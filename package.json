@@ -1,0 +1,32 @@
+{
+  "name": "yatsc",
+  "version": "0.0.0",
+  "description": "Yet-another Typescript Compiler implementation(C++)",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node build.js test",
+    "install": "node build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brn/yatsc.git"
+  },
+  "keywords": [
+    "typescript",
+    "compiler",
+    "tsc"
+  ],
+  "author": "Taketoshi Aono (brn)",
+  "license": "MIT",
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/brn/yatsc/issues"
+  },
+  "homepage": "https://github.com/brn/yatsc",
+  "dependencies": {
+    "node-gyp": "^0.13.1"
+  }
+}
