@@ -59,21 +59,21 @@ class Node {
    * Insert new Node.
    * @param n New node.
    */
-  RASP_INLINE void append_child(Node* n);
+  RASP_INLINE void AppendChild(Node* n);
 
   /**
    * Insert a new Node in front of a specified existing node of the children.
    * @param newNode The node that will newly insert.
    * @param oldNode The node that has inserted.
    */
-  RASP_INLINE void insert_before(Node* newNode, Node* oldNode);
+  RASP_INLINE void InsertBefore(Node* newNode, Node* oldNode);
 
   /**
    * Insert a new Node behind a specified old Node.
    * @param newNode The node that will newly insert.
    * @param oldNode The node that has inserted.
    */
-  RASP_INLINE void insert_after(Node* newNode, Node* oldNode);
+  RASP_INLINE void InsertAfter(Node* newNode, Node* oldNode);
 
   /**
    * Return NodeType of the node.
