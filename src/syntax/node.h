@@ -31,6 +31,7 @@ namespace rasp {
 // Node types.
 enum class NodeType: unit8_t {};
 
+
 // #Forward declaration.
 class Node;
 // #End
@@ -44,17 +45,23 @@ class Node {
   Node() = default;
 
   /**
-   * Return first child of the children.
-   * @returns The first child of the children or nullptr.
+   * Return first child.
+   * @returns The child Node pointer or nullptr.
    */
   RASP_INLINE Node* first_child() RASP_NO_SE;
 
   /**
-   * Return last child of the children.
-   * @returns The last child of the children or nullptr.
+   * Return last child.
+   * @returns The child Node pointer or nullptr.
    */
   RASP_INLINE Node* last_child() RASP_NO_SE;
 
+  /**
+   * Return a specified index child Node.
+   * @returns The child Node pointer or nullptr.
+   */
+  RASP_INLINE Node* nth_child(int n) RASP_NO_SE;
+  
   /**
    * Insert new Node.
    * @param n New node.
