@@ -27,22 +27,110 @@
 #include "../utils/utils.h"
 
 namespace rasp {
-
 // Node types.
-enum class NodeType: unit8_t {};
-
-
-// #Forward declaration.
-class Node;
-// #End
+enum class NodeType: unit8_t {
+  ERROR = 0,
+  RETURN,
+  BITOR,
+  BITXOR,
+  BITAND,
+  EQ,
+  NE,
+  LT,
+  LE,
+  GT,
+  GE,
+  LSH,
+  RSH,
+  URSH,
+  ADD,
+  SUB,
+  MUL,
+  DIV,
+  MOD,
+  NOT,
+  BITNOT,
+  POS,
+  NEG,
+  NEW,
+  DELPROP,
+  TYPEOF,
+  GETPROP,
+  GETELEM,
+  CALL,
+  NAME,
+  NUMBER,
+  STRING,
+  NULL,
+  THIS,
+  FALSE,
+  TRUE,
+  SHEQ,
+  SHNE,
+  REGEXP,
+  THROW,
+  IN,
+  INSTANCEOF,
+  ARRAYLIT,
+  OBJECTLIT,
+  TRY,
+  PARAM_LIST,
+  COMMA,
+  ASSIGN,
+  ASSIGN_BITOR,
+  ASSIGN_BITXOR,
+  ASSIGN_BITAND,
+  ASSIGN_LSH,
+  ASSIGN_RSH,
+  ASSIGN_URSH,
+  ASSIGN_ADD,
+  ASSIGN_SUB,
+  ASSIGN_MUL,
+  ASSIGN_DIV,
+  ASSIGN_MOD,
+  HOOK,
+  OR,
+  AND,
+  INC,
+  DEC,
+  FUNCTION,
+  IF,
+  SWITCH,
+  CASE,
+  DEFAULT_CASE,
+  WHILE,
+  DO,
+  FOR,
+  BREAK,
+  CONTINUE,
+  VAR,
+  WITH,
+  CATCH,
+  CLASS,
+  FIELD,
+  STRING_KEY,
+  IMPORT,
+  VOID,
+  EMPTY,
+  BLOCK,
+  LABEL,
+  EXPR_RESULT,
+  SCRIPT,
+  GETTER_DEF,
+  SETTER_DEF,
+  CONST,
+  DEBUGGER
+};
 
 
 // The AbstractSyntax Tree representation class.
 // This class role as generic node for all ast.
 // Asts are identified by NodeType and childrens.
 class Node {
+  typedef NodeList Vector<Node*>;
+  typedef NodeIterator NodeList::iterator;
  public:
-  Node() = default;
+  RASP_INLINE Node(NodeType type);
 
   /**
    * Return first child.
@@ -86,13 +174,13 @@ class Node {
    * Return NodeType of the node.
    * @returns The NodeType of this node.
    */
-  RASP_INLINE NodeType type() RASP_NO_SE;
-
+  RASP_INLINE NodeType type() RASP_NO_SE {return type_;};
+  
   /**
    * Return children.
    * @returns The node list of the children.
    */
-  RASP_INLINE std::vecotr<Node*>&& children() RASP_NO_SE;
+  RASP_INLINE NodeList&& children() RASP_NO_SE;
 
   /**
    * Return formated string expression of this node.
@@ -105,5 +193,9 @@ class Node {
    * @returns The string expression of this node and children.
    */
   std::string ToStringTree();
+
+ private:
+  NodeType type_;
+  NodeList children_;
 };
 }
