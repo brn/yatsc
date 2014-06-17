@@ -108,5 +108,24 @@
         ],
       },
     },
+    {
+      'target_name': 'node_test',
+      'product_name': 'NodeTest',
+      'type': 'executable',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './lib/gtest/gtest-all.cc',
+        './test/syntax/node-test.cc',
+        './test/test-main.cc'
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
   ] # targets
 }

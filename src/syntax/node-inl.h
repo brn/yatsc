@@ -23,76 +23,13 @@
  */
 
 
-namespace rasp {
-
-Node::Node(NodeType type):
-    type_(type) {}
-
-
-Node* Node::first_child() RASP_NO_SE {
-  return children_.front();
+namespace rasp {namespace syntax {
+Node::String Node::ToString() {
+  return Node::String("");
 }
 
 
-Node* Node::last_child() RASP_NO_SE {
-  return children_.back();
+Node::String Node::ToStringTree() {
+  return Node::String("");
 }
-
-
-Node* Node::nth_child(int n) RASP_NO_SE {
-  return children_.at(n);
-}
-
-
-void Node::AppendChild(Node* n) {
-  children_.push_back(n):
-}
-
-
-void Node::InsertBefore(Node* newNode, Node* oldNode) {
-  NodeIterator it = children_.begin();
-  NodeIterator end = children_.end();
-  for (;it != end; ++it) {
-    if ((*it) == oldNode) {
-      break;
-    }
-  }
-
-  if (it != end) {
-    children_.insert(it, newNode);
-  }
-}
-
-
-void Node::InsertAfter(Node* newNode, Node* oldNode) {
-  NodeIterator it = children_.begin();
-  NodeIterator end = children_.end();
-  for (;it != end; ++it) {
-    if ((*it) == oldNode) {
-      break;
-    }
-  }
-
-  if ((it + 1) != end) {
-    children_.insert(it + 1, newNode);
-  } else {
-    children_.push_back(newNode);
-  }
-}
-
-
-NodeList&& Node::children() RASP_NO_SE {
-  NodeList list(children_.begin(), children_.end());
-  return std::move(list);
-}
-
-
-std::string Node::ToString() {
-  return std::string("");
-}
-
-
-std::string Node::ToStringTree() {
-  return std::string("");
-}
-}
+}}
