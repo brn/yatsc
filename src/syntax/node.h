@@ -29,6 +29,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <stdint.h>
 #include "../utils/utils.h"
 
@@ -113,9 +114,11 @@ class Variable;
 class Node {
  public:
 
-  typedef std::vector<Node*> List;
-  typedef List::iterator Iterator;
   typedef std::string String;
+  typedef std::vector<Node*> List;
+  typedef std::unordered_map<String, Node*> Map;
+  typedef List::iterator ListIterator;
+  typedef Map::iterator MapIterator;
 
   
   RASP_INLINE Node(NodeType type)
@@ -1325,6 +1328,10 @@ class TemaryExpression: public Node {
         then_exp_(then_exp),
         else_exp_(else_exp) {}
 
+
+  // Getter and Setter for cond_.
+  NODE_PROPERTY(cond);
+  
   
   // Getter and Setter for then_exp_.
   NODE_PROPERTY(then_exp);
@@ -1339,12 +1346,17 @@ class TemaryExpression: public Node {
 };
 
 
-class BinaryOpBase: public Node {
+class BinaryExpression: public BinaryOpBase {
  public:
-  BinaryOpBase(NodeType type, Node* first, Node* second)
-      : Node(type),
+  BinaryExpression(Token token, Node* first, Node* second)
+      : Node(NodeType::kBinaryExpression),
+        type_(type),
         first_(first),
-        second_(second) {}
+        second_(second){}
+
+
+  // Getter and Setter for type_.
+  NODE_PROPERTY(type);
 
   // Getter and Setter for first_.
   NODE_PROPERTY(frist);
@@ -1355,32 +1367,6 @@ class BinaryOpBase: public Node {
  private:
   Node* first_;
   Node* second_;
-};
-
-
-class UnaryOpBase: public Node {
- public:
-  UnaryOpBase(NodeType type, Node* exp)
-      : Node(type),
-        exp_(exp) {}
-
-  // Getter and Setter for exp_.
-  NODE_PROPERTY(exp);
-  
- private:
-  Node* exp_;
-};
-
-
-class BinaryExpression: public BinaryOpBase {
- public:
-  BinaryExpression(Token token, Node* first, Node* second)
-      : BinaryOpBase(NodeType::kBinaryExpression, first, second),
-        type_(type) {}
-
-
-  // Getter and Setter for type_.
-  NODE_PROPERTY(type);
 
  private:
   Token type_;
@@ -1390,87 +1376,20 @@ class BinaryExpression: public BinaryOpBase {
 class UnaryExpression: public UnaryOpBase {
  public:
   BinaryExpression(Token token, Node* exp)
-      : BinaryOpBase(NodeType::kUnaryExpression, exp),
-        type_(type) {}
+      : Node(NodeType::kUnaryExpression),
+        type_(type),
+        exp_(exp){}
 
 
   // Getter and Setter for type_.
   NODE_PROPERTY(type);
 
+  // Getter and Setter for exp_.
+  NODE_PROPERTY(exp);
+
  private:
   Token type_;
-};
-
-
-class CommaExpression: public BinaryOpBase {
- public:
-  CommaExpression(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kCommaExpression, first, second) {}
-};
-
-
-class AndExpression: public BinaryOpBase {
- public:
-  AndExpression(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kCommaExpression, first, second) {}
-};
-
-
-class OrExpression: public BinaryOpBase {
- public:
-  OrExpression(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kOrExpression, first, second) {}
-};
-
-
-class NotExpression: public UnaryOpBase {
- public:
-  NotExpression(Node* exp)
-      : UnaryOpBase(NodeType::kNotExpression, exp) {}
-};
-
-
-class StrictEqExpression: public BinaryOpBase {
- public:
-  BinaryOpBase(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kStrictEqExpression, first, second) {}
-};
-
-
-class ShallowEqExpression: public BinaryOpBase {
-  public:
-  BinaryOpBase(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kShallowEqExpression, first, second) {}
-};
-
-
-class Void: public UnaryOpBase {
- public:
-  Void(Node* exp)
-      : UnaryOpBase(NodeType::kVoid),
-        exp_(exp) {}
-};
-
-
-class TypeCast: public UnaryOpBase {
- public:
-  TypeCast(Node* exp)
-      : UnaryOpBase(NodeType::kTypeCast),
-        exp_(exp) {}
-};
-
-
-class AddExpression: public BinaryOpBase {
- public:
-  AddExpression(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kAddExpression, first, second) {}
-};
-
-
-class SubExpression: public BinaryOpBase {
- public:
-  SubExpression(Node* first, Node* second)
-      : BinaryOpBase(NodeType::kSubExpression, first, second) {}
+  Node* exp_;
 };
 
 
@@ -1517,6 +1436,101 @@ class String: public Node {
   
  private:
   TokenInfo token_info_;
+};
+
+
+class ObjectElement: public Node {
+ public:
+  ObjectElement(Node* key, Node* value)
+      : Node(NodeType::kObjectElement),
+        key_(key),
+        value_(value) {}
+
+  // Getter and setter for key_.
+  NODE_PROPERTY(key);
+
+
+  // Getter and setter for value_.
+  NODE_PROPERTY(value);
+
+
+ private:
+  Node* key_;
+  Node* value_;
+}
+
+
+class ObjectLiteral: public Node {
+ public:
+  ObjectLiteral()
+      : Node(NodeType::kObjectLiteral) {}
+
+
+  /**
+   * Add a property element node.
+   * @param element A property element node.
+   */
+  RASP_INLINE AddProperty(Node* element) {
+    elements_.push_back(element);
+  }
+
+
+  /**
+   * Remove a property element node.
+   * @param element A property element node.
+   */
+  RASP_INLINE RemoveProperty(Node* element) {
+    elements_.erase(std::remove(elements_.begin(), elements_.end(), element), elements_.end());
+  }
+
+
+  /**
+   * Return element list.
+   * @returns The element list.
+   */
+  RASP_INLINE const Node::List& properties() RASP_NOEXCEPT {
+    return elements_;
+  }
+
+ private:
+  Node::List elements_;
+};
+
+
+class ArrayLiteral: public Node {
+ public:
+  ArrayLiteral(std::initializer_list<Node*> elements)
+      : Node(NodeType::kArrayLiteral),
+        elements_(elements) {}
+
+  /**
+   * Add an element node.
+   * @param element An element node.
+   */
+  RASP_INLINE AddElement(Node* element) {
+    elements_.push_back(element);
+  }
+
+
+  /**
+   * Remove an element node.
+   * @param element An element node.
+   */
+  RASP_INLINE RemoveElement(Node* element) {
+    elements_.erase(std::remove(elements_.begin(), elements_.end(), element), elements_.end());
+  }
+
+
+  /**
+   * Return element list.
+   * @returns The element list.
+   */
+  RASP_INLINE const Node::List& elements() RASP_NOEXCEPT {
+    return elements_;
+  }
+  
+ private:
+  Node::List elements_;
 };
 
 
