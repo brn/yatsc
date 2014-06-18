@@ -203,6 +203,17 @@ class LazyInitializer {
   Byte heap_[sizeof(T)];
 };
 
+
+template <typename T, typename U, typename... Ts>
+struct is_all_same : 
+  std::integral_constant<bool, is_all_same<T, U>::value & is_all_same<U, Ts...>::value>{ };
+
+template <typename T>
+struct is_all_same<T, T> : std::true_type { };
+
+template <typename T, typename U>
+struct is_all_same<T, U> : std::false_type { };
+
 }
 
 #endif

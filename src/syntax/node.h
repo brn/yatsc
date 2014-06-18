@@ -53,16 +53,22 @@ enum class NodeType: uint8_t {
   kLabelledStatement,
   kSwitchStatement,
   kCase,
-  kTryStmt,
-  kCatchStmt,
-  kFinallyStmt,
-  kThrowStmt,
-  kFor,
-  kForIn,
-  kWhile,
-  kDoWhile,
-  kClass,
-  kClassField,
+  kTryStatement,
+  kCatchStatement,
+  kFinallyStatement,
+  kThrowStatement,
+  kForStatement,
+  kForInStatement,
+  kWhileStatement,
+  kDoWhileStatement,
+  kClassDecl,
+  kInstanceProperty,
+  kClassProperty,
+  kInterface,
+  kInterfaceField,
+  kSimpleTypeExpression,
+  kFunctionTypeExpression,
+  kAccessorTypeExpression,
   kFunction,
   kCallExp,
   kProperty,
@@ -78,9 +84,14 @@ enum class NodeType: uint8_t {
   kArrayLiteral,
   kObjectLiteral,
   kGeneratorExpression,
-  kDstaTree,
-  kDstaExtractedExpressions,
-  kUndefined
+  kUndefined,
+  kDebugger
+};
+
+
+enum class AccessLevel: uint8_t {
+  kPublic = 0,
+  kPrivate
 };
 
 
@@ -150,6 +161,18 @@ class Node {
   NodeType type_;
 };
 
+#define NODE_GETTER(name)                                   \
+  RASP_INLINE Node* name() RASP_NOEXCEPT {return name##_;}
+
+
+#define NODE_SETTER(name)                       \
+  RASP_INLINE void set_##name(Node* name) {name##_ = name;}
+
+
+#define NODE_PROPERTY(name)                         \
+  NODE_GETTER(name)                                 \
+  NODE_SETTER(name)
+
 
 // Represent file root of script.
 class FileScope: public Node {
@@ -192,24 +215,8 @@ class Statement : public Node {
  public:
   Statement(): Node(NodeType::kStatement){}
 
-
-  /**
-   * Return expression.
-   * @returns An expression node.
-   */
-  RASP_INLINE Node* exp() RASP_NO_SE {
-    return exp_;
-  }
-
-
-  /**
-   * Set expression.
-   * @param node An expression.
-   */
-  RASP_INLINE void set_exp(Node* node) {
-    exp_ = node;
-  }
-
+  // Getter and Setter for exp.
+  NODE_PROPERTY(exp);
  private:
   Node* exp_;
 };
@@ -301,6 +308,26 @@ class Block: public Node {
 
  private:
   Node::List children_;
+};
+
+
+// Statement holder base class.
+// e.g ForStatement, WhileStatement...
+class StatementHolder: public Node {
+ public:
+  
+  // Getter and Setter for statement.
+  NODE_PROPERTY(statement);
+
+  
+ protected:
+  StatementHolder(NodeType type, Node* statement):
+      Node(type),
+      statement_(statement) {}
+
+  StatementHolder(NodeType type):
+      Node(type),
+      statement_(nullptr) {}
 };
 
 
@@ -450,40 +477,11 @@ class IfStatement : public Node {
       : Node(NodeType::kIfStatement) {}
 
   
-  /**
-   * Return A then block.
-   * @returns A then block node.
-   */
-  RASP_INLINE Node* then_block() RASP_NOEXCEPT {
-    return then_block_;
-  }
-
-
-  /**
-   * Set a then block.
-   * @param then_block A then block node.
-   */
-  RASP_INLINE void set_then_block(Node* then_block) RASP_NOEXCEPT {
-    then_block_ = then_block;
-  }
-
-
-  /**
-   * Return else block.
-   * @returns A else block node.
-   */
-  RASP_INLINE Node* else_block() RASP_NOEXCEPT {
-    return else_block_;
-  }
-
-
-  /**
-   * Set a else block.
-   * @param else_block A else block node.
-   */
-  RASP_INLINE void set_else_block(Node* else_block) RASP_NOEXCEPT {
-    else_block_ = else_block;
-  }
+  // Getter and Setter for then_block_.
+  NODE_PROPERTY(then_block);
+  
+  // Getter and Setter for else_block_.
+  NODE_PROPERTY(else_block);
 
  private:
   Node* then_block_;
@@ -506,14 +504,8 @@ class ReturnStatement: public Node {
       : Node(NodeType::kReturnStatement),
         exp_(exp) {}
 
-
-  /**
-   * Return an expression node.
-   * @returns An expression node.
-   */
-  RASP_INLINE Node* exp() RASP_NOEXCEPT {
-    return exp_;
-  }
+  // Getter and Setter for exp_.
+  NODE_PROPERTY(exp);
 
  private:
   Node* exp_;
@@ -532,22 +524,8 @@ class BreakStatement: public Node {
         label_(nullptr) {}
 
 
-  /**
-   * Return a label node.
-   * @returns A label node.
-   */
-  RASP_INLINE Node* label() RASP_NOEXCEPT {
-    return label_;
-  }
-
-
-  /**
-   * Set a label node.
-   * @param label A label node.
-   */
-  RASP_INLINE void set_label(Node* label) RASP_NOEXCEPT {
-    label_ = label;
-  }
+  // Getter and Setter for label_.
+  NODE_PROPERTY(label);
   
  private:
   Node* label_;
@@ -555,35 +533,992 @@ class BreakStatement: public Node {
 
 
 // Represent with statement.
-class WithStatement: public Block {
+class WithStatement: public StatementHolder {
  public:
-  WithStatement(Node* exp, Node* block)
-      : Node(NodeType::kWithStatement),
-        exp_(exp),
-        block_(block) {}
-
-  /**
-   * Return an expression node.
-   * @returns An expression node.
-   */
-  RASP_INLINE Node* exp() RASP_NOEXCEPT {
-    return exp_;
-  }
+  WithStatement(Node* exp, Node* statement)
+      : StatementHolder(NodeType::kWithStatement, statement),
+        exp_(exp) {}
 
 
-  /**
-   * Set an expression node.
-   * @param exp An expression node.
-   */
-  RASP_INLINE void set_exp(Node* exp) RASP_NOEXCEPT {
-    exp_ = exp;
-  }
+  WithStatement()
+      : StatementHolder(NodeType::kWithStatement),
+        exp_(nullptr) {}
+
+  // Getter and Setter for exp_.
+  NODE_PROPERTY(exp);
 
 
  private:
   Node* exp_;
-  Node* block_;
 };
+
+
+// Represent labell.
+class LabelledStatement: public StatementHolder {
+ public:
+  LabelledStatement(Node* name, Node* statement)
+      : StatementHolder(NodeType::kLabelledStatement, statement),
+        name_(name) {}
+
+
+  LabelledStatement()
+      : StatementHolder(NodeType::kLabelledStatement),
+        name_(nullptr) {}
+
+
+  // Getter and Setter for name_.
+  NODE_PROPERTY(name);
+
+ private:
+  Node* name_;
+};
+
+
+// Represent switch statement.
+class SwitchStatement: public Node {
+ public:
+  SwitchStatement()
+      : Node(NodeType::kSwitchStatement) {}
+
+
+  /**
+   * Return the case list.
+   * @returns The case list.
+   */
+  RASP_INLINE const Node::List& cases() RASP_NOEXCEPT {
+    return cases_;
+  }
+
+
+  // Getter and Setter for default_case_.
+  NODE_PROPERTY(default_case);
+
+
+  /**
+   * Add a case node.
+   * @param case_node A case node.
+   */
+  RASP_INLINE void AddCase(Node* case_node) RASP_NOEXCEPT {
+    cases_.push_back(case_node);
+  }
+
+
+  /**
+   * Remove a case node.
+   * @param case_node A case node.
+   */
+  RASP_INLINE void RemoveCase(Node* case_node) RASP_NOEXCEPT {
+    cases_.erase(std::remove(cases_.begin(), cases_.end(), case_node), cases_.end());
+  }
+
+ private:
+  Node::List cases_;
+  Node* default_case_;
+};
+
+
+// Represent case.
+class Case: public StatementHolder {
+ public:
+  Case(Node* condition, Node* statement)
+      : StatementHolder(NodeType::kCase, statement),
+        condition_(condition) {}
+
+
+  Case()
+      : StatementHolder(NodeType::kCase),
+        condition_(nullptr) {}
+
+
+  // Getter and Setter for condition_.
+  NODE_PROPERTY(condition);
+
+
+ private:
+  Node* condition_;
+};
+
+
+// Represent try catch finally statement.
+class TryStatement: public Block {
+ public:
+  TryStatement(Node* catch_statement, Node* finally_statement)
+      : Block(NodeType::kTryStatement),
+        catch_statement_(catch_statement),
+        finally_statement_(finally_statement) {}
+
+  
+  TryStatement(Node* catch_statement)
+      : Block(NodeType::kTryStatement),
+        catch_statement_(catch_statement),
+        finally_statement_(nullptr) {}
+
+
+  TryStatement(Node* finally_statement)
+      : Block(NodeType::kTryStatement),
+        catch_statement_(nullptr),
+        finally_statement_(finally_statement) {}
+
+
+  // Getter and Setter for catch_statement_.
+  NODE_PROPERTY(catch_statement);
+
+
+  // Getter and Setter for finally_statement_.
+  NODE_PROPERTY(finally_statement);
+
+
+ private:
+  Node* catch_statement_;
+  Node* finally_statement_:
+};
+
+
+class CatchStatement: public Block {
+ public:
+  CatchStatement(Node* error_name)
+      : Block(NodeType::kCatchStatement),
+        error_name_(error_name){}
+
+
+  // Getter and Setter for error_name.
+  NODE_PROPERTY(error_name);
+
+ private:
+  Node* error_name_;
+};
+
+
+// Represent finally statement.
+class FinallyStatement: public Block {
+ public:
+  FinallyStatement()
+      : Block(NodeType::kFinallyStatement) {}
+};
+
+
+// Represent throw statement.
+class ThrowStatement: public Node {
+ public:
+  ThrowStatement(Node* exp)
+      : Node(NodeType::kThrowStatement),
+        exp_(exp) {}
+
+  
+  // Getter and Setter for exp.
+  NODE_PROPERTY(exp);
+  
+
+ private:
+  Node* exp_;
+};
+
+
+class ForStatement: public StatementHolder {
+ public:
+  ForStatement(Node* cond_init, Node* cond_cmp, Node* cond_upd, Node* statement)
+      : StatementHolder(NodeType::kForStatement, statement),
+        cond_init_(cond_init),
+        cond_cmp_(cond_cmp),
+        cond_upd_(cond_upd),
+        statement_(statement){}
+
+  ForStatement()
+      : StatementHolder(NodeType::kForStatement),
+        cond_init_(nullptr),
+        cond_cmp_(nullptr),
+        cond_upd_(nullptr){}
+
+
+  // Getter and Setter for cond_init.
+  NODE_PROPERTY(cond_init);
+
+
+  // Getter and Setter for cond_upd.
+  NODE_PROPERTY(cond_upd);
+
+
+  // Getter and Setter for cond_cmp.
+  NODE_PROPERTY(cond_cmp);
+
+ private:
+  Node* cond_init_;
+  Node* cond_cmp_;
+  Node* cond_upd_;
+};
+
+
+// Represent for in statement.
+class ForInStatement: public StatementHolder {
+ public:
+  ForInStatement(Node* property_name, Node* exp, Node* statement)
+      : StatementHolder(NodeType::kForInStatement, statement),
+        property_name_(property_name),
+        exp_(exp) {}
+
+  ForInStatement()
+      : Node(NodeType::kForInStatement),
+        property_name_(nullptr),
+        exp_(nullptr) {}
+
+
+  // Getter and Setter for cond_init.
+  NODE_PROPERTY(property_name);
+
+
+  // Getter and Setter for exp.
+  NODE_PROPERTY(exp);
+
+
+ private:
+  Node* property_name_;
+  Node* exp_;
+  Node* statement_;
+};
+
+
+// Represent while statement
+class WhileStatement: public StatementHolder {
+ public:
+  WhileStatement(Node* exp, Node* statement)
+      : StatementHolder(NodeType::kWhileStatement, statement)
+        exp_(exp) {}
+
+  WhileStatement()
+      : Node(NodeType::kWhileStatement),
+        exp_(nullptr) {}
+
+
+  // Getter and Setter for cond_init.
+  NODE_PROPERTY(exp);
+};
+
+
+// Represent do while statement.
+class DoWhileStatement: public StatementHolder {
+ public:
+  DoWhileStatement(Node* exp, Node* statement)
+      : StatementHolder(NodeType::kDoWhileStatement, statement),
+        exp_(exp) {}
+
+
+  DoWhileStatement()
+      : StatementHolder(NodeType::kDoWhileStatement),
+        exp_(nullptr) {}
+
+
+  // Getter and Setter for exp.
+  NODE_PROPERTY(exp);
+
+ private:
+  Node* exp_;
+};
+
+
+class ClassDeclaration: public Node {
+ public:
+  ClassDeclaration(Node* name, Node* constructor, Node* inheritance)
+      : Node(Node::kClassDecl),
+        name_(name),
+        inheritance_(inheritance),
+        constructor_(constructor){}
+
+  
+  ClassDeclaration()
+      : Node(Node::kClassDecl),
+        name_(nullptr),
+        inheritance_(nullptr),
+        constructor(nullptr){}
+
+  /**
+   * Add a field node.
+   * @param filed A filed node.
+   */
+  RASP_INLINE AddField(Node* field) RASP_NOEXCEPT {
+    fields_.push_back(filed);
+  }
+
+
+  /**
+   * Remove a filed node.
+   * @param filed A field node.
+   */
+  RASP_INLINE RemoveField(Node* filed) RASP_NOEXCEPT {
+    filelds_.erase(std::remove(fields_.begin(), fields_.end(), field), fields_.end());
+  }
+
+  
+  /**
+   * Return the filed list.
+   * @returns Fileld list.
+   */
+  RASP_INLINE const Node::List& fields() RASP_NO_SE {
+    return fields_;
+  }
+
+
+  /**
+   * Add an implementation node.
+   * @param impl An implementation node.
+   */
+  RASP_INLINE AddImplementation(Node* impl) RASP_NOEXCEPT {
+    implementations_.push_back(impl);
+  }
+
+
+  /**
+   * Remove an implementation node.
+   * @param impl An implementation node.
+   */
+  RASP_INLINE RemoveImplementation(Node* impl) RASP_NOEXCEPT {
+    implementations_.erase(std::remove(implementations_.begin(), implementations_.end(), impl), implementations_.end());
+  }
+
+
+  /**
+   * Return the implementation list.
+   * @returns The implementation list.
+   */
+  RASP_INLINE const Node::List& implementations() RASP_NO_SE {
+    return implementations_;
+  }
+  
+
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+
+  
+  // Getter and Setter for inheritance.
+  NODE_PROPERTY(inheritance);
+
+
+  // Getter and Setter for constructor.
+  NODE_PROPERTY(constructor);
+
+ private:
+  Node* name_;
+  Node* inheritance_;
+  Node* constructor_;
+  Node::List fields_;
+  Node::List implementations_;
+};
+
+
+// Represent instance property.
+class InstanceProperty: public Node {
+ public:
+  InstanceProperty(bool method, AccessLevel level, Node* name, Node* value)
+      : Node(NodeType::kInstanceProperty),
+        method_(method),
+        access_level_(level),
+        name_(name),
+        value_(value) {}
+
+  InstanceProperty(bool method)
+      : Node(NodeType::kInstanceProperty),
+        method_(method),
+        access_level_(AccessLevel::kPublic),
+        name_(nullptr),
+        value_(nullptr) {}
+
+
+  // Getter and Setter for access_level.
+  NODE_PROPERTY(access_level);
+  
+
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+
+  
+  // Getter and Setter for value.
+  NODE_PROPERTY(value);
+
+
+  RASP_INLINE bool IsMethod() RASP_NO_SE {
+    return method_;
+  }
+
+
+ private:
+  bool method_;
+  AccessLevel access_level_;
+  Node* name_;
+  Node* value_;
+};
+
+
+// Represent class property.
+class ClassProperty: public Node {
+  ClassProperty(bool method, Node* name, Node* value)
+      : Node(NodeType::kClassProperty),
+        method_(method),
+        name_(name),
+        value_(value) {}
+
+  ClassProperty(bool method)
+      : Node(NodeType::kClassProperty),
+        method_(method),
+        name_(nullptr),
+        value_(nullptr) {}
+
+
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+
+
+  // Getter and Setter for value.
+  NODE_PROPERTY(value);
+
+  
+  /**
+   * Return whether this property is method or not.
+   * @returns Method or not.
+   */
+  bool IsMethod() RASP_NO_SE {
+    return method_;
+  }
+
+ private:
+  bool method_;
+  Node* name_;
+  Node* value_;
+};
+
+
+// Represent interface.
+class Interface: public Node {
+ public:
+  Interface(Node* name)
+      : Node(NodeType::kInterface),
+        name_(name) {}
+
+  /**
+   * Add a field node.
+   * @param filed A filed node.
+   */
+  RASP_INLINE AddField(Node* field) RASP_NOEXCEPT {
+    fields_.push_back(filed);
+  }
+
+
+  /**
+   * Remove a filed node.
+   * @param filed A field node.
+   */
+  RASP_INLINE RemoveField(Node* filed) RASP_NOEXCEPT {
+    filelds_.erase(std::remove(fields_.begin(), fields_.end(), field), fields_.end());
+  }
+
+  
+  /**
+   * Return the filed list.
+   * @returns Fileld list.
+   */
+  RASP_INLINE const Node::List& fields() RASP_NO_SE {
+    return fields_;
+  }
+
+
+  /**
+   * Add an extends node.
+   * @param impl An extends node.
+   */
+  RASP_INLINE AddExtends(Node* extends) RASP_NOEXCEPT {
+    extends_.push_back(extends);
+  }
+
+
+  /**
+   * Remove an extends node.
+   * @param impl An extends node.
+   */
+  RASP_INLINE RemoveExtends(Node* extends) RASP_NOEXCEPT {
+    extends_.erase(std::remove(extends_.begin(), extends_.end(), extends), extends_.end());
+  }
+
+
+  /**
+   * Return the extends list.
+   * @returns The extends list.
+   */
+  RASP_INLINE const Node::List& extends() RASP_NO_SE {
+    return extends_;
+  }
+  
+
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+
+ private:
+  Node* name_;
+  Node::List fields_;
+  Node::List extends_;  
+};
+
+
+// Represent interface field.
+class InterfaceField: public Node {
+ public:
+  InterfaceField(Node* name, Node* value):
+      Node(NodeType::kInterfaceField),
+      name_(name),
+      value_(value){}
+
+
+  InterfaceField():
+      Node(NodeType::kInterfaceField),
+      name_(nullptr),
+      value_(nullptr){}
+
+  
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+  
+
+  // Getter and Setter for value.
+  NODE_PROPERTY(value);
+
+ private:
+  Node* name_;
+  Node* value_;
+};
+
+
+// Represent type expression like `var x: string`
+class SimpleTypeExpression: public Node {
+ public:
+  
+  SimpleTypeExpression(Node* type_name, boolean array = false)
+      : Node(NodeType::kSimpleTypeExpression),
+        array_(array),
+        type_name_(type_name) {}
+
+
+  /**
+   * Return whether type expression represent array.
+   * @returns Array or not.
+   */
+  RASP_INLINE bool IsArray() RASP_NO_SE {
+    return array_;
+  }
+  
+
+  // Getter and Setter for name.
+  NODE_PROPERTY(name);
+
+ private:
+  bool array_;
+  Node* name_;
+};
+
+
+// Represent function type expression like, `var x:(a:string, b:string) => string;`
+class FunctionTypeExpression: public Node {
+ public:
+  FunctionTypeExpression(Node* param_list, Node* return_type)
+      : Node(NodeType::kFunctionTypeExpression),
+        param_list_(param_list),
+        return_type_(return_type) {}
+
+
+  FunctionTypeExpression()
+      : Node(NodeType::kFunctionTypeExpression),
+        param_list_(nullptr),
+        return_type_(nullptr) {}
+
+
+  // Getter and setter for param_list_.
+  NODE_PROPERTY(param_list);
+  
+
+  // Getter and setter for return_type_.
+  NODE_PROPERTY(return_type);
+  
+
+ private:
+  Node* param_list_;
+  Node* return_type_;
+};
+
+
+// Represent accessor type expression like, `interface x {[index:int]}`
+class AccessorTypeExpression: public Node {
+ public:
+  AccessorTypeExpression(Node* name, Node* type_expression):
+      Node(NodeType::kAccessorTypeExpression),
+      name_(name) {}
+
+  
+  // Getter and setter for name_.
+  NODE_PROPERTY(name);
+
+ private:
+  Node* name_;
+};
+
+
+// Represent function.
+class Function: public Node {
+ public:
+  Function(bool declaration, Node* name, Node* param_list, Node* body)
+      : Node(NodeType::kFunction),
+        declaration_(declaration),
+        name_(name),
+        param_list_(param_list),
+        body_(body) {}
+
+  // Getter for declaration_.
+  NODE_GETTER(declaration);
+
+  // Getter for name_.
+  NODE_GETTER(name);
+
+  // Getter for param_list_.
+  NODE_GETTER(param_list);
+
+  // Getter for body_.
+  NODE_GETTER(body);
+
+ private:
+  bool declaration_;
+  Node* name_;
+  Node* param_list_;
+  Node* body_;
+};
+
+
+class Call: public Node {
+ public:
+  Call(Node* target, std::initializer_list<Node*> args)
+      : Node(NodeType::kCall),
+        target_(target),
+        args_(args) {}
+
+
+  /**
+   * Return the arguments list.
+   * @param The arguments list.
+   */
+  RASP_INLINE const Node::List& args() RASP_NO_SE {
+    return args_;
+  }
+
+
+  /**
+   * Add an argument.
+   * @param arg An argument.
+   */
+  RASP_INLINE void AddArg(Node* arg) RASP_NOEXCEPT {
+    arg_.push_back(arg);
+  }
+
+
+  /**
+   * Remove an argument.
+   * @param arg An argument.
+   */
+  RASP_INLINE void RemoveArg(Node* arg) RASP_NOEXCEPT {
+    args_.erase(std::remove(args_.begin(), args_.end(), arg), args_.end());
+  }
+  
+  // Getter for target_.
+  NODE_GETTER(target);
+
+ protected:
+  Call(NodeType type, Node* target, std::initializer_list<Node*> args)
+      : Node(type),
+        target_(target),
+        args_(args) {}
+
+ private:
+  Node* target_;
+  Node::List args_;
+};
+
+
+class NewCall: public Call {
+ public:
+  NewCall(Node* target, std::initializer_list<Node*> args)
+      : Call(NodeType::kNewCall, target, args) {}
+};
+
+
+class Name: public Node {
+ public:
+  Name(const TokeInfo& tokenInfo)
+      : Node(NodeType::kName),
+        token_info_(token_info) {}
+
+
+  RASP_INLINE Utf8Value Utf8Value() RASP_NO_SE {
+    return token_info_.value().ToUtf8Value();
+  }
+
+
+  RASP_INLINE Utf16Value Utf16Value() RASP_NO_SE {
+    return token_info_.value().ToUtf16Value();
+  }
+
+ private:
+  TokenInfo token_info_;
+};
+
+
+class GetProp: public Node {
+ public:
+  GetProp(Node* target, Node* prop)
+      : Node(NodeType::kGetProp)
+        target_(target),
+        prop_(prop) {}
+
+  // Getter and Setter for target_.
+  NODE_PROPERTY(target);
+
+  // Getter and Setter for prop_.
+  NODE_PROPERTY(prop);
+
+ protected:
+  GetProp(NodeType type, Node* target, Node* prop)
+      : Node(type),
+        target_(target),
+        prop_(prop) {}
+
+ private:
+  Node* target_;
+  Node* prop_;
+};
+
+
+class GetElem: public GetProp {
+ public:
+  GetElem(Node* target, Node* prop)
+      : GetProp(target, prop) {}
+};
+
+
+class Assignment: public Node {
+ public:
+  Assignment(Node* target, Node* exp)
+      : Node(NodeType::kAssignment),
+        target_(target),
+        exp_(exp){}
+
+
+  // Getter and Setter for target_.
+  NODE_PROPERTY(target);
+
+
+  // Getter and Setter for prop_.
+  NODE_PROPERTY(exp);
+
+ private:
+  Node* target_;
+  Node* prop_;
+};
+
+
+class TemaryExpression: public Node {
+ public :
+  TemaryExpression(Node* cond, Node* then_exp, Node* else_exp)
+      : Node(NodeType::kTemaryExpression),
+        cond_(cond),
+        then_exp_(then_exp),
+        else_exp_(else_exp) {}
+
+  
+  // Getter and Setter for then_exp_.
+  NODE_PROPERTY(then_exp);
+
+  
+  // Getter and Setter for else_exp_.
+  NODE_PROPERTY(else_exp);
+  
+ private:
+  Node* then_exp_;
+  Node* else_exp_;
+};
+
+
+class BinaryOpBase: public Node {
+ public:
+  BinaryOpBase(NodeType type, Node* first, Node* second)
+      : Node(type),
+        first_(first),
+        second_(second) {}
+
+  // Getter and Setter for first_.
+  NODE_PROPERTY(frist);
+
+  // Getter and Setter for second_.
+  NODE_PROPERTY(second);
+  
+ private:
+  Node* first_;
+  Node* second_;
+};
+
+
+class UnaryOpBase: public Node {
+ public:
+  UnaryOpBase(NodeType type, Node* exp)
+      : Node(type),
+        exp_(exp) {}
+
+  // Getter and Setter for exp_.
+  NODE_PROPERTY(exp);
+  
+ private:
+  Node* exp_;
+};
+
+
+class BinaryExpression: public BinaryOpBase {
+ public:
+  BinaryExpression(Token token, Node* first, Node* second)
+      : BinaryOpBase(NodeType::kBinaryExpression, first, second),
+        type_(type) {}
+
+
+  // Getter and Setter for type_.
+  NODE_PROPERTY(type);
+
+ private:
+  Token type_;
+};
+
+
+class UnaryExpression: public UnaryOpBase {
+ public:
+  BinaryExpression(Token token, Node* exp)
+      : BinaryOpBase(NodeType::kUnaryExpression, exp),
+        type_(type) {}
+
+
+  // Getter and Setter for type_.
+  NODE_PROPERTY(type);
+
+ private:
+  Token type_;
+};
+
+
+class CommaExpression: public BinaryOpBase {
+ public:
+  CommaExpression(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kCommaExpression, first, second) {}
+};
+
+
+class AndExpression: public BinaryOpBase {
+ public:
+  AndExpression(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kCommaExpression, first, second) {}
+};
+
+
+class OrExpression: public BinaryOpBase {
+ public:
+  OrExpression(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kOrExpression, first, second) {}
+};
+
+
+class NotExpression: public UnaryOpBase {
+ public:
+  NotExpression(Node* exp)
+      : UnaryOpBase(NodeType::kNotExpression, exp) {}
+};
+
+
+class StrictEqExpression: public BinaryOpBase {
+ public:
+  BinaryOpBase(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kStrictEqExpression, first, second) {}
+};
+
+
+class ShallowEqExpression: public BinaryOpBase {
+  public:
+  BinaryOpBase(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kShallowEqExpression, first, second) {}
+};
+
+
+class Void: public UnaryOpBase {
+ public:
+  Void(Node* exp)
+      : UnaryOpBase(NodeType::kVoid),
+        exp_(exp) {}
+};
+
+
+class TypeCast: public UnaryOpBase {
+ public:
+  TypeCast(Node* exp)
+      : UnaryOpBase(NodeType::kTypeCast),
+        exp_(exp) {}
+};
+
+
+class AddExpression: public BinaryOpBase {
+ public:
+  AddExpression(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kAddExpression, first, second) {}
+};
+
+
+class SubExpression: public BinaryOpBase {
+ public:
+  SubExpression(Node* first, Node* second)
+      : BinaryOpBase(NodeType::kSubExpression, first, second) {}
+};
+
+
+class This: public Node {
+ public:
+  This()
+      : Node(NodeType::kThis) {}
+};
+
+
+class Number: public Node {
+ public:
+  Number(double value)
+      : Node(NodeType::kNumber),
+        value_(value_) {}
+
+ private:
+  double value_;
+};
+
+
+class Null: public Node {
+ public:
+  Null()
+      : Node(NodeType::kNull) {}
+};
+
+
+class String: public Node {
+ public:
+  String(TokenInfo token_info)
+      : token_info_(token_info) {}
+
+  
+  RASP_INLINE Utf8Value Utf8Value() RASP_NO_SE {
+    return token_info_.value().ToUtf8Value();
+  }
+
+
+  RASP_INLINE Utf16Value Utf16Value() RASP_NO_SE {
+    return token_info_.value().ToUtf16Value();
+  }
+  
+  
+ private:
+  TokenInfo token_info_;
+};
+
 
 }} //rasp::syntax
 
