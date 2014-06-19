@@ -136,6 +136,23 @@ static const size_t kSizeTSize = sizeof(size_t);
 #define GB MB * 1024
 
 
+#define RASP_GETTER(type, name, field)                    \
+  RASP_INLINE type name() RASP_NOEXCEPT {return field;}
+
+#define RASP_CONST_GETTER(type, name, field)            \
+  RASP_INLINE type name() RASP_NO_SE {return field;}
+
+
+#define RASP_SETTER(type, name, field)                              \
+  RASP_INLINE void name(type name) RASP_NOEXCEPT {return field = name;}
+
+
+#define RASP_PROPERTY(type, name, field)        \
+  RASP_GETTER(type, name, field)                \
+  RASP_SETTER(type, name, field)
+
+
+
 /**
  * Class traits.
  * Represent class which is not allowed to instantiation.

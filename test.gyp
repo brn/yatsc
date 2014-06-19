@@ -116,7 +116,7 @@
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
         './lib/gtest/gtest-all.cc',
-        './test/syntax/node-test.cc',
+        './test/ir/node-test.cc',
         './test/test-main.cc'
       ],
       'xcode_settings': {

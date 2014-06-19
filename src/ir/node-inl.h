@@ -23,7 +23,7 @@
  */
 
 
-namespace rasp {namespace syntax {
+namespace rasp {namespace ir {
 Node::String Node::ToString() {
   return Node::String("");
 }
