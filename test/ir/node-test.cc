@@ -177,3 +177,46 @@ TEST_F(NodeTest, ImportView_toImportView_test) {
 
   ASSERT_NE(i->ToImportView(), nullptr);
 }
+
+
+TEST_F(NodeTest, VariableView_test) {
+  rasp::ir::Node* name = irfactory.New<DummyView>();
+  rasp::ir::Node* value = irfactory.New<DummyView>();
+  rasp::ir::Node* type = irfactory.New<DummyView>();
+  rasp::ir::VariableView* vv = irfactory.New<rasp::ir::VariableView>(name, value, type);
+  ASSERT_EQ(vv->name(), name);
+  ASSERT_EQ(vv->value(), value);
+  ASSERT_EQ(vv->type(), type);
+
+  vv->set_name(value);
+  vv->set_value(type);
+  vv->set_type(name);
+
+  ASSERT_EQ(vv->name(), value);
+  ASSERT_EQ(vv->value(), type);
+  ASSERT_EQ(vv->type(), name);
+}
+
+
+TEST_F(NodeTest, IfStatementView_test) {
+  rasp::ir::Node* then_block = irfactory.New<DummyView>();
+  rasp::ir::Node* else_block = irfactory.New<DummyView>();
+  rasp::ir::IfStatementView* ifv = irfactory.New<rasp::ir::IfStatementView>(then_block, else_block);
+  ASSERT_EQ(ifv->then_block(), then_block);
+  ASSERT_EQ(ifv->else_block(), else_block);
+
+  ifv->set_then_block(else_block);
+  ifv->set_else_block(then_block);
+
+  ASSERT_EQ(ifv->then_block(), else_block);
+  ASSERT_EQ(ifv->else_block(), then_block);
+}
+
+
+TEST_F(NodeTest, ReturnStatementView_test) {
+  rasp::ir::Node* n = irfactory.New<DummyView>();
+  rasp::ir::ReturnStatementView* rn = irfactory.New<rasp::ir::ReturnStatementView>(n);
+  ASSERT_EQ(rn->expr(), n);
+  rn->set_expr(nullptr);
+  ASSERT_EQ(rn->expr() == nullptr, true);
+}

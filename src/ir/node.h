@@ -178,7 +178,10 @@ class DebuggerView;
 
 // Define setter accessor.
 #define NODE_SETTER(name, pos)                                      \
-  RASP_INLINE void set_##name(Node* name) {node_list_[pos] = name;name->set_parent_node(this);}
+  RASP_INLINE void set_##name(Node* name) {                         \
+    node_list_[pos] = name;                                         \
+    if (name != nullptr) name->set_parent_node(this);               \
+  }
 
 
 // Define both getter and setter accessors.
