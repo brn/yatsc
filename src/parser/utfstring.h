@@ -210,6 +210,12 @@ class UtfString {
   }
 
 
+  inline UtfString& operator = (const UtfString& utf_string) {
+    utf_value_cache_ = utf_string.utf_value_cache_;
+    return (*this);
+  }
+
+
   inline const UtfString& operator += (const UtfString& utf_string) {
     utf_value_cache_.Append(utf_string.utf_value_cache_.utf8_value(),
                             utf_string.utf_value_cache_.utf16_value());

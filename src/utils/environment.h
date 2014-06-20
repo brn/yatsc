@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  * 
- * Copyright (c) Taketoshi Aono(brn)
+ * Copyright (c) 2013 Taketoshi Aono(brn)
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,5 +22,36 @@
  * THE SOFTWARE.
  */
 
-#include "./node.h"
 
+#ifndef ENVIRONMENT_H
+#define ENVIRONMENT_H
+
+#include "./tls.h"
+#include "./regions.h"
+
+namespace rasp {
+class Environment : private Uncopyable {
+ public:
+  static Environment* Create() RASP_NOEXCEPT {
+    Environment* environment = reinterpret_cast<Environment*>(tls_.Get());
+    if (environment == nullptr) {
+      environment = new Environment();
+      tls_.Set(environment);
+    }
+    return environment;
+  }
+
+  template <typename T, typename ... Args>
+  RASP_INLINE T* New(Args ... args) {
+    return regions_.New<T>(std::forward<Args>(args)...);
+  }
+
+ private:
+  Environment() = default;
+  static ThreadLocalStorage::Slot tls_;
+
+  static Regions regions_;
+};
+}
+
+#endif

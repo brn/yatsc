@@ -144,7 +144,7 @@ static const size_t kSizeTSize = sizeof(size_t);
 
 
 #define RASP_SETTER(type, name, field)                              \
-  RASP_INLINE void name(type name) RASP_NOEXCEPT {return field = name;}
+  RASP_INLINE void set_##name(type name) RASP_NOEXCEPT {field = name;}
 
 
 #define RASP_PROPERTY(type, name, field)        \
@@ -172,7 +172,7 @@ class Static {
 class Uncopyable {
 public:
   Uncopyable() = default;
-  ~Uncopyable() = default;
+  virtual ~Uncopyable() = default;
   Uncopyable(const Uncopyable&) = delete;
   Uncopyable& operator = (const Uncopyable&) = delete;
 };

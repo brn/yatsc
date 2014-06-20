@@ -160,10 +160,10 @@ class TokenInfo {
   
 
   TokenInfo(const TokenInfo& token_info)
-      : type_(token_info.type_),
+      : vector_(token_info.vector_),
+        type_(token_info.type_),
         start_col_(token_info.start_col_),
-        line_number_(token_info.line_number_),
-        vector_(token_info.vector_) {}
+        line_number_(token_info.line_number_){}
 
   
   ~TokenInfo() = default;

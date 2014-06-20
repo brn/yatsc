@@ -32,6 +32,7 @@
 #include <stdint.h>
 #include "../utils/utils.h"
 #include "../utils/regions.h"
+#include "../utils/environment.h"
 #include "../parser/token.h"
 
 namespace rasp {namespace ir {
@@ -177,7 +178,7 @@ class DebuggerView;
 
 // Define setter accessor.
 #define NODE_SETTER(name, pos)                                      \
-  RASP_INLINE void set_##name(Node* name) {node_list_[pos] = name;}
+  RASP_INLINE void set_##name(Node* name) {node_list_[pos] = name;name->set_parent_node(this);}
 
 
 // Define both getter and setter accessors.
@@ -186,16 +187,20 @@ class DebuggerView;
   NODE_SETTER(name, pos)
 
 
-#define OPTIONAL_PARENT_PARAMETER               \
-  Node* parent_node = nullptr
-
-
 class SourceInformation {
   friend class Node;
  public:
   SourceInformation(size_t line_number, size_t start_col)
       : line_number_(line_number),
         start_col_(start_col) {}
+
+
+  SourceInformation(const SourceInformation& source_information)
+      : line_number_(source_information.line_number_),
+        start_col_(source_information.start_col_) {}
+
+
+  SourceInformation(SourceInformation&& source_information) = delete;
 
 
   SourceInformation() = default;
@@ -215,7 +220,7 @@ class SourceInformation {
 // The IR Tree representation class.
 // This class has all tree properties and accessible from Node type.
 // All other **View classes are only view of this Node class.
-class Node : public RegionalObject {
+class Node : public RegionalObject, private Uncopyable {
  public:
 
   typedef std::string String;
@@ -227,13 +232,14 @@ class Node : public RegionalObject {
    * Create Node.
    * @param node_type The node type.
    * @param capacity The size of children tree.
-   * @param parent_node A parent node of this node.
    */
-  RASP_INLINE Node(NodeType node_type, size_t capacity = 0, Node* parent_node = nullptr)
+  RASP_INLINE Node(NodeType node_type, size_t capacity = 0)
       : node_type_(node_type),
-        parent_node_(parent_node),
+        capacity_(capacity),
+        parent_node_(nullptr),
         operand_(Token::ILLEGAL),
-        double_value_(0l) {
+        double_value_(0l),
+        environment_(nullptr){
     if (capacity != 0) {
       node_list_.reserve(capacity);
     }
@@ -255,6 +261,9 @@ class Node : public RegionalObject {
   // Getter for children list.
   RASP_CONST_GETTER(const List&, node_list, node_list_);
 
+  // Getter for environment.
+  RASP_PROPERTY(Environment*, environment, environment_);
+
 
   /**
    * Insert a node at the end of the children.
@@ -262,6 +271,7 @@ class Node : public RegionalObject {
    */
   RASP_INLINE void InsertLast(Node* node) {
     node_list_.push_back(node);
+    node->set_parent_node(this);
   }
 
 
@@ -275,6 +285,7 @@ class Node : public RegionalObject {
     } else {
       node_list_.push_back(node);
     }
+    node->set_parent_node(this);
   }
 
 
@@ -288,6 +299,7 @@ class Node : public RegionalObject {
     if (found != node_list_.end()) {
       node_list_.insert(found, newNode);
     }
+    newNode->set_parent_node(this);
   }
 
 
@@ -304,6 +316,7 @@ class Node : public RegionalObject {
     } else if (found != end) {
       node_list_.push_back(newNode);
     }
+    newNode->set_parent_node(this);
   }
 
 
@@ -367,6 +380,7 @@ class Node : public RegionalObject {
    */
   RASP_INLINE void Remove(Node* block) {
     node_list_.erase(std::remove(node_list_.begin(), node_list_.end(), block), node_list_.end());
+    block->set_parent_node(nullptr);
   }
 
 
@@ -376,6 +390,7 @@ class Node : public RegionalObject {
    */
   RASP_INLINE void Remove(Node::ListIterator iterator) {
     node_list_.erase(iterator);
+    (*iterator)->set_parent_node(nullptr);
   }
 
 
@@ -393,6 +408,26 @@ class Node : public RegionalObject {
         node->SetInformationForTree(token_info);
       }
     }
+  }
+
+
+  RASP_INLINE Node* Clone() RASP_NOEXCEPT {
+    RASP_CHECK(true, environment_ != nullptr);
+    Node* cloned = environment_->New<Node>(node_type_, capacity_);
+    cloned->double_value_ = double_value_;
+    cloned->string_value_ = string_value_;
+    cloned->operand_ = operand_;
+    cloned->environment_ = environment_;
+    for (size_t i = 0u; i < node_list_.size(); i++) {
+      Node* node = node_list_[i];
+      if (node != nullptr) {
+        Node* ret = node->Clone();
+        cloned->node_list_.push_back(ret);
+      } else {
+        cloned->node_list_.push_back(nullptr);
+      }
+    }
+    return cloned;
   }
 
   
@@ -493,10 +528,12 @@ class Node : public RegionalObject {
  private:
   SourceInformation source_information_;
   NodeType node_type_;
+  size_t capacity_;
   Node* parent_node_;
   Token operand_;
   double double_value_;
   UtfString string_value_;
+  Environment* environment_;
 };
 
 
@@ -522,10 +559,10 @@ class FileScopeView: public Node {
 // Represent statement.
 class StatementView : public Node {
  public:
-  StatementView(OPTIONAL_PARENT_PARAMETER): Node(NodeType::kStatementView, 1u, parent_node){}
+  StatementView(): Node(NodeType::kStatementView, 1u){}
 
-  StatementView(Node* expr, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kStatementView, 1u, parent_node) {
+  StatementView(Node* expr):
+      Node(NodeType::kStatementView, 1u) {
     InsertLast(expr);
   }
 
@@ -537,12 +574,12 @@ class StatementView : public Node {
 // Represent variable declarations.
 class VariableDeclView: public Node {
  public:
-  VariableDeclView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kVariableDeclView, 0, parent_node) {}
+  VariableDeclView():
+      Node(NodeType::kVariableDeclView, 0) {}
 
   
-  VariableDeclView(std::initializer_list<Node*> vars, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kVariableDeclView, 0, parent_node) {
+  VariableDeclView(std::initializer_list<Node*> vars):
+      Node(NodeType::kVariableDeclView, 0) {
     node_list_.insert(node_list_.end(), vars.begin(), vars.end());
   }
 };
@@ -551,26 +588,26 @@ class VariableDeclView: public Node {
 // Represent true.
 class TrueView: public Node {
  public:
-  TrueView(OPTIONAL_PARENT_PARAMETER): Node(NodeType::kTrueView, 0, parent_node) {}
+  TrueView(): Node(NodeType::kTrueView, 0) {}
 };
 
 
 // Represent false.
 class FalseView: public Node {
  public:
-  FalseView(OPTIONAL_PARENT_PARAMETER): Node(NodeType::kFalseView, 0, parent_node) {}
+  FalseView(): Node(NodeType::kFalseView, 0) {}
 };
 
 
 // Represent module.
 class ModuleDeclView: public Node {
  public:
-  ModuleDeclView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kModuleDeclView, 2u, parent_node) {}
+  ModuleDeclView():
+      Node(NodeType::kModuleDeclView, 2u) {}
 
 
-  ModuleDeclView(Node* name, Node* statement, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kModuleDeclView, 2u, parent_node) {
+  ModuleDeclView(Node* name, Node* statement):
+      Node(NodeType::kModuleDeclView, 2u) {
     InitNodeList({name, statement});
   }
 
@@ -584,14 +621,14 @@ class ModuleDeclView: public Node {
 // Represent export.
 class ExportView: public Node {
  public:
-  ExportView(Node* target, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kExportView, 1u, parent_node) {
+  ExportView(Node* target)
+      : Node(NodeType::kExportView, 1u) {
     InsertLast(target);
   }
 
 
-  ExportView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kExportView, 1u, parent_node) {}
+  ExportView()
+      : Node(NodeType::kExportView, 1u) {}
 
   
   NODE_PROPERTY(target, 0);
@@ -601,14 +638,14 @@ class ExportView: public Node {
 // Represent import.
 class ImportView: public Node {
  public:
-  ImportView(Node* alias, Node* from_expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kImportView, 2u, parent_node) {
+  ImportView(Node* alias, Node* from_expr)
+      : Node(NodeType::kImportView, 2u) {
     InitNodeList({alias, from_expr});
   }
 
 
-  ImportView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kImportView, 2u, parent_node) {}
+  ImportView()
+      : Node(NodeType::kImportView, 2u) {}
 
   
   NODE_PROPERTY(alias, 0);
@@ -621,14 +658,14 @@ class ImportView: public Node {
 // Represent variable.
 class VariableView : public Node {
  public:
-  VariableView(Node* name, Node* value, Node* type, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kVariableView, 3u, parent_node) {
+  VariableView(Node* name, Node* value, Node* type):
+      Node(NodeType::kVariableView, 3u) {
     InitNodeList({name, value, type});
   }
 
 
-  VariableView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kVariableView, 3u, parent_node) {}
+  VariableView():
+      Node(NodeType::kVariableView, 3u) {}
 
 
   NODE_PROPERTY(name, 0);
@@ -640,14 +677,14 @@ class VariableView : public Node {
 // Represent if statement.
 class IfStatementView : public Node {
  public:
-  IfStatementView(Node* if_block_Node, Node* else_block_node, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kIfStatementView, 2u, parent_node) {
+  IfStatementView(Node* if_block_Node, Node* else_block_node)
+      : Node(NodeType::kIfStatementView, 2u) {
     InitNodeList({if_block_Node, else_block_node});
   }
 
 
-  IfStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kIfStatementView, 2u, parent_node) {}
+  IfStatementView()
+      : Node(NodeType::kIfStatementView, 2u) {}
 
   
   // Getter and Setter for then_block_.
@@ -661,22 +698,22 @@ class IfStatementView : public Node {
 // Represent continue statement.
 class ContinueStatementView: public Node {
  public:
-  ContinueStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kContinueStatementView, 0u, parent_node){}
+  ContinueStatementView()
+      : Node(NodeType::kContinueStatementView, 0u){}
 };
 
 
 // Represent return statement.
 class ReturnStatementView: public Node {
  public:
-  ReturnStatementView(Node* expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kReturnStatementView, 1u, parent_node) {
+  ReturnStatementView(Node* expr)
+      : Node(NodeType::kReturnStatementView, 1u) {
     InitNodeList({expr});
   }
 
 
-  ReturnStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kReturnStatementView, 1u, parent_node) {}
+  ReturnStatementView()
+      : Node(NodeType::kReturnStatementView, 1u) {}
   
 
   // Getter and Setter for expr_.
@@ -687,13 +724,13 @@ class ReturnStatementView: public Node {
 // Represent break statement.
 class BreakStatementView: public Node {
  public:
-  BreakStatementView(Node* label, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kBreakStatementView, 1u, parent_node) {
+  BreakStatementView(Node* label)
+      : Node(NodeType::kBreakStatementView, 1u) {
     InitNodeList({label});
   }
 
-  BreakStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kBreakStatementView, 1u, parent_node) {}
+  BreakStatementView()
+      : Node(NodeType::kBreakStatementView, 1u) {}
 
 
   // Getter and Setter for label.
@@ -704,14 +741,14 @@ class BreakStatementView: public Node {
 // Represent with statement.
 class WithStatementView: public Node {
  public:
-  WithStatementView(Node* expr, Node* statement, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kWithStatementView, 2u, parent_node) {
+  WithStatementView(Node* expr, Node* statement)
+      : Node(NodeType::kWithStatementView, 2u) {
     InitNodeList({expr, statement});
   }
 
 
-  WithStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kWithStatementView, 2u, parent_node) {}
+  WithStatementView()
+      : Node(NodeType::kWithStatementView, 2u) {}
 
   // Getter and Setter for expr.
   NODE_PROPERTY(expr, 0);
@@ -725,14 +762,14 @@ class WithStatementView: public Node {
 // Represent labell.
 class LabelledStatementView: public Node {
  public:
-  LabelledStatementView(Node* name, Node* statement, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kLabelledStatementView, 2u, parent_node) {
+  LabelledStatementView(Node* name, Node* statement)
+      : Node(NodeType::kLabelledStatementView, 2u) {
     InitNodeList({name, statement});
   }
 
 
-  LabelledStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kLabelledStatementView, 2u, parent_node) {}
+  LabelledStatementView()
+      : Node(NodeType::kLabelledStatementView, 2u) {}
 
 
   // Getter and Setter for name_.
@@ -746,14 +783,14 @@ class LabelledStatementView: public Node {
 // Represent switch statement.
 class SwitchStatementView: public Node {
  public:
-  SwitchStatementView(Node* case_list, Node* default_case, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kSwitchStatementView, 2u, parent_node) {
+  SwitchStatementView(Node* case_list, Node* default_case)
+      : Node(NodeType::kSwitchStatementView, 2u) {
     InitNodeList({case_list, default_case});
   }
 
 
-  SwitchStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kSwitchStatementView, 2u, parent_node) {}
+  SwitchStatementView()
+      : Node(NodeType::kSwitchStatementView, 2u) {}
 
 
   // Getter and Setter for case_list.
@@ -767,28 +804,28 @@ class SwitchStatementView: public Node {
 
 class CaseListView: public Node {
  public:
-  CaseListView(std::initializer_list<Node*> case_list, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCaseListView, 0, parent_node) {
+  CaseListView(std::initializer_list<Node*> case_list)
+      : Node(NodeType::kCaseListView, 0) {
     InitNodeList(case_list);
   }
 
 
-  CaseListView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCaseListView, 0, parent_node) {}
+  CaseListView()
+      : Node(NodeType::kCaseListView, 0) {}
 };
 
 
 // Represent case.
 class CaseView: public Node {
  public:
-  CaseView(Node* condition, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCaseView, 2u, parent_node) {
+  CaseView(Node* condition, Node* body)
+      : Node(NodeType::kCaseView, 2u) {
     InitNodeList({condition, body});
   }
 
 
-  CaseView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCaseView, 2u, parent_node) {}
+  CaseView()
+      : Node(NodeType::kCaseView, 2u) {}
 
 
   // Getter and Setter for condition.
@@ -803,14 +840,14 @@ class CaseView: public Node {
 // Represent try catch finally statement.
 class TryStatementView: public Node {
  public:
-  TryStatementView(Node* statement, Node* catch_statement, Node* finally_statement, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kTryStatementView, 3u, parent_node) {
+  TryStatementView(Node* statement, Node* catch_statement, Node* finally_statement)
+      : Node(NodeType::kTryStatementView, 3u) {
     InitNodeList({statement, catch_statement, finally_statement});
   }
 
   
-  TryStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kTryStatementView, 3u, parent_node) {}
+  TryStatementView()
+      : Node(NodeType::kTryStatementView, 3u) {}
 
 
   // Getter and Setter for statement.
@@ -828,14 +865,14 @@ class TryStatementView: public Node {
 
 class CatchStatementView: public Node {
  public:
-  CatchStatementView(Node* error_name, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCatchStatementView, 2u, parent_node) {
+  CatchStatementView(Node* error_name, Node* body)
+      : Node(NodeType::kCatchStatementView, 2u) {
     InitNodeList({error_name, body});
   }
 
 
-  CatchStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCatchStatementView, 2u, parent_node) {}
+  CatchStatementView()
+      : Node(NodeType::kCatchStatementView, 2u) {}
 
 
   // Getter and Setter for error_name.
@@ -850,14 +887,14 @@ class CatchStatementView: public Node {
 // Represent finally statement.
 class FinallyStatementView: public Node {
  public:
-  FinallyStatementView(Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kFinallyStatementView, 1u, parent_node) {
+  FinallyStatementView(Node* body)
+      : Node(NodeType::kFinallyStatementView, 1u) {
     InitNodeList({body});
   }
 
 
-  FinallyStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kFinallyStatementView, 1u, parent_node) {}
+  FinallyStatementView()
+      : Node(NodeType::kFinallyStatementView, 1u) {}
 
 
   NODE_PROPERTY(body, 0);
@@ -867,8 +904,8 @@ class FinallyStatementView: public Node {
 // Represent throw statement.
 class ThrowStatementView: public Node {
  public:
-  ThrowStatementView(Node* expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kThrowStatementView, 1u, parent_node) {
+  ThrowStatementView(Node* expr)
+      : Node(NodeType::kThrowStatementView, 1u) {
     InitNodeList({expr});
   }
 
@@ -880,13 +917,13 @@ class ThrowStatementView: public Node {
 
 class ForStatementView: public Node {
  public:
-  ForStatementView(Node* cond_init, Node* cond_cmp, Node* cond_upd, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kForStatementView, 4u, parent_node) {
+  ForStatementView(Node* cond_init, Node* cond_cmp, Node* cond_upd, Node* body)
+      : Node(NodeType::kForStatementView, 4u) {
     InitNodeList({cond_init, cond_cmp, cond_upd, body});
   }
 
-  ForStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kForStatementView, 4u, parent_node) {}
+  ForStatementView()
+      : Node(NodeType::kForStatementView, 4u) {}
 
 
   // Getter and Setter for cond_init.
@@ -909,13 +946,13 @@ class ForStatementView: public Node {
 // Represent for in statement.
 class ForInStatementView: public Node {
  public:
-  ForInStatementView(Node* property_name, Node* expr, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kForInStatementView, 3u, parent_node) {
+  ForInStatementView(Node* property_name, Node* expr, Node* body)
+      : Node(NodeType::kForInStatementView, 3u) {
     InitNodeList({property_name, expr, body});
   }
 
-  ForInStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kForInStatementView, 3u, parent_node) {}
+  ForInStatementView()
+      : Node(NodeType::kForInStatementView, 3u) {}
 
 
   // Getter and Setter for cond_init.
@@ -934,13 +971,13 @@ class ForInStatementView: public Node {
 // Represent while statement
 class WhileStatementView: public Node {
  public:
-  WhileStatementView(Node* expr, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kWhileStatementView, 2u, parent_node) {
+  WhileStatementView(Node* expr, Node* body)
+      : Node(NodeType::kWhileStatementView, 2u) {
     InitNodeList({expr, body});
   }
 
-  WhileStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kWhileStatementView, 2u, parent_node) {}
+  WhileStatementView()
+      : Node(NodeType::kWhileStatementView, 2u) {}
 
 
   // Getter and Setter for expr.
@@ -955,14 +992,14 @@ class WhileStatementView: public Node {
 // Represent do while statement.
 class DoWhileStatementView: public Node {
  public:
-  DoWhileStatementView(Node* expr, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kDoWhileStatementView, 2u, parent_node) {
+  DoWhileStatementView(Node* expr, Node* body)
+      : Node(NodeType::kDoWhileStatementView, 2u) {
     InitNodeList({expr, body});
   }
 
 
-  DoWhileStatementView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kDoWhileStatementView, 2u, parent_node) {}
+  DoWhileStatementView()
+      : Node(NodeType::kDoWhileStatementView, 2u) {}
 
 
   // Getter and Setter for expr.
@@ -976,14 +1013,14 @@ class DoWhileStatementView: public Node {
 
 class ClassDeclViewaration: public Node {
  public:
-  ClassDeclViewaration(Node* name, Node* constructor, Node* field_list, Node* inheritance, Node* impl_list, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kClassDeclView, 5u, parent_node) {
+  ClassDeclViewaration(Node* name, Node* constructor, Node* field_list, Node* inheritance, Node* impl_list)
+      : Node(NodeType::kClassDeclView, 5u) {
     InitNodeList({name, constructor, field_list, inheritance, impl_list});
   }
 
   
-  ClassDeclViewaration(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kClassDeclView, 5u, parent_node) {}
+  ClassDeclViewaration()
+      : Node(NodeType::kClassDeclView, 5u) {}
   
 
   // Getter and Setter for name.
@@ -1009,21 +1046,21 @@ class ClassDeclViewaration: public Node {
 
 class ClassFieldListView: public Node {
  public:
-  ClassFieldListView(std::initializer_list<Node*> fields, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kClassFieldListView, 0, parent_node) {
+  ClassFieldListView(std::initializer_list<Node*> fields)
+      : Node(NodeType::kClassFieldListView, 0) {
     InitNodeList(fields);
   }
 
 
-  ClassFieldListView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kClassFieldListView, 0, parent_node) {}
+  ClassFieldListView()
+      : Node(NodeType::kClassFieldListView, 0) {}
 };
 
 
 class ClassFieldAccessLevelView: public Node {
  public:
-  ClassFieldAccessLevelView(Node* value, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kClassFieldAccessLevelView, 1u, parent_node) {
+  ClassFieldAccessLevelView(Node* value)
+      : Node(NodeType::kClassFieldAccessLevelView, 1u) {
     InitNodeList({value});
   }
 
@@ -1049,70 +1086,70 @@ class FieldBase: public Node {
   NODE_PROPERTY(value, 2);
 
  protected:
-  FieldBase(NodeType type, Node* access_level, Node* name, Node* value, Node* parent_node)
-      : Node(type, 3u, parent_node) {
+  FieldBase(NodeType type, Node* access_level, Node* name, Node* value)
+      : Node(type, 3u) {
     InitNodeList({access_level, name, value});
   }
 
-  FieldBase(NodeType type, Node* parent_node)
-      : Node(type, 3u, parent_node) {}
+  FieldBase(NodeType type)
+      : Node(type, 3u) {}
 };
 
 
 // Represent instance property.
 class InstancePropertyView: public FieldBase {
  public:
-  InstancePropertyView(Node* access_level, Node* name, Node* value, OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kInstancePropertyView, access_level, name, value, parent_node) {}
+  InstancePropertyView(Node* access_level, Node* name, Node* value)
+      : FieldBase(NodeType::kInstancePropertyView, access_level, name, value) {}
 
-  InstancePropertyView(OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kInstancePropertyView, parent_node) {}
+  InstancePropertyView()
+      : FieldBase(NodeType::kInstancePropertyView) {}
 };
 
 
 // Represent instance property.
 class InstanceMethodView: public FieldBase {
  public:
-  InstanceMethodView(Node* access_level, Node* name, Node* value, OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kInstanceMethodView, access_level, name, value, parent_node) {}
+  InstanceMethodView(Node* access_level, Node* name, Node* value)
+      : FieldBase(NodeType::kInstanceMethodView, access_level, name, value) {}
 
-  InstanceMethodView(OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kInstanceMethodView, parent_node) {}
+  InstanceMethodView()
+      : FieldBase(NodeType::kInstanceMethodView) {}
 };
 
 
 // Represent instance property.
 class ClassPropertyView: public FieldBase {
  public:
-  ClassPropertyView(Node* access_level, Node* name, Node* value, OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kClassPropertyView, access_level, name, value, parent_node) {}
+  ClassPropertyView(Node* access_level, Node* name, Node* value)
+      : FieldBase(NodeType::kClassPropertyView, access_level, name, value) {}
 
-  ClassPropertyView(OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kClassPropertyView, parent_node) {}
+  ClassPropertyView()
+      : FieldBase(NodeType::kClassPropertyView) {}
 };
 
 
 // Represent instance property.
 class ClassMethodView: public FieldBase {
  public:
-  ClassMethodView(Node* access_level, Node* name, Node* value, OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kClassMethodView, access_level, name, value, parent_node) {}
+  ClassMethodView(Node* access_level, Node* name, Node* value)
+      : FieldBase(NodeType::kClassMethodView, access_level, name, value) {}
 
-  ClassMethodView(OPTIONAL_PARENT_PARAMETER)
-      : FieldBase(NodeType::kClassMethodView, parent_node) {}
+  ClassMethodView()
+      : FieldBase(NodeType::kClassMethodView) {}
 };
 
 
 // Represent interface.
 class InterfaceView: public Node {
  public:
-  InterfaceView(Node* name, Node* interface_field_list, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kInterfaceView, 2u, parent_node) {
+  InterfaceView(Node* name, Node* interface_field_list)
+      : Node(NodeType::kInterfaceView, 2u) {
     InitNodeList({name, interface_field_list});
   }
 
-  InterfaceView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kInterfaceView, 2u, parent_node) {}
+  InterfaceView()
+      : Node(NodeType::kInterfaceView, 2u) {}
 
   
   // Getter and Setter for name.
@@ -1125,28 +1162,28 @@ class InterfaceView: public Node {
 
 
 class InterfaceFieldListView: public Node {
-  InterfaceFieldListView(std::initializer_list<Node*> fields, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kInterfaceFieldListView, 0, parent_node) {
+  InterfaceFieldListView(std::initializer_list<Node*> fields)
+      : Node(NodeType::kInterfaceFieldListView, 0) {
     InitNodeList(fields);
   }
 
 
-  InterfaceFieldListView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kInterfaceFieldListView, 0, parent_node) {}
+  InterfaceFieldListView()
+      : Node(NodeType::kInterfaceFieldListView, 0) {}
 };
 
 
 // Represent interface field.
 class InterfaceFieldView: public Node {
  public:
-  InterfaceFieldView(Node* name, Node* value, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kInterfaceFieldView, 2u, parent_node) {
+  InterfaceFieldView(Node* name, Node* value):
+      Node(NodeType::kInterfaceFieldView, 2u) {
     InitNodeList({name, value});
   }
 
 
-  InterfaceFieldView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kInterfaceFieldView, 2u, parent_node) {}
+  InterfaceFieldView():
+      Node(NodeType::kInterfaceFieldView, 2u) {}
 
 
   // Getter and Setter for name.
@@ -1162,8 +1199,8 @@ class InterfaceFieldView: public Node {
 class SimpleTypeExprView: public Node {
  public:
   
-  SimpleTypeExprView(Node* type_name, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kSimpleTypeExprView, 1u, parent_node) {
+  SimpleTypeExprView(Node* type_name)
+      : Node(NodeType::kSimpleTypeExprView, 1u) {
     InitNodeList({type_name});
   }
   
@@ -1177,8 +1214,8 @@ class SimpleTypeExprView: public Node {
 class ArrayTypeExprView: public Node {
  public:
   
-  ArrayTypeExprView(Node* type_name, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kArrayTypeExprView, 1u, parent_node) {
+  ArrayTypeExprView(Node* type_name)
+      : Node(NodeType::kArrayTypeExprView, 1u) {
     InitNodeList({type_name});
   }
   
@@ -1191,14 +1228,14 @@ class ArrayTypeExprView: public Node {
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
 class FunctionNodeTypeExprView: public Node {
  public:
-  FunctionNodeTypeExprView(Node* param_list, Node* return_type, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kFunctionNodeTypeExprView, 2u, parent_node) {
+  FunctionNodeTypeExprView(Node* param_list, Node* return_type)
+      : Node(NodeType::kFunctionNodeTypeExprView, 2u) {
     InitNodeList({param_list, return_type});
   }
 
 
-  FunctionNodeTypeExprView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kFunctionNodeTypeExprView, 2u, parent_node) {}
+  FunctionNodeTypeExprView()
+      : Node(NodeType::kFunctionNodeTypeExprView, 2u) {}
 
 
   // Getter and setter for param_list_.
@@ -1213,8 +1250,8 @@ class FunctionNodeTypeExprView: public Node {
 // Represent accessor type expression like, `interface x {[index:int]}`
 class AccessorTypeExprView: public Node {
  public:
-  AccessorTypeExprView(Node* name, Node* type_expression, OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kAccessorTypeExprView, 2u, parent_node) {
+  AccessorTypeExprView(Node* name, Node* type_expression):
+      Node(NodeType::kAccessorTypeExprView, 2u) {
     InitNodeList({name, type_expression});
   }
 
@@ -1231,8 +1268,8 @@ class AccessorTypeExprView: public Node {
 // Represent function.
 class FunctionView: public Node {
  public:
-  FunctionView(Node* name, Node* param_list, Node* body, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kFunctionView, 3u, parent_node) {}
+  FunctionView(Node* name, Node* param_list, Node* body)
+      : Node(NodeType::kFunctionView, 3u) {}
 
   // Getter for name_.
   NODE_GETTER(name, 0);
@@ -1247,8 +1284,8 @@ class FunctionView: public Node {
 
 class CallView: public Node {
  public:
-  CallView(Node* target, Node* args, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCallView, 2u, parent_node) {
+  CallView(Node* target, Node* args)
+      : Node(NodeType::kCallView, 2u) {
     InitNodeList({target, args});
   }
 
@@ -1262,34 +1299,34 @@ class CallView: public Node {
 
 class CallArgsView: public Node {
  public:
-  CallArgsView(std::initializer_list<Node*> args, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCallArgsView, 0, parent_node) {
+  CallArgsView(std::initializer_list<Node*> args)
+      : Node(NodeType::kCallArgsView, 0) {
     InitNodeList(args);
   }
 
 
-  CallArgsView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCallArgsView, 0, parent_node) {}
+  CallArgsView()
+      : Node(NodeType::kCallArgsView, 0) {}
 };
 
 
 class NewCallView: public Node {
  public:
-  NewCallView(Node* target, Node* args, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kNewCallView, 2u, parent_node) {
-    InitNodeList(target, args);
+  NewCallView(Node* target, Node* args)
+      : Node(NodeType::kNewCallView, 2u) {
+    InitNodeList({target, args});
   }
 
 
-  NewCallView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kNewCallView, 2u, parent_node) {}
+  NewCallView()
+      : Node(NodeType::kNewCallView, 2u) {}
 };
 
 
 class NameView: public Node {
  public:
-  NameView(UtfString name, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kNameView, 0, parent_node) {
+  NameView(UtfString name)
+      : Node(NodeType::kNameView, 0) {
     set_string_value(name);
   }
 };
@@ -1297,8 +1334,8 @@ class NameView: public Node {
 
 class GetPropView: public Node {
  public:
-  GetPropView(Node* target, Node* prop, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kGetPropView, 2u, parent_node) {
+  GetPropView(Node* target, Node* prop)
+      : Node(NodeType::kGetPropView, 2u) {
     InitNodeList({target, prop});
   }
 
@@ -1310,10 +1347,10 @@ class GetPropView: public Node {
 };
 
 
-class GetElemView: public GetElemView {
+class GetElemView: public Node {
  public:
-  GetElemView(Node* target, Node* prop, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kGetElemView, 2u, parent_node) {
+  GetElemView(Node* target, Node* prop)
+      : Node(NodeType::kGetElemView, 2u) {
     InitNodeList({target, prop});
   }
 
@@ -1329,8 +1366,8 @@ class GetElemView: public GetElemView {
 
 class AssignmentView: public Node {
  public:
-  AssignmentView(Node* target, Node* expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kAssignmentView, 2u, parent_node) {
+  AssignmentView(Node* target, Node* expr)
+      : Node(NodeType::kAssignmentView, 2u) {
     InitNodeList({target, expr});
   }
 
@@ -1346,8 +1383,8 @@ class AssignmentView: public Node {
 
 class TemaryExprView: public Node {
  public :
-  TemaryExprView(Node* cond, Node* then_expr, Node* else_expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kTemaryExprView, 3u, parent_node) {
+  TemaryExprView(Node* cond, Node* then_expr, Node* else_expr)
+      : Node(NodeType::kTemaryExprView, 3u) {
     InitNodeList({cond, then_expr, else_expr});
   }
 
@@ -1367,8 +1404,8 @@ class TemaryExprView: public Node {
 
 class BinaryExprView: public Node {
  public:
-  BinaryExprView(Token op, Node* first, Node* second, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kBinaryExprView, 2u, parent_node) {
+  BinaryExprView(Token op, Node* first, Node* second)
+      : Node(NodeType::kBinaryExprView, 2u) {
     InitNodeList({first, second});
     set_operand(op);
   }
@@ -1384,8 +1421,8 @@ class BinaryExprView: public Node {
 // Represent cast.
 class CastView: public Node {
  public:
-  CastView(Node* type_expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kCastView, 1u, parent_node) {
+  CastView(Node* type_expr)
+      : Node(NodeType::kCastView, 1u) {
     InitNodeList({type_expr});
   }
 
@@ -1397,8 +1434,8 @@ class CastView: public Node {
 
 class UnaryExprView: public Node {
  public:
-  UnaryExprView(Token op, Node* expr, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kUnaryExprView, 1u, parent_node) {
+  UnaryExprView(Token op, Node* expr)
+      : Node(NodeType::kUnaryExprView, 1u) {
     InitNodeList({expr});
     set_operand(op);
   }
@@ -1410,19 +1447,19 @@ class UnaryExprView: public Node {
 
 class ThisView: public Node {
  public:
-  ThisView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kThisView, 0, parent_node) {}
+  ThisView()
+      : Node(NodeType::kThisView, 0) {}
 };
 
 
 class NumberView: public Node {
  public:
-  NumberView(UtfString value, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kNumberView, 0, parent_node) {
+  NumberView(UtfString value)
+      : Node(NodeType::kNumberView, 0) {
     const char* val = value.ToUtf8Value().value();
     set_string_value(value);
     double d = 0l;
-    sscanf(val, "%lf", d);
+    sscanf(val, "%lf", &d);
     set_double_value(d);
   }
 };
@@ -1430,15 +1467,15 @@ class NumberView: public Node {
 
 class NullView: public Node {
  public:
-  NullView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kNullView, 0, parent_node) {}
+  NullView()
+      : Node(NodeType::kNullView, 0) {}
 };
 
 
 class StringView: public Node {
  public:
-  StringView(UtfString str, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kStringView, 0, parent_node) {
+  StringView(UtfString str)
+      : Node(NodeType::kStringView, 0) {
     set_string_value(str);
   }
 };
@@ -1446,8 +1483,8 @@ class StringView: public Node {
 
 class ObjectElementView: public Node {
  public:
-  ObjectElementView(Node* key, Node* value, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kObjectElementView, 2u, parent_node) {
+  ObjectElementView(Node* key, Node* value)
+      : Node(NodeType::kObjectElementView, 2u) {
     InitNodeList({key, value});
   }
 
@@ -1462,41 +1499,41 @@ class ObjectElementView: public Node {
 
 class ObjectLiteralView: public Node {
  public:
-  ObjectLiteralView(std::initializer_list<Node*> properties, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kObjectLiteralView, 0, parent_node) {
+  ObjectLiteralView(std::initializer_list<Node*> properties)
+      : Node(NodeType::kObjectLiteralView, 0) {
     InitNodeList(properties);
   }
 
 
-  ObjectLiteralView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kObjectLiteralView, 0, parent_node) {}
+  ObjectLiteralView()
+      : Node(NodeType::kObjectLiteralView, 0) {}
 };
 
 
 class ArrayLiteralView: public Node {
  public:
-  ArrayLiteralView(std::initializer_list<Node*> elements, OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kArrayLiteralView, 0, parent_node) {
+  ArrayLiteralView(std::initializer_list<Node*> elements)
+      : Node(NodeType::kArrayLiteralView, 0) {
     InitNodeList(elements);
   }
 
 
-  ArrayLiteralView(OPTIONAL_PARENT_PARAMETER)
-      : Node(NodeType::kArrayLiteralView, 0, parent_node) {}
+  ArrayLiteralView()
+      : Node(NodeType::kArrayLiteralView, 0) {}
 };
 
 
 class UndefinedView: public Node {
  public:
-  UndefinedView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kUndefinedView, 0, parent_node){}
+  UndefinedView():
+      Node(NodeType::kUndefinedView, 0){}
 };
 
 
 class DebuggerView: public Node {
  public:
-  DebuggerView(OPTIONAL_PARENT_PARAMETER):
-      Node(NodeType::kDebuggerView, 0, parent_node){}
+  DebuggerView():
+      Node(NodeType::kDebuggerView, 0){}
 };
 
 
@@ -1506,7 +1543,6 @@ class DebuggerView: public Node {
 #undef NODE_GETTER
 #undef NODE_SETTER
 #undef DEF_CAST
-#undef OPTIONAL_PARENT_PARAMETER
 
 #include "./node-inl.h"
 

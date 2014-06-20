@@ -115,6 +115,11 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/systeminfo.cc',
+        './src/utils/tls.cc',
+        './src/utils/os.cc',
+        './src/utils/regions.cc',
+        './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './test/ir/node-test.cc',
         './test/test-main.cc'

@@ -23,7 +23,9 @@
  */
 
 #include <gtest/gtest.h>
+#include "../../src/utils/regions.h"
 #include "../../src/ir/node.h"
+#include "../../src/ir/irfactory.h"
 
 
 class DummyView: public rasp::ir::Node {
@@ -33,158 +35,145 @@ class DummyView: public rasp::ir::Node {
 };
 
 
-TEST(NodeTest, FileScopeView_ToFileScopeView_test) {
-  rasp::ir::Node* node = new rasp::ir::FileScopeView();
+class NodeTest: public ::testing::Test {
+ protected:
+  static rasp::ir::IRFactory irfactory;
+};
+
+rasp::ir::IRFactory NodeTest::irfactory;
+
+TEST_F(NodeTest, FileScopeView_ToFileScopeView_test) {
+  rasp::ir::Node* node = irfactory.New<rasp::ir::FileScopeView>();
 
   rasp::ir::FileScopeView* scope = node->ToFileScopeView();
   ASSERT_NE(scope, nullptr);
-  delete scope;
 }
 
 
 // StatementView node
-TEST(StatemetTest, StatementView_expr_test) {
-  rasp::ir::StatementView statement;
-  rasp::ir::Node* n = new DummyView();
-  statement.set_expr(n);
-  ASSERT_EQ(statement.expr(), n);
-  delete n;
+TEST_F(NodeTest, StatementView_expr_test) {
+  rasp::ir::StatementView* statement = irfactory.New<rasp::ir::StatementView>();
+  rasp::ir::Node* n = irfactory.New<DummyView>();
+  statement->set_expr(n);
+  ASSERT_EQ(statement->expr(), n);
 }
 
 
-TEST(StatemetTest, StatementView_ToStatementView_test) {
-  rasp::ir::Node* statement = new rasp::ir::StatementView();
+TEST_F(NodeTest, StatementView_ToStatementView_test) {
+  rasp::ir::Node* statement = irfactory.New<rasp::ir::StatementView>();
   ASSERT_NE(statement->ToStatementView(), nullptr);
-  delete statement;
 }
 
 
 // VariableDeclView node
-TEST(VariableDeclView, VariableDeclView_InsertLast_test) {
-  rasp::ir::VariableDeclView var_decl;
-  const rasp::ir::Node::List& list = var_decl.node_list();
-  rasp::ir::Node* n1 = new DummyView();
-  rasp::ir::Node* n2 = new DummyView();
-  rasp::ir::Node* n3 = new DummyView();
+TEST_F(NodeTest, VariableDeclView_InsertLast_test) {
+  rasp::ir::VariableDeclView* var_decl = irfactory.New<rasp::ir::VariableDeclView>();
+  const rasp::ir::Node::List& list = var_decl->node_list();
+  rasp::ir::Node* n1 = irfactory.New<DummyView>();
+  rasp::ir::Node* n2 = irfactory.New<DummyView>();
+  rasp::ir::Node* n3 = irfactory.New<DummyView>();
   
-  var_decl.InsertLast(n1);
-  var_decl.InsertLast(n2);
-  var_decl.InsertLast(n3);
+  var_decl->InsertLast(n1);
+  var_decl->InsertLast(n2);
+  var_decl->InsertLast(n3);
 
   ASSERT_EQ(list[0], n1);
   ASSERT_EQ(list[1], n2);
   ASSERT_EQ(list[2], n3);
-
-  delete n1;
-  delete n2;
-  delete n3;
 }
 
 
-TEST(VariableDeclView, VariableDeclView_Remove_test) {
-  rasp::ir::VariableDeclView var_decl;
-  const rasp::ir::Node::List& list = var_decl.node_list();
-  rasp::ir::Node* n1 = new DummyView();
-  rasp::ir::Node* n2 = new DummyView();
-  rasp::ir::Node* n3 = new DummyView();
+TEST_F(NodeTest, VariableDeclView_Remove_test) {
+  rasp::ir::VariableDeclView* var_decl = irfactory.New<rasp::ir::VariableDeclView>();
+  const rasp::ir::Node::List& list = var_decl->node_list();
+  rasp::ir::Node* n1 = irfactory.New<DummyView>();
+  rasp::ir::Node* n2 = irfactory.New<DummyView>();
+  rasp::ir::Node* n3 = irfactory.New<DummyView>();
   
-  var_decl.InsertLast(n1);
-  var_decl.InsertLast(n2);
-  var_decl.InsertLast(n3);
+  var_decl->InsertLast(n1);
+  var_decl->InsertLast(n2);
+  var_decl->InsertLast(n3);
 
   ASSERT_EQ(list[0], n1);
   ASSERT_EQ(list[1], n2);
   ASSERT_EQ(list[2], n3);
 
-  var_decl.Remove(n1);
+  var_decl->Remove(n1);
   ASSERT_EQ(list[0], n2);
   ASSERT_EQ(list[1], n3);
 
-  var_decl.Remove(n2);
+  var_decl->Remove(n2);
   ASSERT_EQ(list[0], n3);
 
-  var_decl.Remove(n3);
+  var_decl->Remove(n3);
 
   ASSERT_EQ(list.size(), 0);
 }
 
 
-TEST(VariableDeclView, VariableDeclView_ToVariableDeclView_test) {
-  rasp::ir::Node* var_decl = new rasp::ir::VariableDeclView();
+TEST_F(NodeTest, VariableDeclView_ToVariableDeclView_test) {
+  rasp::ir::Node* var_decl = irfactory.New<rasp::ir::VariableDeclView>();
   ASSERT_NE(var_decl->ToVariableDeclView(), nullptr);
-  delete var_decl;
 }
 
 
 // TrueView node
-TEST(TrueViewTest, TrueView_ToTrueView_test) {
-  rasp::ir::Node* t = new rasp::ir::TrueView();
+TEST_F(NodeTest, TrueView_ToTrueView_test) {
+  rasp::ir::Node* t = irfactory.New<rasp::ir::TrueView>();
   ASSERT_NE(t->ToTrueView(), nullptr);
-  delete t;
 }
 
 
 // FalseView node
-TEST(FalseViewTest, FalseView_ToFalseView_test) {
-  rasp::ir::Node* f = new rasp::ir::FalseView();
+TEST_F(NodeTest, FalseView_ToFalseView_test) {
+  rasp::ir::Node* f = irfactory.New<rasp::ir::FalseView>();
   ASSERT_NE(f->ToFalseView(), nullptr);
-  delete f;
 }
 
 
-TEST(BlockViewTest, BlockView_ToBlockView_test) {
-  rasp::ir::Node* node = new rasp::ir::BlockView();
-
+TEST_F(NodeTest, BlockView_ToBlockView_test) {
+  rasp::ir::Node* node = irfactory.New<rasp::ir::BlockView>();
   rasp::ir::BlockView* scope = node->ToBlockView();
   ASSERT_NE(scope, nullptr);
-  delete scope;
 }
 
 
 // ModuleDeclView node.
-TEST(ModuleDeclViewTest, ModuleDeclView_set_name_test) {
-  rasp::ir::ModuleDeclView md;
-  rasp::ir::Node* n = new DummyNode();
-  md.set_name(n);
-  ASSERT_EQ(md.name(), n);
-  delete n;
+TEST_F(NodeTest, ModuleDeclView_set_name_test) {
+  rasp::ir::ModuleDeclView* md = irfactory.New<rasp::ir::ModuleDeclView>();
+  rasp::ir::Node* n = irfactory.New<DummyView>();
+  md->set_name(n);
+  ASSERT_EQ(md->name(), n);
 }
 
 
-TEST(ModuleDeclViewTest, ModuleDeclView_ToModuleDeclView_test) {
-  rasp::ir::Node* md = new rasp::ir::ModuleDeclView();
+TEST_F(NodeTest, ModuleDeclView_ToModuleDeclView_test) {
+  rasp::ir::Node* md = irfactory.New<rasp::ir::ModuleDeclView>();
   ASSERT_NE(md->ToModuleDeclView(), nullptr);
-  delete md;
 }
 
 
-TEST(ExportViewTest, ExportView_target_test) {
-  rasp::ir::Node* n = new DummyView();
-  rasp::ir::ExportView ex(n, true);
-  ASSERT_EQ(ex.target(), n);
-  delete n;
+TEST_F(NodeTest, ExportView_target_test) {
+  rasp::ir::Node* n = irfactory.New<DummyView>();
+  rasp::ir::ExportView* ex = irfactory.New<rasp::ir::ExportView>(n);
+  ASSERT_EQ(ex->target(), n);
 }
 
 
 // ImportView node.
-TEST(ImportViewTest, ImportView_alias_test) {
-  rasp::ir::Node* n1 = new DummyView();
-  rasp::ir::Node* n2 = new DummyView();
-  rasp::ir::ImportView i(n1, n2);
-  ASSERT_EQ(i.alias(), n1);
-  ASSERT_EQ(i.from_expr(), n2);
-  delete n1;
-  delete n2;
+TEST_F(NodeTest, ImportView_alias_test) {
+  rasp::ir::Node* n1 = irfactory.New<DummyView>();
+  rasp::ir::Node* n2 = irfactory.New<DummyView>();
+  rasp::ir::ImportView* i = irfactory.New<rasp::ir::ImportView>(n1, n2);
+  ASSERT_EQ(i->alias(), n1);
+  ASSERT_EQ(i->from_expr(), n2);
 }
 
 
-TEST(ImportViewTest, ImportView_toImportView_test) {
-  rasp::ir::Node* n1 = new DummyView();
-  rasp::ir::Node* n2 = new DummyView();
-  rasp::ir::Node* i = new rasp::ir::ImportView(n1, n2);
+TEST_F(NodeTest, ImportView_toImportView_test) {
+  rasp::ir::Node* n1 = irfactory.New<DummyView>();
+  rasp::ir::Node* n2 = irfactory.New<DummyView>();
+  rasp::ir::Node* i = irfactory.New<rasp::ir::ImportView>(n1, n2);
 
   ASSERT_NE(i->ToImportView(), nullptr);
-  delete n1;
-  delete n2;
-  delete i;
 }

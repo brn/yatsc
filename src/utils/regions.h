@@ -118,9 +118,9 @@ class Regions : private Uncopyable {
 
 
   Regions(Regions&& regions)
-      : central_arena_(regions.central_arena_),
-        size_(regions.size_),
-        allocator_(std::move(regions.allocator_)) {
+      : allocator_(std::move(regions.allocator_)),
+        central_arena_(regions.central_arena_),
+        size_(regions.size_) {
     ASSERT(true, size_ <= kMaxAllocatableSize);
     deleted_.clear();
     regions.deleted_.test_and_set();
@@ -699,7 +699,6 @@ class Regions : private Uncopyable {
   std::atomic_flag deleted_;
   SpinLock tree_lock_;
 };
-
 } // namesapce rasp
 
 
