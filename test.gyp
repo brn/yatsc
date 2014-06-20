@@ -121,6 +121,7 @@
         './src/utils/regions.cc',
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
+        './src/ir/node.cc',
         './test/ir/node-test.cc',
         './test/test-main.cc'
       ],

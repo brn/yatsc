@@ -36,138 +36,90 @@
 #include "../parser/token.h"
 
 namespace rasp {namespace ir {
+
+// The list of the views.
+#define VIEW_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST) \
+  DECLARE_FIRST(Node)                                   \
+  DECLARE(FileScopeView)                                \
+  DECLARE(StatementView)                                \
+  DECLARE(VariableDeclView)                             \
+  DECLARE(TrueView)                                     \
+  DECLARE(FalseView)                                    \
+  DECLARE(BlockView)                                    \
+  DECLARE(ModuleDeclView)                               \
+  DECLARE(ExportView)                                   \
+  DECLARE(ImportView)                                   \
+  DECLARE(VariableView)                                 \
+  DECLARE(IfStatementView)                              \
+  DECLARE(ContinueStatementView)                        \
+  DECLARE(ReturnStatementView)                          \
+  DECLARE(BreakStatementView)                           \
+  DECLARE(WithStatementView)                            \
+  DECLARE(LabelledStatementView)                        \
+  DECLARE(SwitchStatementView)                          \
+  DECLARE(CaseView)                                     \
+  DECLARE(CaseListView)                                 \
+  DECLARE(TryStatementView)                             \
+  DECLARE(CatchStatementView)                           \
+  DECLARE(FinallyStatementView)                         \
+  DECLARE(ThrowStatementView)                           \
+  DECLARE(ForStatementView)                             \
+  DECLARE(ForInStatementView)                           \
+  DECLARE(WhileStatementView)                           \
+  DECLARE(DoWhileStatementView)                         \
+  DECLARE(ClassDeclView)                                \
+  DECLARE(ClassFieldListView)                           \
+  DECLARE(ClassFieldAccessLevelView)                    \
+  DECLARE(InstancePropertyView)                         \
+  DECLARE(InstanceMethodView)                           \
+  DECLARE(ClassPropertyView)                            \
+  DECLARE(ClassMethodView)                              \
+  DECLARE(InterfaceView)                                \
+  DECLARE(InterfaceFieldListView)                       \
+  DECLARE(InterfaceFieldView)                           \
+  DECLARE(SimpleTypeExprView)                           \
+  DECLARE(ArrayTypeExprView)                            \
+  DECLARE(FunctionNodeTypeExprView)                     \
+  DECLARE(AccessorTypeExprView)                         \
+  DECLARE(FunctionView)                                 \
+  DECLARE(CallView)                                     \
+  DECLARE(CallArgsView)                                 \
+  DECLARE(NewCallView)                                  \
+  DECLARE(NameView)                                     \
+  DECLARE(GetPropView)                                  \
+  DECLARE(GetElemView)                                  \
+  DECLARE(AssignmentView)                               \
+  DECLARE(TemaryExprView)                               \
+  DECLARE(CastView)                                     \
+  DECLARE(BinaryExprView)                               \
+  DECLARE(UnaryExprView)                                \
+  DECLARE(ThisView)                                     \
+  DECLARE(NumberView)                                   \
+  DECLARE(NullView)                                     \
+  DECLARE(StringView)                                   \
+  DECLARE(ObjectElementView)                            \
+  DECLARE(ObjectLiteralView)                            \
+  DECLARE(ArrayLiteralView)                             \
+  DECLARE(UndefinedView)                                \
+  DECLARE_LAST(DebuggerView)
+
+
 // Node types.
 enum class NodeType: uint8_t {
-  kFileScopeView = 0,
-  kStatementView,
-  kVariableDeclView,
-  kTrueView,
-  kFalseView,
-  kBlockView,
-  kModuleDeclView,
-  kExportView,
-  kImportView,
-  kVariableView,
-  kIfStatementView,
-  kContinueStatementView,
-  kReturnStatementView,
-  kBreakStatementView,
-  kWithStatementView,
-  kLabelledStatementView,
-  kSwitchStatementView,
-  kCaseListView,
-  kCaseView,
-  kTryStatementView,
-  kCatchStatementView,
-  kFinallyStatementView,
-  kThrowStatementView,
-  kForStatementView,
-  kForInStatementView,
-  kWhileStatementView,
-  kDoWhileStatementView,
-  kClassDeclView,
-  kInstancePropertyView,
-  kInstanceMethodView,
-  kClassPropertyView,
-  kClassMethodView,
-  kClassFieldListView,
-  kClassFieldAccessLevelView,
-  kInterfaceView,
-  kInterfaceFieldListView,
-  kInterfaceFieldView,
-  kSimpleTypeExprView,
-  kArrayTypeExprView,
-  kFunctionNodeTypeExprView,
-  kAccessorTypeExprView,
-  kFunctionView,
-  kCallView,
-  kCallArgsView,
-  kNewCallView,
-  kNameView,
-  kGetPropView,
-  kGetElemView,
-  kAssignmentView,
-  kTemaryExprView,
-  kCastView,
-  kBinaryExprView,
-  kUnaryExprView,
-  kThisView,
-  kNumberView,
-  kNullView,
-  kStringView,
-  kObjectElementView,
-  kObjectLiteralView,
-  kArrayLiteralView,
-  kUAObjectLiteralView, //Destructuring AssignmentView Object
-  kUAArrayLiteal, //Destructuring AssignmentView Array
-  kUndefinedView,
-  kDebuggerView
+#define DECLARE_ENUM(ViewName) k##ViewName,
+#define DECLARE_FIRST(ViewName) k##ViewName = 0,
+#define DECLARE_LAST(ViewName) k##ViewName
+  VIEW_LIST(DECLARE_ENUM, DECLARE_FIRST, DECLARE_LAST)
+#undef DECLARE_ENUM
+#undef DECLARE_FIRST
+#undef DECLARE_LAST
 };
 
 
 // Forward declarations.
-class Node;
-class FileScopeView;
-class StatementView;
-class VariableDeclView;
-class TrueView;
-class FalseView;
-class BlockView;
-class ModuleDeclView;
-class ExportView;
-class ImportView;
-class VariableView;
-class IfStatementView;
-class ContinueStatementView;
-class ReturnStatementView;
-class BreakStatementView;
-class WithStatementView;
-class LabelledStatementView;
-class SwitchStatementView;
-class CaseView;
-class TryStatementView;
-class CatchStatementView;
-class FinallyStatementView;
-class ThrowStatementView;
-class ForStatementView;
-class ForInStatementView;
-class WhileStatementView;
-class DoWhileStatementView;
-class ClassDeclView;
-class ClassFieldListView;
-class ClassFieldAccessLevelView;
-class InstancePropertyView;
-class InstanceMethodView;
-class ClassPropertyView;
-class ClassMethodView;
-class InterfaceView;
-class InterfaceFieldListView;
-class InterfaceFieldView;
-class SimpleTypeExprView;
-class ArrayTypeExprView;
-class FunctionNodeTypeExprView;
-class AccessorTypeExprView;
-class FunctionView;
-class CallView;
-class CallArgsView;
-class NewCallView;
-class NameView;
-class GetPropView;
-class GetElemView;
-class AssignmentView;
-class TemaryExprView;
-class CastView;
-class BinaryExprView;
-class UnaryExprView;
-class ThisView;
-class NumberView;
-class NullView;
-class StringView;
-class ObjectElementView;
-class ObjectLiteralView;
-class ArrayLiteralView;
-class UndefinedView;
-class DebuggerView;
+#define FORWARD_DECL(ViewName) class ViewName;
+VIEW_LIST(FORWARD_DECL, FORWARD_DECL, FORWARD_DECL)
+#undef FORWARD_DECL
 // End forward declarations.
 
 
@@ -190,28 +142,43 @@ class DebuggerView;
   NODE_SETTER(name, pos)
 
 
-class SourceInformation {
+// Source information holder.
+class SourceInformation: private Unmovable{
   friend class Node;
  public:
+  // Use default constructor.
+  SourceInformation() = default;
+  
+  /**
+   * @param line_number The line number of the current token.
+   * @param start_col The start column of the current token.
+   */
   SourceInformation(size_t line_number, size_t start_col)
       : line_number_(line_number),
         start_col_(start_col) {}
 
 
+  /**
+   * Copy constructor
+   */
   SourceInformation(const SourceInformation& source_information)
       : line_number_(source_information.line_number_),
         start_col_(source_information.start_col_) {}
 
 
-  SourceInformation(SourceInformation&& source_information) = delete;
+  // Copy assignment operator.
+  SourceInformation& operator = (const SourceInformation& source_information) {
+    line_number_ = source_information.line_number_;
+    start_col_ = source_information.start_col_;
+    return (*this);
+  }
 
 
-  SourceInformation() = default;
-
-  
+  // Getter and setter for line_number_
   RASP_PROPERTY(size_t, line_number, line_number_);
 
 
+  // Getter and setter for start_col_
   RASP_PROPERTY(size_t, start_col, start_col_);
   
  private:
@@ -223,7 +190,7 @@ class SourceInformation {
 // The IR Tree representation class.
 // This class has all tree properties and accessible from Node type.
 // All other **View classes are only view of this Node class.
-class Node : public RegionalObject, private Uncopyable {
+class Node : public RegionalObject, private Uncopyable, private Unmovable {
  public:
 
   typedef std::string String;
@@ -250,7 +217,7 @@ class Node : public RegionalObject, private Uncopyable {
   }
 
   
-  RASP_INLINE virtual ~Node() {}
+  virtual ~Node() {}
 
 
   // Getter for node_type.
@@ -264,6 +231,7 @@ class Node : public RegionalObject, private Uncopyable {
   // Getter for children list.
   RASP_CONST_GETTER(const List&, node_list, node_list_);
 
+
   // Getter for environment.
   RASP_PROPERTY(Environment*, environment, environment_);
 
@@ -272,24 +240,14 @@ class Node : public RegionalObject, private Uncopyable {
    * Insert a node at the end of the children.
    * @param node A node that want to insert.
    */
-  RASP_INLINE void InsertLast(Node* node) {
-    node_list_.push_back(node);
-    node->set_parent_node(this);
-  }
+  void InsertLast(Node* node);
 
 
   /**
    * Insert a node to the front of the children.
    * @param node A node that want to insert.
    */
-  RASP_INLINE void InsertFront(Node* node) {
-    if (node_list_.size() > 0 ) {
-      InsertBefore(node, node_list_[0]);
-    } else {
-      node_list_.push_back(node);
-    }
-    node->set_parent_node(this);
-  }
+  void InsertFront(Node* node);
 
 
   /**
@@ -297,13 +255,7 @@ class Node : public RegionalObject, private Uncopyable {
    * @param newNode A node that want to isnert.
    * @param oldNode A node taht has inserted.
    */
-  RASP_INLINE void InsertBefore(Node* newNode, Node* oldNode) {
-    ListIterator found = std::find(node_list_.begin(), node_list_.end(), oldNode);
-    if (found != node_list_.end()) {
-      node_list_.insert(found, newNode);
-    }
-    newNode->set_parent_node(this);
-  }
+  void InsertBefore(Node* newNode, Node* oldNode);
 
 
   /**
@@ -311,16 +263,7 @@ class Node : public RegionalObject, private Uncopyable {
    * @param newNode A node that want to isnert.
    * @param oldNode A node taht has inserted.
    */
-  RASP_INLINE void InsertAfter(Node* newNode, Node* oldNode) {
-    ListIterator end = node_list_.end();
-    ListIterator found = std::find(node_list_.begin(), end, oldNode);
-    if (found != end && found + 1 != end) {
-      node_list_.insert(found + 1, newNode);
-    } else if (found != end) {
-      node_list_.push_back(newNode);
-    }
-    newNode->set_parent_node(this);
-  }
+  void InsertAfter(Node* newNode, Node* oldNode);
 
 
   /**
@@ -397,41 +340,25 @@ class Node : public RegionalObject, private Uncopyable {
   }
 
 
-  RASP_INLINE void SetInformationForNode(const TokenInfo& token_info) RASP_NOEXCEPT {
-    source_information_.line_number_ = token_info.line_number();
-    source_information_.start_col_ = token_info.start_col();
-  }
+  /**
+   * Set source information to this node.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForNode(const TokenInfo& token_info) RASP_NOEXCEPT;
 
 
-  RASP_INLINE void SetInformationForTree(const TokenInfo& token_info) RASP_NOEXCEPT  {
-    for (size_t i = 0u; i < node_list_.size(); i++) {
-      Node* node = node_list_[i];
-      if (node != nullptr) {
-        node->SetInformationForNode(token_info);
-        node->SetInformationForTree(token_info);
-      }
-    }
-  }
+  /**
+   * Set source information to this node and children.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForTree(const TokenInfo& token_info) RASP_NOEXCEPT;
 
 
-  RASP_INLINE Node* Clone() RASP_NOEXCEPT {
-    RASP_CHECK(true, environment_ != nullptr);
-    Node* cloned = environment_->New<Node>(node_type_, capacity_);
-    cloned->double_value_ = double_value_;
-    cloned->string_value_ = string_value_;
-    cloned->operand_ = operand_;
-    cloned->environment_ = environment_;
-    for (size_t i = 0u; i < node_list_.size(); i++) {
-      Node* node = node_list_[i];
-      if (node != nullptr) {
-        Node* ret = node->Clone();
-        cloned->node_list_.push_back(ret);
-      } else {
-        cloned->node_list_.push_back(nullptr);
-      }
-    }
-    return cloned;
-  }
+  /**
+   * Clone this node and all children.
+   * @returns Cloned node tree.
+   */
+  Node* Clone() RASP_NOEXCEPT;
 
   
 #define DEF_CAST(type)                                                  \
@@ -441,71 +368,13 @@ class Node : public RegionalObject, private Uncopyable {
   RASP_INLINE bool Has##type() RASP_NO_SE {                             \
     return node_type_ == NodeType::k##type;                             \
   }
-  
-  // Define cast methods.
-  DEF_CAST(FileScopeView);
-  DEF_CAST(StatementView);
-  DEF_CAST(VariableDeclView);
-  DEF_CAST(TrueView);
-  DEF_CAST(FalseView);
-  DEF_CAST(BlockView);
-  DEF_CAST(ModuleDeclView);
-  DEF_CAST(ExportView);
-  DEF_CAST(ImportView);
-  DEF_CAST(VariableView);
-  DEF_CAST(IfStatementView);
-  DEF_CAST(ContinueStatementView);
-  DEF_CAST(ReturnStatementView);
-  DEF_CAST(BreakStatementView);
-  DEF_CAST(WithStatementView);
-  DEF_CAST(LabelledStatementView);
-  DEF_CAST(SwitchStatementView);
-  DEF_CAST(CaseView);
-  DEF_CAST(TryStatementView);
-  DEF_CAST(CatchStatementView);
-  DEF_CAST(FinallyStatementView);
-  DEF_CAST(ThrowStatementView);
-  DEF_CAST(ForStatementView);
-  DEF_CAST(ForInStatementView);
-  DEF_CAST(WhileStatementView);
-  DEF_CAST(DoWhileStatementView);
-  DEF_CAST(ClassDeclView);
-  DEF_CAST(InstancePropertyView);
-  DEF_CAST(InstanceMethodView);
-  DEF_CAST(ClassFieldListView);
-  DEF_CAST(ClassFieldAccessLevelView);
-  DEF_CAST(ClassPropertyView);
-  DEF_CAST(ClassMethodView);
-  DEF_CAST(InterfaceView);
-  DEF_CAST(InterfaceFieldListView);
-  DEF_CAST(InterfaceFieldView);
-  DEF_CAST(SimpleTypeExprView);
-  DEF_CAST(ArrayTypeExprView);
-  DEF_CAST(FunctionNodeTypeExprView);
-  DEF_CAST(AccessorTypeExprView);
-  DEF_CAST(FunctionView);
-  DEF_CAST(CallView);
-  DEF_CAST(CallArgsView);
-  DEF_CAST(NewCallView);
-  DEF_CAST(NameView);
-  DEF_CAST(GetPropView);
-  DEF_CAST(GetElemView);
-  DEF_CAST(AssignmentView);
-  DEF_CAST(TemaryExprView);
-  DEF_CAST(CastView);
-  DEF_CAST(BinaryExprView);
-  DEF_CAST(UnaryExprView);
-  DEF_CAST(ThisView);
-  DEF_CAST(NumberView);
-  DEF_CAST(NullView);
-  DEF_CAST(StringView);
-  DEF_CAST(ObjectElementView);
-  DEF_CAST(ObjectLiteralView);
-  DEF_CAST(ArrayLiteralView);
-  DEF_CAST(UndefinedView);
-  DEF_CAST(DebuggerView);
 
+
+#define DECLARE_CAST(ViewName) DEF_CAST(ViewName);
+  // Define cast methods like To[ViewName].
+VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
 #undef DEF_CAST
+#undef DECLARE_CAST
 
   
   /**
@@ -522,6 +391,10 @@ class Node : public RegionalObject, private Uncopyable {
 
  protected:
 
+  /**
+   * Initialize children with specific node list.
+   * @param node_list The node list that want to add as children.
+   */
   void InitNodeList(std::initializer_list<Node*> node_list) {
     node_list_.insert(node_list_.end(), node_list.begin(), node_list.end());
   }
@@ -1546,7 +1419,6 @@ class DebuggerView: public Node {
 #undef NODE_GETTER
 #undef NODE_SETTER
 #undef DEF_CAST
-
-#include "./node-inl.h"
+#undef VIEW_LIST
 
 #endif

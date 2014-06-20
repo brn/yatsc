@@ -79,7 +79,7 @@ RASP_INLINE void Assert__(bool ok, const char* result, const char* expect, const
   if (!ok) {
     FPrintf(stderr, "assertion failed -> %s == %s\n in file %s at line %d\nIn function %s\n",
             result, expect, file, line, function);
-    abort();
+    std::terminate();
   }
 }
 
@@ -87,7 +87,7 @@ RASP_INLINE void Assert__(bool ok, const char* result, const char* expect, const
 RASP_INLINE void Fatal__(const char* file, int line, const char* function, const std::string& message) {
   FPrintf(stderr, "Fatal error occured, so process no longer exist.\nin file %s at line %d\n%s\n%s\n",
           file, line, function, message.c_str());
-  abort();
+  std::terminate();
 }
 
 
@@ -175,6 +175,15 @@ public:
   virtual ~Uncopyable() = default;
   Uncopyable(const Uncopyable&) = delete;
   Uncopyable& operator = (const Uncopyable&) = delete;
+};
+
+
+class Unmovable {
+ public:
+  Unmovable() = default;
+  virtual ~Unmovable() = default;
+  Unmovable(Unmovable&&) = delete;
+  Unmovable& operator = (Unmovable&&) = delete;
 };
 
 
