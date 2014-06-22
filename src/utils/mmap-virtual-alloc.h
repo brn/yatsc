@@ -29,11 +29,11 @@
 #include <windows.h>
 #include "./utils.h"
 
-namespace rasp {
+namespace yatsc {
 
 class MapAllocator : private Static {
  public:
-  static RASP_INLINE void* Allocate(size_t size) {
+  static YATSC_INLINE void* Allocate(size_t size) {
     void* heap = VirtualAlloc(NULL, size, MEM_COMMIT, PAGE_READWRITE);
     if (heap == NULL) {
       std::string st;
@@ -44,7 +44,7 @@ class MapAllocator : private Static {
   }
 
 
-  static RASP_INLINE void Deallocate(void* area, size_t size) {
+  static YATSC_INLINE void Deallocate(void* area, size_t size) {
     VirtualFree(area, size, MEM_DECOMMIT);
   }
 };

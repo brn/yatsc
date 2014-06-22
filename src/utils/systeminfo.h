@@ -27,7 +27,7 @@
 #include <atomic>
 #include "utils.h"
 
-namespace rasp {
+namespace yatsc {
 
 class SystemInfoPlatform;
 

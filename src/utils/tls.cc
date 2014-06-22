@@ -6,7 +6,7 @@
 #include "tls.h"
 
 
-namespace rasp {
+namespace yatsc {
 // In order to make TLS destructors work, we need to keep around a function
 // pointer to the destructor for each slot. We keep this array of pointers in a
 // global (static) array.
@@ -54,7 +54,7 @@ void** ConstructTlsVector() {
   PlatformThreadLocalStorage::TLSKey key = g_native_tls_key.load(std::memory_order_relaxed);
   
   if (key == PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES) {
-    RASP_CHECK(true, PlatformThreadLocalStorage::AllocTLS(&key));
+    YATSC_CHECK(true, PlatformThreadLocalStorage::AllocTLS(&key));
 
     // The TLS_KEY_OUT_OF_INDEXES is used to find out whether the key is set or
     // not in NoBarrier_CompareAndSwap, but Posix doesn't have invalid key, we
@@ -63,7 +63,7 @@ void** ConstructTlsVector() {
     // another TLS slot.
     if (key == PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES) {
       PlatformThreadLocalStorage::TLSKey tmp = key;
-      RASP_CHECK(true, PlatformThreadLocalStorage::AllocTLS(&key) &&
+      YATSC_CHECK(true, PlatformThreadLocalStorage::AllocTLS(&key) &&
                 key != PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES);
       PlatformThreadLocalStorage::FreeTLS(tmp);
     }
@@ -81,7 +81,7 @@ void** ConstructTlsVector() {
       key = g_native_tls_key.load(std::memory_order_relaxed);
     }
   }
-  RASP_CHECK(true, !PlatformThreadLocalStorage::GetTLSValue(key));
+  YATSC_CHECK(true, !PlatformThreadLocalStorage::GetTLSValue(key));
 
   // Some allocators, such as TCMalloc, make use of thread local storage.
   // As a result, any attempt to call new (or malloc) will lazily cause such a
@@ -232,7 +232,7 @@ void ThreadLocalStorage::StaticSlot::Set(void* value) {
   tls_data[slot_] = value;
 }
 
-}  // namespace rasp
+}  // namespace yatsc
 
 
 #ifdef PLATFORM_WIN
@@ -266,7 +266,7 @@ void NTAPI OnThreadExit(PVOID module, DWORD reason, PVOID reserved) {
   // On XP SP0 & SP1, the DLL_PROCESS_ATTACH is never seen. It is sent on SP2+
   // and on W2K and W2K3. So don't assume it is sent.
   if (DLL_THREAD_DETACH == reason || DLL_PROCESS_DETACH == reason)
-    rasp::PlatformThreadLocalStorage::OnThreadExit();
+    yatsc::PlatformThreadLocalStorage::OnThreadExit();
 }
 } // namespace
 

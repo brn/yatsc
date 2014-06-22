@@ -27,7 +27,7 @@
 
 #include "../utils/utils.h"
 
-namespace rasp {namespace ir {
+namespace yatsc {namespace ir {
 
 class IRFactory : private Uncopyable {
  public:
@@ -36,7 +36,7 @@ class IRFactory : private Uncopyable {
       : environment_(Environment::Create()) {}
   
   template <typename NodeName, typename ... Args>
-  RASP_INLINE NodeName* New(Args ... args) {
+  YATSC_INLINE NodeName* New(Args ... args) {
     NodeName* n = environment_->New<NodeName>(std::forward<Args>(args)...);
     n->set_environment(environment_);
     return n;

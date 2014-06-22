@@ -29,7 +29,7 @@
 
 #include "tls.h"
 
-namespace rasp {
+namespace yatsc {
 
 bool PlatformThreadLocalStorage::AllocTLS(TLSKey* key) {
   return !pthread_key_create(key, PlatformThreadLocalStorage::OnThreadExit);
@@ -37,7 +37,7 @@ bool PlatformThreadLocalStorage::AllocTLS(TLSKey* key) {
 
 void PlatformThreadLocalStorage::FreeTLS(TLSKey key) {
   int ret = pthread_key_delete(key);
-  RASP_CHECK(true, ret == 0);
+  YATSC_CHECK(true, ret == 0);
 }
 
 void* PlatformThreadLocalStorage::GetTLSValue(TLSKey key) {
@@ -46,9 +46,9 @@ void* PlatformThreadLocalStorage::GetTLSValue(TLSKey key) {
 
 void PlatformThreadLocalStorage::SetTLSValue(TLSKey key, void* value) {
   int ret = pthread_setspecific(key, value);
-  RASP_CHECK(true, ret == 0);
+  YATSC_CHECK(true, ret == 0);
 }
 
-}  // namespace rasp
+}  // namespace yatsc
 
 #endif // UTILS_TLS_POSIX_INL_H_

@@ -28,7 +28,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-namespace rasp { namespace testing {
+namespace yatsc { namespace testing {
 inline ::testing::AssertionResult CompareUchar(const std::string& value, const std::string expected, int i) {
   char a = value.at(i);
   char b = expected.at(i);
@@ -59,6 +59,6 @@ inline void CompareString(const char* buffer, const char* expectation) {
   CompareString(b, e);
 }
 
-}} //namespace rasp::testing
+}} //namespace yatsc::testing
 
 #endif

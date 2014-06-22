@@ -30,7 +30,7 @@
 #include "../utils/utils.h"
 #include "../utils/unicode.h"
 
-namespace rasp {
+namespace yatsc {
 class Character : private Static {
  public:
 
@@ -61,12 +61,12 @@ class Character : private Static {
   }
 
 
-  RASP_INLINE static bool IsPuncture(const UChar& uchar) {
+  YATSC_INLINE static bool IsPuncture(const UChar& uchar) {
     return GetCharType(uchar.ToUC8Ascii()) == CharType::PUNCTURES;
   }
   
 
-  RASP_INLINE static bool IsOperatorStart(const UChar& uchar) {
+  YATSC_INLINE static bool IsOperatorStart(const UChar& uchar) {
     return GetCharType(uchar.ToUC8Ascii()) == CharType::OPERATORS;
   }
 
@@ -90,7 +90,7 @@ class Character : private Static {
   }
 
 
-  RASP_INLINE static bool IsIdentifierStart(const UChar& uchar) {
+  YATSC_INLINE static bool IsIdentifierStart(const UChar& uchar) {
     return IsIdentifierStartChar(uchar);
   }
 
@@ -101,37 +101,37 @@ class Character : private Static {
   }
 
 
-  RASP_INLINE static bool IsUnicodeEscapeSequenceStart(const UChar& uchar, const UChar& lookahead) {
+  YATSC_INLINE static bool IsUnicodeEscapeSequenceStart(const UChar& uchar, const UChar& lookahead) {
     return uchar == unicode::u8('\\') && lookahead == unicode::u8('u');
   }
 
 
-  RASP_INLINE static bool IsInIdentifierRange(const UChar& uchar) {
+  YATSC_INLINE static bool IsInIdentifierRange(const UChar& uchar) {
     return IsIdentifierStart(uchar) || IsNumericLiteral(uchar);
   }
 
   
-  RASP_INLINE static bool IsNumericLiteral(const UChar& uchar) {
+  YATSC_INLINE static bool IsNumericLiteral(const UChar& uchar) {
     return GetCharType(uchar.ToUC8Ascii()) == CharType::NUMERIC;
   }
 
 
-  RASP_INLINE static bool IsBinaryCharacter(const UChar& uchar) {
+  YATSC_INLINE static bool IsBinaryCharacter(const UChar& uchar) {
     return uchar == unicode::u8('0') || uchar == unicode::u8('1');
   }
 
 
-  RASP_INLINE static bool IsSingleLineCommentStart(const UChar& uchar, const UChar& lookahead) {
+  YATSC_INLINE static bool IsSingleLineCommentStart(const UChar& uchar, const UChar& lookahead) {
     return uchar == unicode::u8('/') && lookahead == unicode::u8('/');
   }
 
 
-  RASP_INLINE static bool IsMultiLineCommentStart(const UChar& uchar, const UChar& lookahead) {
+  YATSC_INLINE static bool IsMultiLineCommentStart(const UChar& uchar, const UChar& lookahead) {
     return uchar == unicode::u8('/') && lookahead == unicode::u8('*');
   }
 
 
-  RASP_INLINE static bool IsMultiLineCommentEnd(const UChar& uchar, const UChar& lookahead) {
+  YATSC_INLINE static bool IsMultiLineCommentEnd(const UChar& uchar, const UChar& lookahead) {
     return uchar == unicode::u8('*') && lookahead == unicode::u8('/');
   }
 
@@ -295,6 +295,6 @@ class Character : private Static {
     return (ch <= 127 && ch > 0)? kChars[ch] : CharType::OTHER;
   }
 };
-} //namespace rasp
+} //namespace yatsc
 
 #endif

@@ -31,16 +31,16 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace rasp {namespace testing {
+namespace yatsc {namespace testing {
 inline std::string ReadFile(const char* filename) {
-  std::ifstream in(filename, std::ios::binary);
+  std::ifstream in(filename);
   if (in.fail()) {
-    throw std::move(std::runtime_error("Invalid file."));
+    throw std::runtime_error("Invalid file.");
   }
   std::stringstream buffer;
   buffer << in.rdbuf();
   return buffer.str();
 }
-}} //rasp::testing end
+}} //yatsc::testing end
 
 #endif

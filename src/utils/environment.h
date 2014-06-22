@@ -29,10 +29,10 @@
 #include "./tls.h"
 #include "./regions.h"
 
-namespace rasp {
+namespace yatsc {
 class Environment : private Uncopyable {
  public:
-  static Environment* Create() RASP_NOEXCEPT {
+  static Environment* Create() YATSC_NOEXCEPT {
     Environment* environment = reinterpret_cast<Environment*>(tls_.Get());
     if (environment == nullptr) {
       environment = new Environment();
@@ -42,7 +42,7 @@ class Environment : private Uncopyable {
   }
 
   template <typename T, typename ... Args>
-  RASP_INLINE T* New(Args ... args) {
+  YATSC_INLINE T* New(Args ... args) {
     return regions_.New<T>(std::forward<Args>(args)...);
   }
 

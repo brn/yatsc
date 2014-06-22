@@ -35,27 +35,27 @@
 
 
 
-namespace rasp {
+namespace yatsc {
 class ErrorReporter {
  public:
   
-  RASP_INLINE ErrorReporter(const char* message)
+  YATSC_INLINE ErrorReporter(const char* message)
       : message_(message){}
   
 
-  RASP_INLINE ErrorReporter(const std::string& message):
+  YATSC_INLINE ErrorReporter(const std::string& message):
       message_(std::move(message)){}
 
 
-  RASP_INLINE ErrorReporter(const ErrorReporter& e)
+  YATSC_INLINE ErrorReporter(const ErrorReporter& e)
       : message_(e.message_){}
 
 
-  RASP_INLINE ErrorReporter(const ErrorReporter&& e)
+  YATSC_INLINE ErrorReporter(const ErrorReporter&& e)
       : message_(std::move(e.message_)){}
 
   
-  RASP_INLINE void Report(bool is_exit = false) {
+  YATSC_INLINE void Report(bool is_exit = false) {
     std::cerr << message_ << std::endl;
     if (is_exit) exit(1);
   }
@@ -67,24 +67,24 @@ class ErrorReporter {
 
 class MaybeFail {
  public:
-  RASP_INLINE MaybeFail()
+  YATSC_INLINE MaybeFail()
       : success_(true){}
   
   virtual ~MaybeFail() = default;
 
   
-  RASP_INLINE bool success() const {
+  YATSC_INLINE bool success() const {
     return success_;
   }
 
 
-  RASP_INLINE std::stringstream& Fail() {
+  YATSC_INLINE std::stringstream& Fail() {
     success_ = false;
     return message_stream_;
   }
 
   
-  RASP_INLINE std::string failed_message() const {
+  YATSC_INLINE std::string failed_message() const {
     return message_stream_.str();
   }
   
@@ -93,7 +93,7 @@ class MaybeFail {
   std::stringstream message_stream_;
 };
 
-} //namespace rasp
+} //namespace yatsc
 
 
 #endif

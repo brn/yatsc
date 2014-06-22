@@ -36,7 +36,7 @@
 #include "os.h"
 #include "utils.h"
 
-namespace rasp {
+namespace yatsc {
 
 #ifdef _WIN32
 int VAArgs(const char* format, va_list args) {

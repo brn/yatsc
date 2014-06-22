@@ -14,4 +14,4 @@ IF "%2" == "Release" (
   set dir=Release
 )
 
-MSBuild.exe rasp.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVersion=v4.5.1 /p:PlatformToolset=v120 /toolsversion:12.0 && "%dir%/SourceStreamTest.exe" && "%dir%/UnicodeIteratorAdapterTest.exe" && "%dir%/ScannerTest.exe" && "%dir%/RegionsTest.exe"
+MSBuild.exe test.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVersion=v4.5.1 /p:PlatformToolset=v120 /toolsversion:12.0 && "%dir%/SourceStreamTest.exe" && "%dir%/UnicodeIteratorAdapterTest.exe" && "%dir%/ScannerTest.exe" && "%dir%/RegionsTest.exe" && "%dir%/NodeTest.exe"

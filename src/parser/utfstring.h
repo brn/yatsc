@@ -33,7 +33,7 @@
 #include "../utils/utils.h"
 #include "unicode-iterator-adapter.h"
 
-namespace rasp {
+namespace yatsc {
 
 class UtfValueCache {
  public:
@@ -45,7 +45,7 @@ class UtfValueCache {
         utf16_value_(utf_value_cache.utf16_value_) {}
 
   
-  UtfValueCache(UtfValueCache&& utf_value_cache) RASP_NOEXCEPT
+  UtfValueCache(UtfValueCache&& utf_value_cache) YATSC_NOEXCEPT
       : utf8_value_(std::move(utf_value_cache.utf8_value_)),
         utf16_value_(std::move(utf_value_cache.utf16_value_)) {}
 
@@ -64,33 +64,33 @@ class UtfValueCache {
   }
   
   
-  RASP_INLINE void append_utf8_value(const char* utf8) {
+  YATSC_INLINE void append_utf8_value(const char* utf8) {
     utf8_value_.append(utf8);
   }
 
 
-  RASP_INLINE const Utf8String& utf8_value() RASP_NO_SE {
+  YATSC_INLINE const Utf8String& utf8_value() YATSC_NO_SE {
     return utf8_value_;
   }
   
 
-  RASP_INLINE void append_utf16_value(const UC16 uc) {
+  YATSC_INLINE void append_utf16_value(const UC16 uc) {
     utf16_value_.append(1, uc);
   }
 
 
-  RASP_INLINE const Utf16String& utf16_value() const {
+  YATSC_INLINE const Utf16String& utf16_value() const {
     return utf16_value_;
   }
 
 
-  RASP_INLINE void Append(const Utf8String& utf8_value, const Utf16String& utf16_value) {
+  YATSC_INLINE void Append(const Utf8String& utf8_value, const Utf16String& utf16_value) {
     utf8_value_.append(utf8_value);
     utf16_value_.append(utf16_value);
   }
 
 
-  RASP_INLINE void Clear() {
+  YATSC_INLINE void Clear() {
     utf8_value_.clear();
     utf16_value_.clear();
   }
@@ -113,13 +113,18 @@ class Utf8Value {
       : utf8_(uv.utf8_),
         size_(uv.size_){}
 
+
+  operator const char*() const {
+    return value();
+  }
   
-  RASP_INLINE const char* value() RASP_NO_SE {
+  
+  YATSC_INLINE const char* value() YATSC_NO_SE {
     return utf8_;
   }
 
   
-  RASP_INLINE size_t size() RASP_NO_SE {
+  YATSC_INLINE size_t size() YATSC_NO_SE {
     return size_;
   }
   
@@ -141,12 +146,12 @@ class Utf16Value {
         size_(uv.size_){}
 
   
-  RASP_INLINE const UC16* value() const {
+  YATSC_INLINE const UC16* value() const {
     return utf16_;
   }
 
   
-  RASP_INLINE size_t size() const {
+  YATSC_INLINE size_t size() const {
     return size_;
   }
   
@@ -199,7 +204,7 @@ class UtfString {
   }
 
 
-  RASP_INLINE void Clear() {
+  YATSC_INLINE void Clear() {
     utf_value_cache_.Clear();
   }
   
@@ -247,22 +252,22 @@ class UtfString {
   }
 
 
-  RASP_INLINE Utf8Value ToUtf8Value() const {
+  YATSC_INLINE Utf8Value ToUtf8Value() const {
     return Utf8Value(utf_value_cache_.utf8_value().c_str(), utf8_length());
   };
 
 
-  RASP_INLINE Utf16Value ToUtf16Value() const {
+  YATSC_INLINE Utf16Value ToUtf16Value() const {
     return Utf16Value(utf_value_cache_.utf16_value().c_str(), utf16_length());
   };
 
 
-  RASP_INLINE size_t utf8_length() const {
+  YATSC_INLINE size_t utf8_length() const {
     return utf_value_cache_.utf8_value().size();
   }
 
 
-  RASP_INLINE size_t utf16_length() const {
+  YATSC_INLINE size_t utf16_length() const {
     return utf_value_cache_.utf16_value().size();
   }
   
@@ -282,6 +287,6 @@ class UtfString {
   UtfValueCache utf_value_cache_;
 };
 
-} //namespace rasp
+} //namespace yatsc
 
 #endif

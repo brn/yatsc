@@ -30,7 +30,7 @@
 #include <windows.h>
 #include "tls.h"
 
-namespace rasp {
+namespace yatsc {
 
 bool PlatformThreadLocalStorage::AllocTLS(TLSKey* key) {
   TLSKey value = TlsAlloc();
@@ -55,6 +55,6 @@ void PlatformThreadLocalStorage::SetTLSValue(TLSKey key, void* value) {
   ASSERT(true, !!ret);
 }
 
-}  // namespace rasp
+}  // namespace yatsc
 
 #endif // UTILS_TLS_WIN_INL_H_

@@ -27,7 +27,7 @@
 #include "../utils/utils.h"
 #include "token.h"
 
-namespace rasp {
+namespace yatsc {
 
 // Ascii range puncture list.
 // For fast lookup.
@@ -72,8 +72,8 @@ static const Token kPunctures[] = {
   Token::ILLEGAL,          // 37 %
   Token::ILLEGAL,          // 38 &
   Token::ILLEGAL,          // 39 '
-  Token::JS_LEFT_PAREN,    // 40 (
-  Token::JS_RIGHT_PAREN,   // 41 )
+  Token::TS_LEFT_PAREN,    // 40 (
+  Token::TS_RIGHT_PAREN,   // 41 )
   Token::ILLEGAL,          // 42 *
   Token::ILLEGAL,          // 43 +
   Token::ILLEGAL,          // 44 ,
@@ -90,12 +90,12 @@ static const Token kPunctures[] = {
   Token::ILLEGAL,          // 55 7
   Token::ILLEGAL,          // 56 8
   Token::ILLEGAL,          // 57 9
-  Token::JS_COLON,         // 58 :
+  Token::TS_COLON,         // 58 :
   Token::ILLEGAL,          // 59 ;
   Token::ILLEGAL,          // 60 <
   Token::ILLEGAL,          // 61 =
   Token::ILLEGAL,          // 62 >
-  Token::JS_QUESTION_MARK, // 63 ?
+  Token::TS_QUESTION_MARK, // 63 ?
   Token::ILLEGAL,          // 64 @
   Token::ILLEGAL,          // 65 A
   Token::ILLEGAL,          // 66 B
@@ -123,9 +123,9 @@ static const Token kPunctures[] = {
   Token::ILLEGAL,          // 88 X
   Token::ILLEGAL,          // 89 Y
   Token::ILLEGAL,          // 90 Z
-  Token::JS_LEFT_BRACKET,  // 91 [
+  Token::TS_LEFT_BRACKET,  // 91 [
   Token::ILLEGAL,          // 92 BACK_SLASH
-  Token::JS_RIGHT_BRACKET, // 93 ]
+  Token::TS_RIGHT_BRACKET, // 93 ]
   Token::ILLEGAL,          // 94 ^
   Token::ILLEGAL,          // 95 _
   Token::ILLEGAL,          // 96 `
@@ -155,9 +155,9 @@ static const Token kPunctures[] = {
   Token::ILLEGAL,          // 120 x
   Token::ILLEGAL,          // 121 y
   Token::ILLEGAL,          // 122 z
-  Token::JS_LEFT_BRACE,    // 123 {
+  Token::TS_LEFT_BRACE,    // 123 {
   Token::ILLEGAL,          // 124 |
-  Token::JS_RIGHT_BRACE,   // 125 }
+  Token::TS_RIGHT_BRACE,   // 125 }
   Token::ILLEGAL,          // 126 ~
   Token::ILLEGAL           // 127 DEL
 };
@@ -166,71 +166,72 @@ static const Token kPunctures[] = {
 // Borrowed from v8 javascript engine.
 #define KEYWORDS(KEYWORD_GROUP, KEYWORD)                                \
   KEYWORD_GROUP('b')                                                    \
-  KEYWORD("break", Token::JS_BREAK)                                     \
+  KEYWORD("break", Token::TS_BREAK)                                     \
   KEYWORD_GROUP('c')                                                    \
-  KEYWORD("case", Token::JS_CASE)                                       \
-  KEYWORD("catch", Token::JS_CATCH)                                     \
-  KEYWORD("class", Token::JS_CLASS)                                     \
-  KEYWORD("const", Token::JS_CONST)                                     \
-  KEYWORD("continue", Token::JS_CONTINUE)                               \
+  KEYWORD("case", Token::TS_CASE)                                       \
+  KEYWORD("catch", Token::TS_CATCH)                                     \
+  KEYWORD("class", Token::TS_CLASS)                                     \
+  KEYWORD("const", Token::TS_CONST)                                     \
+  KEYWORD("continue", Token::TS_CONTINUE)                               \
   KEYWORD_GROUP('d')                                                    \
-  KEYWORD("debugger", Token::JS_DEBUGGER)                               \
-  KEYWORD("default", Token::JS_DEFAULT)                                 \
-  KEYWORD("delete", Token::JS_DELETE)                                   \
-  KEYWORD("do", Token::JS_DO)                                           \
+  KEYWORD("debugger", Token::TS_DEBUGGER)                               \
+  KEYWORD("declare", Token::TS_DECLARE)                                 \
+  KEYWORD("default", Token::TS_DEFAULT)                                 \
+  KEYWORD("delete", Token::TS_DELETE)                                   \
+  KEYWORD("do", Token::TS_DO)                                           \
   KEYWORD_GROUP('e')                                                    \
-  KEYWORD("else", Token::JS_ELSE)                                       \
-  KEYWORD("enum", Token::JS_ENUM)                                       \
-  KEYWORD("export", Token::JS_EXPORT)                                   \
-  KEYWORD("extends", Token::JS_EXTENDS)                                 \
+  KEYWORD("else", Token::TS_ELSE)                                       \
+  KEYWORD("enum", Token::TS_ENUM)                                       \
+  KEYWORD("export", Token::TS_EXPORT)                                   \
+  KEYWORD("extends", Token::TS_EXTENDS)                                 \
   KEYWORD_GROUP('f')                                                    \
-  KEYWORD("false", Token::JS_FALSE)                                     \
-  KEYWORD("finally", Token::JS_FINALLY)                                 \
-  KEYWORD("for", Token::JS_FOR)                                         \
-  KEYWORD("function", Token::JS_FUNCTION)                               \
+  KEYWORD("false", Token::TS_FALSE)                                     \
+  KEYWORD("finally", Token::TS_FINALLY)                                 \
+  KEYWORD("for", Token::TS_FOR)                                         \
+  KEYWORD("function", Token::TS_FUNCTION)                               \
   KEYWORD_GROUP('i')                                                    \
-  KEYWORD("if", Token::JS_IF)                                           \
-  KEYWORD("implements", Token::JS_IMPLEMENTS)                           \
-  KEYWORD("import", Token::JS_IMPORT)                                   \
-  KEYWORD("in", Token::JS_IN)                                           \
-  KEYWORD("instanceof", Token::JS_INSTANCEOF)                           \
-  KEYWORD("interface", Token::JS_INTERFACE)                             \
+  KEYWORD("if", Token::TS_IF)                                           \
+  KEYWORD("implements", Token::TS_IMPLEMENTS)                           \
+  KEYWORD("import", Token::TS_IMPORT)                                   \
+  KEYWORD("in", Token::TS_IN)                                           \
+  KEYWORD("instanceof", Token::TS_INSTANCEOF)                           \
+  KEYWORD("interface", Token::TS_INTERFACE)                             \
   KEYWORD_GROUP('l')                                                    \
-  KEYWORD("let", es_harmony? Token::JS_LET: Token::FUTURE_STRICT_RESERVED_WORD) \
+  KEYWORD("let", es_harmony? Token::TS_LET: Token::FUTURE_STRICT_RESERVED_WORD) \
   KEYWORD_GROUP('m')                                                    \
-  KEYWORD("module", Token::JS_MODULE)                                   \
+  KEYWORD("module", Token::TS_MODULE)                                   \
   KEYWORD_GROUP('n')                                                    \
-  KEYWORD("new", Token::JS_NEW)                                         \
-  KEYWORD("null", Token::JS_NULL)                                       \
+  KEYWORD("new", Token::TS_NEW)                                         \
+  KEYWORD("null", Token::TS_NULL)                                       \
   KEYWORD_GROUP('N')                                                    \
-  KEYWORD("NaN", Token::JS_NAN)                                         \
+  KEYWORD("NaN", Token::TS_NAN)                                         \
   KEYWORD_GROUP('p')                                                    \
   KEYWORD("package", Token::FUTURE_STRICT_RESERVED_WORD)                \
-  KEYWORD("private", Token::JS_PRIVATE)                                 \
+  KEYWORD("private", Token::TS_PRIVATE)                                 \
   KEYWORD("protected", Token::FUTURE_STRICT_RESERVED_WORD)              \
-  KEYWORD("public", Token::JS_PUBLIC)                                   \
+  KEYWORD("public", Token::TS_PUBLIC)                                   \
   KEYWORD_GROUP('r')                                                    \
-  KEYWORD("return", Token::JS_RETURN)                                   \
+  KEYWORD("return", Token::TS_RETURN)                                   \
   KEYWORD_GROUP('s')                                                    \
-  KEYWORD("static", Token::JS_STATIC)                                   \
-  KEYWORD("super", Token::JS_SUPER)                                     \
-  KEYWORD("switch", Token::JS_SWITCH)                                   \
+  KEYWORD("static", Token::TS_STATIC)                                   \
+  KEYWORD("super", Token::TS_SUPER)                                     \
+  KEYWORD("switch", Token::TS_SWITCH)                                   \
   KEYWORD_GROUP('t')                                                    \
-  KEYWORD("this", Token::JS_THIS)                                       \
-  KEYWORD("throw", Token::JS_THROW)                                     \
-  KEYWORD("true", Token::JS_TRUE)                                       \
-  KEYWORD("try", Token::JS_TRY)                                         \
-  KEYWORD("typeof", Token::JS_TYPEOF)                                   \
+  KEYWORD("this", Token::TS_THIS)                                       \
+  KEYWORD("throw", Token::TS_THROW)                                     \
+  KEYWORD("true", Token::TS_TRUE)                                       \
+  KEYWORD("try", Token::TS_TRY)                                         \
+  KEYWORD("typeof", Token::TS_TYPEOF)                                   \
   KEYWORD_GROUP('u')                                                    \
-  KEYWORD("undefined", Token::JS_UNDEFINED)                             \
+  KEYWORD("undefined", Token::TS_UNDEFINED)                             \
   KEYWORD_GROUP('v')                                                    \
-  KEYWORD("var", Token::JS_VAR)                                         \
-  KEYWORD("void", Token::JS_VOID)                                       \
+  KEYWORD("var", Token::TS_VAR)                                         \
+  KEYWORD("void", Token::TS_VOID)                                       \
   KEYWORD_GROUP('w')                                                    \
-  KEYWORD("while", Token::JS_WHILE)                                     \
-  KEYWORD("with", Token::JS_WITH)                                       \
+  KEYWORD("while", Token::TS_WHILE)                                     \
+  KEYWORD("with", Token::TS_WITH)                                       \
   KEYWORD_GROUP('y')                                                    \
-  KEYWORD("yield", Token::JS_YIELD)
+  KEYWORD("yield", Token::TS_YIELD)
 
 
 // Only enabled in unit tests.
@@ -238,120 +239,7 @@ static const Token kPunctures[] = {
 
 // Get token type string expression.
 const char* TokenInfo::ToString() const {
-  static const char* kTokenStringList[] = {
-    "JS_BREAK",
-    "JS_CASE",
-    "JS_CATCH",
-    "JS_CLASS",
-    "JS_CONST",
-    "JS_CONTINUE",
-    "JS_DEBUGGER",
-    "JS_DEFAULT",
-    "JS_DELETE",
-    "JS_DO",
-    "JS_ELSE",
-    "JS_ENUM",
-    "JS_EXPORT",
-    "JS_EXTENDS",
-    "JS_FALSE",
-    "JS_FINALLY",
-    "JS_FOR",
-    "JS_FUNCTION",
-    "JS_IF",
-    "JS_IMPLEMENTS",
-    "JS_IMPORT",
-    "JS_IN",
-    "JS_INSTANCEOF",
-    "JS_INTERFACE",
-    "JS_LET",
-    "JS_MODULE",
-    "JS_NAN",
-    "JS_NEW",
-    "JS_NULL",
-    "JS_PACKAGE",
-    "JS_PRIVATE",
-    "JS_PROTECTED",
-    "JS_PUBLIC",
-    "JS_RETURN",
-    "JS_STATIC",
-    "JS_SUPER",
-    "JS_SWITCH",
-    "JS_THIS",
-    "JS_THROW",
-    "JS_TRUE",
-    "JS_TRY",
-    "JS_TYPEOF",
-    "JS_UNDEFINED",
-    "JS_VAR",
-    "JS_VOID",
-    "JS_WHILE",
-    "JS_WITH",
-    "JS_YIELD",
-    "JS_INCREMENT",
-    "JS_DECREMENT",
-    "JS_EQUAL",
-    "JS_SHIFT_LEFT",
-    "JS_SHIFT_RIGHT",
-    "JS_LESS_EQUAL",
-    "JS_GREATER_EQUAL",
-    "JS_EQ",
-    "JS_NOT_EQUAL",
-    "JS_NOT_EQ",
-    "JS_U_SHIFT_RIGHT",
-    "JS_PLUS",
-    "JS_MINUS",
-    "JS_MUL",
-    "JS_DIV",
-    "JS_MOD",
-    "JS_GREATER",
-    "JS_LESS",
-    "JS_BIT_OR",
-    "JS_BIT_AND",
-    "JS_BIT_NOR",
-    "JS_BIT_XOR",
-    "JS_ASSIGN",
-    "JS_NOT",
-    "JS_ADD_LET",
-    "JS_SUB_LET",
-    "JS_DIV_LET",
-    "JS_MOD_LET",
-    "JS_MUL_LET",
-    "JS_LOGICAL_AND",
-    "JS_LOGICAL_OR",
-    "JS_SHIFT_LEFT_LET",
-    "JS_SHIFT_RIGHT_LET",
-    "JS_U_SHIFT_RIGHT_LET",
-    "JS_NOR_LET",
-    "JS_AND_LET",
-    "JS_OR_LET",
-    "JS_XOR_LET",
-    "JS_FUNCTION_GLYPH",
-    "JS_IDENTIFIER",
-    "JS_NUMERIC_LITERAL",
-    "JS_OCTAL_LITERAL",
-    "JS_BINARY_LITERAL",
-    "JS_STRING_LITERAL",
-    "JS_REGEXP_LITERAL",
-    "JS_LINE_BREAK",
-    "JS_SET",
-    "JS_GET",
-    "JS_REST_PARAMETER",
-    "JS_LEFT_PAREN",
-    "JS_RIGHT_PAREN",
-    "JS_COLON",
-    "JS_QUESTION_MARK",
-    "JS_LEFT_BRACKET",
-    "JS_RIGHT_BRACKET",
-    "JS_LEFT_BRACE",
-    "JS_RIGHT_BRACE",
-    "JS_ARROW_GLYPH",
-    "LINE_TERMINATOR",
-    "FUTURE_STRICT_RESERVED_WORD",
-    "FUTURE_RESERVED_WORD",
-    "END_OF_INPUT",
-    "ILLEGAL"
-  };
-  return kTokenStringList[static_cast<uint16_t>(type_)];
+  return tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
 }
 #endif
 
@@ -362,7 +250,7 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
   const int min_length = 2;
   const int max_length = 10;
   if (input_length < min_length || input_length > max_length) {
-    return Token::JS_IDENTIFIER;
+    return Token::TS_IDENTIFIER;
   }
   
   // Borrowed from v8 javascript engine.
@@ -391,7 +279,7 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
       }
       KEYWORDS(KEYWORD_GROUP_CASE, KEYWORD)
           }
-  return Token::JS_IDENTIFIER;
+  return Token::TS_IDENTIFIER;
 }
 
 

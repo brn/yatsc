@@ -30,13 +30,13 @@
 #include "../compare-string.h"
 
 
-::testing::AssertionResult Failed(const rasp::UChar& uchar, const rasp::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult Failed(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
   return ::testing::AssertionFailure() << "Invalid unicode charactor. at: " << un.current_position()
                                        << " value: " << uchar.uchar();
 }
 
 
-::testing::AssertionResult IsValid(const rasp::UChar& uchar, const rasp::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsValid(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
   if (!uchar.IsInvalid() && static_cast<bool>(uchar)) {
     return ::testing::AssertionSuccess();
   }
@@ -44,7 +44,7 @@
 }
 
 
-::testing::AssertionResult IsSurrogatePair(const rasp::UChar& uchar, const rasp::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
   if (uchar.IsSurrogatePair()) {
     return ::testing::AssertionSuccess();
   }
@@ -52,7 +52,7 @@
 }
 
 
-::testing::AssertionResult IsNotSurrogatePair(const rasp::UChar& uchar, const rasp::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsNotSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
   if (uchar.IsSurrogatePair()) {
     return Failed(uchar, un);
   }
@@ -61,26 +61,26 @@
 
 
 inline void UnicodeTest(const char* input, const char* expected, size_t expected_size) {
-  auto source = rasp::testing::ReadFile(input);
-  auto result = rasp::testing::ReadFile(expected);
+  auto source = yatsc::testing::ReadFile(input);
+  auto result = yatsc::testing::ReadFile(expected);
   std::string buffer;
   std::string utf8_buffer;
   static const char* kFormat = "%#019x";
   auto end = source.end();
-  rasp::UnicodeIteratorAdapter<std::string::iterator> un(source.begin());
+  yatsc::UnicodeIteratorAdapter<std::string::iterator> un(source.begin());
   int index = 0;
   size_t size = 0;
   for (;un != end; std::advance(un, 1)) {
-    const rasp::UChar uc = *un;
+    const yatsc::UChar uc = *un;
     ASSERT_TRUE(IsValid(uc, un));
     if (uc.IsAscii()) {
       buffer.append(1, uc.ToAscii());
     } else {
       if (!uc.IsSurrogatePair()) {
-        rasp::SPrintf(buffer, true, kFormat, uc.uchar());
+        yatsc::SPrintf(buffer, true, kFormat, uc.uchar());
       } else {
-        rasp::SPrintf(buffer, true, kFormat, uc.ToHighSurrogate());
-        rasp::SPrintf(buffer, true, kFormat, uc.ToLowSurrogate());
+        yatsc::SPrintf(buffer, true, kFormat, uc.ToHighSurrogate());
+        yatsc::SPrintf(buffer, true, kFormat, uc.ToLowSurrogate());
       }
     }
     utf8_buffer.append(uc.utf8());
@@ -88,8 +88,8 @@ inline void UnicodeTest(const char* input, const char* expected, size_t expected
     index++;
   }
   ASSERT_EQ(expected_size, size);
-  rasp::testing::CompareString(buffer, result);
-  rasp::testing::CompareString(utf8_buffer, source);
+  yatsc::testing::CompareString(buffer, result);
+  yatsc::testing::CompareString(utf8_buffer, source);
 }
 
 

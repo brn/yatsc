@@ -27,17 +27,17 @@
 
 #include <cstdio>
 #include <sstream>
-#include "scanner.h"
 #include "token.h"
 #include "../utils/utils.h"
 
 
-namespace rasp {
+namespace yatsc {
 template<typename InputSourceIterator>
 Scanner<InputSourceIterator>::Scanner(InputSourceIterator it,
                                       InputSourceIterator end,
                                       const CompilerOption& compiler_option)
     : has_line_terminator_before_next_(false),
+      position_changed_(true),
       current_position_(0),
       line_number_(1),
       it_(it),
@@ -69,12 +69,34 @@ void Scanner<InputSourceIterator>::Advance()  {
 
 template<typename InputSourceIterator>
 const TokenInfo* Scanner<InputSourceIterator>::Scan() {
+  position_changed_ = true;
+  current_token_info_ = &token_info_;
+  return DoScan();
+}
+
+
+template<typename InputSourceIterator>
+const TokenInfo* Scanner<InputSourceIterator>::Peek() {
+  if (position_changed_) {
+    position_changed_ = false;
+    recorded_position_ = it_;
+    current_token_info_ = &lookahead_token_info_;
+    TokenInfo* token_info = DoScan();
+    it_ = recorded_position_;
+    return token_info;
+  }
+  return lookahead_token_info_;
+}
+
+
+template<typename InputSourceIterator>
+const TokenInfo* Scanner<InputSourceIterator>::DoScan() {
   has_line_terminator_before_next_ = false;
   last_multi_line_comment_.Clear();
   
   if (!char_.IsAscii()) {
     Illegal();
-    return &token_info_;
+    return current_token_info_;
   }
   
   if (char_ == unicode::u8('\0')) {
@@ -99,7 +121,7 @@ const TokenInfo* Scanner<InputSourceIterator>::Scan() {
   if (!SkipWhiteSpace()) {
     Advance();
   }
-  return &token_info_;
+  return current_token_info_;
 }
 
 
@@ -154,7 +176,7 @@ void Scanner<InputSourceIterator>::ScanStringLiteral() {
     v += char_;
   }
 
-  BuildToken(Token::JS_STRING_LITERAL, std::move(v));
+  BuildToken(Token::TS_STRING_LITERAL, std::move(v));
 }
 
 
@@ -198,7 +220,7 @@ void Scanner<InputSourceIterator>::ScanHex() {
     v += char_;
     Advance();
   }
-  BuildToken(Token::JS_NUMERIC_LITERAL, std::move(v));
+  BuildToken(Token::TS_NUMERIC_LITERAL, std::move(v));
 }
 
 
@@ -209,7 +231,7 @@ void Scanner<InputSourceIterator>::ScanOctalLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::JS_OCTAL_LITERAL, std::move(str));
+  BuildToken(Token::TS_OCTAL_LITERAL, std::move(str));
 }
 
 
@@ -227,7 +249,7 @@ void Scanner<InputSourceIterator>::ScanBinaryLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::JS_BINARY_LITERAL, std::move(str));
+  BuildToken(Token::TS_BINARY_LITERAL, std::move(str));
 }
 
 
@@ -274,7 +296,7 @@ void Scanner<InputSourceIterator>::ScanInteger() {
     return Illegal();
   }
   
-  BuildToken(Token::JS_NUMERIC_LITERAL, std::move(v));
+  BuildToken(Token::TS_NUMERIC_LITERAL, std::move(v));
 }
 
 
@@ -302,23 +324,23 @@ template<typename InputSourceIterator>
 void Scanner<InputSourceIterator>::ScanOperator() {
   switch (char_.ToAscii()) {
     case '+':
-      return ScanArithmeticOperator(Token::JS_INCREMENT, Token::JS_ADD_LET, Token::JS_PLUS);
+      return ScanArithmeticOperator(Token::TS_INCREMENT, Token::TS_ADD_LET, Token::TS_PLUS);
     case '-':
-      return ScanArithmeticOperator(Token::JS_DECREMENT, Token::JS_SUB_LET, Token::JS_MINUS);
+      return ScanArithmeticOperator(Token::TS_DECREMENT, Token::TS_SUB_LET, Token::TS_MINUS);
     case '*':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::JS_MUL_LET, Token::JS_MUL, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MUL_LET, Token::TS_MUL, false);
     case '/':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::JS_DIV_LET, Token::JS_DIV, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
     case '%':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::JS_MOD_LET, Token::JS_MOD, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MOD_LET, Token::TS_MOD, false);
     case '~':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::JS_NOR_LET, Token::JS_BIT_NOR, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_NOR_LET, Token::TS_BIT_NOR, false);
     case '^':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::JS_XOR_LET, Token::JS_BIT_XOR, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_XOR_LET, Token::TS_BIT_XOR, false);
     case '&':
-      return ScanLogicalOperator(Token::JS_LOGICAL_AND, Token::JS_AND_LET, Token::JS_BIT_AND);
+      return ScanLogicalOperator(Token::TS_LOGICAL_AND, Token::TS_AND_LET, Token::TS_BIT_AND);
     case '|':
-      return ScanLogicalOperator(Token::JS_LOGICAL_OR, Token::JS_OR_LET, Token::JS_BIT_OR);
+      return ScanLogicalOperator(Token::TS_LOGICAL_OR, Token::TS_OR_LET, Token::TS_BIT_OR);
     case '=':
       return ScanEqualityComparatorOrArrowGlyph();
     case '!':
@@ -326,14 +348,14 @@ void Scanner<InputSourceIterator>::ScanOperator() {
         Advance();
         return ScanEqualityComparatorOrArrowGlyph(true);
       }
-      return BuildToken(Token::JS_NOT);
+      return BuildToken(Token::TS_NOT);
     case '<':
       return ScanBitwiseOrComparationOperator(
-          Token::JS_SHIFT_LEFT, Token::JS_SHIFT_LEFT_LET, Token::ILLEGAL, Token::JS_LESS, Token::JS_LESS_EQUAL);
+          Token::TS_SHIFT_LEFT, Token::TS_SHIFT_LEFT_LET, Token::ILLEGAL, Token::TS_LESS, Token::TS_LESS_EQUAL);
     case '>':
       return ScanBitwiseOrComparationOperator(
-          Token::JS_SHIFT_RIGHT, Token::JS_SHIFT_RIGHT_LET,
-          Token::JS_U_SHIFT_RIGHT, Token::JS_GREATER, Token::JS_GREATER_EQUAL, true);
+          Token::TS_SHIFT_RIGHT, Token::TS_SHIFT_RIGHT_LET,
+          Token::TS_U_SHIFT_RIGHT, Token::TS_GREATER, Token::TS_GREATER_EQUAL, true);
     default:
       Illegal();
   }
@@ -376,13 +398,13 @@ void Scanner<InputSourceIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) 
   if (lookahead1_ == char_) {
     Advance();
     if (!not && lookahead1_ == char_) {
-      return BuildToken(Token::JS_EQ);
+      return BuildToken(Token::TS_EQ);
     }
-    return BuildToken(not? Token::JS_NOT_EQ: Token::JS_EQUAL);
+    return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);
   } else if (lookahead1_ == unicode::u8('>')) {
-    return BuildToken(Token::JS_ARROW_GLYPH);
+    return BuildToken(Token::TS_ARROW_GLYPH);
   }
-  BuildToken(not? Token::JS_NOT_EQUAL: Token::JS_ASSIGN);
+  BuildToken(not? Token::TS_NOT_EQUAL: Token::TS_ASSIGN);
 }
 
 
@@ -449,6 +471,6 @@ bool Scanner<InputSourceIterator>::ConsumeLineBreak() {
   return is_break;
 }
 
-} //namespace rasp
+} //namespace yatsc
 
 #endif

@@ -31,7 +31,7 @@
 #include <string>
 #include "utils.h"
 
-namespace rasp {
+namespace yatsc {
 typedef uint32_t UC32;
 typedef uint16_t UC16;
 typedef uint8_t UC8;
@@ -63,19 +63,19 @@ const UC32 kUnicodeMax = 0x10FFFF;
 const UC8 kAsciiMax = 0x7F;
   
 template <typename T>
-RASP_INLINE UC32 u32(T uc) {
+YATSC_INLINE UC32 u32(T uc) {
   return static_cast<UC32>(uc);
 }
 
 
 template <typename T>
-RASP_INLINE UC32 u16(T uc) {
+YATSC_INLINE UC32 u16(T uc) {
   return static_cast<UC32>(uc);
 }
   
 
 template <typename T>
-RASP_INLINE UC8 u8(T uc) {
+YATSC_INLINE UC8 u8(T uc) {
   return static_cast<UC8>(uc);
 }
 
@@ -85,7 +85,7 @@ RASP_INLINE UC8 u8(T uc) {
  * @return masked bit.
  */
 template<std::size_t N, typename CharT>
-RASP_INLINE CharT Mask(CharT ch) {
+YATSC_INLINE CharT Mask(CharT ch) {
   return Bitmask<N, UC32>::lower & ch;
 }
 } //namespace unicode
@@ -101,7 +101,7 @@ namespace utf16 {
  * @param uc utf-32 byte.
  * @return true(if surrogate pair) false(if not surrogate pair).
  */
-RASP_INLINE bool IsSurrogatePairUC32(UC32 uc) {
+YATSC_INLINE bool IsSurrogatePairUC32(UC32 uc) {
   return uc > unicode::kUtf16Max;
 }
 
@@ -111,7 +111,7 @@ RASP_INLINE bool IsSurrogatePairUC32(UC32 uc) {
  * @param uc utf-16 byte.
  * @return true(if surrogate pair) false(if not surrogate pair).
  */
-RASP_INLINE bool IsSurrogatePairUC16(UC16 uc) {
+YATSC_INLINE bool IsSurrogatePairUC16(UC16 uc) {
   return (uc & ~unicode::kSurrogateMask) == unicode::kSurrogateMin;
 }
 
@@ -121,7 +121,7 @@ RASP_INLINE bool IsSurrogatePairUC16(UC16 uc) {
  * @param uc utf-32 byte.
  * @return UC16 high surrogate pair byte expression.
  */
-RASP_INLINE UC16 ToHighSurrogateUC32(UC32 uc) {
+YATSC_INLINE UC16 ToHighSurrogateUC32(UC32 uc) {
   return static_cast<UC16>((uc >> unicode::kSurrogateBits) + unicode::kHighSurrogateOffset);
 }
 
@@ -131,7 +131,7 @@ RASP_INLINE UC16 ToHighSurrogateUC32(UC32 uc) {
  * @param uc utf-32 byte.
  * @return UC16 low surrogate pair byte expression.
  */
-RASP_INLINE UC16 ToLowSurrogateUC32(UC32 uc) {
+YATSC_INLINE UC16 ToLowSurrogateUC32(UC32 uc) {
   return static_cast<UC16>((uc & unicode::kLowSurrogateMask) + unicode::kLowSurrogateMin);
 }
 
@@ -141,7 +141,7 @@ RASP_INLINE UC16 ToLowSurrogateUC32(UC32 uc) {
  * @param uc utf-32 byte.
  * @return true(if not surrogate pair) false(if surrogate pair)
  */
-RASP_INLINE bool IsOutOfSurrogateRange(UC32 uc) {
+YATSC_INLINE bool IsOutOfSurrogateRange(UC32 uc) {
   return uc < unicode::kHighSurrogateMin || unicode::kLowSurrogateMax < uc;
 }
 
@@ -151,7 +151,7 @@ RASP_INLINE bool IsOutOfSurrogateRange(UC32 uc) {
  * @param uc utf-16 byte.
  * @return true(if high surrogate pair) false(if not high surrogate pair or not surrogate pair)
  */
-RASP_INLINE bool IsHighSurrogateUC16(UC16 uc) {
+YATSC_INLINE bool IsHighSurrogateUC16(UC16 uc) {
   if (!IsSurrogatePairUC16(uc)) return false;
   return (uc & ~unicode::kHighSurrogateMask) == unicode::kHighSurrogateMin;
 }
@@ -162,7 +162,7 @@ RASP_INLINE bool IsHighSurrogateUC16(UC16 uc) {
  * @param uc utf-16 byte.
  * @return true(if low surrogate pair) false(if not low surrogate pair or not surrogate pair)
  */
-RASP_INLINE bool IsLowSurrogateUC16(UC16 uc) {
+YATSC_INLINE bool IsLowSurrogateUC16(UC16 uc) {
   if (!IsSurrogatePairUC16(uc)) return false;
   return (uc & ~unicode::kLowSurrogateMask) == unicode::kLowSurrogateMin;
 }
@@ -191,7 +191,7 @@ class Convertor : private Static {
   
  private:
 
-  RASP_INLINE static UC32 UC16ToUC32SurrogatePair(UC16 high, UC16 low) {
+  YATSC_INLINE static UC32 UC16ToUC32SurrogatePair(UC16 high, UC16 low) {
     using namespace unicode;
     return (u32(high & kHighSurrogateMask) << kSurrogateBits)
         + u32(low & kLowSurrogateMask) + 0x10000;
@@ -241,7 +241,7 @@ namespace utf8 {
  * @param uc utf-8 byte.
  * @return The byte size of utf-8 sequence.
  */
-RASP_INLINE size_t GetByteCount(UC8 uc) {
+YATSC_INLINE size_t GetByteCount(UC8 uc) {
   static const std::array<UC8, UINT8_MAX + 1> kLengthMap = { {
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // 00000000 -> 00011111
       1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,  // 00100000 -> 00111111
@@ -263,7 +263,7 @@ RASP_INLINE size_t GetByteCount(UC8 uc) {
  * @param uc utf-8 byte
  * @return true(if utf-8 byte is not null) false(if utf-8 byte is null)
  */
-RASP_INLINE bool IsNotNull(UC8 uc) {
+YATSC_INLINE bool IsNotNull(UC8 uc) {
   return uc != '\0';
 }
 
@@ -276,7 +276,7 @@ RASP_INLINE bool IsNotNull(UC8 uc) {
  * @param uc utf-8 byte
  * @return true(if utf-8 byte is valid) false(if utf-8 byte is invalid)
  */
-RASP_INLINE bool IsValidSequence(UC8 uc) {
+YATSC_INLINE bool IsValidSequence(UC8 uc) {
   return IsNotNull(uc) && (uc & 0xC0) == 0x80;
 }
 
@@ -287,8 +287,8 @@ RASP_INLINE bool IsValidSequence(UC8 uc) {
  * @return true(if utf-8 byte is ascii) false(if utf-8 byte is not ascii)
  */
 template <typename T>
-RASP_INLINE bool IsAscii(T uc) {return uc < unicode::kAsciiMax;}
+YATSC_INLINE bool IsAscii(T uc) {return uc < unicode::kAsciiMax;}
 } //namespace utf8
 
-} //namespace rasp
+} //namespace yatsc
 #endif

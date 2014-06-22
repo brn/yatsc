@@ -25,7 +25,7 @@
 #include "./unicode.h"
 #include "../utils/bytelen.h"
 
-namespace rasp {
+namespace yatsc {
 Unicode::Unicode(const char* source)
     : current_position_(0),
       line_number_(1),

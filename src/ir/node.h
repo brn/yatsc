@@ -35,7 +35,7 @@
 #include "../utils/environment.h"
 #include "../parser/token.h"
 
-namespace rasp {namespace ir {
+namespace yatsc {namespace ir {
 
 // The list of the views.
 #define VIEW_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST) \
@@ -125,12 +125,12 @@ VIEW_LIST(FORWARD_DECL, FORWARD_DECL, FORWARD_DECL)
 
 // Define getter accessor.
 #define NODE_GETTER(name, pos)                                      \
-  RASP_INLINE Node* name() RASP_NOEXCEPT {return node_list_[pos];}
+  YATSC_INLINE Node* name() YATSC_NOEXCEPT {return node_list_[pos];}
 
 
 // Define setter accessor.
 #define NODE_SETTER(name, pos)                                      \
-  RASP_INLINE void set_##name(Node* name) {                         \
+  YATSC_INLINE void set_##name(Node* name) {                         \
     node_list_[pos] = name;                                         \
     if (name != nullptr) name->set_parent_node(this);               \
   }
@@ -175,11 +175,11 @@ class SourceInformation: private Unmovable{
 
 
   // Getter and setter for line_number_
-  RASP_PROPERTY(size_t, line_number, line_number_);
+  YATSC_PROPERTY(size_t, line_number, line_number_);
 
 
   // Getter and setter for start_col_
-  RASP_PROPERTY(size_t, start_col, start_col_);
+  YATSC_PROPERTY(size_t, start_col, start_col_);
   
  private:
   size_t line_number_;
@@ -203,7 +203,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * @param node_type The node type.
    * @param capacity The size of children tree.
    */
-  RASP_INLINE Node(NodeType node_type, size_t capacity = 0)
+  YATSC_INLINE Node(NodeType node_type, size_t capacity = 0)
       : node_type_(node_type),
         capacity_(capacity),
         parent_node_(nullptr),
@@ -211,9 +211,27 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
         double_value_(0l),
         environment_(nullptr){
     if (capacity != 0) {
-      node_list_.reserve(capacity);
+      node_list_.resize(capacity, nullptr);
     }
-    std::fill(node_list_.begin(), node_list_.end(), nullptr);
+  }
+
+
+  /**
+   * Create Node.
+   * @param node_type The node type.
+   * @param capacity The size of children tree.
+   */
+  YATSC_INLINE Node(NodeType node_type, size_t capacity, std::initializer_list<Node*> node_list)
+      : node_list_(node_list),
+        node_type_(node_type),
+        capacity_(capacity),
+        parent_node_(nullptr),
+        operand_(Token::ILLEGAL),
+        double_value_(0l),
+        environment_(nullptr){
+    if (capacity != 0) {
+      node_list_.resize(capacity, nullptr);
+    }
   }
 
   
@@ -221,19 +239,19 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
 
   // Getter for node_type.
-  RASP_GETTER(NodeType, node_type, node_type_);
+  YATSC_GETTER(NodeType, node_type, node_type_);
 
 
   // Getter and setter for parent_node_.
-  RASP_PROPERTY(Node*, parent_node, parent_node_);
+  YATSC_PROPERTY(Node*, parent_node, parent_node_);
 
 
   // Getter for children list.
-  RASP_CONST_GETTER(const List&, node_list, node_list_);
+  YATSC_CONST_GETTER(const List&, node_list, node_list_);
 
 
   // Getter for environment.
-  RASP_PROPERTY(Environment*, environment, environment_);
+  YATSC_PROPERTY(Environment*, environment, environment_);
 
 
   /**
@@ -270,7 +288,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Set string value.
    * @param str String value.
    */
-  RASP_INLINE void set_string_value(UtfString str) RASP_NOEXCEPT {
+  YATSC_INLINE void set_string_value(UtfString str) YATSC_NOEXCEPT {
     string_value_ = std::move(str);
   }
 
@@ -279,7 +297,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Return string value.
    * @returns String value.
    */
-  RASP_INLINE const UtfString& string_value() RASP_NO_SE {
+  YATSC_INLINE const UtfString& string_value() YATSC_NO_SE {
     return string_value_;
   }
 
@@ -288,7 +306,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Set double value.
    * @param d Double value.
    */
-  RASP_INLINE void set_double_value(double d) RASP_NOEXCEPT {
+  YATSC_INLINE void set_double_value(double d) YATSC_NOEXCEPT {
     double_value_ = d;
   }
 
@@ -297,7 +315,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Return double value.
    * @return Double value.
    */
-  RASP_INLINE double double_value() RASP_NO_SE {
+  YATSC_INLINE double double_value() YATSC_NO_SE {
     return double_value_;
   }
 
@@ -306,7 +324,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Set an operand.
    * @param op An operand.
    */
-  RASP_INLINE void set_operand(Token op) RASP_NOEXCEPT {
+  YATSC_INLINE void set_operand(Token op) YATSC_NOEXCEPT {
     operand_ = op;
   }
 
@@ -315,7 +333,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Return an operand.
    * @returns An operand.
    */
-  RASP_INLINE Token operand() RASP_NO_SE {
+  YATSC_INLINE Token operand() YATSC_NO_SE {
     return operand_;
   }
 
@@ -324,7 +342,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Remove specified node from children.
    * @param block A node that want to erase from children.
    */
-  RASP_INLINE void Remove(Node* block) {
+  YATSC_INLINE void Remove(Node* block) {
     node_list_.erase(std::remove(node_list_.begin(), node_list_.end(), block), node_list_.end());
     block->set_parent_node(nullptr);
   }
@@ -334,7 +352,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Remove a specified iterator from children.
    * @param block An iterator that want to erase from children.
    */
-  RASP_INLINE void Remove(Node::ListIterator iterator) {
+  YATSC_INLINE void Remove(Node::ListIterator iterator) {
     node_list_.erase(iterator);
     (*iterator)->set_parent_node(nullptr);
   }
@@ -344,28 +362,28 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Set source information to this node.
    * @param token_info A token inforamtion class.
    */
-  void SetInformationForNode(const TokenInfo& token_info) RASP_NOEXCEPT;
+  void SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT;
 
 
   /**
    * Set source information to this node and children.
    * @param token_info A token inforamtion class.
    */
-  void SetInformationForTree(const TokenInfo& token_info) RASP_NOEXCEPT;
+  void SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT;
 
 
   /**
    * Clone this node and all children.
    * @returns Cloned node tree.
    */
-  Node* Clone() RASP_NOEXCEPT;
+  Node* Clone() YATSC_NOEXCEPT;
 
   
 #define DEF_CAST(type)                                                  \
-  RASP_INLINE type* To##type() RASP_NOEXCEPT {                          \
+  YATSC_INLINE type* To##type() YATSC_NOEXCEPT {                          \
     return node_type_ == NodeType::k##type? reinterpret_cast<type*>(this): nullptr; \
   }                                                                     \
-  RASP_INLINE bool Has##type() RASP_NO_SE {                             \
+  YATSC_INLINE bool Has##type() YATSC_NO_SE {                             \
     return node_type_ == NodeType::k##type;                             \
   }
 
@@ -390,14 +408,6 @@ VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
   Node::String ToStringTree();
 
  protected:
-
-  /**
-   * Initialize children with specific node list.
-   * @param node_list The node list that want to add as children.
-   */
-  void InitNodeList(std::initializer_list<Node*> node_list) {
-    node_list_.insert(node_list_.end(), node_list.begin(), node_list.end());
-  }
   
   List node_list_;
   
@@ -426,21 +436,19 @@ class FileScopeView: public Node {
   FileScopeView(): Node(NodeType::kFileScopeView, 1u){};
 
   
-  FileScopeView(Node* statement): Node(NodeType::kFileScopeView, 1u){
-    InsertLast(statement);
-  };
+  FileScopeView(Node* body):
+      Node(NodeType::kFileScopeView, 1u, {body}){};
 };
 
 
 // Represent statement.
 class StatementView : public Node {
  public:
-  StatementView(): Node(NodeType::kStatementView, 1u){}
+  StatementView():
+      Node(NodeType::kStatementView, 1u){}
 
   StatementView(Node* expr):
-      Node(NodeType::kStatementView, 1u) {
-    InsertLast(expr);
-  }
+      Node(NodeType::kStatementView, 1u, {expr}) {}
 
   // Getter and Setter for exp.
   NODE_PROPERTY(expr, 0);
@@ -455,9 +463,7 @@ class VariableDeclView: public Node {
 
   
   VariableDeclView(std::initializer_list<Node*> vars):
-      Node(NodeType::kVariableDeclView, 0) {
-    node_list_.insert(node_list_.end(), vars.begin(), vars.end());
-  }
+      Node(NodeType::kVariableDeclView, 0, vars) {}
 };
 
 
@@ -482,15 +488,13 @@ class ModuleDeclView: public Node {
       Node(NodeType::kModuleDeclView, 2u) {}
 
 
-  ModuleDeclView(Node* name, Node* statement):
-      Node(NodeType::kModuleDeclView, 2u) {
-    InitNodeList({name, statement});
-  }
+  ModuleDeclView(Node* name, Node* body):
+      Node(NodeType::kModuleDeclView, 2u, {name, body}) {}
 
   
   NODE_PROPERTY(name, 0);
 
-  NODE_PROPERTY(statement, 1);
+  NODE_PROPERTY(body, 1);
 };
 
 
@@ -498,9 +502,7 @@ class ModuleDeclView: public Node {
 class ExportView: public Node {
  public:
   ExportView(Node* target)
-      : Node(NodeType::kExportView, 1u) {
-    InsertLast(target);
-  }
+      : Node(NodeType::kExportView, 1u, {target}) {}
 
 
   ExportView()
@@ -515,9 +517,7 @@ class ExportView: public Node {
 class ImportView: public Node {
  public:
   ImportView(Node* alias, Node* from_expr)
-      : Node(NodeType::kImportView, 2u) {
-    InitNodeList({alias, from_expr});
-  }
+      : Node(NodeType::kImportView, 2u, {alias, from_expr}) {}
 
 
   ImportView()
@@ -535,9 +535,7 @@ class ImportView: public Node {
 class VariableView : public Node {
  public:
   VariableView(Node* name, Node* value, Node* type):
-      Node(NodeType::kVariableView, 3u) {
-    InitNodeList({name, value, type});
-  }
+      Node(NodeType::kVariableView, 3u, {name, value, type}) {}
 
 
   VariableView():
@@ -554,9 +552,7 @@ class VariableView : public Node {
 class IfStatementView : public Node {
  public:
   IfStatementView(Node* if_block_Node, Node* else_block_node)
-      : Node(NodeType::kIfStatementView, 2u) {
-    InitNodeList({if_block_Node, else_block_node});
-  }
+      : Node(NodeType::kIfStatementView, 2u, {if_block_Node, else_block_node}) {}
 
 
   IfStatementView()
@@ -583,9 +579,7 @@ class ContinueStatementView: public Node {
 class ReturnStatementView: public Node {
  public:
   ReturnStatementView(Node* expr)
-      : Node(NodeType::kReturnStatementView, 1u) {
-    InitNodeList({expr});
-  }
+      : Node(NodeType::kReturnStatementView, 1u, {expr}) {}
 
 
   ReturnStatementView()
@@ -601,9 +595,7 @@ class ReturnStatementView: public Node {
 class BreakStatementView: public Node {
  public:
   BreakStatementView(Node* label)
-      : Node(NodeType::kBreakStatementView, 1u) {
-    InitNodeList({label});
-  }
+      : Node(NodeType::kBreakStatementView, 1u, {label}) {}
 
   BreakStatementView()
       : Node(NodeType::kBreakStatementView, 1u) {}
@@ -618,9 +610,7 @@ class BreakStatementView: public Node {
 class WithStatementView: public Node {
  public:
   WithStatementView(Node* expr, Node* statement)
-      : Node(NodeType::kWithStatementView, 2u) {
-    InitNodeList({expr, statement});
-  }
+      : Node(NodeType::kWithStatementView, 2u, {expr, statement}) {}
 
 
   WithStatementView()
@@ -639,9 +629,7 @@ class WithStatementView: public Node {
 class LabelledStatementView: public Node {
  public:
   LabelledStatementView(Node* name, Node* statement)
-      : Node(NodeType::kLabelledStatementView, 2u) {
-    InitNodeList({name, statement});
-  }
+      : Node(NodeType::kLabelledStatementView, 2u, {name, statement}) {}
 
 
   LabelledStatementView()
@@ -660,9 +648,7 @@ class LabelledStatementView: public Node {
 class SwitchStatementView: public Node {
  public:
   SwitchStatementView(Node* case_list, Node* default_case)
-      : Node(NodeType::kSwitchStatementView, 2u) {
-    InitNodeList({case_list, default_case});
-  }
+      : Node(NodeType::kSwitchStatementView, 2u, {case_list, default_case}) {}
 
 
   SwitchStatementView()
@@ -681,9 +667,7 @@ class SwitchStatementView: public Node {
 class CaseListView: public Node {
  public:
   CaseListView(std::initializer_list<Node*> case_list)
-      : Node(NodeType::kCaseListView, 0) {
-    InitNodeList(case_list);
-  }
+      : Node(NodeType::kCaseListView, 0, case_list) {}
 
 
   CaseListView()
@@ -695,9 +679,7 @@ class CaseListView: public Node {
 class CaseView: public Node {
  public:
   CaseView(Node* condition, Node* body)
-      : Node(NodeType::kCaseView, 2u) {
-    InitNodeList({condition, body});
-  }
+      : Node(NodeType::kCaseView, 2u, {condition, body}) {}
 
 
   CaseView()
@@ -717,9 +699,7 @@ class CaseView: public Node {
 class TryStatementView: public Node {
  public:
   TryStatementView(Node* statement, Node* catch_statement, Node* finally_statement)
-      : Node(NodeType::kTryStatementView, 3u) {
-    InitNodeList({statement, catch_statement, finally_statement});
-  }
+      : Node(NodeType::kTryStatementView, 3u, {statement, catch_statement, finally_statement}) {}
 
   
   TryStatementView()
@@ -742,9 +722,7 @@ class TryStatementView: public Node {
 class CatchStatementView: public Node {
  public:
   CatchStatementView(Node* error_name, Node* body)
-      : Node(NodeType::kCatchStatementView, 2u) {
-    InitNodeList({error_name, body});
-  }
+      : Node(NodeType::kCatchStatementView, 2u, {error_name, body}) {}
 
 
   CatchStatementView()
@@ -764,9 +742,7 @@ class CatchStatementView: public Node {
 class FinallyStatementView: public Node {
  public:
   FinallyStatementView(Node* body)
-      : Node(NodeType::kFinallyStatementView, 1u) {
-    InitNodeList({body});
-  }
+      : Node(NodeType::kFinallyStatementView, 1u, {body}) {}
 
 
   FinallyStatementView()
@@ -781,9 +757,7 @@ class FinallyStatementView: public Node {
 class ThrowStatementView: public Node {
  public:
   ThrowStatementView(Node* expr)
-      : Node(NodeType::kThrowStatementView, 1u) {
-    InitNodeList({expr});
-  }
+      : Node(NodeType::kThrowStatementView, 1u, {expr}) {}
 
   
   // Getter and Setter for expr.
@@ -794,9 +768,7 @@ class ThrowStatementView: public Node {
 class ForStatementView: public Node {
  public:
   ForStatementView(Node* cond_init, Node* cond_cmp, Node* cond_upd, Node* body)
-      : Node(NodeType::kForStatementView, 4u) {
-    InitNodeList({cond_init, cond_cmp, cond_upd, body});
-  }
+      : Node(NodeType::kForStatementView, 4u, {cond_init, cond_cmp, cond_upd, body}) {}
 
   ForStatementView()
       : Node(NodeType::kForStatementView, 4u) {}
@@ -823,9 +795,7 @@ class ForStatementView: public Node {
 class ForInStatementView: public Node {
  public:
   ForInStatementView(Node* property_name, Node* expr, Node* body)
-      : Node(NodeType::kForInStatementView, 3u) {
-    InitNodeList({property_name, expr, body});
-  }
+      : Node(NodeType::kForInStatementView, 3u, {property_name, expr, body}) {}
 
   ForInStatementView()
       : Node(NodeType::kForInStatementView, 3u) {}
@@ -848,9 +818,7 @@ class ForInStatementView: public Node {
 class WhileStatementView: public Node {
  public:
   WhileStatementView(Node* expr, Node* body)
-      : Node(NodeType::kWhileStatementView, 2u) {
-    InitNodeList({expr, body});
-  }
+      : Node(NodeType::kWhileStatementView, 2u, {expr, body}) {}
 
   WhileStatementView()
       : Node(NodeType::kWhileStatementView, 2u) {}
@@ -869,9 +837,7 @@ class WhileStatementView: public Node {
 class DoWhileStatementView: public Node {
  public:
   DoWhileStatementView(Node* expr, Node* body)
-      : Node(NodeType::kDoWhileStatementView, 2u) {
-    InitNodeList({expr, body});
-  }
+      : Node(NodeType::kDoWhileStatementView, 2u, {expr, body}) {}
 
 
   DoWhileStatementView()
@@ -890,9 +856,7 @@ class DoWhileStatementView: public Node {
 class ClassDeclViewaration: public Node {
  public:
   ClassDeclViewaration(Node* name, Node* constructor, Node* field_list, Node* inheritance, Node* impl_list)
-      : Node(NodeType::kClassDeclView, 5u) {
-    InitNodeList({name, constructor, field_list, inheritance, impl_list});
-  }
+      : Node(NodeType::kClassDeclView, 5u, {name, constructor, field_list, inheritance, impl_list}) {}
 
   
   ClassDeclViewaration()
@@ -923,9 +887,7 @@ class ClassDeclViewaration: public Node {
 class ClassFieldListView: public Node {
  public:
   ClassFieldListView(std::initializer_list<Node*> fields)
-      : Node(NodeType::kClassFieldListView, 0) {
-    InitNodeList(fields);
-  }
+      : Node(NodeType::kClassFieldListView, 0, fields) {}
 
 
   ClassFieldListView()
@@ -936,9 +898,7 @@ class ClassFieldListView: public Node {
 class ClassFieldAccessLevelView: public Node {
  public:
   ClassFieldAccessLevelView(Node* value)
-      : Node(NodeType::kClassFieldAccessLevelView, 1u) {
-    InitNodeList({value});
-  }
+      : Node(NodeType::kClassFieldAccessLevelView, 1u, {value}) {}
 
 
   // Getter and Setter for value.
@@ -963,9 +923,7 @@ class FieldBase: public Node {
 
  protected:
   FieldBase(NodeType type, Node* access_level, Node* name, Node* value)
-      : Node(type, 3u) {
-    InitNodeList({access_level, name, value});
-  }
+      : Node(type, 3u, {access_level, name, value}) {}
 
   FieldBase(NodeType type)
       : Node(type, 3u) {}
@@ -1020,9 +978,7 @@ class ClassMethodView: public FieldBase {
 class InterfaceView: public Node {
  public:
   InterfaceView(Node* name, Node* interface_field_list)
-      : Node(NodeType::kInterfaceView, 2u) {
-    InitNodeList({name, interface_field_list});
-  }
+      : Node(NodeType::kInterfaceView, 2u, {name, interface_field_list}) {}
 
   InterfaceView()
       : Node(NodeType::kInterfaceView, 2u) {}
@@ -1039,9 +995,7 @@ class InterfaceView: public Node {
 
 class InterfaceFieldListView: public Node {
   InterfaceFieldListView(std::initializer_list<Node*> fields)
-      : Node(NodeType::kInterfaceFieldListView, 0) {
-    InitNodeList(fields);
-  }
+      : Node(NodeType::kInterfaceFieldListView, 0, fields) {}
 
 
   InterfaceFieldListView()
@@ -1053,9 +1007,7 @@ class InterfaceFieldListView: public Node {
 class InterfaceFieldView: public Node {
  public:
   InterfaceFieldView(Node* name, Node* value):
-      Node(NodeType::kInterfaceFieldView, 2u) {
-    InitNodeList({name, value});
-  }
+      Node(NodeType::kInterfaceFieldView, 2u, {name, value}) {}
 
 
   InterfaceFieldView():
@@ -1076,9 +1028,7 @@ class SimpleTypeExprView: public Node {
  public:
   
   SimpleTypeExprView(Node* type_name)
-      : Node(NodeType::kSimpleTypeExprView, 1u) {
-    InitNodeList({type_name});
-  }
+      : Node(NodeType::kSimpleTypeExprView, 1u, {type_name}) {}
   
 
   // Getter and Setter for type_name_.
@@ -1091,9 +1041,7 @@ class ArrayTypeExprView: public Node {
  public:
   
   ArrayTypeExprView(Node* type_name)
-      : Node(NodeType::kArrayTypeExprView, 1u) {
-    InitNodeList({type_name});
-  }
+      : Node(NodeType::kArrayTypeExprView, 1u, {type_name}) {}
   
 
   // Getter and Setter for type_name_.
@@ -1105,9 +1053,7 @@ class ArrayTypeExprView: public Node {
 class FunctionNodeTypeExprView: public Node {
  public:
   FunctionNodeTypeExprView(Node* param_list, Node* return_type)
-      : Node(NodeType::kFunctionNodeTypeExprView, 2u) {
-    InitNodeList({param_list, return_type});
-  }
+      : Node(NodeType::kFunctionNodeTypeExprView, 2u, {param_list, return_type}) {}
 
 
   FunctionNodeTypeExprView()
@@ -1127,9 +1073,7 @@ class FunctionNodeTypeExprView: public Node {
 class AccessorTypeExprView: public Node {
  public:
   AccessorTypeExprView(Node* name, Node* type_expression):
-      Node(NodeType::kAccessorTypeExprView, 2u) {
-    InitNodeList({name, type_expression});
-  }
+      Node(NodeType::kAccessorTypeExprView, 2u, {name, type_expression}) {}
 
   
   // Getter and setter for name_.
@@ -1145,7 +1089,7 @@ class AccessorTypeExprView: public Node {
 class FunctionView: public Node {
  public:
   FunctionView(Node* name, Node* param_list, Node* body)
-      : Node(NodeType::kFunctionView, 3u) {}
+      : Node(NodeType::kFunctionView, 3u, {name, param_list, body}) {}
 
   // Getter for name_.
   NODE_GETTER(name, 0);
@@ -1161,9 +1105,7 @@ class FunctionView: public Node {
 class CallView: public Node {
  public:
   CallView(Node* target, Node* args)
-      : Node(NodeType::kCallView, 2u) {
-    InitNodeList({target, args});
-  }
+      : Node(NodeType::kCallView, 2u, {target, args}) {}
 
   
   NODE_PROPERTY(target, 0);
@@ -1176,9 +1118,7 @@ class CallView: public Node {
 class CallArgsView: public Node {
  public:
   CallArgsView(std::initializer_list<Node*> args)
-      : Node(NodeType::kCallArgsView, 0) {
-    InitNodeList(args);
-  }
+      : Node(NodeType::kCallArgsView, 0, args) {}
 
 
   CallArgsView()
@@ -1189,9 +1129,7 @@ class CallArgsView: public Node {
 class NewCallView: public Node {
  public:
   NewCallView(Node* target, Node* args)
-      : Node(NodeType::kNewCallView, 2u) {
-    InitNodeList({target, args});
-  }
+      : Node(NodeType::kNewCallView, 2u, {target, args}) {}
 
 
   NewCallView()
@@ -1211,9 +1149,7 @@ class NameView: public Node {
 class GetPropView: public Node {
  public:
   GetPropView(Node* target, Node* prop)
-      : Node(NodeType::kGetPropView, 2u) {
-    InitNodeList({target, prop});
-  }
+      : Node(NodeType::kGetPropView, 2u, {target, prop}) {}
 
   // Getter and Setter for target.
   NODE_PROPERTY(target, 0);
@@ -1226,9 +1162,7 @@ class GetPropView: public Node {
 class GetElemView: public Node {
  public:
   GetElemView(Node* target, Node* prop)
-      : Node(NodeType::kGetElemView, 2u) {
-    InitNodeList({target, prop});
-  }
+      : Node(NodeType::kGetElemView, 2u, {target, prop}) {}
 
   
   // Getter and Setter for target.
@@ -1243,9 +1177,7 @@ class GetElemView: public Node {
 class AssignmentView: public Node {
  public:
   AssignmentView(Node* target, Node* expr)
-      : Node(NodeType::kAssignmentView, 2u) {
-    InitNodeList({target, expr});
-  }
+      : Node(NodeType::kAssignmentView, 2u, {target, expr}) {}
 
 
   // Getter and Setter for target.
@@ -1260,9 +1192,7 @@ class AssignmentView: public Node {
 class TemaryExprView: public Node {
  public :
   TemaryExprView(Node* cond, Node* then_expr, Node* else_expr)
-      : Node(NodeType::kTemaryExprView, 3u) {
-    InitNodeList({cond, then_expr, else_expr});
-  }
+      : Node(NodeType::kTemaryExprView, 3u, {cond, then_expr, else_expr}) {}
 
 
   // Getter and Setter for cond.
@@ -1281,8 +1211,7 @@ class TemaryExprView: public Node {
 class BinaryExprView: public Node {
  public:
   BinaryExprView(Token op, Node* first, Node* second)
-      : Node(NodeType::kBinaryExprView, 2u) {
-    InitNodeList({first, second});
+      : Node(NodeType::kBinaryExprView, 2u, {first, second}) {
     set_operand(op);
   }
 
@@ -1298,9 +1227,7 @@ class BinaryExprView: public Node {
 class CastView: public Node {
  public:
   CastView(Node* type_expr)
-      : Node(NodeType::kCastView, 1u) {
-    InitNodeList({type_expr});
-  }
+      : Node(NodeType::kCastView, 1u, {type_expr}) {}
 
 
   // Getter for type_expr.
@@ -1311,8 +1238,7 @@ class CastView: public Node {
 class UnaryExprView: public Node {
  public:
   UnaryExprView(Token op, Node* expr)
-      : Node(NodeType::kUnaryExprView, 1u) {
-    InitNodeList({expr});
+      : Node(NodeType::kUnaryExprView, 1u, {expr}) {
     set_operand(op);
   }
 
@@ -1360,9 +1286,7 @@ class StringView: public Node {
 class ObjectElementView: public Node {
  public:
   ObjectElementView(Node* key, Node* value)
-      : Node(NodeType::kObjectElementView, 2u) {
-    InitNodeList({key, value});
-  }
+      : Node(NodeType::kObjectElementView, 2u, {key, value}) {}
 
   // Getter and setter for key_.
   NODE_PROPERTY(key, 0);
@@ -1376,9 +1300,7 @@ class ObjectElementView: public Node {
 class ObjectLiteralView: public Node {
  public:
   ObjectLiteralView(std::initializer_list<Node*> properties)
-      : Node(NodeType::kObjectLiteralView, 0) {
-    InitNodeList(properties);
-  }
+      : Node(NodeType::kObjectLiteralView, 0, properties) {}
 
 
   ObjectLiteralView()
@@ -1389,9 +1311,7 @@ class ObjectLiteralView: public Node {
 class ArrayLiteralView: public Node {
  public:
   ArrayLiteralView(std::initializer_list<Node*> elements)
-      : Node(NodeType::kArrayLiteralView, 0) {
-    InitNodeList(elements);
-  }
+      : Node(NodeType::kArrayLiteralView, 0, elements) {}
 
 
   ArrayLiteralView()
@@ -1413,7 +1333,7 @@ class DebuggerView: public Node {
 };
 
 
-}} //rasp::ir
+}} //yatsc::ir
 
 #undef NODE_PROPERTY
 #undef NODE_GETTER

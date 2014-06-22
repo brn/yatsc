@@ -26,32 +26,14 @@
 #include <stdio.h>
 #include "sourcestream.h"
 
-namespace rasp {
-
-const char* kCantOpenInput = "Can not open input file: ";
+namespace yatsc {
 
 SourceStream::SourceStream(const char* filepath)
-    : MaybeFail() {
-  Stat stat(filepath);
-  bool exists = stat.IsExist();
-  filepath_ = filepath;
-  if (exists && stat.IsReg()) {
-    size_ = stat.Size();
-    if (buffer_.capacity() < size_) {
-      buffer_.reserve(size_ + 1);
-    }
-    try {
-      FILE* fp = FOpen(filepath, "rb");
-      ReadBlock(fp);
-      FClose(fp);
-    } catch (const FileIOException& e) {
-      Fail() << kCantOpenInput << filepath
-             << "\nbecause: " << e.what();
-    }
-  } else {
-    size_ = 0;
-    Fail() << kCantOpenInput << filepath
-           << "\nbeacause: " << "No such file or directory";
-  }
+    : MaybeFail(),
+      filepath_(filepath) {
+  Initialize();
 }
+
+
+const char *SourceStream::kCantOpenInput = "Can not open input file: ";
 }

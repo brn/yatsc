@@ -35,32 +35,32 @@
 #include "os.h"
 #include "../config.h"
 
-namespace rasp {
+namespace yatsc {
 
 /**
  * Inline macro.
  */
 #if !defined(DEBUG) && defined(HAVE_FORCE_INLINE)
-#define RASP_INLINE inline __forceinline
+#define YATSC_INLINE inline __forceinline
 #elif !defined(DEBUG) && defined(HAVE_INLINE_ATTRIUTE)
-#define RASP_INLINE inline __attribute__((always_inline))
+#define YATSC_INLINE inline __attribute__((always_inline))
 #else
-#define RASP_INLINE inline
+#define YATSC_INLINE inline
 #endif
 
 #if defined(HAVE_NOEXCEPT)
-#define RASP_NOEXCEPT noexcept
+#define YATSC_NOEXCEPT noexcept
 #else
-#define RASP_NOEXCEPT throw()
+#define YATSC_NOEXCEPT throw()
 #endif
 
-#define RASP_NO_SE const RASP_NOEXCEPT
+#define YATSC_NO_SE const YATSC_NOEXCEPT
 
 
 #if defined(HAVE_UNUSED_ATTRIBUTE)
-#define RASP_UNUSED __attribute__((unused))
+#define YATSC_UNUSED __attribute__((unused))
 #else
-#define RASP_UNUSED
+#define YATSC_UNUSED
 #endif
 
 
@@ -75,7 +75,7 @@ namespace rasp {
 #endif
 
 
-RASP_INLINE void Assert__(bool ok, const char* result, const char* expect, const char* file, int line, const char* function) {
+YATSC_INLINE void Assert__(bool ok, const char* result, const char* expect, const char* file, int line, const char* function) {
   if (!ok) {
     FPrintf(stderr, "assertion failed -> %s == %s\n in file %s at line %d\nIn function %s\n",
             result, expect, file, line, function);
@@ -84,7 +84,7 @@ RASP_INLINE void Assert__(bool ok, const char* result, const char* expect, const
 }
 
 
-RASP_INLINE void Fatal__(const char* file, int line, const char* function, const std::string& message) {
+YATSC_INLINE void Fatal__(const char* file, int line, const char* function, const std::string& message) {
   FPrintf(stderr, "Fatal error occured, so process no longer exist.\nin file %s at line %d\n%s\n%s\n",
           file, line, function, message.c_str());
   std::terminate();
@@ -93,18 +93,18 @@ RASP_INLINE void Fatal__(const char* file, int line, const char* function, const
 
 // ASSERT macro definition.
 #ifdef DEBUG
-#define ASSERT(expect, result) rasp::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define ASSERT(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
 #elif defined(NDEBUG) || !defined(DEBUG)
 #define ASSERT(expect, result)
 #endif
 
 
-#define RASP_CHECK(expect, result) rasp::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define YATSC_CHECK(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
 
 // ASSERT macro definition end.
 
 
-#define FATAL(msg) {std::stringstream err_stream__;err_stream__ << msg;rasp::Fatal__(__FILE__, __LINE__, __PRETTY_FUNCTION__, err_stream__.str());}
+#define FATAL(msg) {std::stringstream err_stream__;err_stream__ << msg;yatsc::Fatal__(__FILE__, __LINE__, __PRETTY_FUNCTION__, err_stream__.str());}
 
 #define UNREACHABLE FATAL("UNREACHABLE CODE ACCESSED.")
 
@@ -121,14 +121,14 @@ static const size_t kPointerSize = kAlignment;
 static const size_t kSizeTSize = sizeof(size_t);
 
 
-#define RASP_ALIGN_OFFSET(offset, alignment)           \
+#define YATSC_ALIGN_OFFSET(offset, alignment)           \
   (offset + (alignment - 1)) & ~(alignment - 1)
 
 
 #if defined(HAVE_STD_ALIGNMENT_OF)
-#define RASP_ALIGN(offset, type)  RASP_ALIGN_OFFSET(offset, std::alignment_of<type>::value)
+#define YATSC_ALIGN(offset, type)  YATSC_ALIGN_OFFSET(offset, std::alignment_of<type>::value)
 #elif defined(HaVE___ALIGNOF)
-#define RASP_ALIGN(offset, type)  RASP_ALIGN_OFFSET(offset, __alignof(type))
+#define YATSC_ALIGN(offset, type)  YATSC_ALIGN_OFFSET(offset, __alignof(type))
 #endif
 
 #define KB * 1024
@@ -136,20 +136,20 @@ static const size_t kSizeTSize = sizeof(size_t);
 #define GB MB * 1024
 
 
-#define RASP_GETTER(type, name, field)                    \
-  RASP_INLINE type name() RASP_NOEXCEPT {return field;}
+#define YATSC_GETTER(type, name, field)                    \
+  YATSC_INLINE type name() YATSC_NOEXCEPT {return field;}
 
-#define RASP_CONST_GETTER(type, name, field)            \
-  RASP_INLINE type name() RASP_NO_SE {return field;}
-
-
-#define RASP_SETTER(type, name, field)                              \
-  RASP_INLINE void set_##name(type name) RASP_NOEXCEPT {field = name;}
+#define YATSC_CONST_GETTER(type, name, field)            \
+  YATSC_INLINE type name() YATSC_NO_SE {return field;}
 
 
-#define RASP_PROPERTY(type, name, field)        \
-  RASP_GETTER(type, name, field)                \
-  RASP_SETTER(type, name, field)
+#define YATSC_SETTER(type, name, field)                              \
+  YATSC_INLINE void set_##name(type name) YATSC_NOEXCEPT {field = name;}
+
+
+#define YATSC_PROPERTY(type, name, field)        \
+  YATSC_GETTER(type, name, field)                \
+  YATSC_SETTER(type, name, field)
 
 
 
@@ -204,7 +204,7 @@ class Bitmask {
  * Generic strlen.
  */
 template <typename T>
-RASP_INLINE size_t Strlen(const T* str) {
+YATSC_INLINE size_t Strlen(const T* str) {
   return strlen(static_cast<const char*>(str));
 }
 
@@ -220,7 +220,7 @@ class LazyInitializer {
   template <typename ... Args>
   T* operator()(Args ... args) {
     if (kInitOnce) {
-      RASP_CHECK(false, lock_.test_and_set());
+      YATSC_CHECK(false, lock_.test_and_set());
     }
     return new(heap_) T(args...);
   }

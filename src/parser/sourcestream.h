@@ -34,43 +34,40 @@
 #include "../utils/unicode.h"
 
 
-namespace rasp {
+namespace yatsc {
 
 class SourceStream : public MaybeFail, private Uncopyable {
  public:
   typedef std::string::iterator iterator;
   SourceStream(const char* filepath);
 
-  RASP_INLINE ~SourceStream() = default;
+  YATSC_INLINE ~SourceStream() = default;
   
   
-  RASP_INLINE iterator begin() {return buffer_.begin();}
+  YATSC_INLINE iterator begin() {return buffer_.begin();}
   
 
-  RASP_INLINE iterator end() {return buffer_.end();}
+  YATSC_INLINE iterator end() {return buffer_.end();}
 
 
-  RASP_INLINE const char* buffer() {return buffer_.c_str();}
+  YATSC_INLINE const char* buffer() {return buffer_.c_str();}
 
 
-  RASP_INLINE size_t size() const {return size_;}
+  YATSC_INLINE size_t size() const {return size_;}
 
 
  private:
-  inline void ReadBlock(FILE* fp)  {
-    char* buffer = new char[size_ + 1];
-    size_t next = FRead(buffer, size_, sizeof(UC8), size_ - 1, fp);
-    if (next > 0) {
-      buffer[next] = '\0';
-      buffer_.append(buffer);
-    }
-    delete[] buffer;
-  }
+  YATSC_INLINE void ReadBlock(FILE* fp);
 
+  YATSC_INLINE void Initialize();
+
+  static const char* kCantOpenInput;
+  
   size_t size_;
   std::string filepath_;
   std::string buffer_;
 };
-
 }
+
+#include "./sourcestream-inl.h"
 #endif

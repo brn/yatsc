@@ -37,7 +37,7 @@
 #include "mmap.h"
 #include "../config.h"
 
-namespace rasp {
+namespace yatsc {
 
 class Regions;
 
@@ -57,12 +57,12 @@ class RegionalObject {
 /**
  * Fast thread safe memory allocator.
  * All memory allocateded from heap(mmap/VirtualAlloc).
- * This memory pool allocate object and array which public extends rasp::RegionalObject,
+ * This memory pool allocate object and array which public extends yatsc::RegionalObject,
  * and all allocated object is dealloced by destructor, but if you want,
  * call Regions::Dealloc(void*) explicitly.
  *
  * @example
- * rasp::Regions p(1024);
+ * yatsc::Regions p(1024);
  * RegionalObjectExtendClass* poolable = new(&p) RegionalObjectExtendClass();
  * // something special.
  * p.Destroy();
@@ -97,7 +97,7 @@ class Regions : private Uncopyable {
   static const uint64_t kDeallocedMask = ~uint32_t(2);
 #endif
 
-  static const size_t kSizeBitSize = RASP_ALIGN_OFFSET(sizeof(SizeBit), kAlignment);
+  static const size_t kSizeBitSize = YATSC_ALIGN_OFFSET(sizeof(SizeBit), kAlignment);
   static const uint8_t kDeallocedBit = 0x2;
   static const uint8_t kArrayBit = 0x1;
   static const uint32_t kInvalidPointer = 0xDEADC0DE;
@@ -134,7 +134,7 @@ class Regions : private Uncopyable {
   /**
    * Free all allocated memory.
    */
-  RASP_INLINE void Destroy() RASP_NOEXCEPT;
+  YATSC_INLINE void Destroy() YATSC_NOEXCEPT;
   
 
   /**
@@ -143,7 +143,7 @@ class Regions : private Uncopyable {
    * This method add memory block to the free list and call destructor.
    * @param object The object pointer that must be allocated by Regions::Allocate[Array].
    */
-  RASP_INLINE void Dealloc(void* object) RASP_NOEXCEPT;
+  YATSC_INLINE void Dealloc(void* object) YATSC_NOEXCEPT;
 
 
   /**
@@ -152,7 +152,7 @@ class Regions : private Uncopyable {
    * must not use delete or free.
    */
   template <typename T, typename ... Args>
-  RASP_INLINE T* New(Args ... args);
+  YATSC_INLINE T* New(Args ... args);
 
 
   /**
@@ -168,7 +168,7 @@ class Regions : private Uncopyable {
    * Get current allocated size by byte.
    * @return The byte expression.
    */
-  RASP_INLINE double commited_bytes() RASP_NO_SE {
+  YATSC_INLINE double commited_bytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.commited_size());
   }
 
@@ -177,7 +177,7 @@ class Regions : private Uncopyable {
    * Get current allocated size by kilo byte.
    * @return The kilo byte expression.
    */
-  RASP_INLINE double commited_kbytes() RASP_NO_SE {
+  YATSC_INLINE double commited_kbytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.commited_size()) / 1024;
   }
 
@@ -186,7 +186,7 @@ class Regions : private Uncopyable {
    * Get current allocated size by mega byte.
    * @return The mega byte expression.
    */
-  RASP_INLINE double commited_mbytes() RASP_NO_SE {
+  YATSC_INLINE double commited_mbytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.commited_size()) / 1024 / 1024;
   }
 
@@ -195,7 +195,7 @@ class Regions : private Uncopyable {
    * Get current allocated heap size which include all unused space.
    * @return The byte expression.
    */
-  RASP_INLINE double real_commited_bytes() RASP_NO_SE {
+  YATSC_INLINE double real_commited_bytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.real_commited_size());
   }
 
@@ -204,7 +204,7 @@ class Regions : private Uncopyable {
    * Get current allocated heap size which include all unused space.
    * @return The kilo byte expression.
    */
-  RASP_INLINE double real_commited_kbytes() RASP_NO_SE {
+  YATSC_INLINE double real_commited_kbytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.real_commited_size()) / 1024;
   }
 
@@ -213,7 +213,7 @@ class Regions : private Uncopyable {
    * Get current allocated heap size which include all unused space.
    * @return The mega byte expression.
    */
-  RASP_INLINE double real_commited_mbytes() RASP_NO_SE {
+  YATSC_INLINE double real_commited_mbytes() YATSC_NO_SE {
     return static_cast<double>(allocator_.real_commited_size()) / 1024 / 1024;
   }
   
@@ -224,21 +224,21 @@ class Regions : private Uncopyable {
    * Return enough size memory block for specified size.
    * @return Unused memory block.
    */
-  RASP_INLINE void* Allocate(size_t size);
+  YATSC_INLINE void* Allocate(size_t size);
 
 
   /**
    * Return enough size memory block for specified size.
    * @return Unused memory block.
    */
-  RASP_INLINE void* AllocateArray(size_t size);
+  YATSC_INLINE void* AllocateArray(size_t size);
 
 
   /**
    * Advance pointer position
    */
   template <typename T>
-  RASP_INLINE static void* PtrAdd(T* ptr, size_t size) {
+  YATSC_INLINE static void* PtrAdd(T* ptr, size_t size) {
     return reinterpret_cast<void*>(reinterpret_cast<Byte*>(ptr) + size);
   }
 
@@ -246,7 +246,7 @@ class Regions : private Uncopyable {
   /**
    * Destruct RegionalObject class instance by the proper method.
    */
-  RASP_INLINE static void DestructRegionalObject(Regions::Header* header);
+  YATSC_INLINE static void DestructRegionalObject(Regions::Header* header);
 
 
   /**
@@ -261,7 +261,7 @@ class Regions : private Uncopyable {
   class Chunk {
    public:
     typedef uint8_t VerificationTag;
-    static const size_t kVerificationTagSize = RASP_ALIGN_OFFSET(sizeof(VerificationTag), kAlignment);
+    static const size_t kVerificationTagSize = YATSC_ALIGN_OFFSET(sizeof(VerificationTag), kAlignment);
     static const uint8_t kVerificationBit = 0xAA;
 
     /**
@@ -275,7 +275,7 @@ class Regions : private Uncopyable {
      * Delete Chunk.
      * @param chunk delete target.
      */
-    inline static void Delete(Chunk* chunk) RASP_NOEXCEPT;
+    inline static void Delete(Chunk* chunk) YATSC_NOEXCEPT;
     
 
     /**
@@ -305,7 +305,7 @@ class Regions : private Uncopyable {
      * @param needs needed size.
      * @returns whether the chunk has the enough memory block or not.
      */
-    RASP_INLINE bool HasEnoughSize(size_t needs) RASP_NO_SE;
+    YATSC_INLINE bool HasEnoughSize(size_t needs) YATSC_NO_SE;
   
 
     /**
@@ -316,14 +316,14 @@ class Regions : private Uncopyable {
      * @param needed size.
      * @returns aligned memory chunk.
      */
-    Header* GetBlock(size_t reserve) RASP_NOEXCEPT;
+    Header* GetBlock(size_t reserve) YATSC_NOEXCEPT;
 
 
     /**
      * Store last memory block.
      * @param block_begin The last allocated block.
      */
-    RASP_INLINE void set_tail(Byte* block_begin) RASP_NOEXCEPT {
+    YATSC_INLINE void set_tail(Byte* block_begin) YATSC_NOEXCEPT {
       tail_block_ = block_begin;
     }
 
@@ -332,7 +332,7 @@ class Regions : private Uncopyable {
      * Check wheter the given block is tail of the chunk or not.
      * @param block_begin New memory block.
      */
-    RASP_INLINE bool IsTail(Byte* block_begin) RASP_NOEXCEPT {
+    YATSC_INLINE bool IsTail(Byte* block_begin) YATSC_NOEXCEPT {
       return tail_block_ == block_begin;
     }
 
@@ -341,22 +341,22 @@ class Regions : private Uncopyable {
      * Connect new chunk to the next link.
      * @param chunk New chunk.
      */
-    RASP_INLINE void set_next(Chunk* chunk) RASP_NOEXCEPT {next_ = chunk;}
+    YATSC_INLINE void set_next(Chunk* chunk) YATSC_NOEXCEPT {next_ = chunk;}
 
 
     /**
      * Return next link.
      */
-    RASP_INLINE Chunk* next() RASP_NO_SE {return next_;}
+    YATSC_INLINE Chunk* next() YATSC_NO_SE {return next_;}
 
 
     /**
      * Return current chunk size.
      */
-    RASP_INLINE size_t size() RASP_NO_SE {return block_size_;}
+    YATSC_INLINE size_t size() YATSC_NO_SE {return block_size_;}
 
 
-    RASP_INLINE Byte* block() RASP_NOEXCEPT {return block_;}
+    YATSC_INLINE Byte* block() YATSC_NOEXCEPT {return block_;}
     
   
    private :
@@ -382,13 +382,13 @@ class Regions : private Uncopyable {
     /**
      * Return head of list.
      */
-    RASP_INLINE Regions::Chunk* head() RASP_NO_SE {return head_;}
+    YATSC_INLINE Regions::Chunk* head() YATSC_NO_SE {return head_;}
 
 
     /**
      * Return tail of list.
      */
-    RASP_INLINE Regions::Chunk* current() RASP_NO_SE {return current_;}
+    YATSC_INLINE Regions::Chunk* current() YATSC_NO_SE {return current_;}
 
 
     /**
@@ -419,26 +419,26 @@ class Regions : private Uncopyable {
      * Connect memory block to tail of free list and replace tail.
      * @param block Dealloced memory block.
      */
-    inline void Unshift(Regions::Header* block) RASP_NOEXCEPT;
+    inline void Unshift(Regions::Header* block) YATSC_NOEXCEPT;
 
 
     /**
      * Swap head of free list to next and return last head.
      */
-    inline Regions::Header* Shift() RASP_NOEXCEPT;
+    inline Regions::Header* Shift() YATSC_NOEXCEPT;
 
 
-    RASP_INLINE bool HasHead() RASP_NO_SE {
+    YATSC_INLINE bool HasHead() YATSC_NO_SE {
       return free_head_ != nullptr;
     }
 
 
-    RASP_INLINE Regions::FreeHeader* head() RASP_NOEXCEPT {
+    YATSC_INLINE Regions::FreeHeader* head() YATSC_NOEXCEPT {
       return free_head_;
     }
 
 
-    RASP_INLINE void Clear() RASP_NOEXCEPT {
+    YATSC_INLINE void Clear() YATSC_NOEXCEPT {
       free_head_ = nullptr;
     }
     
@@ -482,14 +482,14 @@ class Regions : private Uncopyable {
     /**
      * Remove all arena.
      */
-    void Destroy() RASP_NOEXCEPT;
+    void Destroy() YATSC_NOEXCEPT;
 
 
     /**
      * Deallocate specified ptr.
      * @param object The object which want to deallocate.
      */
-    void Dealloc(void* object) RASP_NOEXCEPT;
+    void Dealloc(void* object) YATSC_NOEXCEPT;
 
 
     /**
@@ -520,33 +520,33 @@ class Regions : private Uncopyable {
      * Return index of chunk list which fit to given size.
      * @param size The size which want to allocate.
      */
-    inline int FindBestFitBlockIndex(size_t size) RASP_NOEXCEPT;
+    inline int FindBestFitBlockIndex(size_t size) YATSC_NOEXCEPT;
 
 
     /**
      * Find out arena which was unlocked.
      */
-    inline LocalArena* FindUnlockedArena() RASP_NOEXCEPT;
+    inline LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
 
 
     /**
      * Allocate arena to tls or get unlocked arena.
      * @return Current thread local arena.
      */
-    RASP_INLINE Regions::LocalArena* TlsAlloc();
+    YATSC_INLINE Regions::LocalArena* TlsAlloc();
     
 
     /**
      * Add an arena to linked list.
      * @param arena The arena which want to connect.
      */
-    inline void StoreNewLocalArena(Regions::LocalArena* arena) RASP_NOEXCEPT;
+    inline void StoreNewLocalArena(Regions::LocalArena* arena) YATSC_NOEXCEPT;
 
 
-    void IterateChunkList(Regions::ChunkList*) RASP_NOEXCEPT;
+    void IterateChunkList(Regions::ChunkList*) YATSC_NOEXCEPT;
 
 
-    inline static void TlsFree(void* arena) RASP_NOEXCEPT {
+    inline static void TlsFree(void* arena) YATSC_NOEXCEPT {
       reinterpret_cast<Regions::LocalArena*>(arena)->Return();
     }
     
@@ -589,7 +589,7 @@ class Regions : private Uncopyable {
     /**
      * Return next Regions::LocalArena.
      */
-    RASP_INLINE LocalArena* next() RASP_NO_SE {
+    YATSC_INLINE LocalArena* next() YATSC_NO_SE {
       return next_;
     }
 
@@ -598,7 +598,7 @@ class Regions : private Uncopyable {
      * Append Regions::LocalArena to next link.
      * @param An arena which want to connect.
      */
-    RASP_INLINE void set_next(LocalArena* arena) RASP_NOEXCEPT {
+    YATSC_INLINE void set_next(LocalArena* arena) YATSC_NOEXCEPT {
       next_ = arena;
     }
 
@@ -606,7 +606,7 @@ class Regions : private Uncopyable {
     /**
      * Try lock arena.
      */
-    RASP_INLINE bool AcquireLock() RASP_NOEXCEPT {
+    YATSC_INLINE bool AcquireLock() YATSC_NOEXCEPT {
       return !lock_.test_and_set();
     }
 
@@ -614,7 +614,7 @@ class Regions : private Uncopyable {
     /**
      * Unlock arena.
      */
-    RASP_INLINE void ReleaseLock() RASP_NOEXCEPT {
+    YATSC_INLINE void ReleaseLock() YATSC_NOEXCEPT {
       lock_.clear();
     }
 
@@ -623,12 +623,12 @@ class Regions : private Uncopyable {
      * Get chunk.
      * @return Specific class chunk list.
      */
-    RASP_INLINE ChunkList* chunk_list() RASP_NOEXCEPT {
+    YATSC_INLINE ChunkList* chunk_list() YATSC_NOEXCEPT {
       return &chunk_list_;
     }
 
 
-    RASP_INLINE FreeChunkStack* free_chunk_stack(int index) RASP_NOEXCEPT {
+    YATSC_INLINE FreeChunkStack* free_chunk_stack(int index) YATSC_NOEXCEPT {
       if (index <= kMaxSmallObjectsCount) {
         return &(free_chunk_stack_[index]);
       }
@@ -636,17 +636,17 @@ class Regions : private Uncopyable {
     }
 
 
-    RASP_INLINE FreeChunkStack* free_chunk_stack() RASP_NOEXCEPT {
+    YATSC_INLINE FreeChunkStack* free_chunk_stack() YATSC_NOEXCEPT {
       return free_chunk_stack_;
     }
 
 
-    RASP_INLINE HugeChunkMap* huge_free_chunk_map() RASP_NOEXCEPT {
+    YATSC_INLINE HugeChunkMap* huge_free_chunk_map() YATSC_NOEXCEPT {
       return &huge_free_chunk_map_;
     }
 
 
-    RASP_INLINE bool has_free_chunk(int index) RASP_NOEXCEPT {
+    YATSC_INLINE bool has_free_chunk(int index) YATSC_NOEXCEPT {
       if (index <= kMaxSmallObjectsCount) {
         return free_chunk_stack_[index].HasHead();
       }
@@ -658,18 +658,18 @@ class Regions : private Uncopyable {
      * Find the most nearly size block from free list if size class is 0.
      * @param size Need
      */
-    Regions::Header* FindFreeBlockFromHugeMap(int index) RASP_NOEXCEPT;
+    Regions::Header* FindFreeBlockFromHugeMap(int index) YATSC_NOEXCEPT;
 
 
     Regions::FreeChunkStack* InitHugeFreeChunkStack(int index);
 
 
-    RASP_INLINE bool HasHugeFreeChunkStack(int index) RASP_NOEXCEPT {
+    YATSC_INLINE bool HasHugeFreeChunkStack(int index) YATSC_NOEXCEPT {
       return huge_free_chunk_map_.count(index) != 0;
     }
 
 
-    RASP_INLINE Mmap* allocator() RASP_NOEXCEPT {
+    YATSC_INLINE Mmap* allocator() YATSC_NOEXCEPT {
       return &mmap_;
     }
 
@@ -677,7 +677,7 @@ class Regions : private Uncopyable {
     /**
      * Add The Regions::LocalArena to free list of The Regions::CentralArena.
      */
-    RASP_INLINE void Return();
+    YATSC_INLINE void Return();
    private:
     Mmap mmap_;
     CentralArena* central_arena_;
@@ -699,7 +699,7 @@ class Regions : private Uncopyable {
   std::atomic_flag deleted_;
   SpinLock tree_lock_;
 };
-} // namesapce rasp
+} // namesapce yatsc
 
 
 #include "regions-inl.h"

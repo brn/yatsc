@@ -24,7 +24,7 @@
 
 #include "systeminfo.h"
 
-namespace rasp {
+namespace yatsc {
 
 
 size_t SystemInfo::GetOnlineProcessorCount() {
@@ -60,7 +60,7 @@ namespace {
 class Destructor {
  public:
   ~Destructor() {
-    rasp::SystemInfoPlatform* p = rasp::SystemInfo::GetPlatform();
+    yatsc::SystemInfoPlatform* p = yatsc::SystemInfo::GetPlatform();
     if (p != nullptr) {
       delete p;
     }

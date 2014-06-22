@@ -36,7 +36,7 @@
 #define K_ERRNO errno
 #endif
 
-namespace rasp {
+namespace yatsc {
 
 void Strerror(std::string* buf, int err);
 void Printf(const char* format, ...);

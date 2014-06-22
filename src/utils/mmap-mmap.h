@@ -41,8 +41,8 @@
 #ifdef HAVE_VM_PROTECT
 #include <mach/mach.h>
 #include <mach/mach_traps.h>
-namespace rasp {
-RASP_INLINE void VmProtect(void* addr, size_t size) {
+namespace yatsc {
+YATSC_INLINE void VmProtect(void* addr, size_t size) {
   kern_return_t ret = vm_protect(
       mach_task_self(),
       reinterpret_cast<vm_address_t>(addr),
@@ -58,17 +58,17 @@ RASP_INLINE void VmProtect(void* addr, size_t size) {
 }
 }
 #else
-namespace rasp {
-RASP_INLINE void VmProtect(void* addr, size_t size) {}
+namespace yatsc {
+YATSC_INLINE void VmProtect(void* addr, size_t size) {}
 }
 #endif
 
 
-namespace rasp {
+namespace yatsc {
 
 class MapAllocator : private Static {
  public:
-  static RASP_INLINE void* Allocate(size_t size) {
+  static YATSC_INLINE void* Allocate(size_t size) {
     void* heap = mmap(0, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, FD, 0);
     if (heap == MAP_FAILED) {
       std::string message;
@@ -79,7 +79,7 @@ class MapAllocator : private Static {
   }
 
 
-  static RASP_INLINE void Deallocate(void* area, size_t size) {
+  static YATSC_INLINE void Deallocate(void* area, size_t size) {
     munmap(area, size);
   }
 };

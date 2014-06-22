@@ -31,19 +31,19 @@
 #include <string.h>
 #include "../src/parser/uchar.h"
 
-namespace rasp {
+namespace yatsc {
 namespace testing {
 inline std::vector<UChar> AsciiToUCharVector(const char* str) {
   size_t len = strlen(str);
   std::vector<UChar> v;
-  rasp::UC8Bytes b;
+  yatsc::UC8Bytes b;
   for (size_t i = 0u; i < len; i++) {
     b[0] = str[i];
     b[1] = '\0';
-    v.push_back(rasp::UChar(unicode::u32(str[i]), b));
+    v.push_back(yatsc::UChar(unicode::u32(str[i]), b));
   }
   return v;
 }
-}} //namespace rasp::testing
+}} //namespace yatsc::testing
 
 #endif

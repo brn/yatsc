@@ -38,15 +38,15 @@
 #endif
 
 
-namespace rasp {
+namespace yatsc {
 
 
-RASP_INLINE void* Mmap::Commit(size_t size) {
+YATSC_INLINE void* Mmap::Commit(size_t size) {
   return mmap_.Commit(size);
 }
 
 
-RASP_INLINE void Mmap::UnCommit() {
+YATSC_INLINE void Mmap::UnCommit() {
   if (!uncommited_.test_and_set()) {
     mmap_.UnCommit();
   }
@@ -62,12 +62,12 @@ Mmap::~Mmap() {
 }
 
 
-uint64_t Mmap::commited_size() RASP_NO_SE {
+uint64_t Mmap::commited_size() YATSC_NO_SE {
   return mmap_.commited();
 }
 
 
-uint64_t Mmap::real_commited_size() RASP_NO_SE {
+uint64_t Mmap::real_commited_size() YATSC_NO_SE {
   return mmap_.real_commited();
 }
 
@@ -75,7 +75,7 @@ uint64_t Mmap::real_commited_size() RASP_NO_SE {
 
 void* Mmap::InternalMmap::Commit(size_t size) {
   ScopedSpinLock lock(spin_lock_);
-  size_t needs = RASP_ALIGN_OFFSET((kPointerSize + size), kAlignment);
+  size_t needs = YATSC_ALIGN_OFFSET((kPointerSize + size), kAlignment);
   if (current_map_size_ < needs || (current_map_size_ - used_) < needs || heap_ == nullptr) {
     return Alloc(needs);
   }
@@ -104,7 +104,7 @@ void* Mmap::InternalMmap::Alloc(size_t size) {
     map_size = size;
   }
   map_size += sizeof(Header);
-  current_map_size_ = RASP_ALIGN_OFFSET(map_size, rasp::SystemInfo::GetPageSize());
+  current_map_size_ = YATSC_ALIGN_OFFSET(map_size, yatsc::SystemInfo::GetPageSize());
   void* heap;
   if (heap_ == nullptr) {
     heap = current_ = heap_ = MapAllocator::Allocate(map_size);
@@ -132,6 +132,6 @@ void* Mmap::InternalMmap::AddHeader(void* heap, size_t size) {
   return static_cast<void*>(header->ToValue());
 }
 
-} // namespace rasp
+} // namespace yatsc
 
 #endif

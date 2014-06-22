@@ -26,7 +26,7 @@
 #define PARSER_UNICODE_ITERATOR_ADAPTER_INL_H_
 
 
-namespace rasp {
+namespace yatsc {
 /**
  * Constructor
  * @param begin random access iterator.

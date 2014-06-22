@@ -28,7 +28,7 @@
 #include <unistd.h>
 
 
-namespace rasp {
+namespace yatsc {
 
 class SystemInfoPlatform {
  public:
@@ -49,12 +49,12 @@ class SystemInfoPlatform {
   }
 
 
-  long GetOnlineProcessorCount() RASP_NO_SE {
+  long GetOnlineProcessorCount() YATSC_NO_SE {
     return proc_count_;
   }
 
 
-  long GetPageSize() RASP_NO_SE {
+  long GetPageSize() YATSC_NO_SE {
     return page_size_;
   }
 

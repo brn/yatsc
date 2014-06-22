@@ -24,7 +24,7 @@
 
 #include "compiler-option.h"
 
-namespace rasp {
+namespace yatsc {
 CompilerOption::CompilerOption()
     : language_mode_(LanguageMode::ES3) {}
 }

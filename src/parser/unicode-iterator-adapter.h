@@ -29,21 +29,19 @@
 #include <stdint.h>
 #include <iterator>
 #include <utility>
-#include <boost/concept/assert.hpp>
-#include <boost/concept_check.hpp>
 #include "../utils/utils.h"
 #include "../utils/unicode.h"
 #include "./uchar.h"
 
 
-namespace rasp {
+namespace yatsc {
 /**
  * This class is the utf-8 to utf-16 convertor adapter for forward_iterator.
  */
 template <typename InputIterator>
 class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, UChar> {
   // We require template parameter InputIterator which satisfy randowm_access_iterator_tag
-  BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<InputIterator>));
+  //BOOST_CONCEPT_ASSERT((boost::RandomAccessIterator<InputIterator>));
  public:
   
   /**
@@ -55,31 +53,31 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
   template <typename T>
   UnicodeIteratorAdapter(UnicodeIteratorAdapter<T>&& un);
   ~UnicodeIteratorAdapter() = default;
-  RASP_INLINE UnicodeIteratorAdapter& operator = (InputIterator iter) {begin_ = iter;}
+  YATSC_INLINE UnicodeIteratorAdapter& operator = (InputIterator iter) {begin_ = iter;}
   
 
   /**
    * Implementation of equality compare to satisfy forward_iterator concept.
    */
-  RASP_INLINE bool operator == (const InputIterator& iter){return begin_ == iter;}
+  YATSC_INLINE bool operator == (const InputIterator& iter){return begin_ == iter;}
 
 
   /**
    * Implementation of equality compare to satisfy forward_iterator concept.
    */
-  RASP_INLINE bool operator != (const InputIterator& iter){return begin_ != iter;}
+  YATSC_INLINE bool operator != (const InputIterator& iter){return begin_ != iter;}
 
 
   /**
    * Implementation of dereference to satisfy forward_iterator concept.
    */
-  RASP_INLINE UChar operator* () const {return Convert();}
+  YATSC_INLINE UChar operator* () const {return Convert();}
 
 
   /**
    * Implementation of increment to satisfy forward_iterator concept.
    */
-  RASP_INLINE UnicodeIteratorAdapter& operator ++() {Advance();return *this;}
+  YATSC_INLINE UnicodeIteratorAdapter& operator ++() {Advance();return *this;}
 
 
   /**
@@ -105,21 +103,21 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
    * Return current line number.
    * @return line number
    */
-  RASP_INLINE UC32 line_number() const {return line_number_;}
+  YATSC_INLINE UC32 line_number() const {return line_number_;}
 
 
   /**
    * Return current char cursor position.
    * @return current char position.
    */
-  RASP_INLINE UC32 current_position() const {return current_position_;}
+  YATSC_INLINE UC32 current_position() const {return current_position_;}
 
 
   /**
    * Unwrap iterator.
    * @return wapped iterator.
    */
-  RASP_INLINE const InputIterator& base() const {return begin_;}
+  YATSC_INLINE const InputIterator& base() const {return begin_;}
 
   
  private:

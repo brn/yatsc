@@ -33,120 +33,146 @@
 
 #define FAST_VALUE_LENGTH 20
 
-namespace rasp {
+namespace yatsc {
+
+#define TOKEN_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST)  \
+  DECLARE_FIRST(TS_BREAK)                                 \
+  DECLARE(TS_CASE)                                        \
+  DECLARE(TS_CATCH)                                       \
+  DECLARE(TS_CLASS)                                       \
+  DECLARE(TS_CONST)                                       \
+  DECLARE(TS_CONTINUE)                                    \
+  DECLARE(TS_DEBUGGER)                                    \
+  DECLARE(TS_DECLARE)                                     \
+  DECLARE(TS_DEFAULT)                                     \
+  DECLARE(TS_DELETE)                                      \
+  DECLARE(TS_DO)                                          \
+  DECLARE(TS_ELSE)                                        \
+  DECLARE(TS_ENUM)                                        \
+  DECLARE(TS_EXPORT)                                      \
+  DECLARE(TS_EXTENDS)                                     \
+  DECLARE(TS_FALSE)                                       \
+  DECLARE(TS_FINALLY)                                     \
+  DECLARE(TS_FOR)                                         \
+  DECLARE(TS_FUNCTION)                                    \
+  DECLARE(TS_IF)                                          \
+  DECLARE(TS_IMPLEMENTS)                                  \
+  DECLARE(TS_IMPORT)                                      \
+  DECLARE(TS_IN)                                          \
+  DECLARE(TS_INSTANCEOF)                                  \
+  DECLARE(TS_INTERFACE)                                   \
+  DECLARE(TS_LET)                                         \
+  DECLARE(TS_MODULE)                                      \
+  DECLARE(TS_NAN)                                         \
+  DECLARE(TS_NEW)                                         \
+  DECLARE(TS_NULL)                                        \
+  DECLARE(TS_PACKAGE)                                     \
+  DECLARE(TS_PRIVATE)                                     \
+  DECLARE(TS_PROTECTED)                                   \
+  DECLARE(TS_PUBLIC)                                      \
+  DECLARE(TS_RETURN)                                      \
+  DECLARE(TS_STATIC)                                      \
+  DECLARE(TS_SUPER)                                       \
+  DECLARE(TS_SWITCH)                                      \
+  DECLARE(TS_THIS)                                        \
+  DECLARE(TS_THROW)                                       \
+  DECLARE(TS_TRUE)                                        \
+  DECLARE(TS_TRY)                                         \
+  DECLARE(TS_TYPEOF)                                      \
+  DECLARE(TS_UNDEFINED)                                   \
+  DECLARE(TS_VAR)                                         \
+  DECLARE(TS_VOID)                                        \
+  DECLARE(TS_WHILE)                                       \
+  DECLARE(TS_WITH)                                        \
+  DECLARE(TS_YIELD)                                       \
+  DECLARE(TS_INCREMENT)                                   \
+  DECLARE(TS_DECREMENT)                                   \
+  DECLARE(TS_EQUAL)                                       \
+  DECLARE(TS_SHIFT_LEFT)                                  \
+  DECLARE(TS_SHIFT_RIGHT)                                 \
+  DECLARE(TS_LESS_EQUAL)                                  \
+  DECLARE(TS_GREATER_EQUAL)                               \
+  DECLARE(TS_EQ)                                          \
+  DECLARE(TS_NOT_EQUAL)                                   \
+  DECLARE(TS_NOT_EQ)                                      \
+  DECLARE(TS_U_SHIFT_RIGHT)                               \
+  DECLARE(TS_PLUS)                                        \
+  DECLARE(TS_MINUS)                                       \
+  DECLARE(TS_MUL)                                         \
+  DECLARE(TS_DIV)                                         \
+  DECLARE(TS_MOD)                                         \
+  DECLARE(TS_GREATER)                                     \
+  DECLARE(TS_LESS)                                        \
+  DECLARE(TS_BIT_OR)                                      \
+  DECLARE(TS_BIT_AND)                                     \
+  DECLARE(TS_BIT_NOR)                                     \
+  DECLARE(TS_BIT_XOR)                                     \
+  DECLARE(TS_ASSIGN)                                      \
+  DECLARE(TS_NOT)                                         \
+  DECLARE(TS_ADD_LET)                                     \
+  DECLARE(TS_SUB_LET)                                     \
+  DECLARE(TS_DIV_LET)                                     \
+  DECLARE(TS_MOD_LET)                                     \
+  DECLARE(TS_MUL_LET)                                     \
+  DECLARE(TS_LOGICAL_AND)                                 \
+  DECLARE(TS_LOGICAL_OR)                                  \
+  DECLARE(TS_SHIFT_LEFT_LET)                              \
+  DECLARE(TS_SHIFT_RIGHT_LET)                             \
+  DECLARE(TS_U_SHIFT_RIGHT_LET)                           \
+  DECLARE(TS_NOR_LET)                                     \
+  DECLARE(TS_AND_LET)                                     \
+  DECLARE(TS_OR_LET)                                      \
+  DECLARE(TS_XOR_LET)                                     \
+  DECLARE(TS_FUNCTION_GLYPH)                              \
+  DECLARE(TS_IDENTIFIER)                                  \
+  DECLARE(TS_NUMERIC_LITERAL)                             \
+  DECLARE(TS_OCTAL_LITERAL)                               \
+  DECLARE(TS_BINARY_LITERAL)                              \
+  DECLARE(TS_STRING_LITERAL)                              \
+  DECLARE(TS_REGEXP_LITERAL)                              \
+  DECLARE(TS_LINE_BREAK)                                  \
+  DECLARE(TS_SET)                                         \
+  DECLARE(TS_GET)                                         \
+  DECLARE(TS_REST_PARAMETER)                              \
+  DECLARE(TS_LEFT_PAREN)                                  \
+  DECLARE(TS_RIGHT_PAREN)                                 \
+  DECLARE(TS_COLON)                                       \
+  DECLARE(TS_QUESTION_MARK)                               \
+  DECLARE(TS_LEFT_BRACKET)                                \
+  DECLARE(TS_RIGHT_BRACKET)                               \
+  DECLARE(TS_LEFT_BRACE)                                  \
+  DECLARE(TS_RIGHT_BRACE)                                 \
+  DECLARE(TS_ARROW_GLYPH)                                 \
+  DECLARE(LINE_TERMINATOR)                                \
+  DECLARE(FUTURE_STRICT_RESERVED_WORD)                    \
+  DECLARE(FUTURE_RESERVED_WORD)                           \
+  DECLARE(END_OF_INPUT)                                   \
+  DECLARE_LAST(ILLEGAL)
+
+
 enum class Token: uint16_t {
-  JS_BREAK = 0,
-  JS_CASE,
-  JS_CATCH,
-  JS_CLASS,
-  JS_CONST,
-  JS_CONTINUE,
-  JS_DEBUGGER,
-  JS_DEFAULT,
-  JS_DELETE,
-  JS_DO,
-  JS_ELSE,
-  JS_ENUM,
-  JS_EXPORT,
-  JS_EXTENDS,
-  JS_FALSE,
-  JS_FINALLY,
-  JS_FOR,
-  JS_FUNCTION,
-  JS_IF,
-  JS_IMPLEMENTS,
-  JS_IMPORT,
-  JS_IN,
-  JS_INSTANCEOF,
-  JS_INTERFACE,
-  JS_LET,
-  JS_MODULE,
-  JS_NAN,
-  JS_NEW,
-  JS_NULL,
-  JS_PACKAGE,
-  JS_PRIVATE,
-  JS_PROTECTED,
-  JS_PUBLIC,
-  JS_RETURN,
-  JS_STATIC,
-  JS_SUPER,
-  JS_SWITCH,
-  JS_THIS,
-  JS_THROW,
-  JS_TRUE,
-  JS_TRY,
-  JS_TYPEOF,
-  JS_UNDEFINED,
-  JS_VAR,
-  JS_VOID,
-  JS_WHILE,
-  JS_WITH,
-  JS_YIELD,
-  JS_INCREMENT,
-  JS_DECREMENT,
-  JS_EQUAL,
-  JS_SHIFT_LEFT,
-  JS_SHIFT_RIGHT,
-  JS_LESS_EQUAL,
-  JS_GREATER_EQUAL,
-  JS_EQ,
-  JS_NOT_EQUAL,
-  JS_NOT_EQ,
-  JS_U_SHIFT_RIGHT,
-  JS_PLUS,
-  JS_MINUS,
-  JS_MUL,
-  JS_DIV,
-  JS_MOD,
-  JS_GREATER,
-  JS_LESS,
-  JS_BIT_OR,
-  JS_BIT_AND,
-  JS_BIT_NOR,
-  JS_BIT_XOR,
-  JS_ASSIGN,
-  JS_NOT,
-  JS_ADD_LET,
-  JS_SUB_LET,
-  JS_DIV_LET,
-  JS_MOD_LET,
-  JS_MUL_LET,
-  JS_LOGICAL_AND,
-  JS_LOGICAL_OR,
-  JS_SHIFT_LEFT_LET,
-  JS_SHIFT_RIGHT_LET,
-  JS_U_SHIFT_RIGHT_LET,
-  JS_NOR_LET,
-  JS_AND_LET,
-  JS_OR_LET,
-  JS_XOR_LET,
-  JS_FUNCTION_GLYPH,
-  JS_IDENTIFIER,
-  JS_NUMERIC_LITERAL,
-  JS_OCTAL_LITERAL,
-  JS_BINARY_LITERAL,
-  JS_STRING_LITERAL,
-  JS_REGEXP_LITERAL,
-  JS_LINE_BREAK,
-  JS_SET,
-  JS_GET,
-  JS_REST_PARAMETER,
-  JS_LEFT_PAREN,
-  JS_RIGHT_PAREN,
-  JS_COLON,
-  JS_QUESTION_MARK,
-  JS_LEFT_BRACKET,
-  JS_RIGHT_BRACKET,
-  JS_LEFT_BRACE,
-  JS_RIGHT_BRACE,
-  JS_ARROW_GLYPH,
-  LINE_TERMINATOR,
-  FUTURE_STRICT_RESERVED_WORD,
-  FUTURE_RESERVED_WORD,
-  END_OF_INPUT,
-  ILLEGAL
+#define DECLARE_ENUM(TokenName) TokenName,
+#define DECLARE_FIRST(TokenName) TokenName = 0,
+#define DECLARE_LAST(TokenName) TokenName
+  TOKEN_LIST(DECLARE_ENUM, DECLARE_FIRST, DECLARE_LAST)
+#undef DECLARE_ENUM
+#undef DECLARE_FIRST
+#undef DECLARE_LAST
 };
+
+
+namespace tokenhelper {
+#ifdef UNIT_TEST
+static const char* kTokenStringList[] = {
+#define DECLARE(TokenName) #TokenName,
+#define DECLARE_LAST(TokenName) #TokenName
+  TOKEN_LIST(DECLARE, DECLARE, DECLARE_LAST)
+#undef DECLARE_ENUM
+#undef DECLARE_FIRST
+#undef DECLARE_LAST
+};
+}
+#endif
 
 
 
@@ -169,42 +195,42 @@ class TokenInfo {
   ~TokenInfo() = default;
 
 
-  RASP_INLINE void set_value(UtfString&& vector) {
+  YATSC_INLINE void set_value(UtfString&& vector) {
     vector_ = std::move(vector);
   }
   
   
-  RASP_INLINE const UtfString& value() const {
+  YATSC_INLINE const UtfString& value() const {
     return vector_;
   }
 
 
-  RASP_INLINE void set_type(Token type) {
+  YATSC_INLINE void set_type(Token type) {
     type_ = type;
   }
   
   
-  RASP_INLINE Token type() const {
+  YATSC_INLINE Token type() const {
     return type_;
   }
 
 
-  RASP_INLINE void set_start_col(size_t start_col) {
+  YATSC_INLINE void set_start_col(size_t start_col) {
     start_col_ = start_col;
   }
   
   
-  RASP_INLINE size_t start_col() const {
+  YATSC_INLINE size_t start_col() const {
     return start_col_;
   }
 
 
-  RASP_INLINE void set_line_number(size_t line_number) {
+  YATSC_INLINE void set_line_number(size_t line_number) {
     line_number_ = line_number;
   }
   
   
-  RASP_INLINE size_t line_number() const {
+  YATSC_INLINE size_t line_number() const {
     return line_number_;
   }
 
@@ -218,7 +244,7 @@ class TokenInfo {
 
   static Token GetPunctureType(const UChar& uchar);
   
- private:
+ private:  
   UtfString vector_;
   Token type_;
   size_t start_col_;

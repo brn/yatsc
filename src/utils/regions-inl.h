@@ -32,7 +32,7 @@
 #include <thread>
 
 
-namespace rasp {
+namespace yatsc {
 
 /**
  * The header of allocated memory block.
@@ -45,7 +45,7 @@ class Regions::Header {
    * Return the size of block except header.
    * @return block size except header.
    */
-  RASP_INLINE size_t size() RASP_NOEXCEPT {
+  YATSC_INLINE size_t size() YATSC_NOEXCEPT {
     return size_ & kTagRemoveBit;
   }
 
@@ -54,7 +54,7 @@ class Regions::Header {
    * Set the block size which must be the value block size.
    * @param size Block size which except header.
    */
-  RASP_INLINE void set_size(size_t size) RASP_NOEXCEPT {
+  YATSC_INLINE void set_size(size_t size) YATSC_NOEXCEPT {
     bool array = IsMarkedAsArray();
     bool dealloced = IsMarkedAsDealloced();
     size_ = size;
@@ -67,7 +67,7 @@ class Regions::Header {
    * Return the front of memory block.
    * @return The front of block.
    */
-  RASP_INLINE Byte* ToBegin() RASP_NOEXCEPT {
+  YATSC_INLINE Byte* ToBegin() YATSC_NOEXCEPT {
     return reinterpret_cast<Byte*>(this);
   }
 
@@ -76,7 +76,7 @@ class Regions::Header {
    * Return Regions::FreeHeader.
    * @return Regions::FreeHeader
    */
-  RASP_INLINE Regions::FreeHeader* ToFreeHeader() RASP_NOEXCEPT {
+  YATSC_INLINE Regions::FreeHeader* ToFreeHeader() YATSC_NOEXCEPT {
     return reinterpret_cast<FreeHeader*>(reinterpret_cast<Byte*>(this) + kHeaderSize);
   }
 
@@ -87,7 +87,7 @@ class Regions::Header {
    * so it does not perform any check.
    * @return Next block.
    */
-  RASP_INLINE Header* next_addr() RASP_NOEXCEPT {
+  YATSC_INLINE Header* next_addr() YATSC_NOEXCEPT {
     return reinterpret_cast<Header*>(ToValue<Byte*>() + size());
   }
 
@@ -96,7 +96,7 @@ class Regions::Header {
    * Return value block.
    */
   template <typename T = RegionalObject*>
-  RASP_INLINE typename std::remove_pointer<T>::type* ToValue() RASP_NOEXCEPT {
+  YATSC_INLINE typename std::remove_pointer<T>::type* ToValue() YATSC_NOEXCEPT {
     return reinterpret_cast<typename std::remove_pointer<T>::type*>(ToBegin() + kSizeTSize);
   }
 
@@ -104,7 +104,7 @@ class Regions::Header {
   /**
    * Mark memory block as not used.
    */
-  RASP_INLINE void MarkAsDealloced() RASP_NOEXCEPT {
+  YATSC_INLINE void MarkAsDealloced() YATSC_NOEXCEPT {
     size_ |= kDeallocedBit;
   }
 
@@ -112,7 +112,7 @@ class Regions::Header {
   /**
    * Mark memory block used.
    */
-  RASP_INLINE void UnmarkDealloced() RASP_NOEXCEPT {
+  YATSC_INLINE void UnmarkDealloced() YATSC_NOEXCEPT {
     size_ &= kDeallocedMask;
   }
 
@@ -120,7 +120,7 @@ class Regions::Header {
   /**
    * Return this memory block is marked as not used.
    */
-  RASP_INLINE bool IsMarkedAsDealloced() RASP_NOEXCEPT {
+  YATSC_INLINE bool IsMarkedAsDealloced() YATSC_NOEXCEPT {
     return (size_ & kDeallocedBit) == kDeallocedBit;
   }
 
@@ -128,7 +128,7 @@ class Regions::Header {
   /**
    * Mark this memory block allocated as array.
    */
-  RASP_INLINE void MarkAsArray() RASP_NOEXCEPT {
+  YATSC_INLINE void MarkAsArray() YATSC_NOEXCEPT {
     size_ |= kArrayBit;
   }
 
@@ -136,7 +136,7 @@ class Regions::Header {
   /**
    * Return this memory block allocated as array.
    */
-  RASP_INLINE bool IsMarkedAsArray() RASP_NOEXCEPT {
+  YATSC_INLINE bool IsMarkedAsArray() YATSC_NOEXCEPT {
     return (size_ & kArrayBit) == kArrayBit;
   }
 
@@ -157,7 +157,7 @@ class Regions::FreeHeader {
    * Return next FreeHeader in the free list.
    * @return next FreeHeader in the free list.
    */
-  RASP_INLINE FreeHeader* ToNextPtr() RASP_NOEXCEPT {
+  YATSC_INLINE FreeHeader* ToNextPtr() YATSC_NOEXCEPT {
     return reinterpret_cast<FreeHeader*>(next_);
   }
 
@@ -165,7 +165,7 @@ class Regions::FreeHeader {
   /**
    * Set next ptr.
    */
-  RASP_INLINE void set_next_ptr(Byte* next_ptr) RASP_NOEXCEPT {
+  YATSC_INLINE void set_next_ptr(Byte* next_ptr) YATSC_NOEXCEPT {
     next_ = next_ptr;
   }
 
@@ -173,7 +173,7 @@ class Regions::FreeHeader {
   /**
    * Return front of FreeHeader.
    */
-  RASP_INLINE Byte* ToBegin() RASP_NOEXCEPT {
+  YATSC_INLINE Byte* ToBegin() YATSC_NOEXCEPT {
     return reinterpret_cast<Byte*>(this);
   }
 
@@ -182,7 +182,7 @@ class Regions::FreeHeader {
    * Return the header of this memory block.
    * @return The header of this memory block.
    */
-  RASP_INLINE Regions::Header* ToHeader() RASP_NOEXCEPT {
+  YATSC_INLINE Regions::Header* ToHeader() YATSC_NOEXCEPT {
     return reinterpret_cast<Header*>(ToBegin() - kFreeHeaderSize);
   }
 
@@ -196,7 +196,7 @@ class Regions::FreeHeader {
 /**
  * Destroy all allocated chunks.
  */
-void Regions::Destroy() RASP_NOEXCEPT {
+void Regions::Destroy() YATSC_NOEXCEPT {
   // Check atomically.
   if (!deleted_.test_and_set()) {
     central_arena_->Destroy();
@@ -210,7 +210,7 @@ void Regions::Destroy() RASP_NOEXCEPT {
  * @param object The pointer which returned from Regions::Allocate(size_t)
  * or Regions::AllocateArray(size_t)
  */
-void Regions::Dealloc(void* object) RASP_NOEXCEPT {
+void Regions::Dealloc(void* object) YATSC_NOEXCEPT {
   central_arena_->Dealloc(object);
 }
 
@@ -218,7 +218,7 @@ void Regions::Dealloc(void* object) RASP_NOEXCEPT {
 template <typename T, typename ... Args>
 T* Regions::New(Args ... args) {
   static_assert(std::is_base_of<RegionalObject, T>::value == true,
-                "The type argument of the rasp::Reigons::New must be derived class of rasp::RegionalObject.");
+                "The type argument of the yatsc::Reigons::New must be derived class of yatsc::RegionalObject.");
   return new(Allocate(sizeof(T))) T(args...);
 }
 
@@ -226,11 +226,11 @@ T* Regions::New(Args ... args) {
 template <typename T, typename ... Args>
 T* Regions::NewArray(size_t size, Args ... args) {
   static_assert(std::is_base_of<RegionalObject, T>::value == true,
-                "The type argument of the rasp::Reigons::New must be derived class of rasp::RegionalObject.");
-  RASP_CHECK(true, size > 0);
+                "The type argument of the yatsc::Reigons::New must be derived class of yatsc::RegionalObject.");
+  YATSC_CHECK(true, size > 0);
 
   // In case of array, we allocate extra space which holds array size and each type size.
-  size_t alloc_size = RASP_ALIGN_OFFSET(((sizeof(T) * size) + (kSizeTSize * 2)), kAlignment);
+  size_t alloc_size = YATSC_ALIGN_OFFSET(((sizeof(T) * size) + (kSizeTSize * 2)), kAlignment);
   Byte* area = reinterpret_cast<Byte*>(AllocateArray(alloc_size));
 
   // The size of array.
@@ -316,14 +316,14 @@ Regions::Header* Regions::DistributeBlock(size_t size) {
 Regions::Chunk* Regions::Chunk::New(size_t size, Mmap* allocator) {
   ASSERT(true, size <= kMaxAllocatableSize);
   static const size_t kChunkSize = sizeof(Chunk);
-  const size_t aligned_size = RASP_ALIGN_OFFSET(size, kAlignment);
+  const size_t aligned_size = YATSC_ALIGN_OFFSET(size, kAlignment);
 
 #if defined(DEBUG)
   // All heap size we want.
-  const size_t heap_size = RASP_ALIGN_OFFSET((kVerificationTagSize + kChunkSize + aligned_size), kAlignment);
+  const size_t heap_size = YATSC_ALIGN_OFFSET((kVerificationTagSize + kChunkSize + aligned_size), kAlignment);
 #else
   // All heap size we want.
-  const size_t heap_size = RASP_ALIGN_OFFSET((kChunkSize + aligned_size), kAlignment);
+  const size_t heap_size = YATSC_ALIGN_OFFSET((kChunkSize + aligned_size), kAlignment);
 #endif
   Byte* ptr = reinterpret_cast<Byte*>(allocator->Commit(heap_size));
 
@@ -341,15 +341,15 @@ Regions::Chunk* Regions::Chunk::New(size_t size, Mmap* allocator) {
 }
 
 
-void Regions::Chunk::Delete(Chunk* chunk) RASP_NOEXCEPT {
+void Regions::Chunk::Delete(Chunk* chunk) YATSC_NOEXCEPT {
   chunk->Destruct();
   chunk->~Chunk();
 }
 
 
-bool Regions::Chunk::HasEnoughSize(size_t needs) RASP_NO_SE {
+bool Regions::Chunk::HasEnoughSize(size_t needs) YATSC_NO_SE {
   needs = needs > kFreeHeaderSize? needs: kFreeHeaderSize;
-  return block_size_ >= used_ + (RASP_ALIGN_OFFSET((kValueOffset + needs), kAlignment));
+  return block_size_ >= used_ + (YATSC_ALIGN_OFFSET((kValueOffset + needs), kAlignment));
 }
 // Chunk inline end
 
@@ -357,7 +357,7 @@ bool Regions::Chunk::HasEnoughSize(size_t needs) RASP_NO_SE {
 // ChunkList inline begin
 inline Regions::Header* Regions::ChunkList::AllocChunkIfNecessary(size_t size, Mmap* mmap, Regions::CentralArena* arena) {
   if (head_ == nullptr) {
-    current_ = head_ = Regions::Chunk::New(RASP_ALIGN_OFFSET((100 KB), kAlignment), mmap);
+    current_ = head_ = Regions::Chunk::New(YATSC_ALIGN_OFFSET((100 KB), kAlignment), mmap);
   }
   
   if (!current_->HasEnoughSize(size)) {
@@ -369,7 +369,7 @@ inline Regions::Header* Regions::ChunkList::AllocChunkIfNecessary(size_t size, M
     static const size_t kHundredKilloByte = 100 KB;
     size_t real_size = size + kValueOffset;
     size_t alloc_size = kHundredKilloByte > real_size? kHundredKilloByte: real_size;
-    current_->set_next(Regions::Chunk::New(RASP_ALIGN_OFFSET(alloc_size, kAlignment), mmap));
+    current_->set_next(Regions::Chunk::New(YATSC_ALIGN_OFFSET(alloc_size, kAlignment), mmap));
     current_ = current_->next();
   }
   return current_->GetBlock(size);
@@ -441,13 +441,13 @@ Regions::Header* Regions::CentralArena::FindFreeChunk(size_t size) {
 };
 
 
-inline int Regions::CentralArena::FindBestFitBlockIndex(size_t size) RASP_NOEXCEPT {
-  RASP_CHECK(true, size > 0);
+inline int Regions::CentralArena::FindBestFitBlockIndex(size_t size) YATSC_NOEXCEPT {
+  YATSC_CHECK(true, size > 0);
   return (size / kAlignment) - 1;
 }
 
 
-Regions::LocalArena* Regions::CentralArena::FindUnlockedArena() RASP_NOEXCEPT {
+Regions::LocalArena* Regions::CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
   LocalArena* arena = arena_head_;
   while (arena != nullptr) {
     if (arena->AcquireLock()) {
@@ -479,7 +479,7 @@ Regions::LocalArena* Regions::CentralArena::TlsAlloc() {
 }
 
 
-void Regions::CentralArena::StoreNewLocalArena(Regions::LocalArena* arena) RASP_NOEXCEPT {
+void Regions::CentralArena::StoreNewLocalArena(Regions::LocalArena* arena) YATSC_NOEXCEPT {
   ScopedSpinLock lock(central_free_arena_lock_);
   if (arena_head_ == nullptr) {
     arena_head_ = arena_tail_ = arena;
@@ -492,7 +492,7 @@ void Regions::CentralArena::StoreNewLocalArena(Regions::LocalArena* arena) RASP_
 
 
 // FreeChunkStack inline begin
-void Regions::FreeChunkStack::Unshift(Regions::Header* header) RASP_NOEXCEPT {
+void Regions::FreeChunkStack::Unshift(Regions::Header* header) YATSC_NOEXCEPT {
   ScopedSpinLock lock(tree_lock_);
   ASSERT(true, header->IsMarkedAsDealloced());
   FreeHeader* block = header->ToFreeHeader();
@@ -507,7 +507,7 @@ void Regions::FreeChunkStack::Unshift(Regions::Header* header) RASP_NOEXCEPT {
 }
 
 
-RASP_INLINE Regions::Header* Regions::FreeChunkStack::Shift() RASP_NOEXCEPT {
+YATSC_INLINE Regions::Header* Regions::FreeChunkStack::Shift() YATSC_NOEXCEPT {
   ScopedSpinLock lock(tree_lock_);
   if (free_head_ == nullptr) {return nullptr;}
   Header* header = free_head_->ToHeader();
@@ -538,6 +538,6 @@ void Regions::LocalArena::Return() {
 }
 // LocalArena inline end
 
-} // namespace rasp
+} // namespace yatsc
 
 #endif

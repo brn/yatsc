@@ -27,7 +27,7 @@
 
 #include <windows.h>
 
-namespace rasp {
+namespace yatsc {
 
 class SystemInfoPlatform {
  public:
@@ -35,12 +35,12 @@ class SystemInfoPlatform {
     GetSystemInfo(&info_);
   }
 
-  long GetOnlineProcessorCount() RASP_NO_SE {
+  long GetOnlineProcessorCount() YATSC_NO_SE {
     return info_.dwNumberOfProcessors;
   }
 
 
-  long GetPageSize() RASP_NO_SE {
+  long GetPageSize() YATSC_NO_SE {
     return info_.dwPageSize;
   }
 

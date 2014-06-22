@@ -31,22 +31,22 @@ const char filename[] = "test/parser/sourcestream-test-cases/jquery.js";
 
 
 TEST(SourceStream, read_all_ok) {
-  rasp::SourceStream st(filename);
-  std::string expected = rasp::testing::ReadFile(filename);
-  rasp::testing::CompareString(st.buffer(), expected.c_str());
+  yatsc::SourceStream st(filename);
+  std::string expected = yatsc::testing::ReadFile(filename);
+  yatsc::testing::CompareString(st.buffer(), expected.c_str());
 }
 
 
 TEST(SourceStream, iterator_ok) {
-  rasp::SourceStream st(filename);
-  std::string expected = rasp::testing::ReadFile(filename);
+  yatsc::SourceStream st(filename);
+  std::string expected = yatsc::testing::ReadFile(filename);
   ASSERT_TRUE(st.success());
   auto it = st.begin();
   auto end = st.end();
   size_t i = 0;
   while (it != end) {
-    rasp::UC8 expectation = static_cast<rasp::UC8>(expected.at(i));
-    rasp::UC8 actual = *it;
+    yatsc::UC8 expectation = static_cast<yatsc::UC8>(expected.at(i));
+    yatsc::UC8 actual = *it;
     ASSERT_EQ(expectation, actual);
     ++it;
     i++;
@@ -55,7 +55,7 @@ TEST(SourceStream, iterator_ok) {
 
 
 TEST(SourceStream, load_error) {
-  rasp::SourceStream st("un-exists");
+  yatsc::SourceStream st("un-exists");
   ASSERT_FALSE(st.success());
   ASSERT_EQ(st.size(), 0u);
   ASSERT_GT(st.failed_message().size(), 0U);

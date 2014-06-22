@@ -31,10 +31,10 @@
 #include "spinlock.h"
 
 namespace {
-static const size_t kDefaultByte = rasp::SystemInfo::GetPageSize();
+static const size_t kDefaultByte = yatsc::SystemInfo::GetPageSize();
 }
 
-namespace rasp {
+namespace yatsc {
 class Mmap {
   class InternalMmap;
  public:
@@ -57,10 +57,10 @@ class Mmap {
   }
   
   
-  RASP_INLINE void* Commit(size_t size);
-  RASP_INLINE void UnCommit();
-  RASP_INLINE uint64_t commited_size() RASP_NO_SE;
-  RASP_INLINE uint64_t real_commited_size() RASP_NO_SE;
+  YATSC_INLINE void* Commit(size_t size);
+  YATSC_INLINE void UnCommit();
+  YATSC_INLINE uint64_t commited_size() YATSC_NO_SE;
+  YATSC_INLINE uint64_t real_commited_size() YATSC_NO_SE;
   
 
   template <class T>
@@ -152,32 +152,32 @@ class Mmap {
   
     class Header {
      public:
-      RASP_INLINE Header* ToNextPtr() RASP_NO_SE {
+      YATSC_INLINE Header* ToNextPtr() YATSC_NO_SE {
         return next_;
       }
 
 
-      RASP_INLINE void set_next(Header* byte) RASP_NOEXCEPT {
+      YATSC_INLINE void set_next(Header* byte) YATSC_NOEXCEPT {
         next_ = byte;
       }
 
 
-      RASP_INLINE Byte* ToValue() RASP_NO_SE {
+      YATSC_INLINE Byte* ToValue() YATSC_NO_SE {
         return ToBegin() + sizeof(Header);
       }
   
 
-      RASP_INLINE Byte* ToBegin() RASP_NO_SE {
+      YATSC_INLINE Byte* ToBegin() YATSC_NO_SE {
         return reinterpret_cast<Byte*>(const_cast<Header*>(this));
       }
 
 
-      RASP_INLINE size_t size() RASP_NO_SE {
+      YATSC_INLINE size_t size() YATSC_NO_SE {
         return size_;
       }
 
 
-      RASP_INLINE void set_size(size_t size) RASP_NOEXCEPT {
+      YATSC_INLINE void set_size(size_t size) YATSC_NOEXCEPT {
         size_ = size;
       }
 
@@ -188,7 +188,7 @@ class Mmap {
 
   
    public:
-    RASP_INLINE InternalMmap():
+    YATSC_INLINE InternalMmap():
         current_map_size_(kDefaultByte),
         used_(0u),
         heap_(nullptr),
@@ -203,27 +203,27 @@ class Mmap {
     ~InternalMmap() = default;
 
 
-    RASP_INLINE uint64_t commited() RASP_NO_SE {
+    YATSC_INLINE uint64_t commited() YATSC_NO_SE {
       return commited_;
     }
 
 
-    RASP_INLINE uint64_t real_commited() RASP_NO_SE {
+    YATSC_INLINE uint64_t real_commited() YATSC_NO_SE {
       return real_;
     }
   
   
-    RASP_INLINE void* Commit(size_t size);
+    YATSC_INLINE void* Commit(size_t size);
 
 
-    RASP_INLINE void UnCommit();
+    YATSC_INLINE void UnCommit();
 
    private:
   
-    RASP_INLINE void* Alloc(size_t size);
+    YATSC_INLINE void* Alloc(size_t size);
 
 
-    RASP_INLINE void* AddHeader(void* heap, size_t size);
+    YATSC_INLINE void* AddHeader(void* heap, size_t size);
   
 
     SpinLock spin_lock_;

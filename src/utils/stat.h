@@ -46,7 +46,7 @@
 #define MODE (fstat_.st_mode & S_IFMT)
 
 
-namespace rasp {
+namespace yatsc {
 class Stat{
  public :
   typedef enum {
@@ -59,7 +59,7 @@ class Stat{
     kSock
   } FileType;
 
-  RASP_INLINE Stat(const char* path) {
+  YATSC_INLINE Stat(const char* path) {
     is_exist_ = (STAT_FN(path, &fstat_) != -1);
   }
 
@@ -67,55 +67,55 @@ class Stat{
   ~Stat(){};
 
 
-  RASP_INLINE bool IsExist() const { return is_exist_; }
+  YATSC_INLINE bool IsExist() const { return is_exist_; }
 
 
-  RASP_INLINE int Dev() const { return fstat_.st_dev;}
+  YATSC_INLINE int Dev() const { return fstat_.st_dev;}
 
 
-  RASP_INLINE int Ino() const { return fstat_.st_ino; }
+  YATSC_INLINE int Ino() const { return fstat_.st_ino; }
 
 
-  RASP_INLINE int NLink() const { return fstat_.st_nlink; }
+  YATSC_INLINE int NLink() const { return fstat_.st_nlink; }
 
 
-  RASP_INLINE int UId() const { return fstat_.st_uid; }
+  YATSC_INLINE int UId() const { return fstat_.st_uid; }
 
 
-  RASP_INLINE int GId() const { return fstat_.st_gid; };
+  YATSC_INLINE int GId() const { return fstat_.st_gid; };
 
 
-  RASP_INLINE int RDev() const { return fstat_.st_rdev; };
+  YATSC_INLINE int RDev() const { return fstat_.st_rdev; };
 
 
-  RASP_INLINE int Size() const { return fstat_.st_size; };
+  YATSC_INLINE int Size() const { return fstat_.st_size; };
 
 
-  RASP_INLINE const char* ATime() {
+  YATSC_INLINE const char* ATime() {
     CTIME(&(fstat_.st_atime),atime_);
     return atime_;
   }
 
 
-  RASP_INLINE const char* MTime() {
+  YATSC_INLINE const char* MTime() {
     CTIME(&(fstat_.st_mtime),mtime_);
     return mtime_;
   }
 
 
-  RASP_INLINE const char* CTime() {
+  YATSC_INLINE const char* CTime() {
     CTIME(&(fstat_.st_ctime),ctime_);
     return ctime_;
   }
 
 
-  RASP_INLINE bool IsDir() { return MODE == S_IFDIR; }
+  YATSC_INLINE bool IsDir() { return MODE == S_IFDIR; }
 
 
-  RASP_INLINE bool IsReg() { return MODE == S_IFREG; }
+  YATSC_INLINE bool IsReg() { return MODE == S_IFREG; }
 
 
-  RASP_INLINE bool IsChr() { return MODE == S_IFCHR; }
+  YATSC_INLINE bool IsChr() { return MODE == S_IFCHR; }
 
 
  private :

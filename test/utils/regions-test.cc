@@ -31,7 +31,7 @@
 #include "../../src/utils/utils.h"
 
 namespace {
-size_t thread_size = rasp::SystemInfo::GetOnlineProcessorCount();
+size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();
 static const uint64_t kSize = 1000000u;
 static const size_t kThreadSize = thread_size - 1 == 0? 1 : thread_size - 1;
 static const int kThreadObjectSize = 100000;
@@ -45,8 +45,8 @@ static const int kStackSize = kThreadObjectSize * kThreadSize;
 class RegionsTest: public ::testing::Test {
  public:
   static void SetUpTestCase() {
-    rasp::Printf("[TEST CONFIG] DefaultObjectCreationCount %llu.\n", kSize);
-    rasp::Printf("[TEST CONFIG] DefaultThreadCount %d.\n", kThreadSize);
+    yatsc::Printf("[TEST CONFIG] DefaultObjectCreationCount %llu.\n", kSize);
+    yatsc::Printf("[TEST CONFIG] DefaultThreadCount %d.\n", kThreadSize);
   }
 };
 
@@ -59,49 +59,49 @@ class Test0 {
 };
 
 template <typename T = uint64_t>
-class Test1 : public rasp::RegionalObject {
+class Test1 : public yatsc::RegionalObject {
  public:
-  Test1(T* ok):rasp::RegionalObject(),ok(ok){}
+  Test1(T* ok):yatsc::RegionalObject(),ok(ok){}
   ~Test1() {(*ok)++;}
   T* ok;
 };
 
 template <typename T = uint64_t>
-class Test2 : public rasp::RegionalObject  {
+class Test2 : public yatsc::RegionalObject  {
  public:
-  Test2(T* ok):rasp::RegionalObject(),ok(ok){}
+  Test2(T* ok):yatsc::RegionalObject(),ok(ok){}
   ~Test2() {(*ok)++;}
   T* ok;
-  uint64_t padding1 RASP_UNUSED;
-  uint64_t padding2 RASP_UNUSED;
+  uint64_t padding1 YATSC_UNUSED;
+  uint64_t padding2 YATSC_UNUSED;
 };
 
 template <typename T = uint64_t>
-class Test3 : public rasp::RegionalObject  {
+class Test3 : public yatsc::RegionalObject  {
  public:
-  Test3(T* ok):rasp::RegionalObject(),ok(ok){}
+  Test3(T* ok):yatsc::RegionalObject(),ok(ok){}
   ~Test3() {(*ok)++;}
   T* ok;
-  uint64_t padding1 RASP_UNUSED;
-  uint64_t padding2 RASP_UNUSED;
-  uint64_t padding3 RASP_UNUSED;
-  uint64_t padding4 RASP_UNUSED;
+  uint64_t padding1 YATSC_UNUSED;
+  uint64_t padding2 YATSC_UNUSED;
+  uint64_t padding3 YATSC_UNUSED;
+  uint64_t padding4 YATSC_UNUSED;
 };
 
 
-class LargeObject : public rasp::RegionalObject  {
+class LargeObject : public yatsc::RegionalObject  {
  public:
-  LargeObject(uint64_t* ok):rasp::RegionalObject(),ok(ok){}
+  LargeObject(uint64_t* ok):yatsc::RegionalObject(),ok(ok){}
   ~LargeObject() {(*ok)++;}
  private:
   uint64_t* ok;
-  char padding[20000] RASP_UNUSED;
+  char padding[20000] YATSC_UNUSED;
 };
 
 
-class Deletable : public rasp::RegionalObject  {
+class Deletable : public yatsc::RegionalObject  {
  public:
-  Deletable(uint64_t* ok):rasp::RegionalObject(),ok(ok){}
+  Deletable(uint64_t* ok):yatsc::RegionalObject(),ok(ok){}
   ~Deletable() = default;
   void Destruct() {(*ok)++;}
  private:
@@ -109,7 +109,7 @@ class Deletable : public rasp::RegionalObject  {
 };
 
 
-class Array : public rasp::RegionalObject {
+class Array : public yatsc::RegionalObject {
  public:
   uint64_t* ok;
   ~Array() {(*ok)++;}
@@ -118,7 +118,7 @@ class Array : public rasp::RegionalObject {
 
 TEST_F(RegionsTest, RegionsTest_allocate_from_chunk) {
   uint64_t ok = 0u;
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   p.New<Test1<>>(&ok);
   p.Destroy();
   ASSERT_EQ(ok, 1u);
@@ -127,7 +127,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_from_chunk) {
 
 TEST_F(RegionsTest, RegionsTest_allocate_from_chunk_array) {
   uint64_t ok = 0u;
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   p.NewArray<Test1<>>(kSize, &ok);
   p.Destroy();
   ASSERT_EQ(kSize, ok);
@@ -135,7 +135,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_from_chunk_array) {
 
 
 TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk) {
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   uint64_t ok = 0u;
   for (uint64_t i = 0u; i < kSize; i++) {
     p.New<Test1<>>(&ok);
@@ -150,7 +150,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random) {
   std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_int_distribution<size_t> size(1, 100);
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   for (uint64_t i = 0u; i < kSize; i++) {
     int s = size(mt);
     int t = s % 3 == 0;
@@ -170,7 +170,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random) {
 
 TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_and_dealloc) {
   uint64_t ok = 0u;
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   for (uint64_t i = 0u; i < kSize; i++) {
     Test1<>* t = p.New<Test1<>>(&ok);
     p.Dealloc(t);
@@ -185,7 +185,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random_and_dealloc) {
   std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_int_distribution<size_t> size(1, 100);
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   void* last = nullptr;
   for (uint64_t i = 0u; i < kSize; i++) {
     int s = size(mt);
@@ -214,7 +214,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random_and_dealloc) {
 
 TEST_F(RegionsTest, RegionsTest_allocate_big_object) {
   uint64_t ok = 0u;
-  rasp::Regions p(8);
+  yatsc::Regions p(8);
   p.New<LargeObject>(&ok);
   p.Destroy();
   ASSERT_EQ(ok, 1u);
@@ -224,7 +224,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_big_object) {
 TEST_F(RegionsTest, RegionsTest_allocate_many_big_object) {
   static const uint64_t kSize = 10000;
   uint64_t ok = 0u;
-  rasp::Regions p(8);
+  yatsc::Regions p(8);
   for (uint64_t i = 0u; i < kSize; i++) {
     p.New<LargeObject>(&ok);
   }
@@ -236,7 +236,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_big_object) {
 TEST_F(RegionsTest, RegionsTest_allocate_many_big_object_and_dealloc) {
   static const uint64_t kSize = 10000;
   uint64_t ok = 0u;
-  rasp::Regions p(8);
+  yatsc::Regions p(8);
   for (uint64_t i = 0u; i < kSize; i++) {
     auto t = p.New<LargeObject>(&ok);
     p.Dealloc(t);
@@ -248,7 +248,7 @@ TEST_F(RegionsTest, RegionsTest_allocate_many_big_object_and_dealloc) {
 
 
 TEST_F(RegionsTest, RegionsTest_performance1) {
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   uint64_t ok = 0u;
   for (uint64_t i = 0u; i < kSize; i++) {
     p.New<Test1<>>(&ok);
@@ -285,7 +285,7 @@ TEST_F(RegionsTest, RegionsTest_performance3) {
 
 TEST_F(RegionsTest, RegionsTest_thread) {
   uint64_t ok = 0u;
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   std::atomic<unsigned> index(0);
   
   auto fn = [&]() {
@@ -346,7 +346,7 @@ TEST_F(RegionsTest, RegionsTest_thread_new) {
 
 TEST_F(RegionsTest, RegionsTest_thread_random) {
   uint64_t ok = 0u;
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   std::atomic<unsigned> index(0);
   auto fn = [&]() {
     std::random_device rd;
@@ -386,7 +386,7 @@ TEST_F(RegionsTest, RegionsTest_thread_random) {
 
 TEST_F(RegionsTest, RegionsTest_thread_random_dealloc) {
   std::atomic<uint64_t> ok(0u);
-  rasp::Regions p(1024);
+  yatsc::Regions p(1024);
   std::atomic<unsigned> index(0);
   std::atomic<bool> wait(true);
   auto fn = [&]() {

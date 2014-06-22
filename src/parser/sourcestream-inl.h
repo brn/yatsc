@@ -22,61 +22,39 @@
  * THE SOFTWARE.
  */
 
-#ifndef COMPILER_OPTION_H_
-#define COMPILER_OPTION_H_
-
-#include "utils/utils.h"
 
 namespace yatsc {
-enum class LanguageMode : uint8_t {
-  ES3 = 0,
-  ES5_STRICT,
-  HARMONY
-};
-
-
-class CompilerOption {
- public:
-  CompilerOption();
-  YATSC_INLINE void set_language_mode(LanguageMode language_mode) {
-    language_mode_ = language_mode;
+void SourceStream::Initialize() {
+  Stat stat(filepath_.c_str());
+  bool exists = stat.IsExist();
+  if (exists && stat.IsReg()) {
+    size_ = stat.Size();
+    if (buffer_.capacity() < size_) {
+      buffer_.reserve(size_ + 1);
+    }
+    try {
+      FILE* fp = FOpen(filepath_.c_str(), "r");
+      ReadBlock(fp);
+      FClose(fp);
+    } catch (const FileIOException& e) {
+      Fail() << kCantOpenInput << filepath_
+             << "\nbecause: " << e.what();
+    }
+  } else {
+    size_ = 0;
+    Fail() << kCantOpenInput << filepath_
+           << "\nbeacause: " << "No such file or directory";
   }
-  
-  YATSC_INLINE LanguageMode language_mode() const {
-    return language_mode_;
-  }
-  
- private:
-  LanguageMode language_mode_;
-};
-
-
-class LanguageModeUtil : private Static {
- public:
-  YATSC_INLINE static bool IsOctalLiteralAllowed(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::ES3;
-  }
-
-  
-  YATSC_INLINE static bool IsBinaryLiteralAllowed(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::HARMONY;
-  }
-
-  
-  YATSC_INLINE static bool IsHarmony(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::HARMONY;
-  }
-
-  
-  YATSC_INLINE static bool IsES5Strict(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::ES5_STRICT;
-  }
-
-  
-  YATSC_INLINE static bool IsES3(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::ES3;
-  }
-};
 }
 
-#endif
+
+void SourceStream::ReadBlock(FILE* fp)  {
+  char* buffer = new char[size_ + 1];
+  size_t next = FRead(buffer, size_, sizeof(UC8), size_ - 1, fp);
+  if (next > 0) {
+    buffer[next] = '\0';
+    buffer_.append(buffer);
+  }
+  delete[] buffer;
+}
+}

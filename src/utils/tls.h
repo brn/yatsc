@@ -35,7 +35,7 @@
 #include <pthread.h>
 #endif
 
-namespace rasp {
+namespace yatsc {
 
 // WARNING: You should *NOT* be using this class directly.
 // PlatformThreadLocalStorage is low-level abstraction to the OS's TLS
@@ -152,7 +152,7 @@ class ThreadLocalStorage : private Uncopyable {
   };
 };
 
-}  // namespace rasp
+}  // namespace yatsc
 
 #if defined(PLATFORM_WIN)
 #include "tls-win-inl.h"

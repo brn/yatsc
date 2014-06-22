@@ -32,7 +32,7 @@
 #include "../compiler-option.h"
 
 
-namespace rasp {
+namespace yatsc {
 template <typename InputSourceIterator>
 class Scanner {
  public:
@@ -49,31 +49,39 @@ class Scanner {
   const TokenInfo* Scan();
 
 
-  RASP_INLINE bool has_line_terminator_before_next() RASP_NO_SE {
+  /**
+   * Lookahead a token.
+   */
+  const TokenInfo* Peek();
+
+
+  YATSC_INLINE bool has_line_terminator_before_next() YATSC_NO_SE {
     return has_line_terminator_before_next_;
   }
   
   
-  RASP_INLINE const char* message() const {
+  YATSC_INLINE const char* message() const {
     return message_.c_str();
   }
 
   
-  RASP_INLINE const UtfString& last_multi_line_comment() RASP_NO_SE {
+  YATSC_INLINE const UtfString& last_multi_line_comment() YATSC_NO_SE {
     return last_multi_line_comment_;
   }
 
 
-  RASP_INLINE size_t current_position() RASP_NO_SE {
+  YATSC_INLINE size_t current_position() YATSC_NO_SE {
     return current_position_;
   }
 
   
-  RASP_INLINE size_t line_number() RASP_NO_SE {
+  YATSC_INLINE size_t line_number() YATSC_NO_SE {
     return line_number_;
   }
   
  private:
+
+  const TokenInfo* DoScan();
 
   void LineFeed() {
     line_number_++;
@@ -161,7 +169,7 @@ class Scanner {
   }
   
 
-  RASP_INLINE bool IsEnd() const {
+  YATSC_INLINE bool IsEnd() const {
     return it_ == end_;
   }
 
@@ -243,7 +251,7 @@ class Scanner {
   }
 
 
-  RASP_INLINE void Illegal() {
+  YATSC_INLINE void Illegal() {
     return Error("Illegal token.");
   }
   
@@ -265,12 +273,16 @@ class Scanner {
 
   
   bool has_line_terminator_before_next_;
+  bool position_changed_;
   size_t lookahead_cursor_;
   size_t current_position_;
   size_t line_number_;
   InputSourceIterator it_;
   InputSourceIterator end_;
+  InputSourceIterator recorded_position_;
+  TokenInfo* current_token_info_;
   TokenInfo token_info_;
+  TokenInfo lookahead_token_info_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

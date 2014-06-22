@@ -37,11 +37,13 @@ var fs = require('fs');
 var STAMP = '.stamp';
 if (platform === 'darwin') {
   test = 'sh ./all-test.osx.sh';
+} else if (platform === 'win32') {
+  test = './all-test.win.bat';
 }
 
 function proc(cmd, cb) {
-  var p = exec(cmd);
-  ['stdin', 'stdout'].forEach(function(o) {
+  var p = exec(cmd, {encoding: 'utf8'});
+  ['stderr', 'stdout'].forEach(function(o) {
     p[o].pipe(process[o]);
   });
   p.on('error', function(e) {

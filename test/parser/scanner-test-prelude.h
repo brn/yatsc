@@ -33,23 +33,23 @@
 
 
 #define INIT__(var, str, type)                                          \
-  typedef std::vector<rasp::UChar>::iterator Iterator;                  \
-  std::vector<rasp::UChar> v__ = rasp::testing::AsciiToUCharVector(str); \
-  rasp::CompilerOption compiler_option;                                 \
+  typedef std::vector<yatsc::UChar>::iterator Iterator;                  \
+  std::vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
+  yatsc::CompilerOption compiler_option;                                 \
   compiler_option.set_language_mode(type);                              \
-  rasp::Scanner<Iterator> scanner(v__.begin(), v__.end(), compiler_option); \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), compiler_option); \
   auto var = scanner.Scan();
 
-#define INIT(var, str) INIT__(var, str, rasp::LanguageMode::ES3)
-#define INIT_STRICT(var, str) INIT__(var, str, rasp::LanguageMode::ES5_STRICT)
-#define INIT_HARMONY(var, str) INIT__(var, str, rasp::LanguageMode::HARMONY)
+#define INIT(var, str) INIT__(var, str, yatsc::LanguageMode::ES3)
+#define INIT_STRICT(var, str) INIT__(var, str, yatsc::LanguageMode::ES5_STRICT)
+#define INIT_HARMONY(var, str) INIT__(var, str, yatsc::LanguageMode::HARMONY)
 
 
 #define END_SCAN                                  \
   {                                               \
   auto t = scanner.Scan();                        \
   ASSERT_STREQ(t->ToString(), "END_OF_INPUT");     \
-  ASSERT_EQ(t->type(), rasp::Token::END_OF_INPUT); \
+  ASSERT_EQ(t->type(), yatsc::Token::END_OF_INPUT); \
   }
 
 #endif

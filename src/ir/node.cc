@@ -24,7 +24,7 @@
 
 #include "./node.h"
 
-namespace rasp { namespace ir {
+namespace yatsc { namespace ir {
 
 // Insert new node to the end of children.
 void Node::InsertLast(Node* node)  {
@@ -68,8 +68,8 @@ void Node::InsertBefore(Node* newNode, Node* oldNode) {
 
 
 // Clone node and node's children.
-Node* Node::Clone() RASP_NOEXCEPT {
-  RASP_CHECK(true, environment_ != nullptr);
+Node* Node::Clone() YATSC_NOEXCEPT {
+  YATSC_CHECK(true, environment_ != nullptr);
   Node* cloned = environment_->New<Node>(node_type_, capacity_);
   cloned->double_value_ = double_value_;
   cloned->string_value_ = string_value_;
@@ -90,14 +90,14 @@ Node* Node::Clone() RASP_NOEXCEPT {
 
 
 // Attach source information to this node.
-void Node::SetInformationForNode(const TokenInfo& token_info) RASP_NOEXCEPT {
+void Node::SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT {
   source_information_.line_number_ = token_info.line_number();
   source_information_.start_col_ = token_info.start_col();
 }
 
 
 // Attach source information to this node and children.
-void Node::SetInformationForTree(const TokenInfo& token_info) RASP_NOEXCEPT  {
+void Node::SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT  {
   for (size_t i = 0u; i < node_list_.size(); i++) {
     Node* node = node_list_[i];
     if (node != nullptr) {

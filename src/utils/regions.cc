@@ -25,7 +25,7 @@
 #include "regions.h"
 
 
-namespace rasp {
+namespace yatsc {
 
 
 //Regions constructor.
@@ -41,7 +41,7 @@ Regions::Regions(size_t size)
 // The heap structure is bellow
 // |1-BIT SENTINEL-FLAG|1-BIT Allocatable FLAG|14-BIT SIZE BIT|FREE-MEMORY|
 // This method return FREE-MEMORY area.
-rasp::Regions::Header* Regions::Chunk::GetBlock(size_t reserve) RASP_NOEXCEPT  {
+yatsc::Regions::Header* Regions::Chunk::GetBlock(size_t reserve) YATSC_NOEXCEPT  {
   ASSERT(true, HasEnoughSize(reserve));
 
   if (reserve < kFreeHeaderSize) {
@@ -50,7 +50,7 @@ rasp::Regions::Header* Regions::Chunk::GetBlock(size_t reserve) RASP_NOEXCEPT  {
   
   Byte* ret = block_ + used_;
   
-  size_t reserved_size = RASP_ALIGN_OFFSET((kHeaderSize + reserve), kAlignment);
+  size_t reserved_size = YATSC_ALIGN_OFFSET((kHeaderSize + reserve), kAlignment);
   used_ += reserved_size;
   tail_block_ = ret;
   
@@ -101,7 +101,7 @@ Regions::FreeChunkStack* Regions::LocalArena::InitHugeFreeChunkStack(int index) 
 }
 
 
-void Regions::CentralArena::Destroy() RASP_NOEXCEPT {
+void Regions::CentralArena::Destroy() YATSC_NOEXCEPT {
   LocalArena* arena = arena_head_;
   while (arena != nullptr) {
     auto chunk_list = arena->chunk_list();
@@ -113,7 +113,7 @@ void Regions::CentralArena::Destroy() RASP_NOEXCEPT {
 }
 
 
-void Regions::CentralArena::IterateChunkList(Regions::ChunkList* chunk_list) RASP_NOEXCEPT {
+void Regions::CentralArena::IterateChunkList(Regions::ChunkList* chunk_list) YATSC_NOEXCEPT {
   if (chunk_list->head() != nullptr) {
     auto chunk = chunk_list->head();
     while (chunk != nullptr) {
@@ -126,11 +126,11 @@ void Regions::CentralArena::IterateChunkList(Regions::ChunkList* chunk_list) RAS
 }
 
 
-void Regions::CentralArena::Dealloc(void* object) RASP_NOEXCEPT {
+void Regions::CentralArena::Dealloc(void* object) YATSC_NOEXCEPT {
   Byte* block = reinterpret_cast<Byte*>(object);
   block -= Regions::kHeaderSize;
   Regions::Header* header = reinterpret_cast<Regions::Header*>(block);
-  RASP_CHECK(false, header->IsMarkedAsDealloced());
+  YATSC_CHECK(false, header->IsMarkedAsDealloced());
   DestructRegionalObject(header);
   header->MarkAsDealloced();
   ASSERT(true, header->IsMarkedAsDealloced());
@@ -143,5 +143,5 @@ void Regions::CentralArena::Dealloc(void* object) RASP_NOEXCEPT {
 const int Regions::kValueOffset = kSizeTSize;
 const size_t Regions::kFreeHeaderSize = sizeof(Regions::FreeHeader);
 const size_t Regions::kHeaderSize = sizeof(Regions::Header);
-} //namespace rasp
+} //namespace yatsc
 

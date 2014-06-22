@@ -30,17 +30,17 @@
 #include <mutex>
 #include "utils.h"
 
-namespace rasp {
+namespace yatsc {
 class SpinLock {
  public:
   SpinLock() {unlock();}
   ~SpinLock() = default;
-  RASP_INLINE void lock() RASP_NOEXCEPT {
+  YATSC_INLINE void lock() YATSC_NOEXCEPT {
     while (lock_.test_and_set(std::memory_order_seq_cst)) {}
   }
 
   
-  RASP_INLINE void unlock() RASP_NOEXCEPT {
+  YATSC_INLINE void unlock() YATSC_NOEXCEPT {
     lock_.clear(std::memory_order_seq_cst);
   }
 
