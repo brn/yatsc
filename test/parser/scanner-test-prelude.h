@@ -32,17 +32,30 @@
 #include "../unicode-util.h"
 
 
-#define INIT__(var, str, type)                                          \
-  typedef std::vector<yatsc::UChar>::iterator Iterator;                  \
-  std::vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
-  yatsc::CompilerOption compiler_option;                                 \
-  compiler_option.set_language_mode(type);                              \
+#define SCAN__(var , ex_type)                                            \
   yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), compiler_option); \
   auto var = scanner.Scan();
 
-#define INIT(var, str) INIT__(var, str, yatsc::LanguageMode::ES3)
-#define INIT_STRICT(var, str) INIT__(var, str, yatsc::LanguageMode::ES5_STRICT)
-#define INIT_HARMONY(var, str) INIT__(var, str, yatsc::LanguageMode::HARMONY)
+
+#define SCAN_THROW__(var, ex_type)                                       \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), compiler_option); \
+  ASSERT_THROW(scanner.Scan(), ex_type);
+
+
+#define INIT__(SCAN, var, str, type, ex_type)                           \
+  typedef std::vector<yatsc::UChar>::iterator Iterator;                 \
+  std::vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
+  yatsc::CompilerOption compiler_option;                                \
+  compiler_option.set_language_mode(type);                              \
+  SCAN(var, ex_type)
+  
+
+#define INIT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES3, nullptr)
+#define INIT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES3, ex_type)
+#define INIT_STRICT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES5_STRICT, nullptr)
+#define INIT_STRICT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES5_STRICT, ex_type)
+#define INIT_HARMONY(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::HARMONY, nullptr)
+#define INIT_HARMONY_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::HARMONY, ex_type)
 
 
 #define END_SCAN                                  \

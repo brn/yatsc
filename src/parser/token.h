@@ -198,6 +198,11 @@ class TokenInfo {
   YATSC_INLINE void set_value(UtfString&& vector) {
     vector_ = std::move(vector);
   }
+
+
+  YATSC_INLINE void ClearValue() {
+    vector_.Clear();
+  }
   
   
   YATSC_INLINE const UtfString& value() const {

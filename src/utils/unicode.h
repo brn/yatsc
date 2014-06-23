@@ -287,7 +287,7 @@ YATSC_INLINE bool IsValidSequence(UC8 uc) {
  * @return true(if utf-8 byte is ascii) false(if utf-8 byte is not ascii)
  */
 template <typename T>
-YATSC_INLINE bool IsAscii(T uc) {return uc < unicode::kAsciiMax;}
+YATSC_INLINE bool IsAscii(T uc) {return uc >= 0 && uc < unicode::kAsciiMax;}
 } //namespace utf8
 
 } //namespace yatsc

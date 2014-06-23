@@ -32,14 +32,14 @@
 
 
 namespace yatsc {
-template<typename InputSourceIterator>
-Scanner<InputSourceIterator>::Scanner(InputSourceIterator it,
-                                      InputSourceIterator end,
+template<typename UCharInputIterator>
+Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
+                                      UCharInputIterator end,
                                       const CompilerOption& compiler_option)
     : has_line_terminator_before_next_(false),
-      position_changed_(true),
       current_position_(0),
       line_number_(1),
+      line_head_(it),
       it_(it),
       end_(end),
       compiler_option_(compiler_option) {
@@ -48,8 +48,8 @@ Scanner<InputSourceIterator>::Scanner(InputSourceIterator it,
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::Advance()  {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::Advance()  {
   if (it_ == end_) {
     char_ = UChar::Null();
     return;
@@ -63,40 +63,19 @@ void Scanner<InputSourceIterator>::Advance()  {
     lookahead1_ = UChar::Null();
     return;
   }
+  
   lookahead1_ = *it_;
 }
 
 
-template<typename InputSourceIterator>
-const TokenInfo* Scanner<InputSourceIterator>::Scan() {
-  position_changed_ = true;
-  current_token_info_ = &token_info_;
-  return DoScan();
-}
-
-
-template<typename InputSourceIterator>
-const TokenInfo* Scanner<InputSourceIterator>::Peek() {
-  if (position_changed_) {
-    position_changed_ = false;
-    recorded_position_ = it_;
-    current_token_info_ = &lookahead_token_info_;
-    TokenInfo* token_info = DoScan();
-    it_ = recorded_position_;
-    return token_info;
-  }
-  return lookahead_token_info_;
-}
-
-
-template<typename InputSourceIterator>
-const TokenInfo* Scanner<InputSourceIterator>::DoScan() {
+template<typename UCharInputIterator>
+const TokenInfo* Scanner<UCharInputIterator>::Scan() {
   has_line_terminator_before_next_ = false;
   last_multi_line_comment_.Clear();
   
   if (!char_.IsAscii()) {
     Illegal();
-    return current_token_info_;
+    return &token_info_;
   }
   
   if (char_ == unicode::u8('\0')) {
@@ -105,28 +84,29 @@ const TokenInfo* Scanner<InputSourceIterator>::DoScan() {
     return Scan();
   } else if (Character::IsPuncture(char_)) {
     BuildToken(TokenInfo::GetPunctureType(char_));
+    Advance();
   } else if (Character::IsIdentifierStart(char_) ||
              Character::IsUnicodeEscapeSequenceStart(char_, lookahead1_)) {
     ScanIdentifier();
   } else if (Character::IsStringLiteralStart(char_)) {
     ScanStringLiteral();
+    Advance();
   } else if (Character::IsDigitStart(char_, lookahead1_)) {
     ScanDigit();
   } else if (Character::IsOperatorStart(char_)) {
     ScanOperator();
+    Advance();
   } else {
     Illegal();
   }
-
-  if (!SkipWhiteSpace()) {
-    Advance();
-  }
-  return current_token_info_;
+  
+  SkipWhiteSpace();
+  return &token_info_;
 }
 
 
-template<typename InputSourceIterator>
-UC16 Scanner<InputSourceIterator>::ScanHexEscape(const UChar& uchar, int len, bool* success) {
+template<typename UCharInputIterator>
+UC16 Scanner<UCharInputIterator>::ScanHexEscape(const UChar& uchar, int len, bool* success) {
   UC16 result = 0;
   for (int i = 0; i < len; ++i) {
     const int d = ToHexValue(uchar);
@@ -142,8 +122,8 @@ UC16 Scanner<InputSourceIterator>::ScanHexEscape(const UChar& uchar, int len, bo
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanStringLiteral() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanStringLiteral() {
   UChar quote = char_;
   UtfString v;
   bool escaped = false;
@@ -180,8 +160,8 @@ void Scanner<InputSourceIterator>::ScanStringLiteral() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanDigit() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanDigit() {
   if (char_ == unicode::u8('0') && lookahead1_ == unicode::u8('x')) {
     return ScanHex();
   }
@@ -209,8 +189,8 @@ void Scanner<InputSourceIterator>::ScanDigit() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanHex() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanHex() {
   UtfString v;
   v += char_;
   Advance();
@@ -224,8 +204,8 @@ void Scanner<InputSourceIterator>::ScanHex() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanOctalLiteral() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanOctalLiteral() {
   UtfString str;
   while (Character::IsNumericLiteral(char_)) {
     str += char_;
@@ -235,8 +215,8 @@ void Scanner<InputSourceIterator>::ScanOctalLiteral() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanBinaryLiteral() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanBinaryLiteral() {
   UtfString str;
   str += char_;
   Advance();
@@ -253,8 +233,8 @@ void Scanner<InputSourceIterator>::ScanBinaryLiteral() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanInteger() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanInteger() {
   UtfString v;
   v += char_;
   bool js_double = char_ == unicode::u8('.');
@@ -300,8 +280,8 @@ void Scanner<InputSourceIterator>::ScanInteger() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanIdentifier() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanIdentifier() {
   UtfString v;  
   while (Character::IsInIdentifierRange(char_) || char_ == unicode::u8('\\')) {
     if (char_ == unicode::u8('\\')) {
@@ -320,8 +300,8 @@ void Scanner<InputSourceIterator>::ScanIdentifier() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanOperator() {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanOperator() {
   switch (char_.ToAscii()) {
     case '+':
       return ScanArithmeticOperator(Token::TS_INCREMENT, Token::TS_ADD_LET, Token::TS_PLUS);
@@ -362,20 +342,22 @@ void Scanner<InputSourceIterator>::ScanOperator() {
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanArithmeticOperator(Token type1, Token type2, Token normal, bool has_let) {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanArithmeticOperator(Token type1, Token type2, Token normal, bool has_let) {
   if (has_let && lookahead1_ == char_) {
-    return BuildToken(type1);
+    BuildToken(type1);
+    return Advance();
   }
   if (lookahead1_ == unicode::u8('=')) {
-    return BuildToken(type2);
+    BuildToken(type2);
+    return Advance();
   }
   BuildToken(normal);
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanBitwiseOrComparationOperator(
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
     Token type1, Token type2, Token type3, Token normal, Token equal_comparator, bool has_u) {
   if (lookahead1_ == char_) {
     Advance();
@@ -393,23 +375,23 @@ void Scanner<InputSourceIterator>::ScanBitwiseOrComparationOperator(
 }
 
 
-template<typename InputSourceIterator>
-void Scanner<InputSourceIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
   if (lookahead1_ == char_) {
     Advance();
     if (!not && lookahead1_ == char_) {
       return BuildToken(Token::TS_EQ);
     }
     return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);
-  } else if (lookahead1_ == unicode::u8('>')) {
+  } else if (!not && lookahead1_ == unicode::u8('>')) {
     return BuildToken(Token::TS_ARROW_GLYPH);
   }
   BuildToken(not? Token::TS_NOT_EQUAL: Token::TS_ASSIGN);
 }
 
 
-template<typename InputSourceIterator>
-bool Scanner<InputSourceIterator>::ScanUnicodeEscapeSequence(UtfString* v) {
+template<typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v) {
   Advance();
   if (char_ != unicode::u8('u')) {
     Error("Illegal Token");
@@ -432,8 +414,8 @@ bool Scanner<InputSourceIterator>::ScanUnicodeEscapeSequence(UtfString* v) {
 }
 
 
-template <typename InputSourceIterator>
-bool Scanner<InputSourceIterator>::ScanAsciiEscapeSequence(UtfString* v) {
+template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
   Advance();
   if (char_ != unicode::u8('x')) {
     Error("Illegal Token");
@@ -452,8 +434,8 @@ bool Scanner<InputSourceIterator>::ScanAsciiEscapeSequence(UtfString* v) {
 }
 
 
-template <typename InputSourceIterator>
-bool Scanner<InputSourceIterator>::ConsumeLineBreak() {
+template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::ConsumeLineBreak() {
   bool is_break = false;
   Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);
   if (lt == Character::LineBreakType::CRLF) {

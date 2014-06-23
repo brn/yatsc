@@ -23,6 +23,7 @@
  */
 
 
+#include <iostream>
 #include "./scanner-test-prelude.h"
 
 
@@ -53,9 +54,7 @@ TEST(ScannerTest, ScanStringLiteralTest_double_escaped_string) {
 
 
 TEST(ScannerTest, ScanStringLiteralTest_unterminated_string) {
-  INIT(token, "'test")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
-  ASSERT_STREQ(scanner.message(), "Unterminated string literal.");
+  INIT_THROW(token, "'test", yatsc::TokenException)
 }
 
 
@@ -68,20 +67,17 @@ TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string) {
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string) {
-  INIT(token, "'\\u006_foo_\\u0062_bar_\\u0063_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\u006_foo_\\u0062_bar_\\u0063_baz'", yatsc::TokenException)
 }
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string2) {
-  INIT(token, "'\\u0061_foo_\\u062_bar_\\u0063_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\u0061_foo_\\u062_bar_\\u0063_baz'", yatsc::TokenException)
 }
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string3) {
-  INIT(token, "'\\ux0061_foo_\\u0062_bar_\\u0-063_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\ux0061_foo_\\u0062_bar_\\u0-063_baz'", yatsc::TokenException)
 }
 
 
@@ -94,20 +90,17 @@ TEST(ScannerTest, ScanStringLiteralTest_ascii_escaped_string) {
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_ascii_escaped_string) {
-  INIT(token, "'\\x6_foo_\\x62_bar_\\x63_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\x6_foo_\\x62_bar_\\x63_baz'", yatsc::TokenException)
 }
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_ascii_escaped_string2) {
-  INIT(token, "'\\x61_foo_\\x2_bar_\\x63_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\x61_foo_\\x2_bar_\\x63_baz'", yatsc::TokenException)
 }
 
 
 TEST(ScannerTest, ScanStringLiteralTest_invalid_ascii_escaped_string3) {
-  INIT(token, "'\\x61_foo_\\x62_bar_\\x-63_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "'\\x61_foo_\\x62_bar_\\x-63_baz'", yatsc::TokenException)
 }
 
 
@@ -121,9 +114,7 @@ TEST(ScannerTest, ScanDigit_double) {
 
 
 TEST(ScannerTest, ScanDigit_double_illegal) {
-  INIT(token, ".30.32")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
-  ASSERT_STREQ(scanner.message(), "Illegal token.");
+  INIT_THROW(token, ".30.32", yatsc::TokenException);
 }
 
 
@@ -155,9 +146,7 @@ TEST(ScannerTest, ScanDigit_double2) {
 
 
 TEST(ScannerTest, ScanDigit_double2_illegal) {
-  INIT(token, "1349.07.5")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
-  ASSERT_STREQ(scanner.message(), "Illegal token.");
+  INIT_THROW(token, "1349.07.5", yatsc::TokenException);
 }
 
 
@@ -180,16 +169,12 @@ TEST(ScannerTest, ScanDigit_exponent2) {
 
 
 TEST(ScannerTest, ScanDigit_exponent_illegal) {
-  INIT(token, "1.3e1")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
-  ASSERT_STREQ(scanner.message(), "Illegal token.");
+  INIT_THROW(token, "1.3e1", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanDigit_exponent_illegal2) {
-  INIT(token, "1.3e+")
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
-  ASSERT_STREQ(scanner.message(), "Illegal token.");
+  INIT_THROW(token, "1.3e+", yatsc::TokenException)
 }
 
 
@@ -203,8 +188,7 @@ TEST(ScannerTest, ScanOcatalLiteral_valid) {
 
 
 TEST(ScannerTest, ScanOcatalLiteral_invalid) {
-  INIT_STRICT(token, "07771");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_STRICT_THROW(token, "07771", yatsc::TokenException);
 }
 
 
@@ -229,32 +213,27 @@ TEST(ScannerTest, ScanBinaryLiteral_valid2) {
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid1) {
-  INIT_STRICT(token, "0o0011101");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_STRICT_THROW(token, "0o0011101", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid2) {
-  INIT(token, "0o0011101");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_THROW(token, "0o0011101", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid3) {
-  INIT_HARMONY(token, "0ox");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_HARMONY_THROW(token, "0ox", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid4) {
-  INIT_HARMONY(token, "0o2");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_HARMONY_THROW(token, "0o2", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid5) {
-  INIT_HARMONY(token, "0o!");
-  ASSERT_EQ(token->type(), yatsc::Token::ILLEGAL);
+  INIT_HARMONY_THROW(token, "0o!", yatsc::TokenException);
 }
 
 
@@ -453,4 +432,19 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   ASSERT_STREQ("aaa", utf8_value.value());
   ASSERT_EQ(4u, scanner.line_number());
   END_SCAN;
+}
+
+
+TEST(ScannerTest, GetLineSource) {
+  const char* source = "for (var i = 0; i < 1000; i++) {\nvar x = i;\nvar m = i + x;\n}\nconsole.log(x);\nconsole.log(m);";
+  INIT(token, source);
+  try {
+  for (int i = 0; i < 14; i++) {
+    token = scanner.Scan();
+    std::cout << token->ToString() << " " << scanner.message() << " " << token->value().ToUtf8Value().value() << std::endl;
+  }
+  } catch(const yatsc::TokenException& e) {
+    std::cout << e.what() << std::endl;
+  }
+  std::cout << scanner.GetLineSource(0, 3, 8) << std::endl;
 }

@@ -50,11 +50,11 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE iterator end() {return buffer_.end();}
 
 
-  YATSC_INLINE const char* buffer() {return buffer_.c_str();}
+  YATSC_INLINE const std::string& buffer() {return buffer_;}
 
 
   YATSC_INLINE size_t size() const {return size_;}
-
+  
 
  private:
   YATSC_INLINE void ReadBlock(FILE* fp);
