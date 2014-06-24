@@ -32,12 +32,14 @@ namespace yatsc {
 template <typename InputSourceIterator>
 class Parser {
  public:
-  Parser(Scanner<InputSourceIterator>* scanner)
-      : scanner_(scanner) {}
+  Parser(Scanner<InputSourceIterator>* scanner, ErrorReporter* error_reporter)
+      : scanner_(scanner),
+        error_reporter_(error_reporter){}
 
 
   Node* Parse();
 
+ VISIBLE_FOR_TEST:
   Node* ParseProgram();
 
   Node* ParseSourceElements();
@@ -132,6 +134,12 @@ class Parser {
   
  private:
 
+  void Next() {
+    current_ = scanner_->Scan();
+    next_ = scanner_->Scan();
+  }
+  
+
   YATSC_INLINE const TokenInfo* Scan() YATSC_NOEXCEPT {
     return scanner_.Scan();
   }
@@ -149,24 +157,16 @@ class Parser {
 
   Scanner<InputSourceIterator>* scanner_;
   ir::IRFactory irfactory_;
+  ErrorReporter* error_reporter_;
 };
 
 
 // Syntax error exception.
 class SyntaxError: public std::exception, private Unmovable, private Uncopyable {
  public:
-  SyntaxError()
-      : std::exception() {}
-
-
-  /**
-   * Append message.
-   * @param message The message for the error.
-   */
-  YATSC_INLINE SyntaxError& operator << (const char* message) {
-    message_ += message;
-    return *this;
-  }
+  SyntaxError(const std::string& message)
+      : std::exception(),
+        message_(message) {}
 
   
   /**

@@ -29,6 +29,7 @@
 #include "character.h"
 #include "token.h"
 #include "utfstring.h"
+#include "error_reporter.h"
 #include "../compiler-option.h"
 
 
@@ -58,6 +59,7 @@ class Scanner {
    */
   Scanner(UCharInputIterator it,
           UCharInputIterator end,
+          ErrorReporter* error_reporter,
           const CompilerOption& compilation_option);
 
   /**
@@ -87,34 +89,7 @@ class Scanner {
   }
 
 
-  YATSC_INLINE size_t current_position() YATSC_NO_SE {
-    return current_position_;
-  }
-
-  
-  YATSC_INLINE size_t line_number() YATSC_NO_SE {
-    return line_number_;
-  }
-
-
-  YATSC_INLINE std::string GetLineSource(size_t line_start_col, size_t start_col, size_t end_col) {
-    UCharInputIterator it = line_head_;
-    std::stringstream st;
-    for (size_t i = 0; i < end_col; i++, ++it) {
-      if (i >= line_start_col) {
-        st << it->ToAscii();
-      }
-    }
-    st << "\n";
-    for (size_t i = 0; i < end_col - line_start_col; i++) {
-      if (i >= start_col) {
-        st << '^';
-      } else {
-        st << '-';
-      }
-    }
-    return std::move(st.str());
-  }
+  YATSC_CONST_GETTER(size_t, line_number, current_line_number_);
   
   
  private:
@@ -122,9 +97,8 @@ class Scanner {
   const TokenInfo* DoScan();
 
   void LineFeed() {
-    line_number_++;
+    current_line_number_++;
     current_position_ = 1;
-    line_head_ = it_;
   }
   
   
@@ -279,24 +253,23 @@ class Scanner {
   void UpdateTokenInfo() {
     message_.clear();
     token_info_.ClearValue();
-    token_info_.set_start_col(current_position());
-    token_info_.set_line_number(line_number());
+    token_info_.set_source_position(CreateSourcePosition());
   }
   
 
   void Error(const char* message) {
-    UpdateTokenInfo();
-    token_info_.set_type(Token::ILLEGAL);
-    TokenException te(message);
-    throw te;
+    error_reporter() << message;
+    error_reporter_->Throw<TokenException>(CreateSourcePosition());
   }
 
 
   YATSC_INLINE void Illegal() {
-    std::stringstream ss;
-    ss << "Illegal token.\n" << GetLineSource(0, token_info_.start_col(), current_position_);
-    std::string message = std::move(ss.str());
-    return Error(message.c_str());
+    Error("Illegal token.");
+  }
+
+
+  YATSC_INLINE SourcePosition CreateSourcePosition() {
+    return SourcePosition(start_position_, current_position_, start_line_number_, current_line_number_);
   }
   
 
@@ -311,15 +284,21 @@ class Scanner {
     UpdateTokenInfo();
     token_info_.set_type(type);
   }
+
+
+  YATSC_INLINE ErrorReporter& error_reporter() {
+    return *error_reporter_;
+  }
   
 
   void Advance();
 
   
   bool has_line_terminator_before_next_;
+  size_t start_position_;
   size_t current_position_;
-  size_t line_number_;
-  UCharInputIterator line_head_;
+  size_t current_line_number_;
+  size_t start_line_number_;
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
@@ -327,6 +306,7 @@ class Scanner {
   UChar lookahead1_;
   UtfString last_multi_line_comment_;
   std::string message_;
+  ErrorReporter* error_reporter_;
   const CompilerOption& compiler_option_;
 };
 }

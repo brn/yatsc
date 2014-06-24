@@ -27,14 +27,8 @@
 namespace yatsc {
 
 #define SYNTAX_ERROR(message, token)            \
-  {                                             \
-    SyntaxError error;                          \
-    error << message << "\n" << "at: "          \
-          << filename_                          \
-          << ":" << token->line_number()        \
-          << ":" << token->start_col();         \
-    throw error;                                \
-  }
+  (*error_reporter_) << message;                \
+  error_reporter_->Throw(token->source_position())
 
 
 // Parse source string and create Node.

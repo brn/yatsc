@@ -413,7 +413,7 @@ TEST(ScannerTest, SkipMultiLineComment) {
   token = scanner.Scan();
   utf8_value = token->value().ToUtf8Value();
   ASSERT_STREQ("aaa", utf8_value.value());
-  ASSERT_EQ(4u, scanner.line_number());
+  ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }
 
@@ -430,21 +430,19 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   token = scanner.Scan();
   utf8_value = token->value().ToUtf8Value();
   ASSERT_STREQ("aaa", utf8_value.value());
-  ASSERT_EQ(4u, scanner.line_number());
+  ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }
 
 
 TEST(ScannerTest, GetLineSource) {
-  const char* source = "for (var i = 0; i < 1000; i++) {\nvar x = i;\nvar m = i + x;\n}\nconsole.log(x);\nconsole.log(m);";
+  const char* source = "for (var i = 0; i < 1000; i++あああ) {\nvar x = i;\nvar m = i + x;\n}\nconsole.log(x);\nconsole.log(m);";
   INIT(token, source);
   try {
   for (int i = 0; i < 14; i++) {
     token = scanner.Scan();
-    std::cout << token->ToString() << " " << scanner.message() << " " << token->value().ToUtf8Value().value() << std::endl;
   }
   } catch(const yatsc::TokenException& e) {
     std::cout << e.what() << std::endl;
   }
-  std::cout << scanner.GetLineSource(0, 3, 8) << std::endl;
 }

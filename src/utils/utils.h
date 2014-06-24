@@ -152,6 +152,18 @@ static const size_t kSizeTSize = sizeof(size_t);
   YATSC_SETTER(type, name, field)
 
 
+#define YATSC_CONST_PROPERTY(type, name, field)        \
+  YATSC_CONST_GETTER(type, name, field)                \
+  YATSC_SETTER(type, name, field)
+
+
+#ifdef UNIT_TEST
+#define VISIBLE_FOR_TEST public
+#else
+#define VISIBLE_FOR_TEST private
+#endif
+
+
 
 /**
  * Class traits.

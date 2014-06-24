@@ -26,6 +26,7 @@
 #define PARSER_TOKEN_H_
 
 #include <string>
+#include "./sourceposition.h"
 #include "./utfstring.h"
 #include "./uchar.h"
 #include "../utils/utils.h"
@@ -179,81 +180,81 @@ static const char* kTokenStringList[] = {
 class TokenInfo {
  public:
 
+  // Default constructor.
   TokenInfo() :
-      type_(Token::END_OF_INPUT),
-      start_col_(0),
-      line_number_(1) {}
+      type_(Token::END_OF_INPUT) {}
   
 
+  // Copy constructor
   TokenInfo(const TokenInfo& token_info)
-      : vector_(token_info.vector_),
+      : utf_string_(token_info.utf_string_),
         type_(token_info.type_),
-        start_col_(token_info.start_col_),
-        line_number_(token_info.line_number_){}
+        source_position_(token_info.source_position_) {}
 
   
   ~TokenInfo() = default;
+  
 
-
-  YATSC_INLINE void set_value(UtfString&& vector) {
-    vector_ = std::move(vector);
+  /**
+   * Set token value.
+   * @param utf_string The token value that is unicode encoded string.
+   */
+  YATSC_INLINE void set_value(UtfString&& utf_string) {
+    utf_string_ = std::move(utf_string);
   }
 
 
+  /**
+   * Remove token value.
+   */
   YATSC_INLINE void ClearValue() {
-    vector_.Clear();
+    utf_string_.Clear();
   }
   
-  
-  YATSC_INLINE const UtfString& value() const {
-    return vector_;
+
+  /**
+   * Return token value.
+   * @returns The token value that is unicode encoded string.
+   */
+  YATSC_INLINE const UtfString& value() YATSC_NO_SE {
+    return utf_string_;
   }
 
 
-  YATSC_INLINE void set_type(Token type) {
-    type_ = type;
-  }
-  
-  
-  YATSC_INLINE Token type() const {
-    return type_;
-  }
+  // Getter and setter for type_.
+  YATSC_CONST_PROPERTY(Token, type, type_);
 
 
-  YATSC_INLINE void set_start_col(size_t start_col) {
-    start_col_ = start_col;
-  }
+  // Setter for source_position_.
+  YATSC_SETTER(SourcePosition, source_position, source_position_);
   
   
-  YATSC_INLINE size_t start_col() const {
-    return start_col_;
-  }
-
-
-  YATSC_INLINE void set_line_number(size_t line_number) {
-    line_number_ = line_number;
-  }
-  
-  
-  YATSC_INLINE size_t line_number() const {
-    return line_number_;
-  }
-
+  // Getter for source_position_.
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
 
 #ifdef UNIT_TEST
   const char* ToString() const;
 #endif
   
-
+  /**
+   * Get a type of the identifier like TS_VAR
+   * @param maybe_keyword An identifier value.
+   * @param es_harmony Harmony option.
+   */
   static Token GetIdentifierType(const char* maybe_keyword, bool es_harmony = false);
 
+
+  /**
+   * Get a type of the puncture like TS_LEFT_BRACE.
+   * @param uchar The unicode char.
+   */
   static Token GetPunctureType(const UChar& uchar);
   
  private:  
-  UtfString vector_;
+  UtfString utf_string_;
   Token type_;
-  size_t start_col_;
-  size_t line_number_;
+  bool has_line_terminator_before_next_;
+  SourcePosition source_position_;
 };
 }
 

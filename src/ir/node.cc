@@ -91,8 +91,7 @@ Node* Node::Clone() YATSC_NOEXCEPT {
 
 // Attach source information to this node.
 void Node::SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT {
-  source_information_.line_number_ = token_info.line_number();
-  source_information_.start_col_ = token_info.start_col();
+  source_information_.source_position_ = token_info.source_position();
 }
 
 

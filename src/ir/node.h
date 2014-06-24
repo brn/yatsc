@@ -153,37 +153,29 @@ class SourceInformation: private Unmovable{
    * @param line_number The line number of the current token.
    * @param start_col The start column of the current token.
    */
-  SourceInformation(size_t line_number, size_t start_col)
-      : line_number_(line_number),
-        start_col_(start_col) {}
+  SourceInformation(SourcePosition source_position)
+      : source_position_(source_position) {}
 
 
   /**
    * Copy constructor
    */
   SourceInformation(const SourceInformation& source_information)
-      : line_number_(source_information.line_number_),
-        start_col_(source_information.start_col_) {}
+      : source_position_(source_information.source_position_){}
 
 
   // Copy assignment operator.
   SourceInformation& operator = (const SourceInformation& source_information) {
-    line_number_ = source_information.line_number_;
-    start_col_ = source_information.start_col_;
-    return (*this);
+    source_position_ = source_information.source_position_;
+    return *this;
   }
 
 
   // Getter and setter for line_number_
-  YATSC_PROPERTY(size_t, line_number, line_number_);
-
-
-  // Getter and setter for start_col_
-  YATSC_PROPERTY(size_t, start_col, start_col_);
+  YATSC_PROPERTY(const SourcePosition&, source_position, source_position_);
   
  private:
-  size_t line_number_;
-  size_t start_col_;
+  SourcePosition source_position_;
 };
 
 

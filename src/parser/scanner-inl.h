@@ -34,14 +34,17 @@
 namespace yatsc {
 template<typename UCharInputIterator>
 Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
-                                      UCharInputIterator end,
-                                      const CompilerOption& compiler_option)
+                                     UCharInputIterator end,
+                                     ErrorReporter* error_reporter,
+                                     const CompilerOption& compiler_option)
     : has_line_terminator_before_next_(false),
+      start_position_(0),
       current_position_(0),
-      line_number_(1),
-      line_head_(it),
+      current_line_number_(1),
+      start_line_number_(1),
       it_(it),
       end_(end),
+      error_reporter_(error_reporter),
       compiler_option_(compiler_option) {
   Advance();
   SkipWhiteSpace();
@@ -72,6 +75,8 @@ template<typename UCharInputIterator>
 const TokenInfo* Scanner<UCharInputIterator>::Scan() {
   has_line_terminator_before_next_ = false;
   last_multi_line_comment_.Clear();
+  start_position_ = current_position_;
+  start_line_number_ = current_line_number_;
   
   if (!char_.IsAscii()) {
     Illegal();
