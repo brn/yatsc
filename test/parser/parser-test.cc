@@ -44,7 +44,7 @@
 
 TEST(ParserTest, ParseLiteral_string) {
   INIT(yatsc::LanguageMode::ES3, parser, "'aaaaaaa'", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kStringView);
   });
 }
@@ -52,7 +52,7 @@ TEST(ParserTest, ParseLiteral_string) {
 
 TEST(ParserTest, ParseLiteral_numeric) {
   INIT(yatsc::LanguageMode::ES3, parser, "12345", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kNumberView);
   });
 }
@@ -60,13 +60,13 @@ TEST(ParserTest, ParseLiteral_numeric) {
 
 TEST(ParserTest, ParseLiteral_boolean) {
   INIT(yatsc::LanguageMode::ES3, parser, "true", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kTrueView);
   });
 
 
   INIT(yatsc::LanguageMode::ES3, parser, "false", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kFalseView);
   });
 }
@@ -74,7 +74,7 @@ TEST(ParserTest, ParseLiteral_boolean) {
 
 TEST(ParserTest, ParseLiteral_undefined) {
   INIT(yatsc::LanguageMode::ES3, parser, "undefined", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kUndefinedView);
   });
 }
@@ -82,7 +82,7 @@ TEST(ParserTest, ParseLiteral_undefined) {
 
 TEST(ParserTest, ParseLiteral_null) {
   INIT(yatsc::LanguageMode::ES3, parser, "null", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kNullView);
   });
 }
@@ -90,7 +90,7 @@ TEST(ParserTest, ParseLiteral_null) {
 
 TEST(ParserTest, ParseLiteral_NaN) {
   INIT(yatsc::LanguageMode::ES3, parser, "NaN", [&]{
-    auto node = parser.ParseLiteral();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kNaNView);
   });
 }
@@ -98,7 +98,7 @@ TEST(ParserTest, ParseLiteral_NaN) {
 
 TEST(ParserTest, ParsePrimaryExpression_this) {
   INIT(yatsc::LanguageMode::ES3, parser, "this", [&]{
-    auto node = parser.ParsePrimaryExpression();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kThisView);
   });
 }
@@ -106,7 +106,7 @@ TEST(ParserTest, ParsePrimaryExpression_this) {
 
 TEST(ParserTest, ParsePrimaryExpression_identifier) {
   INIT(yatsc::LanguageMode::ES3, parser, "Identifier", [&]{
-    auto node = parser.ParsePrimaryExpression();
+    auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kNameView);
   });
 }
@@ -116,6 +116,7 @@ TEST(ParserTest, ParseExpression_array) {
   INIT(yatsc::LanguageMode::ES3, parser, "[1,2,3,4]", [&]{
     auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrayLiteralView);
+    ASSERT_TRUE(node->HasArrayLiteralView());
     const yatsc::ir::Node::List& list = node->node_list();
     ASSERT_EQ(list.size(), 4);
     for (int i = 0; i < 4; i++) {
