@@ -133,5 +133,32 @@
         ],
       },
     },
+    {
+      'target_name': 'parser_test',
+      'product_name': 'ParserTest',
+      'type': 'executable',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/compiler-option.cc',
+        './src/parser/token.cc',
+        './src/utils/systeminfo.cc',
+        './src/utils/tls.cc',
+        './src/utils/os.cc',
+        './src/utils/regions.cc',
+        './src/utils/environment.cc',
+        './lib/gtest/gtest-all.cc',
+        './src/ir/node.cc',
+        './test/parser/parser-test.cc',
+        './test/test-main.cc'
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
   ] # targets
 }

@@ -206,9 +206,9 @@ class Character : private Static {
       CharType::PUNCTURES,  // 41 )
       CharType::OPERATORS,  // 42 *
       CharType::OPERATORS,  // 43 +
-      CharType::OTHER,      // 44 ,
+      CharType::OPERATORS,  // 44 ,
       CharType::OPERATORS,  // 45 -
-      CharType::OTHER,      // 46 .
+      CharType::OPERATORS,  // 46 .
       CharType::OPERATORS,  // 47 /
       CharType::NUMERIC,    // 48 0
       CharType::NUMERIC,    // 49 1

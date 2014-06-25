@@ -27,126 +27,125 @@
 
 #include "../ir/node.h"
 #include "../ir/irfactory.h"
+#include "../parser/scanner.h"
 
 namespace yatsc {
-template <typename InputSourceIterator>
+template <typename UCharInputSourceIterator>
 class Parser {
  public:
-  Parser(Scanner<InputSourceIterator>* scanner, ErrorReporter* error_reporter)
+  Parser(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
       : scanner_(scanner),
         error_reporter_(error_reporter){}
 
 
-  Node* Parse();
+  ir::Node* Parse();
 
  VISIBLE_FOR_TEST:
-  Node* ParseProgram();
+  ir::Node* ParseProgram();
 
-  Node* ParseSourceElements();
+  ir::Node* ParseSourceElements();
 
-  Node* ParseSourceElement();
+  ir::Node* ParseSourceElement();
 
-  Node* ParseStatementList();
+  ir::Node* ParseStatementList();
 
-  Node* ParseStatement();
+  ir::Node* ParseStatement();
 
-  Node* ParseBlockStatement();
+  ir::Node* ParseBlockStatement();
 
-  Node* ParseModuleStatement();
+  ir::Node* ParseModuleStatement();
 
-  Node* ParseImportStatement();
+  ir::Node* ParseImportStatement();
 
-  Node* ParseExportStatement();
+  ir::Node* ParseExportStatement();
 
-  Node* ParseDebuggerStatement();
+  ir::Node* ParseDebuggerStatement();
 
-  Node* ParseVariableDeclaration(bool noin);
+  ir::Node* ParseVariableDeclaration(bool noin);
 
-  Node* ParseIfStatement();
+  ir::Node* ParseIfStatement();
 
-  Node* ParseWhileStatement();
+  ir::Node* ParseWhileStatement();
 
-  Node* ParseDoWhileStatement();
+  ir::Node* ParseDoWhileStatement();
 
-  Node* ParseForStatement();
+  ir::Node* ParseForStatement();
 
-  Node* ParseContinueStatement();
+  ir::Node* ParseContinueStatement();
 
-  Node* ParseBreakStatement();
+  ir::Node* ParseBreakStatement();
 
-  Node* ParseReturnStatement();
+  ir::Node* ParseReturnStatement();
 
-  Node* ParseWithStatement();
+  ir::Node* ParseWithStatement();
 
-  Node* ParseSwitchStatement();
+  ir::Node* ParseSwitchStatement();
 
-  Node* ParseCaseClauses();
+  ir::Node* ParseCaseClauses();
 
-  Node* ParseLabelledStatement();
+  ir::Node* ParseLabelledStatement();
 
-  Node* ParseThrowStatement();
+  ir::Node* ParseThrowStatement();
 
-  Node* ParseTryStatement();
+  ir::Node* ParseTryStatement();
 
-  Node* ParseCatchBlock();
+  ir::Node* ParseCatchBlock();
 
-  Node* ParseFinallyBlock();
+  ir::Node* ParseFinallyBlock();
 
-  Node* ParseClassDeclaration();
+  ir::Node* ParseClassDeclaration();
 
-  Node* ParseClassFields();
+  ir::Node* ParseClassFields();
 
-  Node* ParseExpression();
+  ir::Node* ParseExpression(bool noin);
 
-  Node* ParseAssignmentExpression();
+  ir::Node* ParseAssignmentExpression(bool noin);
 
-  Node* ParseYieldExpression();
+  ir::Node* ParseYieldExpression();
 
-  Node* ParseConditional();
+  ir::Node* ParseConditionalExpression(bool noin);
 
-  Node* ParseBinaryExpression();
+  ir::Node* ParseBinaryExpression(bool noin);
 
-  Node* ParseUnaryExpression();
+  ir::Node* ParseUnaryExpression();
 
-  Node* ParsePostfixExpression();
+  ir::Node* ParsePostfixExpression();
 
-  Node* ParseLeftHandSideExpression();
+  ir::Node* ParseLeftHandSideExpression();
 
-  Node* ParseNewExpression();
+  ir::Node* ParseNewExpression();
 
-  Node* ParseCallExpression();
+  ir::Node* ParseCallExpression();
 
-  Node* ParseArguments();
+  ir::Node* ParseArguments();
 
-  Node* ParseMemberExpression();
+  ir::Node* ParseMemberExpression();
 
-  Node* ParsePrimaryExpression();
+  ir::Node* ParseGetPropOrElem(ir::Node* node);
 
-  Node* ParseObjectLiteral();
+  ir::Node* ParsePrimaryExpression();
 
-  Node* ParseArrayLiteral();
+  ir::Node* ParseObjectLiteral();
 
-  Node* ParseLiteral();
+  ir::Node* ParseArrayLiteral();
 
-  Node* ParseFunction();
+  ir::Node* ParseLiteral();
 
-  Node* ParseFormalParameterList();
+  ir::Node* ParseFunction();
+
+  ir::Node* ParseFormalParameterList();
   
  private:
 
-  void Next() {
-    current_ = scanner_->Scan();
-    next_ = scanner_->Scan();
-  }
-  
-
-  YATSC_INLINE const TokenInfo* Scan() YATSC_NOEXCEPT {
-    return scanner_.Scan();
+  YATSC_INLINE TokenInfo* Next() {
+    current_token_info_ = scanner_->Scan();
+    return current_token_info_;
   }
 
-  
-  YATSC_INLINE const TokenInfo* Peek() YATSC_NOEXCEPT {
-    return scanner_.Scan();
+
+  YATSC_INLINE TokenInfo* Peek() {
+    next_token_info_ = scanner_->Peek();
+    return next_token_info_;
   }
   
   
@@ -155,14 +154,22 @@ class Parser {
     return irfactory_.New<T>(std::forward<Args>(args)...);
   }
 
-  Scanner<InputSourceIterator>* scanner_;
+
+  template <typename T>
+  T* New(std::initializer_list<ir::Node*> list) {
+    return irfactory_.New<T>(list);
+  }
+
+  Scanner<UCharInputSourceIterator>* scanner_;
+  TokenInfo* current_token_info_;
+  TokenInfo* next_token_info_;
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
 };
 
 
 // Syntax error exception.
-class SyntaxError: public std::exception, private Unmovable, private Uncopyable {
+class SyntaxError: public std::exception {
  public:
   SyntaxError(const std::string& message)
       : std::exception(),
@@ -179,5 +186,7 @@ class SyntaxError: public std::exception, private Unmovable, private Uncopyable 
   std::string message_;
 };
 }
+
+#include "./parser-inl.h"
 
 #endif

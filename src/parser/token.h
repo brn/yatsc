@@ -28,6 +28,7 @@
 #include <string>
 #include "./sourceposition.h"
 #include "./utfstring.h"
+#include "./lineterminator-state.h"
 #include "./uchar.h"
 #include "../utils/utils.h"
 #include "../utils/os.h"
@@ -41,6 +42,7 @@ namespace yatsc {
   DECLARE(TS_CASE)                                        \
   DECLARE(TS_CATCH)                                       \
   DECLARE(TS_CLASS)                                       \
+  DECLARE(TS_COMMA)                                       \
   DECLARE(TS_CONST)                                       \
   DECLARE(TS_CONTINUE)                                    \
   DECLARE(TS_DEBUGGER)                                    \
@@ -48,6 +50,7 @@ namespace yatsc {
   DECLARE(TS_DEFAULT)                                     \
   DECLARE(TS_DELETE)                                      \
   DECLARE(TS_DO)                                          \
+  DECLARE(TS_DOT)                                         \
   DECLARE(TS_ELSE)                                        \
   DECLARE(TS_ENUM)                                        \
   DECLARE(TS_EXPORT)                                      \
@@ -210,6 +213,19 @@ class TokenInfo {
   YATSC_INLINE void ClearValue() {
     utf_string_.Clear();
   }
+
+
+  YATSC_INLINE void set_multi_line_comment(UtfString multi_line_comment) {
+    multi_line_comment_ = multi_line_comment;
+  }
+
+  
+  /**
+   * Remove token value.
+   */
+  YATSC_INLINE void ClearComment() {
+    multi_line_comment_.Clear();
+  }
   
 
   /**
@@ -218,6 +234,11 @@ class TokenInfo {
    */
   YATSC_INLINE const UtfString& value() YATSC_NO_SE {
     return utf_string_;
+  }
+
+
+  YATSC_INLINE const UtfString& comment() YATSC_NO_SE {
+    return multi_line_comment_;
   }
 
 
@@ -231,6 +252,15 @@ class TokenInfo {
   
   // Getter for source_position_.
   YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
+
+
+  YATSC_SETTER(LineTerminatorState, line_terminator_state, line_terminator_state_);
+  
+
+  YATSC_CONST_GETTER(bool, has_line_terminator_before_next, line_terminator_state_.has_line_terminator_before_next());
+
+
+  YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
 
 #ifdef UNIT_TEST
   const char* ToString() const;
@@ -252,8 +282,9 @@ class TokenInfo {
   
  private:  
   UtfString utf_string_;
+  UtfString multi_line_comment_;
   Token type_;
-  bool has_line_terminator_before_next_;
+  LineTerminatorState line_terminator_state_;
   SourcePosition source_position_;
 };
 }

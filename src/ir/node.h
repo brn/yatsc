@@ -81,11 +81,13 @@ namespace yatsc {namespace ir {
   DECLARE(ArrayTypeExprView)                            \
   DECLARE(FunctionNodeTypeExprView)                     \
   DECLARE(AccessorTypeExprView)                         \
+  DECLARE(CommaExprView)                                \
   DECLARE(FunctionView)                                 \
   DECLARE(CallView)                                     \
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
   DECLARE(NameView)                                     \
+  DECLARE(PostfixView)                                  \
   DECLARE(GetPropView)                                  \
   DECLARE(GetElemView)                                  \
   DECLARE(AssignmentView)                               \
@@ -96,6 +98,7 @@ namespace yatsc {namespace ir {
   DECLARE(ThisView)                                     \
   DECLARE(NumberView)                                   \
   DECLARE(NullView)                                     \
+  DECLARE(NaNView)                                      \
   DECLARE(StringView)                                   \
   DECLARE(ObjectElementView)                            \
   DECLARE(ObjectLiteralView)                            \
@@ -201,6 +204,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
+        invalid_lhs_(false),
         environment_(nullptr){
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
@@ -220,6 +224,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
+        invalid_lhs_(false),
         environment_(nullptr){
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
@@ -245,6 +250,24 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   // Getter for environment.
   YATSC_PROPERTY(Environment*, environment, environment_);
 
+
+  YATSC_CONST_GETTER(Node*, first_child, node_list_[0]);
+
+
+  YATSC_CONST_GETTER(Node*, last_child, node_list_.back());
+
+
+  /**
+   * Mark this node as invalid for the left-hand-side-expression.
+   */
+  void MarkAsInValidLhs() {invalid_lhs_ = true;}
+
+
+  /**
+   * Return wheter this node is valid lef-hand-side-expression or not.
+   */
+  bool IsValidLhs() {return !invalid_lhs_;}
+  
 
   /**
    * Insert a node at the end of the children.
@@ -410,6 +433,7 @@ VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
   Node* parent_node_;
   Token operand_;
   double double_value_;
+  bool invalid_lhs_;
   UtfString string_value_;
   Environment* environment_;
 };
@@ -1077,6 +1101,16 @@ class AccessorTypeExprView: public Node {
 };
 
 
+class CommaExprView: public Node {
+ public:
+  CommaExprView(std::initializer_list<Node*> exprs)
+      : Node(NodeType::kCommaExprView, 0u, exprs) {}
+
+  CommaExprView()
+      : Node(NodeType::kCommaExprView, 0u) {}
+};
+
+
 // Represent function.
 class FunctionView: public Node {
  public:
@@ -1138,6 +1172,18 @@ class NameView: public Node {
 };
 
 
+class PostfixView: public Node {
+ public:
+  PostfixView(Node* target, Token op)
+      : Node(NodeType::kPostfixView, 1u, {target}) {
+    set_operand(op);
+  }
+
+  PostfixView()
+      : Node(NodeType::kPostfixView, 1u) {}
+};
+
+
 class GetPropView: public Node {
  public:
   GetPropView(Node* target, Node* prop)
@@ -1168,8 +1214,10 @@ class GetElemView: public Node {
 
 class AssignmentView: public Node {
  public:
-  AssignmentView(Node* target, Node* expr)
-      : Node(NodeType::kAssignmentView, 2u, {target, expr}) {}
+  AssignmentView(Token op, Node* target, Node* expr)
+      : Node(NodeType::kAssignmentView, 2u, {target, expr}) {
+    set_operand(op);
+  }
 
 
   // Getter and Setter for target.
@@ -1263,6 +1311,13 @@ class NullView: public Node {
  public:
   NullView()
       : Node(NodeType::kNullView, 0) {}
+};
+
+
+class NaNView: public Node {
+ public:
+  NaNView()
+      : Node(NodeType::kNaNView, 0) {}
 };
 
 

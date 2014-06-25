@@ -33,6 +33,9 @@
   }
 
 
+OPERATOR_TEST(",", comma, TS_COMMA)
+OPERATOR_TEST(".", dot, TS_DOT)
+
 OPERATOR_TEST("+", arithmetic_plus, TS_PLUS)
 OPERATOR_TEST("+=", arithmetic_add_let, TS_ADD_LET)
 OPERATOR_TEST("++", arithmetic_increment, TS_INCREMENT)

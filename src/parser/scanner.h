@@ -30,15 +30,28 @@
 #include "token.h"
 #include "utfstring.h"
 #include "error_reporter.h"
+#include "lineterminator-state.h"
 #include "../compiler-option.h"
 
 
 namespace yatsc {
-class TokenException: std::exception {
+class TokenException: public std::exception {
  public:
   TokenException(const char* message)
       : std::exception(),
         message_(message) {}
+
+
+  TokenException(const TokenException& token_exception)
+      : std::exception(token_exception),
+        message_(token_exception.message_) {}
+
+
+  TokenException& operator = (const TokenException& token_exception) {
+    std::exception::operator = (token_exception);
+    message_ = token_exception.message_;
+    return *this;
+  }
 
     
   const char* what() const throw() {
@@ -52,7 +65,7 @@ class TokenException: std::exception {
 
 
 template <typename UCharInputIterator>
-class Scanner {
+class Scanner: private Uncopyable, private Unmovable {
  public:
   /**
    * @param source The source file content.
@@ -65,40 +78,67 @@ class Scanner {
   /**
    * Scan the source file from the current position to the next token position.
    */
-  const TokenInfo* Scan();
+  TokenInfo* Scan();
 
 
   /**
-   * Lookahead a token.
+   * Peek next token.
    */
-  const TokenInfo* Peek();
-
-
-  YATSC_INLINE bool has_line_terminator_before_next() YATSC_NO_SE {
-    return has_line_terminator_before_next_;
-  }
-  
-  
-  YATSC_INLINE const char* message() const {
-    return message_.c_str();
-  }
-
-  
-  YATSC_INLINE const UtfString& last_multi_line_comment() YATSC_NO_SE {
-    return last_multi_line_comment_;
+  TokenInfo* Peek() {
+    if (unscaned_) {
+      unscaned_ = false;
+      current_token_info_ = &next_token_info_;
+      DoScan();
+    }
+    return &next_token_info_;
   }
 
 
-  YATSC_CONST_GETTER(size_t, line_number, current_line_number_);
+  YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
   
   
  private:
 
-  const TokenInfo* DoScan();
+  class ScannerSourcePosition {
+   public:
+    ScannerSourcePosition()
+        : start_position_(0),
+          current_position_(0),
+          current_line_number_(1),
+          start_line_number_(1) {}
+
+
+    YATSC_CONST_GETTER(size_t, start_position, start_position_);
+    YATSC_CONST_GETTER(size_t, current_position, current_position_);
+    YATSC_CONST_GETTER(size_t, current_line_number, current_line_number_);
+    YATSC_CONST_GETTER(size_t, start_line_number, start_line_number_);
+
+    YATSC_INLINE void AdvancePosition() YATSC_NOEXCEPT {current_position_++;}
+
+    YATSC_INLINE void AdvanceLine() YATSC_NOEXCEPT {
+      current_line_number_++;
+      current_position_ = 1;
+    }
+
+    YATSC_INLINE void UpdateStartPosition() YATSC_NOEXCEPT {
+      start_position_ = current_position_;
+      start_line_number_ = current_line_number_;
+    }
+
+   private:
+    
+    size_t start_position_;
+    size_t current_position_;
+    size_t current_line_number_;
+    size_t start_line_number_;
+  };
+
+
+  void DoScan();
 
   void LineFeed() {
-    current_line_number_++;
-    current_position_ = 1;
+    scanner_source_position_.AdvancePosition();
+    scanner_source_position_.AdvanceLine();
   }
   
   
@@ -167,19 +207,7 @@ class Scanner {
 
 
   template <typename T>
-  int ToHexValue(const T& uchar) const {
-    int ret = 0;
-    if (uchar >= unicode::u8('0') && uchar <= unicode::u8('9')) {
-      ret = static_cast<int>(uchar - unicode::u8('0'));
-    } else if (uchar >= unicode::u8('a') && uchar <= unicode::u8('f')) {
-      ret = static_cast<int>(uchar - unicode::u8('a') + 10);
-    } else if (uchar >= unicode::u8('A') && uchar <= unicode::u8('F')) {
-      ret = static_cast<int>(uchar - unicode::u8('A') + 10);
-    } else {
-      return -1;
-    }
-    return ret;
-  }
+  int ToHexValue(const T& uchar) YATSC_NO_SE;
   
 
   YATSC_INLINE bool IsEnd() const {
@@ -187,73 +215,19 @@ class Scanner {
   }
 
   
-  bool SkipWhiteSpace() {
-    bool skip = false;
-    while(Character::IsWhiteSpace(char_, lookahead1_) || char_ == unicode::u8(';') ||
-          Character::IsSingleLineCommentStart(char_, lookahead1_) ||
-          Character::IsMultiLineCommentStart(char_, lookahead1_)) {
-      if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
-          char_ == unicode::u8(';')) {
-        has_line_terminator_before_next_ = true;
-      }
-      skip = true;
-      if (!ConsumeLineBreak() && !SkipSingleLineComment() && !SkipMultiLineComment()) {
-        Advance();
-      }
-    }
-    return skip;
-  }
+  bool SkipWhiteSpace();
 
 
-  bool SkipSingleLineComment() {
-    bool skip = false;
-    if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
-      while (char_ != unicode::u8('\0') &&
-             Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
-        Advance();
-      }
-      skip = true;
-    }
-    return skip;
-  }
+  bool SkipSingleLineComment();
 
 
-  bool SkipMultiLineComment() {
-    bool skip = false;
-    if (Character::IsMultiLineCommentStart(char_, lookahead1_)) {
-      UtfString str;
-      while (!Character::IsMultiLineCommentEnd(char_, lookahead1_)) {
-        Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);
-        if (lt != Character::LineBreakType::NONE) {
-          LineFeed();
-          has_line_terminator_before_next_ = true;
-        }
-
-        if (lt == Character::LineBreakType::CRLF) {
-          str += char_;
-          Advance();
-          str += char_;
-          Advance();          
-        } else {
-          str += char_;
-          Advance();
-        }
-      }
-      str += char_;
-      Advance();
-      str += char_;
-      Advance();
-      skip = true;
-      last_multi_line_comment_ = std::move(str);
-    }
-    return skip;
-  }
+  bool SkipMultiLineComment();
   
 
   void UpdateTokenInfo() {
-    message_.clear();
-    token_info_.ClearValue();
-    token_info_.set_source_position(CreateSourcePosition());
+    current_token_info_->set_multi_line_comment(last_multi_line_comment_);
+    current_token_info_->ClearValue();
+    current_token_info_->set_source_position(CreateSourcePosition());
   }
   
 
@@ -269,20 +243,23 @@ class Scanner {
 
 
   YATSC_INLINE SourcePosition CreateSourcePosition() {
-    return SourcePosition(start_position_, current_position_, start_line_number_, current_line_number_);
+    return SourcePosition(scanner_source_position_.start_position(),
+                          scanner_source_position_.current_position(),
+                          scanner_source_position_.start_line_number(),
+                          scanner_source_position_.current_line_number());
   }
   
 
   void BuildToken(Token type, UtfString utf_string) {
     UpdateTokenInfo();
-    token_info_.set_value(std::move(utf_string));
-    token_info_.set_type(type);
+    current_token_info_->set_value(std::move(utf_string));
+    current_token_info_->set_type(type);
   }
 
 
   void BuildToken(Token type) {
     UpdateTokenInfo();
-    token_info_.set_type(type);
+    current_token_info_->set_type(type);
   }
 
 
@@ -293,19 +270,18 @@ class Scanner {
 
   void Advance();
 
-  
-  bool has_line_terminator_before_next_;
-  size_t start_position_;
-  size_t current_position_;
-  size_t current_line_number_;
-  size_t start_line_number_;
+
+  bool unscaned_;
+  ScannerSourcePosition scanner_source_position_;
+  LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
+  TokenInfo next_token_info_;
+  TokenInfo* current_token_info_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;
-  std::string message_;
   ErrorReporter* error_reporter_;
   const CompilerOption& compiler_option_;
 };

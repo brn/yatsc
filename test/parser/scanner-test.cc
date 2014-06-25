@@ -295,7 +295,7 @@ TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape_with_ascii) {
 TEST(ScannerTest, ScanLineTerminator_line_terminator) {
   INIT(token, "aaa;");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_TRUE(scanner.has_line_terminator_before_next());
+  ASSERT_TRUE(token->has_line_terminator_before_next());
   END_SCAN;
 }
 
@@ -303,7 +303,7 @@ TEST(ScannerTest, ScanLineTerminator_line_terminator) {
 TEST(ScannerTest, ScanLineTerminator_line_break) {
   INIT(token, "aaa\n");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_TRUE(scanner.has_line_terminator_before_next());
+  ASSERT_TRUE(token->has_line_break_before_next());
   END_SCAN;
 }
 
@@ -311,7 +311,7 @@ TEST(ScannerTest, ScanLineTerminator_line_break) {
 TEST(ScannerTest, ScanLineTerminator_line_terminator_with_space) {
   INIT(token, "aaa  ;");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_TRUE(scanner.has_line_terminator_before_next());
+  ASSERT_TRUE(token->has_line_terminator_before_next());
   END_SCAN;
 }
 
@@ -319,7 +319,7 @@ TEST(ScannerTest, ScanLineTerminator_line_terminator_with_space) {
 TEST(ScannerTest, ScanLineTerminator_line_break_with_space) {
   INIT(token, "aaa  \n");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_TRUE(scanner.has_line_terminator_before_next());
+  ASSERT_TRUE(token->has_line_break_before_next());
   END_SCAN;
 }
 
@@ -408,11 +408,11 @@ TEST(ScannerTest, SkipMultiLineComment) {
   yatsc::Utf8Value utf8_value = token->value().ToUtf8Value();
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
   ASSERT_STREQ("foo", utf8_value.value());
-  yatsc::UtfString utf_string = scanner.last_multi_line_comment();
-  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
   token = scanner.Scan();
   utf8_value = token->value().ToUtf8Value();
   ASSERT_STREQ("aaa", utf8_value.value());
+  yatsc::UtfString utf_string = token->comment();
+  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }
@@ -425,11 +425,11 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   yatsc::Utf8Value utf8_value = token->value().ToUtf8Value();
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
   ASSERT_STREQ("foo", utf8_value.value());
-  yatsc::UtfString utf_string = scanner.last_multi_line_comment();
-  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
   token = scanner.Scan();
   utf8_value = token->value().ToUtf8Value();
   ASSERT_STREQ("aaa", utf8_value.value());
+  yatsc::UtfString utf_string = token->comment();
+  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }

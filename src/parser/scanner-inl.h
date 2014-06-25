@@ -37,11 +37,7 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
-    : has_line_terminator_before_next_(false),
-      start_position_(0),
-      current_position_(0),
-      current_line_number_(1),
-      start_line_number_(1),
+    : unscaned_(true),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
@@ -59,7 +55,7 @@ void Scanner<UCharInputIterator>::Advance()  {
   }
 
   char_ = *it_;
-  current_position_++;
+  scanner_source_position_.AdvancePosition();
   ++it_;
   
   if (it_ == end_) {
@@ -72,21 +68,37 @@ void Scanner<UCharInputIterator>::Advance()  {
 
 
 template<typename UCharInputIterator>
-const TokenInfo* Scanner<UCharInputIterator>::Scan() {
-  has_line_terminator_before_next_ = false;
-  last_multi_line_comment_.Clear();
-  start_position_ = current_position_;
-  start_line_number_ = current_line_number_;
+TokenInfo* Scanner<UCharInputIterator>::Scan() {
+  unscaned_ = false;
+  if (scanner_source_position_.start_position() > 0) {
+    token_info_ = next_token_info_;
+    current_token_info_ = &next_token_info_;
+    DoScan();
+  } else {
+    current_token_info_ = &token_info_;
+    DoScan();
+    current_token_info_ = &next_token_info_;
+    DoScan();
+  }
+
+  current_token_info_ = &token_info_;
+  return &token_info_;
+}
+
+
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::DoScan() {
+  line_terminator_state_.Clear();
+  scanner_source_position_.UpdateStartPosition();
   
   if (!char_.IsAscii()) {
     Illegal();
-    return &token_info_;
   }
   
   if (char_ == unicode::u8('\0')) {
     BuildToken(Token::END_OF_INPUT);
   } else if (char_ == unicode::u8(';')) {
-    return Scan();
+    return DoScan();
   } else if (Character::IsPuncture(char_)) {
     BuildToken(TokenInfo::GetPunctureType(char_));
     Advance();
@@ -104,9 +116,10 @@ const TokenInfo* Scanner<UCharInputIterator>::Scan() {
   } else {
     Illegal();
   }
-  
+
+  last_multi_line_comment_.Clear();
   SkipWhiteSpace();
-  return &token_info_;
+  current_token_info_->set_line_terminator_state(line_terminator_state_);
 }
 
 
@@ -326,6 +339,10 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       return ScanLogicalOperator(Token::TS_LOGICAL_AND, Token::TS_AND_LET, Token::TS_BIT_AND);
     case '|':
       return ScanLogicalOperator(Token::TS_LOGICAL_OR, Token::TS_OR_LET, Token::TS_BIT_OR);
+    case ',':
+      return BuildToken(Token::TS_COMMA);
+    case '.':
+      return BuildToken(Token::TS_DOT);
     case '=':
       return ScanEqualityComparatorOrArrowGlyph();
     case '!':
@@ -436,6 +453,90 @@ bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
   UC8Bytes bytes{{static_cast<char>(uc8), '\0'}};
   (*v) += UChar(uc8, bytes);
   return true;
+}
+
+
+template <typename UCharInputIterator>
+template <typename T>
+int Scanner<UCharInputIterator>::ToHexValue(const T& uchar) YATSC_NO_SE {
+  int ret = 0;
+  if (uchar >= unicode::u8('0') && uchar <= unicode::u8('9')) {
+    ret = static_cast<int>(uchar - unicode::u8('0'));
+  } else if (uchar >= unicode::u8('a') && uchar <= unicode::u8('f')) {
+    ret = static_cast<int>(uchar - unicode::u8('a') + 10);
+  } else if (uchar >= unicode::u8('A') && uchar <= unicode::u8('F')) {
+    ret = static_cast<int>(uchar - unicode::u8('A') + 10);
+  } else {
+    return -1;
+  }
+  return ret;
+}
+
+
+template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
+  bool skip = false;
+  while(Character::IsWhiteSpace(char_, lookahead1_) || char_ == unicode::u8(';') ||
+        Character::IsSingleLineCommentStart(char_, lookahead1_) ||
+        Character::IsMultiLineCommentStart(char_, lookahead1_)) {
+    if (char_ == unicode::u8(';')) {
+      line_terminator_state_.set_line_terminator_before_next();
+    } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+      line_terminator_state_.set_line_break_before_next();
+    }
+    skip = true;
+    if (!ConsumeLineBreak() && !SkipSingleLineComment() && !SkipMultiLineComment()) {
+      Advance();
+    }
+  }
+  return skip;
+}
+
+
+template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
+  bool skip = false;
+  if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
+    while (char_ != unicode::u8('\0') &&
+           Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
+      Advance();
+    }
+    skip = true;
+  }
+  return skip;
+}
+
+
+template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::SkipMultiLineComment() {
+  bool skip = false;
+  if (Character::IsMultiLineCommentStart(char_, lookahead1_)) {
+    UtfString str;
+    while (!Character::IsMultiLineCommentEnd(char_, lookahead1_)) {
+      Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);
+      if (lt != Character::LineBreakType::NONE) {
+        LineFeed();
+        line_terminator_state_.set_line_break_before_next();
+      }
+
+      if (lt == Character::LineBreakType::CRLF) {
+        str += char_;
+        Advance();
+        str += char_;
+        Advance();          
+      } else {
+        str += char_;
+        Advance();
+      }
+    }
+    str += char_;
+    Advance();
+    str += char_;
+    Advance();
+    skip = true;
+    last_multi_line_comment_ = std::move(str);
+  }
+  return skip;
 }
 
 
