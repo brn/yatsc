@@ -113,7 +113,7 @@ class Parser {
 
   ir::Node* ParseLeftHandSideExpression();
 
-  ir::Node* ParseNewExpression();
+  ir::Node* ParseTypeExpression();
 
   ir::Node* ParseCallExpression();
 
@@ -125,6 +125,10 @@ class Parser {
 
   ir::Node* ParsePrimaryExpression();
 
+  ir::Node* ParseTypedParameterOrNameExpression();
+
+  void CheckExpression(ir::Node* expr);
+
   ir::Node* ParseObjectLiteral();
 
   ir::Node* ParseArrayLiteral();
@@ -133,9 +137,45 @@ class Parser {
 
   ir::Node* ParseFunction();
 
+  ir::Node* ParseArrowFunction(ir::Node* args);
+
+  ir::Node* ParseFunctionBody();
+
   ir::Node* ParseFormalParameterList();
   
  private:
+
+  class ParserState: private Unmovable, private Uncopyable {
+   public:
+    ParserState() {}
+
+#define SCOPE(name, bit)                                              \
+    class name: private Unmovable, private Uncopyable {               \
+     public:                                                          \
+     name(ParserState* parser_state)                                  \
+         : parser_state_(parser_state) {                              \
+       parser_state_.bits_.set(bit);                                  \
+     }                                                                \
+                                                                      \
+     ~name() {                                                        \
+       parser_state_.bits_.clear(bit);                                \
+     }                                                                \
+     private:                                                         \
+     ParserState* parser_state_;                                      \
+    };                                                                \
+    YATSC_INLINE bool IsIn##name() {                                  \
+      return 1 == bits_.test(0);                                      \
+    }                                                                 \
+    
+
+    SCOPE(ArrowFunctionScope, 0);
+    SCOPE(MethodScope, 1);
+
+#undef SCOPE
+    
+   private:
+    std::bitset<8> bits_;
+  };
 
   YATSC_INLINE TokenInfo* Next() {
     current_token_info_ = scanner_->Scan();
@@ -184,6 +224,7 @@ class SyntaxError: public std::exception {
   
  private:
   std::string message_;
+  ParserState parser_state_;
 };
 }
 

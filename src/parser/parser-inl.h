@@ -26,8 +26,12 @@
 namespace yatsc {
 
 #define SYNTAX_ERROR(message, token)            \
+  SYNTAX_ERROR_POS(message, token->source_position())
+
+
+#define SYNTAX_ERROR_POS(message, pos)          \
   (*error_reporter_) << message;                \
-  error_reporter_->Throw<SyntaxError>(token->source_position())
+  error_reporter_->Throw<SyntaxError>(pos)
 
 
 // Parse source string and create Node.
@@ -424,6 +428,10 @@ ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool noin) {
   TokenInfo* ti = Peek();
   if (ti->type() == Token::TS_QUESTION_MARK) {
     Next();
+    if (Peek()->type() == Token::TS_COLON) {
+      ParseTypeExpressionAfterName(expr);
+      return New<ir::OptionalParamView>(expr);
+    }
     ir::Node* left = ParseAssignmentExpression(noin);
     ti = Peek();
     if (ti->type() == Token::TS_COLON) {
@@ -675,6 +683,47 @@ ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression() {
 }
 
 
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseTypeExpression() {
+  if (Peek()->type() == Token::TS_IDENTIFIER) {
+    ir::Node* node = ParseLiteral();
+    if (Peek()->type() == Token::TS_LEFT_BRACKET) {
+      Next();
+      if (Peek()->type() == Token::TS_RIGHT_BRACKET) {
+        Next();
+        return New<ir::ArrayTypeExprView>(node);
+      }
+      SYNTAX_ERROR("SyntaxError ']' expected", next_token_info_);
+    } else {
+      return New<ir::SimpleTypeExprView>(node);
+    }
+  } else if (Peek()->type() == Token::TS_LEFT_PAREN) {
+    ParserState::ArrowFunctionScope scope(&parser_state_);
+    ir::Node* types = ParseParameter(false);
+    if (Peek()->type() == Token::TS_FUNCTION_GLYPH) {
+      Next();
+      ir::Node* ret_type = ParseTypeExpression();
+      return New<ir::FunctionTypeExprView>(types, ret_type);
+    }
+    SYNTAX_ERROR("SyntaxError '=>' expected", next_token_info_);
+  } else if (Peek()->type() == Token::TS_LEFT_BRACE) {
+    return ParseObjectLiteral();
+  } else if (Peek()->type() == Token::TS_LEFT_BRACKET) {
+    Next();
+    if (Peek()->type() == Token::TS_IDENTIFIER) {
+      ir::Node* name = ParseLiteral();
+      if (Peek()->type() == Token::TS_COLON) {
+        Next();
+        ir::Node* type = ParseTypeExpression();
+        return New<ir::AccessorTypeExprView>(name, type);
+      }
+      SYNTAX_ERROR("SyntaxError ':' expected", next_token_info_);
+    }
+    SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
+  }
+}
+
+
 // Parse call expression.
 // call_expression
 // 	: member_expression arguments
@@ -823,10 +872,13 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
   // Not advance scanner.
   TokenInfo* token_info = Peek();
   switch (token_info->type()) {
-    case Token::TS_IDENTIFIER:
+    case Token::TS_IDENTIFIER: {
       // parse an identifier.
+      ir::NameView* name = New<ir::NameView>(token_info->value());
       Next();
-      return New<ir::NameView>(token_info->value());
+      ParseTypeExpressionAfterName(name);
+      return name;
+    }
     case Token::TS_THIS:
       // parse a this.
       Next();
@@ -838,16 +890,66 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
+      ParserState::ArrowFunctionScope scope(&parser_state_);
       // parse an expression that beggining '('
       ir::Node* node = ParseExpression(false);
       if (Next()->type() != Token::TS_RIGHT_PAREN) {
         SYNTAX_ERROR("Unexpected token.", current_token_info_);
+      }
+      if (Peek()->type() == Token::TS_FUNCTION_GLYPH) {
+        Next();
+        return ParseArrowFunction(node);
+      } else {
+        CheckExpression(node);
       }
       return node;
     }
     default:
       // parse a literal.
       return ParseLiteral();
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseTypeExpressionAfterName(ir::Node* name) {
+  if (Peek()->type() == Token::TS_COLON ) {
+    if (!name->HasNameView()) {
+      SYNTAX_ERROR_POS("SyntaxError invalid expression", name->source_position());
+    }
+    ir::Node name_view = name->ToNameView();
+    if (!parser_state_.IsInArrowFunctionScope()) {
+      SYNTAX_ERROR("SyntaxError unexpected token", next_token_info_);
+    }
+    Next();
+    ir::Node* type = ParseTypeExpression();
+    name_view->set_type_expr(type);
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::CheckExpression(ir::Node* node) {
+  for (auto c: node->node_list()) {
+    ir::Node* p = *c;
+    if (p != nullptr) {
+      if (p->HasOptionalParamView()) {
+        SYNTAX_ERROR_POS("SyntaxError unexpected '?'", p->source_position());
+      } else if (p->HasNameView()) {
+        ir::NameView* name = p->ToNameView();
+        if (nullptr != name->type_expr()) {
+          SYNTAX_ERROR_POS("SyntaxError unexpected ':'", p->source_position());
+        }
+      } else if (p->HasAssignmentView()) {
+        ir::AssignmentView* assignment = p->ToAssignmentView();
+        if (nullptr != assignment->target() && assignment->target()->HasNameView()) {
+          ir::NameView* name = assignment->target()->ToNameView();
+          if (nullptr != name->type_expr()) {
+            SYNTAX_ERROR_POS("SyntaxError unexpected ':'", p->source_position());
+          }
+        }
+      }
+    }
   }
 }
 
@@ -906,31 +1008,114 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayLiteral() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
+  // Allow regular expression in this context.
+  Scanner<UCharInputIterator>::RegularExpressionScope scope(scanner_);
+  // Advance scanner.
   Next();
   switch(current_token_info_->type()) {
     case Token::TS_TRUE:
+      // true value
       return New<ir::TrueView>();
     case Token::TS_FALSE:
+      // false value
       return New<ir::FalseView>();
     case Token::TS_STRING_LITERAL:
+      // 'aaaa' value
       return New<ir::StringView>(current_token_info_->value());
     case Token::TS_NUMERIC_LITERAL:
+      // 1234.5 value
       return New<ir::NumberView>(current_token_info_->value());
+    case Token::TS_REGULAR_EXPR:
+      // /aaaaa/ value
+      return New<ir::RegularExprView>(current_token_info_->value());
     case Token::TS_UNDEFINED:
+      // undefined value
       return New<ir::UndefinedView>();
     case Token::TS_NULL:
+      // null value
       return New<ir::NullView>();
     case Token::TS_NAN:
+      // NaN value
       return New<ir::NaNView>();
     default:
-      SYNTAX_ERROR("Unexpected token.", current_token_info_);
+      // Any other token cause SyntaxError.
+      SYNTAX_ERROR("SyntaxError literal expected", current_token_info_);
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseParameter() {
+  if (Next()->type() == Token::TS_LEFT_PAREN) {
+    ir::ParamList* param_list = New<ir::ParamList>();
+    while (1) {
+      ir::Node* expr = ParseAssignmentExpression();
+      param_list->InsertLast(expr);
+      if (Peek()->type() == Token::TS_COMMA) {
+        Next();
+      } else if (Peek()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        return param_list;
+      } else {
+        SYNTAX_ERROR("SyntaxError in formal parameter list", next_token_info_);
+      }
+    }
   }
 }
 
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFunction() {
-  return nullptr;
+  if (Peek()->type() == Token::TS_FUNCTION) {
+    Next();
+    ir::Node* name;
+    if (Peek()->type() == Token::TS_IDENTIFIER) {
+      name = ParseLiteral();
+    }
+    ir::Node* param_list = ParseParameter();
+    ir::Node* body = ParseFunctionBody();
+    return New<ir::FunctionView>(name, param_list, body);
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* args) {
+  ir::ParamList* param_list = New<ir::ParamList>();
+  for (auto c: args->node_list()) {
+    ir::Node* arg = *c;
+    if (!arg->HasAssignmentView() &&
+        !arg->HasOptionalParamView() &&
+        !arg->HasNameView()) {
+      SYNTAX_ERROR("")
+    }
+    param_list->InsertLast(*c);
+  }
+  ir::Node* body;
+  if (Peek()->type() == Token::TS_LEFT_BRACE) {
+    body = ParseFunctionBody();
+  } else {
+    body = ParseAssignmentExpression();
+  }
+  return New<ir::FunctionView>(nullptr, param_list, body);
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseFunctionBody() {
+  if (Peek()->type() == Token::TS_LEFT_BRACE) {
+    Next();
+    auto block = New<ir::BlockView>();
+    while (1) {
+      auto node = ParseSourceElement();
+      block->InsertLast(node);
+      if (Peek()->type() == Token::TS_RIGHT_BRACE) {
+        break;
+      }
+    }
+    return block;
+  }
+  SYNTAX_ERROR("SyntaxError unexpected token in 'function body'", next_token_info_);
 }
 
 

@@ -74,6 +74,7 @@ namespace yatsc {
   DECLARE(TS_PRIVATE)                                     \
   DECLARE(TS_PROTECTED)                                   \
   DECLARE(TS_PUBLIC)                                      \
+  DECLARE(TS_REGULAR_EXPR)                                \
   DECLARE(TS_RETURN)                                      \
   DECLARE(TS_STATIC)                                      \
   DECLARE(TS_SUPER)                                       \

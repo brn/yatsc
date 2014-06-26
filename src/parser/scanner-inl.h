@@ -38,6 +38,7 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
     : unscaned_(true),
+      allow_regular_expression_(false),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
@@ -328,7 +329,11 @@ void Scanner<UCharInputIterator>::ScanOperator() {
     case '*':
       return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MUL_LET, Token::TS_MUL, false);
     case '/':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
+      if (!allow_regular_expression_) {
+        return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
+      } else {
+        return ScanRegularExpression();
+      }
     case '%':
       return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MOD_LET, Token::TS_MOD, false);
     case '~':
@@ -394,6 +399,28 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
     return BuildToken(equal_comparator);
   }
   BuildToken(normal);
+}
+
+
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::ScanRegularExpression() {
+  UtfString expr;
+  expr += char_;
+  Advance();
+  bool escaped = false;
+  
+  while (1) {
+    if (unicode::u8('/') == char_ && false == escaped) {
+      return BuildToken(Token::TS_REGULAR_EXPR, expr);
+    }
+    if (unicode::u8('\\') == char_) {
+      escaped = !escaped;
+    }
+    if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+      Error("Unterminated regular expression");
+    }
+    Advance();
+  }
 }
 
 

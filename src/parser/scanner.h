@@ -95,6 +95,34 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
+
+
+  class RegularExpressionScope: private Unmovable {
+   public:
+    RegularExpressionScope(Scanner<UCharInputIterator>* scanner)
+        : scanner_(scanner) {
+      scanner_->allow_regular_expression_ = true;
+    }
+
+    RegularExpressionScope(const RegularExpressionScope& scope)
+        : scanner_(scope.scanner_) {}
+
+
+    RegularExpressionScope& operator = (const RegularExpressionScope& scope) {
+      scanner_ = scope.scanner_;
+    }
+
+    
+    ~RegularExpressionScope() {
+      scanner_->allow_regular_expression_ = false;
+    }
+
+
+    YATSC_INLINE void Escape() YATSC_NOEXCEPT {scanner_->allow_regular_expression_ = false;}
+
+   private:
+    Scanner<UCharInputIterator>* scanner_;
+  };
   
   
  private:
@@ -177,6 +205,9 @@ class Scanner: private Uncopyable, private Unmovable {
   
   
   bool ScanUnicodeEscapeSequence(UtfString*);
+
+
+  void ScanRegularExpression();
 
 
   bool ConsumeLineBreak();
@@ -272,6 +303,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
   bool unscaned_;
+  bool allow_regular_expression_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;

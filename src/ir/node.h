@@ -79,10 +79,12 @@ namespace yatsc {namespace ir {
   DECLARE(InterfaceFieldView)                           \
   DECLARE(SimpleTypeExprView)                           \
   DECLARE(ArrayTypeExprView)                            \
-  DECLARE(FunctionNodeTypeExprView)                     \
+  DECLARE(FunctionTypeExprView)                         \
   DECLARE(AccessorTypeExprView)                         \
   DECLARE(CommaExprView)                                \
   DECLARE(FunctionView)                                 \
+  DECLARE(OptionalParamView)                            \
+  DECLARE(ParamList)                                    \
   DECLARE(CallView)                                     \
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
@@ -100,6 +102,7 @@ namespace yatsc {namespace ir {
   DECLARE(NullView)                                     \
   DECLARE(NaNView)                                      \
   DECLARE(StringView)                                   \
+  DECLARE(RegularExprView)                              \
   DECLARE(ObjectElementView)                            \
   DECLARE(ObjectLiteralView)                            \
   DECLARE(ArrayLiteralView)                             \
@@ -237,6 +240,9 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
   // Getter for node_type.
   YATSC_GETTER(NodeType, node_type, node_type_);
+
+
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_information_.source_position());
 
 
   // Getter and setter for parent_node_.
@@ -913,8 +919,11 @@ class ClassFieldListView: public Node {
 
 class ClassFieldAccessLevelView: public Node {
  public:
-  ClassFieldAccessLevelView(Node* value)
-      : Node(NodeType::kClassFieldAccessLevelView, 1u, {value}) {}
+  ClassFieldAccessLevelView(Token op)
+      : Node(NodeType::kClassFieldAccessLevelView, 0u) {
+    set_operand(op);
+  }
+}
 
 
   // Getter and Setter for value.
@@ -1066,14 +1075,14 @@ class ArrayTypeExprView: public Node {
 
 
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
-class FunctionNodeTypeExprView: public Node {
+class FunctionTypeExprView: public Node {
  public:
-  FunctionNodeTypeExprView(Node* param_list, Node* return_type)
-      : Node(NodeType::kFunctionNodeTypeExprView, 2u, {param_list, return_type}) {}
+  FunctionTypeExprView(Node* param_list, Node* return_type)
+      : Node(NodeType::kFunctionTypeExprView, 2u, {param_list, return_type}) {}
 
 
-  FunctionNodeTypeExprView()
-      : Node(NodeType::kFunctionNodeTypeExprView, 2u) {}
+  FunctionTypeExprView()
+      : Node(NodeType::kFunctionTypeExprView, 2u) {}
 
 
   // Getter and setter for param_list_.
@@ -1128,6 +1137,27 @@ class FunctionView: public Node {
 };
 
 
+class OptionalParamView: public Node {
+ public:
+  Param(Node* expr)
+      : Node(NodeType::kOptionalParamView, 1u, {expr}){}
+
+
+  NODE_PROPERTY(param, 0);
+}
+
+
+class ParamList: public Node {
+ public:
+  ParamList(std::initializer_list<Node*> args)
+      : Node(NodeType::kParamList, 0u, args) {}
+
+
+  ParamList()
+      : Node(NodeType::kParamList, 0u) {}
+};
+
+
 class CallView: public Node {
  public:
   CallView(Node* target, Node* args)
@@ -1165,10 +1195,12 @@ class NewCallView: public Node {
 
 class NameView: public Node {
  public:
-  NameView(UtfString name)
-      : Node(NodeType::kNameView, 0) {
+  NameView(UtfString name, Node* type = nullptr)
+      : Node(NodeType::kNameView, 1u, {type}) {
     set_string_value(name);
   }
+
+  NODE_PROPERTY(type_expr, 0);
 };
 
 
@@ -1324,6 +1356,15 @@ class NaNView: public Node {
 class StringView: public Node {
  public:
   StringView(UtfString str)
+      : Node(NodeType::kStringView, 0) {
+    set_string_value(str);
+  }
+};
+
+
+class RegularExprView: public Node {
+ public:
+  RegularExprView(UtfString str)
       : Node(NodeType::kStringView, 0) {
     set_string_value(str);
   }
