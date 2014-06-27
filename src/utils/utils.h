@@ -157,6 +157,22 @@ static const size_t kSizeTSize = sizeof(size_t);
   YATSC_SETTER(type, name, field)
 
 
+class YatscScoped__ {
+ public:
+  template <typename T>
+  YatscScoped__(T cb)
+      : cb_(cb) {}
+
+  ~YatscScoped__() {cb_();}
+
+ private:
+  std::function<void()> cb_;
+};
+
+
+#define YATSC_SCOPED(exit_function) YatscScoped__ yatsc_scoped_once##__LINE__(exit_function);
+
+
 #ifdef UNIT_TEST
 #define VISIBLE_FOR_TEST public
 #else

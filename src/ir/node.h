@@ -79,16 +79,26 @@ namespace yatsc {namespace ir {
   DECLARE(InterfaceFieldView)                           \
   DECLARE(SimpleTypeExprView)                           \
   DECLARE(ArrayTypeExprView)                            \
+  DECLARE(ObjectTypeExprView)                           \
+  DECLARE(PropertySignatureView)                        \
+  DECLARE(MethodSignatureView)                          \
   DECLARE(FunctionTypeExprView)                         \
+  DECLARE(ConstructSignatureView)                       \
   DECLARE(AccessorTypeExprView)                         \
+  DECLARE(TypeParametersView)                           \
+  DECLARE(TypeParameterView)                            \
   DECLARE(CommaExprView)                                \
   DECLARE(FunctionView)                                 \
-  DECLARE(OptionalParamView)                            \
+  DECLARE(ArrowFunctionView)                            \
+  DECLARE(ParameterView)                                \
+  DECLARE(RestParamView)                                \
   DECLARE(ParamList)                                    \
   DECLARE(CallView)                                     \
+  DECLARE(CallSinatureView)                             \
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
   DECLARE(NameView)                                     \
+  DECLARE(SuperView)                                    \
   DECLARE(PostfixView)                                  \
   DECLARE(GetPropView)                                  \
   DECLARE(GetElemView)                                  \
@@ -148,6 +158,27 @@ VIEW_LIST(FORWARD_DECL, FORWARD_DECL, FORWARD_DECL)
   NODE_SETTER(name, pos)
 
 
+#define NODE_FLAG_GETTER(name, pos)             \
+  YATSC_INLINE bool name() {                    \
+    return TestFlag(pos);                       \
+  }
+
+
+#define NODE_FLAG_SETTER(name, pos)               \
+  YATSC_INLINE void set_##name(bool val) {        \
+    if (val) {                                    \
+      set_flag(pos);                              \
+    } else {                                      \
+      ClearFlag(pos);}                            \
+  }
+
+
+#define NODE_FLAG_PROPERTY(name, pos)           \
+  NODE_FLAG_GETTER(name, pos)                   \
+  NODE_FLAG_SETTER(name, pos)
+  
+
+
 // Source information holder.
 class SourceInformation: private Unmovable{
   friend class Node;
@@ -178,7 +209,7 @@ class SourceInformation: private Unmovable{
 
 
   // Getter and setter for line_number_
-  YATSC_PROPERTY(const SourcePosition&, source_position, source_position_);
+  YATSC_CONST_PROPERTY(const SourcePosition&, source_position, source_position_);
   
  private:
   SourcePosition source_position_;
@@ -350,6 +381,21 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
+  YATSC_INLINE void set_flag(int pos) YATSC_NOEXCEPT {
+    flags_.set(pos);
+  }
+
+
+  YATSC_INLINE bool TestFlag(int pos) YATSC_NO_SE {
+    return 1 == flags_.test(pos);
+  }
+
+
+  YATSC_INLINE void ClearFlag(size_t pos) YATSC_NOEXCEPT {
+    flags_.reset(pos);
+  }
+
+
   /**
    * Return an operand.
    * @returns An operand.
@@ -384,13 +430,27 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * @param token_info A token inforamtion class.
    */
   void SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT;
-
+  
 
   /**
    * Set source information to this node and children.
    * @param token_info A token inforamtion class.
    */
   void SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT;
+
+  
+  /**
+   * Set source information to this node.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForNode(const Node* node) YATSC_NOEXCEPT;
+
+
+  /**
+   * Set source information to this node and children.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForTree(const Node* node) YATSC_NOEXCEPT;
 
 
   /**
@@ -433,6 +493,7 @@ VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
   List node_list_;
   
  private:
+  std::bitset<8> flags_;
   SourceInformation source_information_;
   NodeType node_type_;
   size_t capacity_;
@@ -923,7 +984,6 @@ class ClassFieldAccessLevelView: public Node {
       : Node(NodeType::kClassFieldAccessLevelView, 0u) {
     set_operand(op);
   }
-}
 
 
   // Getter and Setter for value.
@@ -1074,6 +1134,67 @@ class ArrayTypeExprView: public Node {
 };
 
 
+// Represent type expression like `var x: string`
+class ObjectTypeExprView: public Node {
+ public:
+  
+  ObjectTypeExprView(std::initializer_list<Node*> type_member_list)
+      : Node(NodeType::kArrayTypeExprView, 0u, type_member_list) {}
+  
+
+  ObjectTypeExprView()
+      : Node(NodeType::kArrayTypeExprView, 0u) {}
+};
+
+
+class PropertySignatureView: public Node {
+ public:
+  PropertySignatureView(bool opt, Node* property_name, Node* type_expr)
+      : Node(NodeType::kPropertySignatureView, 2u, {property_name, type_expr}) {
+    if (opt) {
+      set_flag(0);
+    }
+  }
+
+
+  PropertySignatureView()
+      : Node(NodeType::kPropertySignatureView, 2u) {}
+  
+
+  NODE_PROPERTY(property_name, 0);
+
+
+  NODE_PROPERTY(type_expr, 1);
+
+
+  NODE_FLAG_PROPERTY(optional, 0);
+};
+
+
+class MethodSignatureView: public Node {
+ public:
+  MethodSignatureView(bool opt, Node* property_name, Node* type_expr)
+      : Node(NodeType::kMethodSignatureView, 2u, {property_name, type_expr}) {
+    if (opt) {
+      set_flag(0);
+    }
+  }
+
+
+  MethodSignatureView()
+      : Node(NodeType::kMethodSignatureView, 2u) {}
+  
+
+  NODE_PROPERTY(property_name, 0);
+
+
+  NODE_PROPERTY(type_expr, 1);
+
+
+  NODE_FLAG_PROPERTY(optional, 0);
+};
+
+
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
 class FunctionTypeExprView: public Node {
  public:
@@ -1094,6 +1215,22 @@ class FunctionTypeExprView: public Node {
 };
 
 
+// Represent function type expression like, `var x:(a:string, b:string) => string;`
+class ConstructSignatureView: public Node {
+ public:
+  ConstructSignatureView(Node* call_signature)
+      : Node(NodeType::kConstructSignatureView, 1u, {call_signature}) {}
+
+
+  ConstructSignatureView()
+      : Node(NodeType::kConstructSignatureView, 1u) {}
+
+
+  // Getter and setter for type_parameters.
+  NODE_PROPERTY(call_signature, 0);
+};
+
+
 // Represent accessor type expression like, `interface x {[index:int]}`
 class AccessorTypeExprView: public Node {
  public:
@@ -1107,6 +1244,35 @@ class AccessorTypeExprView: public Node {
 
   // Getter and setter for type_expr.
   NODE_PROPERTY(type_expr, 1);
+};
+
+
+class TypeParametersView: public Node {
+ public:
+  TypeParametersView(std::initializer_list<Node*> type_arguments)
+      : Node(NodeType::kTypeParametersView, 0u, type_arguments) {}
+
+
+  TypeParametersView()
+      : Node(NodeType::kTypeParametersView, 0u) {}
+};
+
+
+// Represent accessor type expression like, `interface x {[index:int]}`
+class TypeParameterView: public Node {
+ public:
+  TypeParameterView(Node* identifier, Node* constraint):
+      Node(NodeType::kTypeParameterView, 2u, {identifier, constraint}) {}
+
+
+  TypeParameterView():
+      Node(NodeType::kTypeParameterView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+
+  NODE_PROPERTY(constraint, 1);
 };
 
 
@@ -1137,14 +1303,52 @@ class FunctionView: public Node {
 };
 
 
-class OptionalParamView: public Node {
+// Represent function.
+class ArrowFunctionView: public Node {
  public:
-  Param(Node* expr)
-      : Node(NodeType::kOptionalParamView, 1u, {expr}){}
+  ArrowFunctionView(Node* name, Node* param_list, Node* body)
+      : Node(NodeType::kArrowFunctionView, 3u, {name, param_list, body}) {}
+
+  // Getter for name_.
+  NODE_GETTER(name, 0);
+
+  // Getter for param_list_.
+  NODE_GETTER(param_list, 1);
+
+  // Getter for body_.
+  NODE_GETTER(body, 2);
+};
 
 
-  NODE_PROPERTY(param, 0);
-}
+class ParameterView: public Node {
+ public:
+  ParameterView(bool optional, Node* expr, Node* access_level)
+      : Node(NodeType::kParameterView, 1u, {expr, access_level}){
+    if (optional) {
+      set_flag(0);
+    }
+  }
+
+
+  ParameterView()
+      : Node(NodeType::kParameterView, 1u){}
+
+
+  NODE_PROPERTY(expr, 0);
+
+  
+  NODE_PROPERTY(access_level, 1);
+};
+
+
+class RestParamView: public Node {
+ public:
+  RestParamView(Node* identifier)
+      : Node(NodeType::kRestParamView, 1u, {identifier}){}
+
+
+  NODE_PROPERTY(identifier, 0);
+};
 
 
 class ParamList: public Node {
@@ -1168,6 +1372,19 @@ class CallView: public Node {
 
 
   NODE_PROPERTY(args, 1);
+};
+
+
+class CallSinatureView: public Node {
+ public:
+  CallSinatureView(Node* param_list, Node* return_type)
+      : Node(NodeType::kCallView, 2u, {param_list, return_type}) {}
+
+  
+  NODE_PROPERTY(param_list, 0);
+
+
+  NODE_PROPERTY(return_type, 1);
 };
 
 
@@ -1201,6 +1418,13 @@ class NameView: public Node {
   }
 
   NODE_PROPERTY(type_expr, 0);
+};
+
+
+class SuperView: public Node {
+ public:
+  SuperView()
+      : Node(NodeType::kSuperView, 0u) {}
 };
 
 

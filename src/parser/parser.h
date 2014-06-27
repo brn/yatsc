@@ -34,7 +34,8 @@ template <typename UCharInputSourceIterator>
 class Parser {
  public:
   Parser(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
-      : scanner_(scanner),
+      : print_parser_phase_(false),
+        scanner_(scanner),
         error_reporter_(error_reporter){}
 
 
@@ -115,9 +116,15 @@ class Parser {
 
   ir::Node* ParseTypeExpression();
 
+  ir::Node* ParseObjectTypeExpression();
+
+  ir::Node* ParseObjectTypeElement();
+
   ir::Node* ParseCallExpression();
 
   ir::Node* ParseArguments();
+
+  ir::Node* ParseParameter();
 
   ir::Node* ParseMemberExpression();
 
@@ -142,6 +149,18 @@ class Parser {
   ir::Node* ParseFunctionBody();
 
   ir::Node* ParseFormalParameterList();
+
+  ir::Node* ParseCallSignature();
+
+  ir::Node* ParseObjectKey();
+
+  void ParseTypeExpressionAfterName(ir::Node* expr);
+
+  void ConvertExpressionToParameter(ir::Node* args, ir::Node* param_list);
+
+  void EnablePrintParsePhase() {print_parser_phase_ = true;};
+
+  void DisablePrintParsePhase() {print_parser_phase_ = false;};
   
  private:
 
@@ -152,19 +171,19 @@ class Parser {
 #define SCOPE(name, bit)                                              \
     class name: private Unmovable, private Uncopyable {               \
      public:                                                          \
-     name(ParserState* parser_state)                                  \
+     name(ParserState* parser_state)      \
          : parser_state_(parser_state) {                              \
-       parser_state_.bits_.set(bit);                                  \
+       parser_state_->bits_.set(bit);                                 \
      }                                                                \
                                                                       \
      ~name() {                                                        \
-       parser_state_.bits_.clear(bit);                                \
+       parser_state_->bits_.reset(bit);                               \
      }                                                                \
      private:                                                         \
      ParserState* parser_state_;                                      \
     };                                                                \
     YATSC_INLINE bool IsIn##name() {                                  \
-      return 1 == bits_.test(0);                                      \
+      return 1 == bits_.test(bit);                                    \
     }                                                                 \
     
 
@@ -200,11 +219,13 @@ class Parser {
     return irfactory_.New<T>(list);
   }
 
+  bool print_parser_phase_;
   Scanner<UCharInputSourceIterator>* scanner_;
   TokenInfo* current_token_info_;
   TokenInfo* next_token_info_;
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
+  ParserState parser_state_;
 };
 
 
@@ -224,7 +245,6 @@ class SyntaxError: public std::exception {
   
  private:
   std::string message_;
-  ParserState parser_state_;
 };
 }
 

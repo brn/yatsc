@@ -125,3 +125,14 @@ TEST(ParserTest, ParseExpression_array) {
     }
   });
 }
+
+
+TEST(ParserTest, ParseExpression_arrow_function) {
+  INIT(yatsc::LanguageMode::ES3, parser, "(a:string,b:number) => a + b", [&]{
+    parser.EnablePrintParsePhase();
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrowFunctionView);
+    ASSERT_TRUE(node->HasArrowFunctionView());
+    parser.DisablePrintParsePhase();
+  });
+}

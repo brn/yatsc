@@ -106,6 +106,24 @@ void Node::SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT  {
   }
 }
 
+
+// Attach source information to this node.
+void Node::SetInformationForNode(const Node* node) YATSC_NOEXCEPT {
+  source_information_.source_position_ = node->source_position();
+}
+
+
+// Attach source information to this node and children.
+void Node::SetInformationForTree(const Node* node) YATSC_NOEXCEPT  {
+  for (size_t i = 0u; i < node_list_.size(); i++) {
+    Node* target = node_list_[i];
+    if (target != nullptr) {
+      target->SetInformationForNode(node);
+      target->SetInformationForTree(node);
+    }
+  }
+}
+
 Node::String Node::ToString() {
   return Node::String("");
 }

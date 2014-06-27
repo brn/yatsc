@@ -410,10 +410,10 @@ void Scanner<UCharInputIterator>::ScanRegularExpression() {
   bool escaped = false;
   
   while (1) {
-    if (unicode::u8('/') == char_ && false == escaped) {
+    if (char_ == unicode::u8('/') && false == escaped) {
       return BuildToken(Token::TS_REGULAR_EXPR, expr);
     }
-    if (unicode::u8('\\') == char_) {
+    if (char_ == unicode::u8('\\')) {
       escaped = !escaped;
     }
     if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
