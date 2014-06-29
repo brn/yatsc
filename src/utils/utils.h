@@ -29,6 +29,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <new>
@@ -157,20 +158,22 @@ static const size_t kSizeTSize = sizeof(size_t);
   YATSC_SETTER(type, name, field)
 
 
+template <typename T>
 class YatscScoped__ {
  public:
-  template <typename T>
   YatscScoped__(T cb)
       : cb_(cb) {}
 
-  ~YatscScoped__() {cb_();}
+  ~YatscScoped__() {
+    cb_();
+  }
 
  private:
-  std::function<void()> cb_;
+  T cb_;
 };
 
 
-#define YATSC_SCOPED(exit_function) YatscScoped__ yatsc_scoped_once##__LINE__(exit_function);
+#define YATSC_SCOPED(exit_function) auto exit_function_of_scope##__LINE__ = exit_function;YatscScoped__<decltype(exit_function_of_scope##__LINE__)> yatsc_scoped_once##__LINE__(exit_function_of_scope##__LINE__);
 
 
 #ifdef UNIT_TEST

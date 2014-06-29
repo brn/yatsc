@@ -34,11 +34,29 @@ namespace yatsc {
   error_reporter_->Throw<SyntaxError>(pos)
 
 
+#ifdef DEBUG
 #define ENTER(name)                                                     \
-  if (print_parser_phase_ )Printf("Enter %s: Token = %s\n", #name, current_token_info_->ToString()); \
+  if (print_parser_phase_) {                                            \
+    if (current_token_info_ != nullptr) {                               \
+      Printf("%sEnter %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, current_token_info_->ToString(), Peek()->ToString()); \
+    } else {                                                            \
+      Printf("%sEnter %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, Peek()->ToString()); \
+    }                                                                   \
+  }                                                                     \
+  indent_ += "  ";                                                      \
   YATSC_SCOPED([&]{                                                     \
-    if (this->print_parser_phase_) Printf("Exit %s: Token = %s\n", #name, this->current_token_info_->ToString()); \
-  })
+      indent_ = indent_.substr(0, indent_.size() - 2);                  \
+      if (this->print_parser_phase_) {                                  \
+        if (this->current_token_info_ != nullptr) {                     \
+          Printf("%sExit %s: Token = %s\n", indent_.c_str(), #name, this->current_token_info_->ToString()); \
+        } else {                                                        \
+          Printf("%sExit %s: Token = %s\n", indent_.c_str(), #name, this->Peek()->ToString()); \
+        }                                                               \
+      }                                                                 \
+    })
+#else
+#define ENTER(name)
+#endif
 
 
 
@@ -1000,6 +1018,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
+      Next();
       typename ParserState::ArrowFunctionScope scope(&parser_state_);
       // parse an expression that beggining '('
       ir::Node* node = ParseExpression(false);

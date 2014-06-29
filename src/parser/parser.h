@@ -36,6 +36,8 @@ class Parser {
   Parser(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
       : print_parser_phase_(false),
         scanner_(scanner),
+        current_token_info_(nullptr),
+        next_token_info_(nullptr),
         error_reporter_(error_reporter){}
 
 
@@ -226,6 +228,10 @@ class Parser {
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
   ParserState parser_state_;
+
+#ifdef DEBUG
+  std::string indent_;
+#endif
 };
 
 
