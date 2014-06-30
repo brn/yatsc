@@ -25,6 +25,7 @@
 #ifndef PARSER_PARSER_H
 #define PARSER_PARSER_H
 
+#include <memory>
 #include "../ir/node.h"
 #include "../ir/irfactory.h"
 #include "../parser/scanner.h"
@@ -38,7 +39,7 @@ class Parser {
         scanner_(scanner),
         current_token_info_(nullptr),
         next_token_info_(nullptr),
-        error_reporter_(error_reporter){}
+        error_reporter_(error_reporter) {}
 
 
   ir::Node* Parse();
@@ -126,7 +127,9 @@ class Parser {
 
   ir::Node* ParseArguments();
 
-  ir::Node* ParseParameter();
+  ir::Node* ParseParameterList(bool accesslevel_allowed);
+  
+  ir::Node* ParseParameter(bool rest, bool accesslevel_allowed);
 
   ir::Node* ParseMemberExpression();
 
@@ -136,8 +139,6 @@ class Parser {
 
   ir::Node* ParseTypedParameterOrNameExpression();
 
-  void CheckExpression(ir::Node* expr);
-
   ir::Node* ParseObjectLiteral();
 
   ir::Node* ParseArrayLiteral();
@@ -146,25 +147,62 @@ class Parser {
 
   ir::Node* ParseFunction();
 
-  ir::Node* ParseArrowFunction(ir::Node* args);
+  ir::Node* ParseArrowFunction();
 
   ir::Node* ParseFunctionBody();
 
   ir::Node* ParseFormalParameterList();
 
-  ir::Node* ParseCallSignature();
+  ir::Node* ParseCallSignature(bool accesslevel_allowed);
 
   ir::Node* ParseObjectKey();
-
-  void ParseTypeExpressionAfterName(ir::Node* expr);
-
-  void ConvertExpressionToParameter(ir::Node* args, ir::Node* param_list);
 
   void EnablePrintParsePhase() {print_parser_phase_ = true;};
 
   void DisablePrintParsePhase() {print_parser_phase_ = false;};
   
  private:
+
+  class TokenBuffer: private Uncopyable, private Unmovable {
+   public:
+    TokenBuffer()
+        : index_(0) {}
+
+  
+    YATSC_INLINE void PushBack(TokenInfo* token_info) {
+      buffer_.push_back(*token_info);
+    }
+
+    YATSC_INLINE bool IsEmpty() YATSC_NO_SE {
+      return buffer_.empty();
+    }
+
+
+    YATSC_INLINE TokenInfo* Next() {
+      if (index_ >= buffer_.size()) {return nullptr;}
+      return &(buffer_[index_++]);
+    }
+
+
+    YATSC_INLINE TokenInfo* Peek() {
+      if (index_ >= buffer_.size()) {return nullptr;}
+      if (index_ == 0) {
+        return &(buffer_[index_ + 1]);
+      }
+      return &(buffer_[index_]);
+    }
+
+
+    YATSC_INLINE void Clear() {
+      buffer_.clear();
+      index_ = 0;
+    }    
+
+   private:
+    size_t index_;
+    std::vector<TokenInfo> buffer_;
+  };
+  
 
   class ParserState: private Unmovable, private Uncopyable {
    public:
@@ -173,15 +211,23 @@ class Parser {
 #define SCOPE(name, bit)                                              \
     class name: private Unmovable, private Uncopyable {               \
      public:                                                          \
-     name(ParserState* parser_state)      \
+     name(ParserState* parser_state)                                  \
          : parser_state_(parser_state) {                              \
+       if (1 == parser_state->bits_.test(bit)) {                      \
+         nested_ = true;                                              \
+       } else {                                                       \
+         nested_ = false;                                             \
+       }                                                              \
        parser_state_->bits_.set(bit);                                 \
      }                                                                \
                                                                       \
      ~name() {                                                        \
-       parser_state_->bits_.reset(bit);                               \
+       if (!nested_) {                                                \
+         parser_state_->bits_.reset(bit);                             \
+       }                                                              \
      }                                                                \
      private:                                                         \
+     bool nested_;                                                    \
      ParserState* parser_state_;                                      \
     };                                                                \
     YATSC_INLINE bool IsIn##name() {                                  \
@@ -191,6 +237,7 @@ class Parser {
 
     SCOPE(ArrowFunctionScope, 0);
     SCOPE(MethodScope, 1);
+    SCOPE(RecordTokenScope, 1);
 
 #undef SCOPE
     
@@ -199,12 +246,36 @@ class Parser {
   };
 
   YATSC_INLINE TokenInfo* Next() {
-    current_token_info_ = scanner_->Scan();
+    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
+      current_token_info_ = token_buffer_.Next();
+      if (current_token_info_ != nullptr) {
+        if (current_token_info_->type() == Token::NULL_TOKEN) {
+          return Next();
+        }
+        return current_token_info_;
+      }
+      token_buffer_.Clear();
+    }
+    
+    TokenInfo* token = scanner_->Scan();
+    if (parser_state_.IsInRecordTokenScope()) {
+      if (current_token_info_ == nullptr) {
+        token_buffer_.PushBack(&TokenInfo::kNullToken);
+      }
+      token_buffer_.PushBack(token);
+    }
+    current_token_info_ = token;
     return current_token_info_;
   }
 
 
   YATSC_INLINE TokenInfo* Peek() {
+    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
+      next_token_info_ = token_buffer_.Peek();
+      if (next_token_info_ != nullptr) {
+        return next_token_info_;
+      }
+    }
     next_token_info_ = scanner_->Peek();
     return next_token_info_;
   }
@@ -228,6 +299,7 @@ class Parser {
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
   ParserState parser_state_;
+  TokenBuffer token_buffer_;
 
 #ifdef DEBUG
   std::string indent_;

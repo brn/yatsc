@@ -48,9 +48,9 @@ namespace yatsc {
       indent_ = indent_.substr(0, indent_.size() - 2);                  \
       if (this->print_parser_phase_) {                                  \
         if (this->current_token_info_ != nullptr) {                     \
-          Printf("%sExit %s: Token = %s\n", indent_.c_str(), #name, this->current_token_info_->ToString()); \
+          Printf("%sExit %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, current_token_info_->ToString(), this->Peek()->ToString()); \
         } else {                                                        \
-          Printf("%sExit %s: Token = %s\n", indent_.c_str(), #name, this->Peek()->ToString()); \
+          Printf("%sExit %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, this->Peek()->ToString()); \
         }                                                               \
       }                                                                 \
     })
@@ -388,6 +388,8 @@ ir::Node* Parser<UCharInputIterator>::ParseClassFields() {
 }
 
 
+// Parse expression.
+// like '(' expression ')' or assignment expression.
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseExpression(bool noin) {
   ENTER(ParseExpression);
@@ -412,6 +414,11 @@ ir::Node* Parser<UCharInputIterator>::ParseExpression(bool noin) {
 }
 
 
+/**
+ * Return true if token type is assignment operator.
+ * @param type A token type.
+ * @returns True if token type is assignment operator.
+ */
 bool IsAssignmentOp(Token type) {
   return type == Token::TS_ASSIGN || type == Token::TS_MUL_LET ||
     type == Token::TS_DIV_LET || type == Token::TS_MOD_LET ||
@@ -465,11 +472,6 @@ ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool noin) {
   TokenInfo* ti = Peek();
   if (ti->type() == Token::TS_QUESTION_MARK) {
     Next();
-    if (Peek()->type() == Token::TS_COLON) {
-      ParseTypeExpressionAfterName(expr);
-      ir::Node* parameter = New<ir::ParameterView>(true, expr, nullptr);
-      parameter->SetInformationForNode(expr);
-    }
     ir::Node* left = ParseAssignmentExpression(noin);
     ti = Peek();
     if (ti->type() == Token::TS_COLON) {
@@ -736,7 +738,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseTypeExpression() {
   ENTER(ParseTypeExpression);
   if (Peek()->type() == Token::TS_IDENTIFIER) {
-    ir::Node* node = ParseLiteral();
+    ir::Node* node = ParsePrimaryExpression();
     if (Peek()->type() == Token::TS_LEFT_BRACKET) {
       Next();
       if (Peek()->type() == Token::TS_RIGHT_BRACKET) {
@@ -749,7 +751,7 @@ ir::Node* Parser<UCharInputIterator>::ParseTypeExpression() {
     }
   } else if (Peek()->type() == Token::TS_LEFT_PAREN) {
     typename ParserState::ArrowFunctionScope scope(&parser_state_);
-    ir::Node* types = ParseParameter();
+    ir::Node* types = ParseParameterList(false);
     if (Peek()->type() == Token::TS_FUNCTION_GLYPH) {
       Next();
       ir::Node* ret_type = ParseTypeExpression();
@@ -781,6 +783,7 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectTypeExpression() {
   if (Peek()->type() == Token::TS_LEFT_BRACE) {
     Next();
     ir::ObjectTypeExprView* object_type = New<ir::ObjectTypeExprView>();
+    object_type->SetInformationForNode(current_token_info_);
     while (Peek()->type() != Token::TS_RIGHT_BRACE) {
       ir::Node* property = ParseObjectTypeElement();
       object_type->InsertLast(property);
@@ -797,10 +800,10 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectTypeElement() {
   ENTER(ParseObjectTypeElement);
   if (Peek()->type() == Token::TS_NEW) {
     Next();
-    ir::Node* call_sig = ParseCallSignature();
+    ir::Node* call_sig = ParseCallSignature(false);
     return New<ir::ConstructSignatureView>(call_sig);
   } else if (Peek()->type() == Token::TS_LEFT_PAREN) {
-    return ParseCallSignature();
+    return ParseCallSignature(false);
   } else {
     bool optional = false;
     ir::Node* key = ParseObjectKey();
@@ -812,7 +815,7 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectTypeElement() {
       if (key->HasNameView()) {
         SYNTAX_ERROR_POS("SyntaxError invalid method name", key->source_position());
       }
-      ir::Node* call_sig = ParseCallSignature();
+      ir::Node* call_sig = ParseCallSignature(false);
       return New<ir::MethodSignatureView>(optional, key, call_sig);
     } else if (Peek()->type() == Token::TS_COLON) {
       Next();
@@ -1004,7 +1007,6 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       // parse an identifier.
       ir::NameView* name = New<ir::NameView>(token_info->value());
       Next();
-      ParseTypeExpressionAfterName(name);
       return name;
     }
     case Token::TS_THIS:
@@ -1018,68 +1020,46 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
-      Next();
       typename ParserState::ArrowFunctionScope scope(&parser_state_);
-      // parse an expression that beggining '('
-      ir::Node* node = ParseExpression(false);
-      if (Next()->type() != Token::TS_RIGHT_PAREN) {
-        SYNTAX_ERROR("Unexpected token.", current_token_info_);
+      ir::Node* node = nullptr;
+
+      // First try parse as expression.
+      try {
+        bool reparse_as_arrow_parameter = false;
+        {
+          // Enable token recording mode.
+          typename ParserState::RecordTokenScope token_scope(&parser_state_);
+          Next();
+          // parse an expression that beggining '('
+          node = ParseExpression(false);
+
+          // If close brace is not exists, it's treat as an arrow function.
+          if (Next()->type() != Token::TS_RIGHT_PAREN || Peek()->type() == Token::TS_ARROW_GLYPH) {
+            reparse_as_arrow_parameter = true;
+          }
+        }
+
+        // If parse failed, try parse as an arrow parameter,
+        // and if parse success but arrow glyph(=>) exists,
+        // treat as an arrow parameter too.
+        if (reparse_as_arrow_parameter) {
+          return ParseArrowFunction();
+        }
+
+        token_buffer_.Clear();
+        
+        return node;
+      } catch (const SyntaxError& e) {
+        // If failure, try parse as arrow function.
+        return ParseArrowFunction();
+      } catch (const std::exception& e) {
+        // Any errors except the SyntaxError are goto here.
+        throw e;
       }
-      if (Peek()->type() == Token::TS_FUNCTION_GLYPH) {
-        Next();
-        return ParseArrowFunction(node);
-      } else {
-        CheckExpression(node);
-      }
-      return node;
     }
     default:
       // parse a literal.
       return ParseLiteral();
-  }
-}
-
-
-template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::ParseTypeExpressionAfterName(ir::Node* name) {
-  ENTER(ParseTypeExpressionAfterName);
-  if (Peek()->type() == Token::TS_COLON ) {
-    if (!name->HasNameView()) {
-      SYNTAX_ERROR_POS("SyntaxError invalid expression", name->source_position());
-    }
-    ir::NameView* name_view = name->ToNameView();
-    if (!parser_state_.IsInArrowFunctionScope()) {
-      SYNTAX_ERROR("SyntaxError unexpected token", next_token_info_);
-    }
-    Next();
-    ir::Node* type = ParseTypeExpression();
-    name_view->set_type_expr(type);
-  }
-}
-
-
-template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::CheckExpression(ir::Node* node) {
-  ENTER(CheckExpression);
-  for (auto p: node->node_list()) {
-    if (p != nullptr) {
-      if (p->HasParameterView()) {
-        SYNTAX_ERROR_POS("SyntaxError unexpected '?'", p->source_position());
-      } else if (p->HasNameView()) {
-        ir::NameView* name = p->ToNameView();
-        if (nullptr != name->type_expr()) {
-          SYNTAX_ERROR_POS("SyntaxError unexpected ':'", p->source_position());
-        }
-      } else if (p->HasAssignmentView()) {
-        ir::AssignmentView* assignment = p->ToAssignmentView();
-        if (nullptr != assignment->target() && assignment->target()->HasNameView()) {
-          ir::NameView* name = assignment->target()->ToNameView();
-          if (nullptr != name->type_expr()) {
-            SYNTAX_ERROR_POS("SyntaxError unexpected ':'", p->source_position());
-          }
-        }
-      }
-    }
   }
 }
 
@@ -1188,24 +1168,86 @@ ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseParameter() {
-  ENTER(ParseParameter);
-  if (Next()->type() == Token::TS_LEFT_PAREN) {
+ir::Node* Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allowed) {
+  ENTER(ParseParameterList);
+  if (Peek()->type() == Token::TS_LEFT_PAREN) {
+    Next();
     ir::ParamList* param_list = New<ir::ParamList>();
     while (1) {
-      ir::Node* expr = ParseAssignmentExpression(false);
-      param_list->InsertLast(expr);
-      if (Peek()->type() == Token::TS_COMMA) {
-        Next();
-      } else if (Peek()->type() == Token::TS_RIGHT_PAREN) {
-        Next();
-        return param_list;
-      } else {
-        SYNTAX_ERROR("SyntaxError in formal parameter list", next_token_info_);
+      switch (Peek()->type()) {
+        case Token::TS_IDENTIFIER: {
+          param_list->InsertLast(ParseParameter(false, accesslevel_allowed));
+          break;
+        }
+
+        case Token::TS_REST: {
+          Next();
+          ir::Node* node = New<ir::RestParamView>(ParseParameter(true, accesslevel_allowed));
+          param_list->InsertLast(node);
+          break;
+        }
+
+        case Token::TS_COMMA: {
+          Next();
+          break;
+        }
+
+        default:
+          if (Peek()->type() == Token::TS_RIGHT_PAREN) {
+            Next();
+            return param_list;
+          }
+          SYNTAX_ERROR("SyntaxError unexpected token", next_token_info_);
       }
     }
   }
   SYNTAX_ERROR("SyntaxError '(' is expected", next_token_info_);
+  NO_RETURN;
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel_allowed) {
+  ENTER(ParseParameter);
+  ir::Node* access_level = nullptr;
+  if (Peek()->type() == Token::TS_PUBLIC || Peek()->type() == Token::TS_PRIVATE) {
+    Next();
+    if (accesslevel_allowed) {
+      access_level = New<ir::ClassFieldAccessLevelView>(current_token_info_->type());
+    } else {
+      SYNTAX_ERROR("SyntaxError 'private' or 'public' not allowed here", current_token_info_);
+      NO_RETURN;
+    }
+  }
+  if (Peek()->type() == Token::TS_IDENTIFIER) {
+    Next();
+    ir::ParameterView* pv = New<ir::ParameterView>();
+    ir::NameView* nv = New<ir::NameView>(current_token_info_->value());
+    pv->set_access_level(access_level);
+    pv->set_name(pv);
+    if (Peek()->type() == Token::TS_QUESTION_MARK) {
+      if (rest) {
+        SYNTAX_ERROR("SyntaxError optional parameter not allowed in rest parameter", next_token_info_);
+        NO_RETURN;
+      }
+      Next();
+      pv->set_optional(true);
+    }
+    if (Peek()->type() == Token::TS_COLON) {
+      Next();
+      pv->set_type_expr(ParseTypeExpression());
+    }
+    if (Peek()->type() == Token::TS_ASSIGN) {
+      if (rest) {
+        SYNTAX_ERROR("SyntaxError default parameter not allowed in rest parameter", next_token_info_);
+        NO_RETURN;
+      }
+      Next();
+      pv->set_value(ParseAssignmentExpression(false));
+    }
+    return pv;
+  }
+  SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
   NO_RETURN;
 }
 
@@ -1219,7 +1261,7 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction() {
     if (Peek()->type() == Token::TS_IDENTIFIER) {
       name = ParseLiteral();
     }
-    ir::Node* call_signature = ParseCallSignature();
+    ir::Node* call_signature = ParseCallSignature(false);
     ir::Node* body = ParseFunctionBody();
     return New<ir::FunctionView>(name, call_signature, body);
   }
@@ -1229,10 +1271,10 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCallSignature() {
+ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed) {
   ENTER(ParseCallSignature);
   if (Peek()->type() == Token::TS_LEFT_PAREN) {
-    ir::Node* parameter_list = ParseParameter();
+    ir::Node* parameter_list = ParseParameterList(accesslevel_allowed);
     ir::Node* return_type = nullptr;
     if (Peek()->type() == Token::TS_COLON) {
       Next();
@@ -1246,14 +1288,12 @@ ir::Node* Parser<UCharInputIterator>::ParseCallSignature() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* args) {
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
   ENTER(ParseArrowFunction);
-  ir::Node* param_list;
-  if (args->HasNameView()) {
-    param_list = args;
-  } else {
-    param_list = New<ir::ParamList>();
-    ConvertExpressionToParameter(args, param_list);
+  
+  ir::Node* param_list = ParseParameterList(false);
+  if (Next()->type() != Token::TS_ARROW_GLYPH) {
+    SYNTAX_ERROR("SyntaxError '=>' expected", current_token_info_);
   }
   ir::Node* body;
   if (Peek()->type() == Token::TS_LEFT_BRACE) {
@@ -1262,46 +1302,6 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* args) {
     body = ParseAssignmentExpression(false);
   }
   return New<ir::ArrowFunctionView>(nullptr, param_list, body);
-}
-
-
-template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::ConvertExpressionToParameter(ir::Node* args, ir::Node* param_list) {
-  ENTER(ConvertExpressionToParameter);
-  bool has_rest = false;
-  if (args->HasNameView()) {
-    param_list->InsertLast(New<ir::ParameterView>(false, args, nullptr));
-  } else if (args->HasCommaExprView()) {
-    for (auto arg: args->node_list()) {
-      if (has_rest) {
-        SYNTAX_ERROR_POS("SyntaxError rest parameter must be end of formal parameter list", arg->source_position());
-      }
-      switch (arg->node_type()) {
-        case ir::NodeType::kAssignmentView: {
-          ir::AssignmentView* assignment_view = arg->ToAssignmentView();
-          if (assignment_view->operand() != Token::TS_ASSIGN) {
-            SYNTAX_ERROR_POS("SyntaxError expected '='", assignment_view->source_position());
-          }
-          ir::Node* target = assignment_view->target();
-          if (!target->HasNameView() &&
-              !target->HasParameterView()) {
-            SYNTAX_ERROR_POS("SyntaxError unexpected token", target->source_position());
-          }
-          param_list->InsertLast(arg);
-        }
-        case ir::NodeType::kRestParamView: {
-          has_rest = true;
-          param_list->InsertLast(arg);
-        }
-        case ir::NodeType::kParameterView: {
-          param_list->InsertLast(arg);
-        }
-        case ir::NodeType::kNameView: {
-          param_list->InsertLast(New<ir::ParameterView>(false, arg, nullptr));
-        }
-      }
-    }
-  }
 }
 
 

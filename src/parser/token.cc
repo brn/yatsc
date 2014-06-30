@@ -287,4 +287,7 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
 Token TokenInfo::GetPunctureType(const UChar& uchar) {
   return kPunctures[uchar.ToUC8Ascii()];
 }
+
+
+TokenInfo TokenInfo::kNullToken;
 }

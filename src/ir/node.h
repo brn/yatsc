@@ -438,6 +438,20 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    */
   void SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT;
 
+
+  /**
+   * Set source information to this node.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForNode(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForNode(*token_info);}
+  
+
+  /**
+   * Set source information to this node and children.
+   * @param token_info A token inforamtion class.
+   */
+  void SetInformationForTree(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForTree(*token_info);}
+
   
   /**
    * Set source information to this node.
@@ -1322,8 +1336,8 @@ class ArrowFunctionView: public Node {
 
 class ParameterView: public Node {
  public:
-  ParameterView(bool optional, Node* expr, Node* access_level)
-      : Node(NodeType::kParameterView, 1u, {expr, access_level}){
+  ParameterView(bool optional, Node* name, Node* value, Node* type_expr, Node* access_level)
+      : Node(NodeType::kParameterView, 4u, {name, value, type_expr, access_level}){
     if (optional) {
       set_flag(0);
     }
@@ -1331,23 +1345,28 @@ class ParameterView: public Node {
 
 
   ParameterView()
-      : Node(NodeType::kParameterView, 1u){}
+      : Node(NodeType::kParameterView, 4u){}
 
 
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(name, 0);
 
+  NODE_PROPERTY(value, 1);
+
+  NODE_PROPERTY(type_expr, 2);
   
-  NODE_PROPERTY(access_level, 1);
+  NODE_PROPERTY(access_level, 3);
+
+  NODE_FLAG_PROPERTY(optional, 0);
 };
 
 
 class RestParamView: public Node {
  public:
-  RestParamView(Node* identifier)
-      : Node(NodeType::kRestParamView, 1u, {identifier}){}
+  RestParamView(Node* parameter)
+      : Node(NodeType::kRestParamView, 1u, {parameter}){}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(parameter, 0);
 };
 
 

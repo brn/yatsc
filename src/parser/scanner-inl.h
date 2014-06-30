@@ -347,6 +347,13 @@ void Scanner<UCharInputIterator>::ScanOperator() {
     case ',':
       return BuildToken(Token::TS_COMMA);
     case '.':
+      if (lookahead1_ == char_) {
+        Advance();
+        if (lookahead1_ == char_) {
+          return BuildToken(Token::TS_REST);
+        }
+        Illegal();
+      }
       return BuildToken(Token::TS_DOT);
     case '=':
       return ScanEqualityComparatorOrArrowGlyph();
@@ -433,6 +440,7 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
     }
     return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);
   } else if (!not && lookahead1_ == unicode::u8('>')) {
+    Advance();
     return BuildToken(Token::TS_ARROW_GLYPH);
   }
   BuildToken(not? Token::TS_NOT_EQUAL: Token::TS_ASSIGN);

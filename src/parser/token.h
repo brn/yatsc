@@ -33,7 +33,6 @@
 #include "../utils/utils.h"
 #include "../utils/os.h"
 
-#define FAST_VALUE_LENGTH 20
 
 namespace yatsc {
 
@@ -75,6 +74,7 @@ namespace yatsc {
   DECLARE(TS_PROTECTED)                                   \
   DECLARE(TS_PUBLIC)                                      \
   DECLARE(TS_REGULAR_EXPR)                                \
+  DECLARE(TS_REST)                                        \
   DECLARE(TS_RETURN)                                      \
   DECLARE(TS_STATIC)                                      \
   DECLARE(TS_SUPER)                                       \
@@ -152,6 +152,7 @@ namespace yatsc {
   DECLARE(FUTURE_STRICT_RESERVED_WORD)                    \
   DECLARE(FUTURE_RESERVED_WORD)                           \
   DECLARE(END_OF_INPUT)                                   \
+  DECLARE(NULL_TOKEN)                                     \
   DECLARE_LAST(ILLEGAL)
 
 
@@ -172,8 +173,7 @@ static const char* kTokenStringList[] = {
 #define DECLARE(TokenName) #TokenName,
 #define DECLARE_LAST(TokenName) #TokenName
   TOKEN_LIST(DECLARE, DECLARE, DECLARE_LAST)
-#undef DECLARE_ENUM
-#undef DECLARE_FIRST
+#undef DECLARE
 #undef DECLARE_LAST
 };
 }
@@ -186,12 +186,14 @@ class TokenInfo {
 
   // Default constructor.
   TokenInfo() :
-      type_(Token::END_OF_INPUT) {}
+      type_(Token::NULL_TOKEN) {}
   
 
   // Copy constructor
   TokenInfo(const TokenInfo& token_info)
       : utf_string_(token_info.utf_string_),
+        multi_line_comment_(token_info.multi_line_comment_),
+        line_terminator_state_(token_info.line_terminator_state_),
         type_(token_info.type_),
         source_position_(token_info.source_position_) {}
 
@@ -280,6 +282,9 @@ class TokenInfo {
    * @param uchar The unicode char.
    */
   static Token GetPunctureType(const UChar& uchar);
+
+  
+  static TokenInfo kNullToken;
   
  private:  
   UtfString utf_string_;
@@ -290,5 +295,6 @@ class TokenInfo {
 };
 }
 
-#undef FAST_VALUE_LENGTH
+
+#undef TOKEN_LIST
 #endif

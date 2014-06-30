@@ -129,10 +129,26 @@ TEST(ParserTest, ParseExpression_array) {
 
 TEST(ParserTest, ParseExpression_arrow_function) {
   INIT(yatsc::LanguageMode::ES3, parser, "(a:string,b:number) => a + b", [&]{
-    parser.EnablePrintParsePhase();
     auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrowFunctionView);
     ASSERT_TRUE(node->HasArrowFunctionView());
-    parser.DisablePrintParsePhase();
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_parenthesized_expression) {
+  INIT(yatsc::LanguageMode::ES3, parser, "(100,200,300,b)", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kCommaExprView);
+    ASSERT_TRUE(node->HasCommaExprView());
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_parenthesized_expression_like_arrow_function) {
+  INIT(yatsc::LanguageMode::ES3, parser, "(a, b, c) => a + b", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrowFunctionView);
+    ASSERT_TRUE(node->HasArrowFunctionView());
   });
 }
