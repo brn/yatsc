@@ -62,6 +62,17 @@ class UtfValueCache {
     utf16_value_ = utf_value_cache.utf16_value_;
     return (*this);
   }
+
+
+  bool operator == (const UtfValueCache& utf_value_cache) const {
+    return utf8_value_ == utf_value_cache.utf8_value_ &&
+      utf16_value_== utf_value_cache.utf16_value_;
+  }
+
+
+  bool operator == (const char* str) const {
+    return utf8_value_ == str;
+  }
   
   
   YATSC_INLINE void append_utf8_value(const char* utf8) {
@@ -206,6 +217,16 @@ class UtfString {
 
   YATSC_INLINE void Clear() {
     utf_value_cache_.Clear();
+  }
+
+
+  inline bool operator == (UtfString&& utf_string) const {
+    return utf_value_cache_ == utf_string.utf_value_cache_;
+  }
+
+
+  inline bool operator == (const char* str) const {
+    return utf_value_cache_ == str;
   }
   
 

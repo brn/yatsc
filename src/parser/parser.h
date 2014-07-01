@@ -39,7 +39,7 @@ class Parser {
         scanner_(scanner),
         current_token_info_(nullptr),
         next_token_info_(nullptr),
-        error_reporter_(error_reporter) {}
+        error_reporter_(error_reporter) {Next();}
 
 
   ir::Node* Parse();
@@ -119,6 +119,18 @@ class Parser {
 
   ir::Node* ParseTypeExpression();
 
+  ir::Node* ParseReferencedType();
+
+  ir::Node* ParseGenericType();
+
+  ir::Node* ParseTypeArguments();
+
+  ir::Node* ParseTypeParameters();
+
+  ir::Node* ParseTypeQueryExpression();
+
+  ir::Node* ParseArrayType(ir::Node* type_expr);
+
   ir::Node* ParseObjectTypeExpression();
 
   ir::Node* ParseObjectTypeElement();
@@ -179,17 +191,20 @@ class Parser {
 
 
     YATSC_INLINE TokenInfo* Next() {
+      if (index_ >= (buffer_.size() - 1)) {return nullptr;}
+      return &(buffer_[++index_]);
+    }
+
+
+    YATSC_INLINE TokenInfo* Current() {
       if (index_ >= buffer_.size()) {return nullptr;}
-      return &(buffer_[index_++]);
+      return &(buffer_[index_]);
     }
 
 
     YATSC_INLINE TokenInfo* Peek() {
       if (index_ >= buffer_.size()) {return nullptr;}
-      if (index_ == 0) {
-        return &(buffer_[index_ + 1]);
-      }
-      return &(buffer_[index_]);
+      return &(buffer_[index_ + 1]);
     }
 
 
@@ -245,13 +260,11 @@ class Parser {
     std::bitset<8> bits_;
   };
 
+
   YATSC_INLINE TokenInfo* Next() {
     if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
       current_token_info_ = token_buffer_.Next();
       if (current_token_info_ != nullptr) {
-        if (current_token_info_->type() == Token::NULL_TOKEN) {
-          return Next();
-        }
         return current_token_info_;
       }
       token_buffer_.Clear();
@@ -259,9 +272,6 @@ class Parser {
     
     TokenInfo* token = scanner_->Scan();
     if (parser_state_.IsInRecordTokenScope()) {
-      if (current_token_info_ == nullptr) {
-        token_buffer_.PushBack(&TokenInfo::kNullToken);
-      }
       token_buffer_.PushBack(token);
     }
     current_token_info_ = token;
@@ -278,6 +288,18 @@ class Parser {
     }
     next_token_info_ = scanner_->Peek();
     return next_token_info_;
+  }
+
+
+  YATSC_INLINE TokenInfo* Current() {
+    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
+      TokenInfo* token = token_buffer_.Current();
+      if (token != nullptr) {
+        current_token_info_ = token;
+        return current_token_info_;
+      }
+    }
+    return current_token_info_;
   }
   
   

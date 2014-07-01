@@ -55,8 +55,9 @@ void Scanner<UCharInputIterator>::Advance()  {
     return;
   }
 
+  size_t pos = char_.utf8_length();
   char_ = *it_;
-  scanner_source_position_.AdvancePosition();
+  scanner_source_position_.AdvancePosition(pos);
   ++it_;
   
   if (it_ == end_) {

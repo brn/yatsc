@@ -172,8 +172,9 @@ class YatscScoped__ {
   T cb_;
 };
 
-
-#define YATSC_SCOPED(exit_function) auto exit_function_of_scope##__LINE__ = exit_function;YatscScoped__<decltype(exit_function_of_scope##__LINE__)> yatsc_scoped_once##__LINE__(exit_function_of_scope##__LINE__);
+#define YATSC_SCOPED_INNER__L(exit_function, line) auto exit_function_of_scope##line = exit_function;YatscScoped__<decltype(exit_function_of_scope##line)> yatsc_scoped_once##line(exit_function_of_scope##line);
+#define YATSC_SCOPED_INNER__(exit_function, line) YATSC_SCOPED_INNER__L(exit_function, line);
+#define YATSC_SCOPED(exit_function) YATSC_SCOPED_INNER__(exit_function, __LINE__)
 
 
 #ifdef UNIT_TEST

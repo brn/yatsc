@@ -25,20 +25,26 @@
 
 namespace yatsc {
 
-#define SYNTAX_ERROR(message, token)            \
+#define SYNTAX_ERROR(message, token)                  \
   SYNTAX_ERROR_POS(message, token->source_position())
 
 
+#ifndef DEBUG
 #define SYNTAX_ERROR_POS(message, pos)          \
   (*error_reporter_) << message;                \
   error_reporter_->Throw<SyntaxError>(pos)
+#else
+#define SYNTAX_ERROR_POS(message, pos)                          \
+  (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
+  error_reporter_->Throw<SyntaxError>(pos)
+#endif
 
 
 #ifdef DEBUG
 #define ENTER(name)                                                     \
   if (print_parser_phase_) {                                            \
-    if (current_token_info_ != nullptr) {                               \
-      Printf("%sEnter %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, current_token_info_->ToString(), Peek()->ToString()); \
+    if (Current() != nullptr) {                               \
+      Printf("%sEnter %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, Current()->ToString(), Peek()->ToString()); \
     } else {                                                            \
       Printf("%sEnter %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, Peek()->ToString()); \
     }                                                                   \
@@ -47,8 +53,8 @@ namespace yatsc {
   YATSC_SCOPED([&]{                                                     \
       indent_ = indent_.substr(0, indent_.size() - 2);                  \
       if (this->print_parser_phase_) {                                  \
-        if (this->current_token_info_ != nullptr) {                     \
-          Printf("%sExit %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, current_token_info_->ToString(), this->Peek()->ToString()); \
+        if (this->Current() != nullptr) {                     \
+          Printf("%sExit %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, Current()->ToString(), this->Peek()->ToString()); \
         } else {                                                        \
           Printf("%sExit %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, this->Peek()->ToString()); \
         }                                                               \
@@ -394,15 +400,15 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseExpression(bool noin) {
   ENTER(ParseExpression);
   ir::Node* assignment_expr = ParseAssignmentExpression(noin);
-  if (Peek()->type() == Token::TS_COMMA) {
+  if (Current()->type() == Token::TS_COMMA) {
     Next();
     ir::CommaExprView* comma_expr = New<ir::CommaExprView>({assignment_expr});
-    comma_expr->SetInformationForNode(*current_token_info_);
+    comma_expr->SetInformationForNode(*Current());
     
     while (1) {
       assignment_expr = ParseAssignmentExpression(noin);
       comma_expr->InsertLast(assignment_expr);
-      if (Peek()->type() == Token::TS_COMMA) {
+      if (Current()->type() == Token::TS_COMMA) {
         Next();
       } else {
         return comma_expr;
@@ -433,7 +439,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool noin) {
   ENTER(ParseAssignmentExpression);
   ir::Node* expr = ParseConditionalExpression(noin);
-  TokenInfo *token_info = Peek();
+  TokenInfo *token_info = Current();
   Token type = token_info->type();
   if (IsAssignmentOp(type)) {
     Next();
@@ -443,7 +449,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool noin) {
       result->SetInformationForNode(expr);
       return result;
     }
-    SYNTAX_ERROR("invalid left hand side expression in 'assignment expression'", current_token_info_);
+    SYNTAX_ERROR("invalid left hand side expression in 'assignment expression'", Current());
   }
   return expr;
 }
@@ -469,11 +475,11 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool noin) {
   ENTER(ParseConditionalExpression);
   ir::Node* expr = ParseBinaryExpression(noin);
-  TokenInfo* ti = Peek();
+  TokenInfo* ti = Current();
   if (ti->type() == Token::TS_QUESTION_MARK) {
     Next();
     ir::Node* left = ParseAssignmentExpression(noin);
-    ti = Peek();
+    ti = Current();
     if (ti->type() == Token::TS_COLON) {
       Next();
       ir::Node* right = ParseAssignmentExpression(noin);
@@ -600,7 +606,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool noin) {
   ir::Node* lhs = ParseUnaryExpression();
   ir::Node* expr = nullptr;
   while (1) {
-    TokenInfo* token = Peek();
+    TokenInfo* token = Current();
     Token type = token->type();
     switch (token->type()) {
       case Token::TS_LOGICAL_AND :
@@ -685,7 +691,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool noin) {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseUnaryExpression() {
   ENTER(ParseUnaryExpression);
-  Token type = Peek()->type();
+  Token type = Current()->type();
   switch (type) {
     case Token::TS_DELETE:
     case Token::TS_VOID:
@@ -710,9 +716,9 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
   ENTER(ParsePostfixExpression);
   ir::Node* node = ParseLeftHandSideExpression();
-  if (Peek()->type() == Token::TS_INCREMENT) {
+  if (Current()->type() == Token::TS_INCREMENT) {
     return New<ir::PostfixView>(node, Token::TS_INCREMENT);
-  } else if (Peek()->type() == Token::TS_DECREMENT) {
+  } else if (Current()->type() == Token::TS_DECREMENT) {
     return New<ir::PostfixView>(node, Token::TS_DECREMENT);
   }
   return node;
@@ -727,64 +733,258 @@ ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression() {
   ENTER(ParseLeftHandSideExpression);
-  if (Peek()->type() == Token::TS_NEW) {
+  if (Current()->type() == Token::TS_NEW) {
     return ParseMemberExpression();
   }
   return ParseCallExpression();
 }
 
 
+// type_parameters
+//   : '<' type_parameter_list '>'
+//   ;
+// type_parameter_list
+//   : type_parameter 
+//   | type_parameter_list , type_parameter
+//   ;
+// type_parameter
+//   : identifier constraint__opt
+//   ;
+// constraint
+//   : 'extends' type
+//   ;
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseTypeParameters() {
+  if (Current()->type() == Token::TS_LESS) {
+    Next();
+    ir::TypeParametersView* type_params = New<ir::TypeParametersView>();
+    bool found = false;
+    while (1) {
+      if (Current()->type() == Token::TS_IDENTIFIER) {
+        found = true;
+        ir::Node* name = ParsePrimaryExpression();
+        if (Current()->type() == Token::TS_EXTENDS) {
+          type_params->InsertLast(New<ir::TypeConstraintsView>(name));
+        } else {
+          type_params->InsertLast(name);
+        }
+      } else if (Current()->type() == Token::TS_GREATER) {
+        if (!found) {
+          SYNTAX_ERROR("SyntaxError need type parameter", Current());
+        }
+        Next();
+        return type_params;
+      } else if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else {
+        SYNTAX_ERROR("SyntaxError unexpected token", next_token_info_);
+        NO_RETURN;
+      }
+    }
+  }
+  SYNTAX_ERROR("SyntaxError '<' expected", next_token_info_);
+  NO_RETURN;
+}
+
+
+// type
+//   : predefined_type 
+//   | type_reference 
+//   | type_query 
+//   | type_literal
+//   ;
+//
+// pre_defined_type 
+//   : 'any'
+//   | 'number'
+//   | 'boolean'
+//   | 'string'
+//   | 'void'
+//   ;
+// type_literal 
+//   : object_type 
+//   | array_type 
+//   | function_type 
+//   | constructor_type
+//   ;
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseTypeExpression() {
   ENTER(ParseTypeExpression);
-  if (Peek()->type() == Token::TS_IDENTIFIER) {
-    ir::Node* node = ParsePrimaryExpression();
-    if (Peek()->type() == Token::TS_LEFT_BRACKET) {
-      Next();
-      if (Peek()->type() == Token::TS_RIGHT_BRACKET) {
-        Next();
-        return New<ir::ArrayTypeExprView>(node);
-      }
-      SYNTAX_ERROR("SyntaxError ']' expected", next_token_info_);
-    } else {
-      return New<ir::SimpleTypeExprView>(node);
-    }
-  } else if (Peek()->type() == Token::TS_LEFT_PAREN) {
-    typename ParserState::ArrowFunctionScope scope(&parser_state_);
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    return ParseArrayType(ParseReferencedType());
+  } else if (Current()->type() == Token::TS_LEFT_PAREN) {
     ir::Node* types = ParseParameterList(false);
-    if (Peek()->type() == Token::TS_FUNCTION_GLYPH) {
+    if (Current()->type() == Token::TS_ARROW_GLYPH) {
       Next();
       ir::Node* ret_type = ParseTypeExpression();
-      return New<ir::FunctionTypeExprView>(types, ret_type);
+      return ParseArrayType(New<ir::FunctionTypeExprView>(types, ret_type));
     }
     SYNTAX_ERROR("SyntaxError '=>' expected", next_token_info_);
-  } else if (Peek()->type() == Token::TS_LEFT_BRACE) {
-    return ParseObjectTypeExpression();
-  } else if (Peek()->type() == Token::TS_LEFT_BRACKET) {
-    Next();
-    if (Peek()->type() == Token::TS_IDENTIFIER) {
-      ir::Node* name = ParseLiteral();
-      if (Peek()->type() == Token::TS_COLON) {
-        Next();
-        ir::Node* type = ParseTypeExpression();
-        return New<ir::AccessorTypeExprView>(name, type);
-      }
-      SYNTAX_ERROR("SyntaxError ':' expected", next_token_info_);
-    }
-    SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
+  } else if (Current()->type() == Token::TS_LEFT_BRACE) {
+    return ParseArrayType(ParseObjectTypeExpression());
+  } else if (Current()->type() == Token::TS_TYPEOF) {
+    return ParseArrayType(ParseTypeQueryExpression());
   }
   NO_RETURN;
 }
 
 
+// type_reference 
+//   : type_name [no line_terminator here] type_arguments__opt
+//   ;
+// type_name
+//   : identifier 
+//   | module_name '.' identifier
+//   ;
+// module_name
+//   : identifier
+//   | module_name '.' identifier
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseReferencedType() {
+  ENTER(ParseReferencedType);
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    ir::Node* node = ParsePrimaryExpression();
+    if (Current()->type() == Token::TS_DOT) {
+      ir::GetPropView* get_prop_view = New<ir::GetPropView>();
+      while (1) {
+        if (Current()->type() == Token::TS_DOT) {
+          Next();
+          get_prop_view->InsertLast(ParsePrimaryExpression());
+        } else {
+          break;
+        }
+      }
+      node = get_prop_view;
+    }
+    if (!Current()->has_line_break_before_next() && Current()->type() == Token::TS_LESS) {
+      ir::Node* type_parameter = ParseTypeArguments();
+      return New<ir::GenericTypeExprView>(node, type_parameter);
+    }
+
+    return New<ir::SimpleTypeExprView>(node);
+  }
+
+  SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
+  NO_RETURN;
+}
+
+
+// type_query
+//   : 'typeof' type_query_expression
+//   ;
+// type_query_expression: 
+//   : identifier
+//   | type_query_expression '.' identifier_name
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseTypeQueryExpression() {
+  if (Current()->type() == Token::TS_TYPEOF) {
+    Next();
+    if (Current()->type() == Token::TS_IDENTIFIER) {
+      ir::Node* name = ParsePrimaryExpression();
+      if (Current()->type() == Token::TS_DOT) {
+        Next();
+        ir::GetPropView* getprop = New<ir::GetPropView>();
+        ir::GetPropView* root = getprop;
+        getprop->set_target(name);
+        while (1) {
+          if (Current()->type() == Token::TS_IDENTIFIER) {
+            getprop->set_prop(ParsePrimaryExpression());
+            if (Current()->type() == Token::TS_DOT) {
+              ir::GetPropView* getprop_tmp = New<ir::GetPropView>();
+              getprop->set_target(getprop_tmp);
+              getprop_tmp = getprop;
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+        return New<ir::TypeQueryView>(root);
+      }
+      return New<ir::TypeQueryView>(name);
+    }
+    SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
+  }
+  SYNTAX_ERROR("SyntaxError 'typeof' expected", next_token_info_);
+  NO_RETURN;
+}
+
+
+// type_arguments 
+//   : '<' type_argument_list '>'
+//   ;
+// type_argument_list
+//   : type_argument 
+//   | type_argument_list ',' type_argument
+//   ;
+// type_argument
+//   : type
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseTypeArguments() {
+  if (Current()->type() == Token::TS_LESS) {
+    Next();
+    ir::TypeArgumentsView* type_arguments = New<ir::TypeArgumentsView>();
+    while (1) {
+      type_arguments->InsertLast(ParseTypeExpression());
+      if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else {
+        return type_arguments;
+      }
+    }
+  }
+  SYNTAX_ERROR("SyntaxError '<' expected", next_token_info_);
+}
+
+
+// array_type
+//   : element_type [no LineTerminator here] '[' ']'
+//   ;
+// element_type
+//   : pre_defined_type
+//   | type_reference
+//   | type_query
+//   | object_type
+//   | array_type
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrayType(ir::Node* type_expr) {
+  if (Current()->type() == Token::TS_LEFT_BRACKET) {
+    Next();
+    if (Current()->type() == Token::TS_RIGHT_BRACKET) {
+      Next();
+      return ParseArrayType(New<ir::ArrayTypeExprView>(type_expr));
+    }
+    SYNTAX_ERROR("SyntaxError ']' expected", next_token_info_);
+    NO_RETURN;
+  }
+  return type_expr;
+}
+
+
+// object_type
+//   : '{' type_body__opt '}'
+//   ;
+// type_body
+//   : type_member_list ';'__opt
+//   ;
+// type_member_list
+//   : type_member
+//   | type_member_list ';' type_member
+//   ;
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseObjectTypeExpression() {
   ENTER(ParseObjectTypeExpression);
-  if (Peek()->type() == Token::TS_LEFT_BRACE) {
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
     Next();
     ir::ObjectTypeExprView* object_type = New<ir::ObjectTypeExprView>();
-    object_type->SetInformationForNode(current_token_info_);
-    while (Peek()->type() != Token::TS_RIGHT_BRACE) {
+    object_type->SetInformationForNode(Current());
+    while (Current()->type() != Token::TS_RIGHT_BRACE) {
       ir::Node* property = ParseObjectTypeElement();
       object_type->InsertLast(property);
     }
@@ -795,35 +995,59 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectTypeExpression() {
 }
 
 
+// type_member
+//   : property_signature
+//   | call_signature
+//   | construct_signature
+//   | index_signature
+//   | method_signature
+//   ;
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseObjectTypeElement() {
   ENTER(ParseObjectTypeElement);
-  if (Peek()->type() == Token::TS_NEW) {
+  if (Current()->type() == Token::TS_NEW) {
     Next();
     ir::Node* call_sig = ParseCallSignature(false);
     return New<ir::ConstructSignatureView>(call_sig);
-  } else if (Peek()->type() == Token::TS_LEFT_PAREN) {
+  } else if (Current()->type() == Token::TS_LEFT_PAREN) {
     return ParseCallSignature(false);
+  } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
+    Next();
+    if (Current()->type() == Token::TS_IDENTIFIER) {
+      ir::Node* name = ParseLiteral();
+      if (Current()->type() == Token::TS_COLON) {
+        Next();
+        if (Current()->type() == Token::TS_IDENTIFIER &&
+            (Current()->value() == "string" || Current()->value() == "number")) {
+          Next();
+          return New<ir::AccessorTypeExprView>(name, ParsePrimaryExpression());
+        } else {
+          SYNTAX_ERROR("SyntaxError type name in indexSignature only allowed one of 'string' or 'number'", next_token_info_);
+        }
+      }
+      SYNTAX_ERROR("SyntaxError ':' expected", next_token_info_);
+    }
+    SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
   } else {
     bool optional = false;
     ir::Node* key = ParseObjectKey();
-    if (Peek()->type() == Token::TS_QUESTION_MARK) {
+    if (Current()->type() == Token::TS_QUESTION_MARK) {
       optional = true;
       Next();
     }
-    if (Peek()->type() == Token::TS_LEFT_PAREN) {
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
       if (key->HasNameView()) {
         SYNTAX_ERROR_POS("SyntaxError invalid method name", key->source_position());
       }
       ir::Node* call_sig = ParseCallSignature(false);
       return New<ir::MethodSignatureView>(optional, key, call_sig);
-    } else if (Peek()->type() == Token::TS_COLON) {
+    } else if (Current()->type() == Token::TS_COLON) {
       Next();
       ir::Node* type_expr = ParseTypeExpression();
       return New<ir::PropertySignatureView>(optional, key, type_expr);
-    } else if (Peek()->type() == Token::TS_LEFT_BRACKET) {
+    } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
       if (optional) {
-        SYNTAX_ERROR("SyntaxError unexpected '?'", current_token_info_);
+        SYNTAX_ERROR("SyntaxError unexpected '?'", Current());
       }
       return ParseTypeExpression();
     }
@@ -844,10 +1068,10 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
   ENTER(ParseCallExpression);
   ir::Node* target;
-  if (Peek()->type() == Token::TS_SUPER) {
+  if (Current()->type() == Token::TS_SUPER) {
     Next();
     target = New<ir::SuperView>();
-    if (Peek()->type() == Token::TS_DOT) {
+    if (Current()->type() == Token::TS_DOT) {
       Next();
       ir::Node* literal = ParseLiteral();
       if (literal->HasNameView()) {
@@ -859,11 +1083,11 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
   } else {
     target = ParseMemberExpression();
   }
-  if (Peek()->type() == Token::TS_LEFT_PAREN) {
+  if (Current()->type() == Token::TS_LEFT_PAREN) {
     ir::Node* args = ParseArguments();
     ir::Node* call = New<ir::CallView>(target, args);
     while (1) {
-      switch (Peek()->type()) {
+      switch (Current()->type()) {
         case Token::TS_LEFT_PAREN: {
           ir::Node* args = ParseArguments();
           call = New<ir::CallView>(call, args);
@@ -900,12 +1124,12 @@ ir::Node* Parser<UCharInputIterator>::ParseArguments() {
     while (1) {
       args->InsertLast(ParseAssignmentExpression(false));
       Next();
-      if (current_token_info_->type() == Token::TS_COMMA) {
+      if (Current()->type() == Token::TS_COMMA) {
         continue;
-      } else if (current_token_info_->type() == Token::TS_RIGHT_BRACE) {
+      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
         return args;
       }
-      SYNTAX_ERROR("SyntaxError unexpected token in 'arguments'", current_token_info_);
+      SYNTAX_ERROR("SyntaxError unexpected token in 'arguments'", Current());
     }
   }
   return nullptr;
@@ -924,7 +1148,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseMemberExpression() {
   ENTER(ParseMemberExpression);
   // Not advance scanner.
-  TokenInfo* token_info = Peek();
+  TokenInfo* token_info = Current();
   ir::Node* node;
   if (token_info->type() ==  Token::TS_NEW) {
     // Parse new Foo() expression.
@@ -933,7 +1157,7 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression() {
 
     // New expression can omit parens.
     // If paren exists, continue parsing.
-    if (Peek()->type() == Token::TS_LEFT_PAREN) {
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
       ir::Node* args = ParseArguments();
       node = New<ir::NewCallView>(member, args);
       return ParseGetPropOrElem(node);
@@ -961,21 +1185,24 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node) {
   ENTER(ParseGetPropOrElem);
   while (1) {
-    switch (Peek()->type()) {
+    switch (Current()->type()) {
       case Token::TS_LEFT_BRACKET: {
         // [...] expression.
         Next();
         ir::Node* expr = ParseExpression(false);
         node = New<ir::GetElemView>(node, expr);
         if (Next()->type() != Token::TS_RIGHT_BRACKET) {
-          SYNTAX_ERROR("Unexpected token.", current_token_info_);
+          SYNTAX_ERROR("Unexpected token.", Current());
         }
         break;
       }
       case Token::TS_DOT: {
         // a.b.c expression.
         Next();
-        ir::Node* expr = ParseExpression(false);
+        ir::Node* expr = ParsePrimaryExpression();
+        if (!expr->HasNameView() && !expr->HasKeywordLiteralView()) {
+          SYNTAX_ERROR_POS("SyntaxError identifier expected", expr->source_position());
+        }
         node = New<ir::GetPropView>(node, expr);
         break;
       }
@@ -983,7 +1210,7 @@ ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node) {
         return node;
     }
   }
-  SYNTAX_ERROR("SyntaxError", current_token_info_);
+  SYNTAX_ERROR("SyntaxError", Current());
   NO_RETURN;
 }
 
@@ -1001,18 +1228,22 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
   ENTER(ParsePrimaryExpression);
   // Not advance scanner.
-  TokenInfo* token_info = Peek();
+  TokenInfo* token_info = Current();
   switch (token_info->type()) {
     case Token::TS_IDENTIFIER: {
       // parse an identifier.
       ir::NameView* name = New<ir::NameView>(token_info->value());
+      name->SetInformationForNode(Current());
       Next();
       return name;
     }
-    case Token::TS_THIS:
+    case Token::TS_THIS: {
       // parse a this.
+      ir::Node* this_view = New<ir::ThisView>();
+      this_view->SetInformationForNode(Current());
       Next();
-      return New<ir::ThisView>();
+      return this_view;
+    }
     case Token::TS_LEFT_BRACE:
       // parse an object literal.
       return ParseObjectLiteral();
@@ -1029,12 +1260,13 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
         {
           // Enable token recording mode.
           typename ParserState::RecordTokenScope token_scope(&parser_state_);
+          token_buffer_.PushBack(Current());
           Next();
           // parse an expression that beggining '('
           node = ParseExpression(false);
 
           // If close brace is not exists, it's treat as an arrow function.
-          if (Next()->type() != Token::TS_RIGHT_PAREN || Peek()->type() == Token::TS_ARROW_GLYPH) {
+          if (Current()->type() != Token::TS_RIGHT_PAREN || Peek()->type() == Token::TS_ARROW_GLYPH) {
             reparse_as_arrow_parameter = true;
           }
         }
@@ -1056,6 +1288,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
         // Any errors except the SyntaxError are goto here.
         throw e;
       }
+      break;
     }
     default:
       // parse a literal.
@@ -1067,23 +1300,30 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseObjectLiteral() {
   ENTER(ParseObjectLiteral);
-  Next();
-  if (current_token_info_->type() == Token::TS_LEFT_BRACE) {
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    Next();
     ir::ObjectLiteralView* object_literal = New<ir::ObjectLiteralView>();
-    while (current_token_info_->type() != Token::TS_RIGHT_BRACE) {
+    while (1) {
       ir::Node* key = ParseObjectKey();
-      Next();
-      if (current_token_info_->type() != Token::TS_COMMA ||
-          current_token_info_->type() != Token::TS_RIGHT_BRACE) {
-        SYNTAX_ERROR("SyntaxError expected ','", current_token_info_);
+      if (Current()->type() != Token::TS_COLON) {
+        SYNTAX_ERROR("SyntaxError ':' expected", Current());
       }
+      Next();
       ir::Node* value = ParseAssignmentExpression(false);
       ir::ObjectElementView* element = New<ir::ObjectElementView>(key, value);
       object_literal->InsertLast(element);
+      if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        Next();
+        break;
+      } else {
+        SYNTAX_ERROR("SyntaxError expected ',' or '}'", Current());
+      }
     }
     return object_literal;
   }
-  SYNTAX_ERROR("Unexpected token.", current_token_info_);
+  SYNTAX_ERROR("Unexpected token.", Current());
   NO_RETURN;
 }
 
@@ -1091,15 +1331,15 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectLiteral() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseObjectKey() {
   ENTER(ParseObjectKey);
-  Next();
-  if (current_token_info_->type() == Token::TS_IDENTIFIER) {
-    return New<ir::NameView>(current_token_info_->value());
-  } else if (current_token_info_->type() == Token::TS_STRING_LITERAL) {
-    return New<ir::StringView>(current_token_info_->value());
-  } else if (current_token_info_->type() == Token::TS_NUMERIC_LITERAL) {
-    return New<ir::NumberView>(current_token_info_->value());
+  YATSC_SCOPED([&]{this->Next();});
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    return New<ir::NameView>(Current()->value());
+  } else if (Current()->type() == Token::TS_STRING_LITERAL) {
+    return New<ir::StringView>(Current()->value());
+  } else if (Current()->type() == Token::TS_NUMERIC_LITERAL) {
+    return New<ir::NumberView>(Current()->value());
   } else {
-    SYNTAX_ERROR("Invalid ObjectLiteral key.", current_token_info_);
+    SYNTAX_ERROR("Invalid ObjectLiteral key.", Current());
   }
   return nullptr;
 }
@@ -1108,21 +1348,24 @@ ir::Node* Parser<UCharInputIterator>::ParseObjectKey() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseArrayLiteral() {
   ENTER(ParseArrayLiteral);
-  Next();
-  if (current_token_info_->type() == Token::TS_LEFT_BRACKET) {
+  if (Current()->type() == Token::TS_LEFT_BRACKET) {
+    Next();
     ir::ArrayLiteralView* array_literal = New<ir::ArrayLiteralView>();
-    while (current_token_info_->type() != Token::TS_RIGHT_BRACKET) {
+    while (1) {
       ir::Node* expr = ParseAssignmentExpression(false);
       array_literal->InsertLast(expr);
-      Next();
-      if (current_token_info_->type() != Token::TS_COMMA &&
-          current_token_info_->type() != Token::TS_RIGHT_BRACKET) {
-        SYNTAX_ERROR("SyntaxError unexpected token in 'array literal'", current_token_info_);
+      if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else if (Current()->type() == Token::TS_RIGHT_BRACKET) {
+        Next();
+        break;
+      } else {
+        SYNTAX_ERROR("SyntaxError unexpected token in 'array literal'", Current());
       }
     }
     return array_literal;
   }
-  SYNTAX_ERROR("Unexpected token.", current_token_info_);
+  SYNTAX_ERROR("Unexpected token.", Current());
   NO_RETURN;
 }
 
@@ -1132,36 +1375,41 @@ ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
   ENTER(ParseLiteral);
   // Allow regular expression in this context.
   typename Scanner<UCharInputIterator>::RegularExpressionScope scope(scanner_);
-  // Advance scanner.
-  Next();
-  switch(current_token_info_->type()) {
+  ir::Node* ret = nullptr;
+  YATSC_SCOPED([&]{
+    if (ret != nullptr) {
+      ret->SetInformationForNode(this->Current());
+    }
+    this->Next();
+  })
+  switch(Current()->type()) {
     case Token::TS_TRUE:
       // true value
-      return New<ir::TrueView>();
+      return ret = New<ir::TrueView>();
     case Token::TS_FALSE:
       // false value
-      return New<ir::FalseView>();
+      return ret = New<ir::FalseView>();
     case Token::TS_STRING_LITERAL:
       // 'aaaa' value
-      return New<ir::StringView>(current_token_info_->value());
+      return ret = New<ir::StringView>(Current()->value());
     case Token::TS_NUMERIC_LITERAL:
       // 1234.5 value
-      return New<ir::NumberView>(current_token_info_->value());
+      return ret = New<ir::NumberView>(Current()->value());
     case Token::TS_REGULAR_EXPR:
       // /aaaaa/ value
-      return New<ir::RegularExprView>(current_token_info_->value());
+      return ret = New<ir::RegularExprView>(Current()->value());
     case Token::TS_UNDEFINED:
       // undefined value
-      return New<ir::UndefinedView>();
+      return ret = New<ir::UndefinedView>();
     case Token::TS_NULL:
       // null value
-      return New<ir::NullView>();
+      return ret = New<ir::NullView>();
     case Token::TS_NAN:
       // NaN value
-      return New<ir::NaNView>();
+      return ret = New<ir::NaNView>();
     default:
       // Any other token cause SyntaxError.
-      SYNTAX_ERROR("SyntaxError literal expected", current_token_info_);
+      SYNTAX_ERROR("SyntaxError literal expected", Current());
       NO_RETURN;
   }
 }
@@ -1170,11 +1418,11 @@ ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allowed) {
   ENTER(ParseParameterList);
-  if (Peek()->type() == Token::TS_LEFT_PAREN) {
+  if (Current()->type() == Token::TS_LEFT_PAREN) {
     Next();
     ir::ParamList* param_list = New<ir::ParamList>();
     while (1) {
-      switch (Peek()->type()) {
+      switch (Current()->type()) {
         case Token::TS_IDENTIFIER: {
           param_list->InsertLast(ParseParameter(false, accesslevel_allowed));
           break;
@@ -1193,15 +1441,15 @@ ir::Node* Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allowe
         }
 
         default:
-          if (Peek()->type() == Token::TS_RIGHT_PAREN) {
+          if (Current()->type() == Token::TS_RIGHT_PAREN) {
             Next();
             return param_list;
           }
-          SYNTAX_ERROR("SyntaxError unexpected token", next_token_info_);
+          SYNTAX_ERROR("SyntaxError ')' expected in parameter list", next_token_info_);
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '(' is expected", next_token_info_);
+  SYNTAX_ERROR("SyntaxError '(' is expected in parameter list", next_token_info_);
   NO_RETURN;
 }
 
@@ -1210,36 +1458,36 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel_allowed) {
   ENTER(ParseParameter);
   ir::Node* access_level = nullptr;
-  if (Peek()->type() == Token::TS_PUBLIC || Peek()->type() == Token::TS_PRIVATE) {
+  if (Current()->type() == Token::TS_PUBLIC || Current()->type() == Token::TS_PRIVATE) {
     Next();
     if (accesslevel_allowed) {
-      access_level = New<ir::ClassFieldAccessLevelView>(current_token_info_->type());
+      access_level = New<ir::ClassFieldAccessLevelView>(Current()->type());
     } else {
-      SYNTAX_ERROR("SyntaxError 'private' or 'public' not allowed here", current_token_info_);
+      SYNTAX_ERROR("SyntaxError 'private' or 'public' not allowed here", Current());
       NO_RETURN;
     }
   }
-  if (Peek()->type() == Token::TS_IDENTIFIER) {
-    Next();
+  if (Current()->type() == Token::TS_IDENTIFIER) {
     ir::ParameterView* pv = New<ir::ParameterView>();
-    ir::NameView* nv = New<ir::NameView>(current_token_info_->value());
+    ir::NameView* nv = New<ir::NameView>(Current()->value());
     pv->set_access_level(access_level);
-    pv->set_name(pv);
-    if (Peek()->type() == Token::TS_QUESTION_MARK) {
+    pv->set_name(nv);
+    Next();
+    if (Current()->type() == Token::TS_QUESTION_MARK) {
       if (rest) {
-        SYNTAX_ERROR("SyntaxError optional parameter not allowed in rest parameter", next_token_info_);
+        SYNTAX_ERROR("SyntaxError optional parameter not allowed in rest parameter", Current());
         NO_RETURN;
       }
       Next();
       pv->set_optional(true);
     }
-    if (Peek()->type() == Token::TS_COLON) {
+    if (Current()->type() == Token::TS_COLON) {
       Next();
       pv->set_type_expr(ParseTypeExpression());
     }
-    if (Peek()->type() == Token::TS_ASSIGN) {
+    if (Current()->type() == Token::TS_ASSIGN) {
       if (rest) {
-        SYNTAX_ERROR("SyntaxError default parameter not allowed in rest parameter", next_token_info_);
+        SYNTAX_ERROR("SyntaxError default parameter not allowed in rest parameter", Current());
         NO_RETURN;
       }
       Next();
@@ -1247,7 +1495,7 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
     }
     return pv;
   }
-  SYNTAX_ERROR("SyntaxError identifier expected", next_token_info_);
+  SYNTAX_ERROR("SyntaxError identifier expected", Current());
   NO_RETURN;
 }
 
@@ -1255,10 +1503,10 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFunction() {
   ENTER(ParseFunction);
-  if (Peek()->type() == Token::TS_FUNCTION) {
+  if (Current()->type() == Token::TS_FUNCTION) {
     Next();
     ir::Node* name = nullptr;
-    if (Peek()->type() == Token::TS_IDENTIFIER) {
+    if (Current()->type() == Token::TS_IDENTIFIER) {
       name = ParseLiteral();
     }
     ir::Node* call_signature = ParseCallSignature(false);
@@ -1273,10 +1521,10 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed) {
   ENTER(ParseCallSignature);
-  if (Peek()->type() == Token::TS_LEFT_PAREN) {
+  if (Current()->type() == Token::TS_LEFT_PAREN) {
     ir::Node* parameter_list = ParseParameterList(accesslevel_allowed);
     ir::Node* return_type = nullptr;
-    if (Peek()->type() == Token::TS_COLON) {
+    if (Current()->type() == Token::TS_COLON) {
       Next();
       return_type = ParseTypeExpression();
     }
@@ -1292,11 +1540,14 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
   ENTER(ParseArrowFunction);
   
   ir::Node* param_list = ParseParameterList(false);
-  if (Next()->type() != Token::TS_ARROW_GLYPH) {
-    SYNTAX_ERROR("SyntaxError '=>' expected", current_token_info_);
+  if (Current()->type() != Token::TS_ARROW_GLYPH) {
+    SYNTAX_ERROR("SyntaxError '=>' expected", Current());
+    NO_RETURN;
   }
+  Next();
   ir::Node* body;
-  if (Peek()->type() == Token::TS_LEFT_BRACE) {
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    Next();
     body = ParseFunctionBody();
   } else {
     body = ParseAssignmentExpression(false);
@@ -1308,13 +1559,13 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFunctionBody() {
   ENTER(ParseFunctionBody);
-  if (Peek()->type() == Token::TS_LEFT_BRACE) {
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
     Next();
     auto block = New<ir::BlockView>();
     while (1) {
       auto node = ParseSourceElement();
       block->InsertLast(node);
-      if (Peek()->type() == Token::TS_RIGHT_BRACE) {
+      if (Current()->type() == Token::TS_RIGHT_BRACE) {
         break;
       }
     }
@@ -1329,7 +1580,6 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFormalParameterList() {
   return nullptr;
 }
-
 }
 
 #undef ENTER

@@ -124,8 +124,9 @@ void Node::SetInformationForTree(const Node* node) YATSC_NOEXCEPT  {
   }
 }
 
+
 Node::String Node::ToString() {
-  return Node::String("");
+  return Node::String(kNodeTypeStringList[static_cast<int>(node_type_)]);
 }
 
 

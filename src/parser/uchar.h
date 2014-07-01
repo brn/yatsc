@@ -274,7 +274,12 @@ class UChar {
 
 
   YATSC_INLINE size_t utf8_length() const {
-    return utf8_.size() - 1;
+    for (size_t i = 0; i < utf8_.size(); i++) {
+      if (utf8_[i] == '\0') {
+        return i;
+      }
+    }
+    return utf8_.size();
   }
 
  private:

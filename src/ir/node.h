@@ -78,6 +78,10 @@ namespace yatsc {namespace ir {
   DECLARE(InterfaceFieldListView)                       \
   DECLARE(InterfaceFieldView)                           \
   DECLARE(SimpleTypeExprView)                           \
+  DECLARE(GenericTypeExprView)                          \
+  DECLARE(TypeConstraintsView)                          \
+  DECLARE(TypeArgumentsView)                            \
+  DECLARE(TypeQueryView)                                \
   DECLARE(ArrayTypeExprView)                            \
   DECLARE(ObjectTypeExprView)                           \
   DECLARE(PropertySignatureView)                        \
@@ -86,7 +90,6 @@ namespace yatsc {namespace ir {
   DECLARE(ConstructSignatureView)                       \
   DECLARE(AccessorTypeExprView)                         \
   DECLARE(TypeParametersView)                           \
-  DECLARE(TypeParameterView)                            \
   DECLARE(CommaExprView)                                \
   DECLARE(FunctionView)                                 \
   DECLARE(ArrowFunctionView)                            \
@@ -109,6 +112,7 @@ namespace yatsc {namespace ir {
   DECLARE(UnaryExprView)                                \
   DECLARE(ThisView)                                     \
   DECLARE(NumberView)                                   \
+  DECLARE(RegExpView)                                   \
   DECLARE(NullView)                                     \
   DECLARE(NaNView)                                      \
   DECLARE(StringView)                                   \
@@ -139,16 +143,27 @@ VIEW_LIST(FORWARD_DECL, FORWARD_DECL, FORWARD_DECL)
 // End forward declarations.
 
 
+static const char* kNodeTypeStringList[] = {
+    // Forward declarations.
+#define DECLARE(ViewName) #ViewName,
+#define DECLARE_LAST(ViewName) #ViewName
+    VIEW_LIST(DECLARE, DECLARE, DECLARE_LAST)
+#undef DECLARE
+#undef DECLARE_LAST
+    // End forward declarations.
+  };
+
+
 // Define getter accessor.
-#define NODE_GETTER(name, pos)                                      \
+#define NODE_GETTER(name, pos)                                        \
   YATSC_INLINE Node* name() YATSC_NOEXCEPT {return node_list_[pos];}
 
 
 // Define setter accessor.
-#define NODE_SETTER(name, pos)                                      \
-  YATSC_INLINE void set_##name(Node* name) {                         \
-    node_list_[pos] = name;                                         \
-    if (name != nullptr) name->set_parent_node(this);               \
+#define NODE_SETTER(name, pos)                        \
+  YATSC_INLINE void set_##name(Node* name) {          \
+    node_list_[pos] = name;                           \
+    if (name != nullptr) name->set_parent_node(this); \
   }
 
 
@@ -164,12 +179,12 @@ VIEW_LIST(FORWARD_DECL, FORWARD_DECL, FORWARD_DECL)
   }
 
 
-#define NODE_FLAG_SETTER(name, pos)               \
-  YATSC_INLINE void set_##name(bool val) {        \
-    if (val) {                                    \
-      set_flag(pos);                              \
-    } else {                                      \
-      ClearFlag(pos);}                            \
+#define NODE_FLAG_SETTER(name, pos)             \
+  YATSC_INLINE void set_##name(bool val) {      \
+    if (val) {                                  \
+      set_flag(pos);                            \
+    } else {                                    \
+      ClearFlag(pos);}                          \
   }
 
 
@@ -293,6 +308,27 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
   YATSC_CONST_GETTER(Node*, last_child, node_list_.back());
 
+
+  YATSC_INLINE bool HasLiteralView() YATSC_NO_SE {
+    return node_type_ == NodeType::kNullView
+      || node_type_ == NodeType::kTrueView
+      || node_type_ == NodeType::kFalseView
+      || node_type_ == NodeType::kStringView
+      || node_type_ == NodeType::kNumberView
+      || node_type_ == NodeType::kRegExpView
+      || node_type_ == NodeType::kUndefinedView
+      || node_type_ == NodeType::kNaNView;
+  }
+
+
+  YATSC_INLINE bool HasKeywordLiteralView() YATSC_NO_SE {
+    return node_type_ == NodeType::kNullView
+      || node_type_ == NodeType::kTrueView
+      || node_type_ == NodeType::kFalseView
+      || node_type_ == NodeType::kUndefinedView
+      || node_type_ == NodeType::kNaNView;
+  }
+  
 
   /**
    * Mark this node as invalid for the left-hand-side-expression.
@@ -475,17 +511,17 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
   
 #define DEF_CAST(type)                                                  \
-  YATSC_INLINE type* To##type() YATSC_NOEXCEPT {                          \
+  YATSC_INLINE type* To##type() YATSC_NOEXCEPT {                        \
     return node_type_ == NodeType::k##type? reinterpret_cast<type*>(this): nullptr; \
   }                                                                     \
-  YATSC_INLINE bool Has##type() YATSC_NO_SE {                             \
+  YATSC_INLINE bool Has##type() YATSC_NO_SE {                           \
     return node_type_ == NodeType::k##type;                             \
   }
 
 
 #define DECLARE_CAST(ViewName) DEF_CAST(ViewName);
   // Define cast methods like To[ViewName].
-VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
+  VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
 #undef DEF_CAST
 #undef DECLARE_CAST
 
@@ -1136,6 +1172,56 @@ class SimpleTypeExprView: public Node {
 
 
 // Represent type expression like `var x: string`
+class GenericTypeExprView: public Node {
+ public:
+  
+  GenericTypeExprView(Node* type_name, Node* type_arguments)
+      : Node(NodeType::kGenericTypeExprView, 2u, {type_name, type_arguments}) {}
+  
+
+  // Getter and Setter for type_name_.
+  NODE_PROPERTY(type_name, 0);
+
+
+  // Getter and Setter for type_name_.
+  NODE_PROPERTY(type_arguments, 1);
+};
+
+
+// Represent type expression like `var x: string`
+class TypeConstraintsView: public Node {
+ public:
+  
+  TypeConstraintsView(Node* type_expr)
+      : Node(NodeType::kTypeConstraintsView, 1u, {type_expr}) {}
+  
+
+  // Getter and Setter for type_name_.
+  NODE_PROPERTY(type_expr, 0);
+};
+
+
+class TypeArgumentsView: public Node {
+ public:
+  
+  TypeArgumentsView()
+      : Node(NodeType::kTypeArgumentsView, 0u) {}
+};
+
+
+class TypeQueryView: public Node {
+ public:
+  
+  TypeQueryView(Node* var_name)
+      : Node(NodeType::kTypeArgumentsView, 1u, {var_name}) {}
+
+
+  TypeQueryView()
+      : Node(NodeType::kTypeArgumentsView, 1u) {}
+};
+
+
+// Represent type expression like `var x: string`
 class ArrayTypeExprView: public Node {
  public:
   
@@ -1251,6 +1337,10 @@ class AccessorTypeExprView: public Node {
   AccessorTypeExprView(Node* name, Node* type_expression):
       Node(NodeType::kAccessorTypeExprView, 2u, {name, type_expression}) {}
 
+
+  AccessorTypeExprView():
+      Node(NodeType::kAccessorTypeExprView, 2u) {}
+
   
   // Getter and setter for name_.
   NODE_PROPERTY(name, 0);
@@ -1269,24 +1359,6 @@ class TypeParametersView: public Node {
 
   TypeParametersView()
       : Node(NodeType::kTypeParametersView, 0u) {}
-};
-
-
-// Represent accessor type expression like, `interface x {[index:int]}`
-class TypeParameterView: public Node {
- public:
-  TypeParameterView(Node* identifier, Node* constraint):
-      Node(NodeType::kTypeParameterView, 2u, {identifier, constraint}) {}
-
-
-  TypeParameterView():
-      Node(NodeType::kTypeParameterView, 2u) {}
-
-
-  NODE_PROPERTY(identifier, 0);
-
-
-  NODE_PROPERTY(constraint, 1);
 };
 
 
@@ -1433,7 +1505,7 @@ class NameView: public Node {
  public:
   NameView(UtfString name, Node* type = nullptr)
       : Node(NodeType::kNameView, 1u, {type}) {
-    set_string_value(name);
+    set_string_value(std::move(name));
   }
 
   NODE_PROPERTY(type_expr, 0);
@@ -1463,6 +1535,10 @@ class GetPropView: public Node {
  public:
   GetPropView(Node* target, Node* prop)
       : Node(NodeType::kGetPropView, 2u, {target, prop}) {}
+
+
+  GetPropView()
+      : Node(NodeType::kGetPropView, 2u) {}
 
   // Getter and Setter for target.
   NODE_PROPERTY(target, 0);
@@ -1578,6 +1654,15 @@ class NumberView: public Node {
     double d = 0l;
     sscanf(val, "%lf", &d);
     set_double_value(d);
+  }
+};
+
+
+class RegExpView: public Node {
+ public:
+  RegExpView(UtfString value)
+      : Node(NodeType::kNumberView, 0) {
+    set_string_value(value);
   }
 };
 

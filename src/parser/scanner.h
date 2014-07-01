@@ -85,11 +85,6 @@ class Scanner: private Uncopyable, private Unmovable {
    * Peek next token.
    */
   TokenInfo* Peek() {
-    if (unscaned_) {
-      unscaned_ = false;
-      current_token_info_ = &next_token_info_;
-      DoScan();
-    }
     return &next_token_info_;
   }
 
@@ -141,7 +136,7 @@ class Scanner: private Uncopyable, private Unmovable {
     YATSC_CONST_GETTER(size_t, current_line_number, current_line_number_);
     YATSC_CONST_GETTER(size_t, start_line_number, start_line_number_);
 
-    YATSC_INLINE void AdvancePosition() YATSC_NOEXCEPT {current_position_++;}
+    YATSC_INLINE void AdvancePosition(size_t pos) YATSC_NOEXCEPT {current_position_ += pos;}
 
     YATSC_INLINE void AdvanceLine() YATSC_NOEXCEPT {
       current_line_number_++;
@@ -165,7 +160,6 @@ class Scanner: private Uncopyable, private Unmovable {
   void DoScan();
 
   void LineFeed() {
-    scanner_source_position_.AdvancePosition();
     scanner_source_position_.AdvanceLine();
   }
   
@@ -275,7 +269,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   YATSC_INLINE SourcePosition CreateSourcePosition() {
     return SourcePosition(scanner_source_position_.start_position(),
-                          scanner_source_position_.current_position(),
+                          scanner_source_position_.current_position() - 1,
                           scanner_source_position_.start_line_number(),
                           scanner_source_position_.current_line_number());
   }

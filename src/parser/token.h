@@ -128,7 +128,6 @@ namespace yatsc {
   DECLARE(TS_AND_LET)                                     \
   DECLARE(TS_OR_LET)                                      \
   DECLARE(TS_XOR_LET)                                     \
-  DECLARE(TS_FUNCTION_GLYPH)                              \
   DECLARE(TS_IDENTIFIER)                                  \
   DECLARE(TS_NUMERIC_LITERAL)                             \
   DECLARE(TS_OCTAL_LITERAL)                               \

@@ -127,6 +127,39 @@ TEST(ParserTest, ParseExpression_array) {
 }
 
 
+TEST(ParserTest, ParseExpression_object) {
+  INIT(yatsc::LanguageMode::ES3, parser, "({a:200,b:300,c:400})", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kObjectLiteralView);
+    ASSERT_TRUE(node->HasObjectLiteralView());
+  });
+
+  INIT(yatsc::LanguageMode::ES3, parser, "({a:{b:{c:{d:{e:{f:100}}}}}})", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kObjectLiteralView);
+    ASSERT_TRUE(node->HasObjectLiteralView());
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_call) {
+  INIT(yatsc::LanguageMode::ES3, parser, "func()", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kCallView);
+    ASSERT_TRUE(node->HasCallView());
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_property_call) {
+  INIT(yatsc::LanguageMode::ES3, parser, "foo.bar.null.func()", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kCallView);
+    ASSERT_TRUE(node->HasCallView());
+  });
+}
+
+
 TEST(ParserTest, ParseExpression_arrow_function) {
   INIT(yatsc::LanguageMode::ES3, parser, "(a:string,b:number) => a + b", [&]{
     auto node = parser.ParseExpression(false);
@@ -150,5 +183,27 @@ TEST(ParserTest, ParseExpression_parenthesized_expression_like_arrow_function) {
     auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrowFunctionView);
     ASSERT_TRUE(node->HasArrowFunctionView());
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_function_type) {
+  INIT(yatsc::LanguageMode::ES3, parser, "(param1:(string, number, Object) => string, param2) => param1 + param2", [&]{
+    auto node = parser.ParseExpression(false);
+    ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kArrowFunctionView);
+    ASSERT_TRUE(node->HasArrowFunctionView());
+    yatsc::ir::ArrowFunctionView* fv = node->ToArrowFunctionView();
+    yatsc::ir::ParamList* pl = fv->param_list()->ToParamList();
+    const yatsc::ir::Node::List& param_list = pl->node_list();
+    ASSERT_EQ(param_list.size(), 2);
+    
+    ASSERT_EQ(param_list[0]->node_type(), yatsc::ir::NodeType::kParameterView);
+    yatsc::ir::ParameterView* pv = param_list[0]->ToParameterView();
+    ASSERT_STREQ(pv->name()->string_value().ToUtf8Value().value(), "param1");
+    ASSERT_EQ(pv->type_expr()->node_type(), yatsc::ir::NodeType::kFunctionTypeExprView);
+    
+    ASSERT_EQ(param_list[1]->node_type(), yatsc::ir::NodeType::kParameterView);
+    pv = param_list[1]->ToParameterView();
+    ASSERT_STREQ(pv->name()->string_value().ToUtf8Value().value(), "param2");
   });
 }
