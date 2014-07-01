@@ -1119,14 +1119,19 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseArguments() {
   ENTER(ParseArguments);
-  if (Next()->type() == Token::TS_LEFT_PAREN) {
+  if (Current()->type() == Token::TS_LEFT_PAREN) {
+    Next();
     ir::CallArgsView* args = New<ir::CallArgsView>();
+    if (Current()->type() == Token::TS_RIGHT_PAREN) {
+      Next();
+      return args;
+    }
     while (1) {
       args->InsertLast(ParseAssignmentExpression(false));
-      Next();
       if (Current()->type() == Token::TS_COMMA) {
         continue;
       } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        Next();
         return args;
       }
       SYNTAX_ERROR("SyntaxError unexpected token in 'arguments'", Current());
@@ -1184,34 +1189,30 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node) {
   ENTER(ParseGetPropOrElem);
-  while (1) {
-    switch (Current()->type()) {
-      case Token::TS_LEFT_BRACKET: {
-        // [...] expression.
-        Next();
-        ir::Node* expr = ParseExpression(false);
-        node = New<ir::GetElemView>(node, expr);
-        if (Next()->type() != Token::TS_RIGHT_BRACKET) {
-          SYNTAX_ERROR("Unexpected token.", Current());
-        }
-        break;
+  
+  switch (Current()->type()) {
+    case Token::TS_LEFT_BRACKET: {
+      // [...] expression.
+      Next();
+      ir::Node* expr = ParseExpression(false);
+      ir::Node* result = New<ir::GetElemView>(node, expr);
+      if (Current()->type() != Token::TS_RIGHT_BRACKET) {
+        SYNTAX_ERROR("Unexpected token.", Current());
       }
-      case Token::TS_DOT: {
-        // a.b.c expression.
-        Next();
-        ir::Node* expr = ParsePrimaryExpression();
-        if (!expr->HasNameView() && !expr->HasKeywordLiteralView()) {
-          SYNTAX_ERROR_POS("SyntaxError identifier expected", expr->source_position());
-        }
-        node = New<ir::GetPropView>(node, expr);
-        break;
-      }
-      default:
-        return node;
+      return result;
     }
+    case Token::TS_DOT: {
+      // a.b.c expression.
+      Next();
+      ir::Node* expr = ParseMemberExpression();
+      if (!expr->HasNameView() && !expr->HasKeywordLiteralView() && !expr->HasGetPropView() && !expr->HasGetElemView()) {
+        SYNTAX_ERROR_POS("SyntaxError identifier expected", expr->source_position());
+      }
+      return New<ir::GetPropView>(node, expr);
+    }
+    default:
+      return node;
   }
-  SYNTAX_ERROR("SyntaxError", Current());
-  NO_RETURN;
 }
 
 

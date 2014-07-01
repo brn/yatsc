@@ -147,6 +147,11 @@ TEST(ParserTest, ParseExpression_call) {
     auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kCallView);
     ASSERT_TRUE(node->HasCallView());
+    yatsc::ir::CallView* cv = node->ToCallView();
+    ASSERT_TRUE(cv->target()->HasNameView());
+    yatsc::ir::NameView* nv = cv->target()->ToNameView();
+    ASSERT_STREQ(nv->string_value().ToUtf8Value().value(), "func");
+    ASSERT_EQ(cv->args()->node_list().size(), 0);
   });
 }
 
@@ -156,6 +161,49 @@ TEST(ParserTest, ParseExpression_property_call) {
     auto node = parser.ParseExpression(false);
     ASSERT_EQ(node->node_type(), yatsc::ir::NodeType::kCallView);
     ASSERT_TRUE(node->HasCallView());
+    yatsc::ir::CallView* cv = node->ToCallView();
+    ASSERT_TRUE(cv->target()->HasGetPropView());
+    
+    yatsc::ir::GetPropView* gpv = cv->target()->ToGetPropView();
+    ASSERT_TRUE(gpv->target()->HasNameView());
+    ASSERT_STREQ(gpv->target()->utf8_value(), "foo");
+    ASSERT_TRUE(gpv->prop()->HasGetPropView());
+    
+    yatsc::ir::GetPropView* gpv2 = gpv->prop()->ToGetPropView();
+    ASSERT_TRUE(gpv2->target()->HasNameView());
+    ASSERT_STREQ(gpv2->target()->utf8_value(), "bar");
+    ASSERT_TRUE(gpv2->prop()->HasGetPropView());
+
+    yatsc::ir::GetPropView* gpv3 = gpv2->prop()->ToGetPropView();
+    ASSERT_TRUE(gpv3->target()->HasNullView());
+    ASSERT_TRUE(gpv3->prop()->HasNameView());
+    ASSERT_STREQ(gpv3->prop()->utf8_value(), "func");
+  });
+}
+
+
+TEST(ParserTest, ParseExpression_property_call_call) {
+  INIT(yatsc::LanguageMode::ES3, parser, "foo.func().foo.baz()()", [&]{
+    const char* expected =
+      "[CallView]\n"
+      "  [CallView]\n"
+      "    [GetPropView]\n"
+      "      [CallView]\n"
+      "        [GetPropView]\n"
+      "          [NameView][foo]\n"
+      "            [nullptr]\n"
+      "          [NameView][func]\n"
+      "            [nullptr]\n"
+      "        [CallArgsView]\n"
+      "      [GetPropView]\n"
+      "        [NameView][foo]\n"
+      "          [nullptr]\n"
+      "        [NameView][baz]\n"
+      "          [nullptr]\n"
+      "    [CallArgsView]\n"
+      "  [CallArgsView]\n";
+    auto node = parser.ParseExpression(false);
+    ASSERT_STREQ(node->ToStringTree().c_str(), expected);
   });
 }
 

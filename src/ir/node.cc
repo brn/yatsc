@@ -131,7 +131,38 @@ Node::String Node::ToString() {
 
 
 Node::String Node::ToStringTree() {
-  return Node::String("");
+  std::stringstream ss;
+  std::string indent = "";
+  ToStringSelf(this, indent, ss);
+  indent += "  ";
+  DoToStringTree(indent, ss);
+  return ss.str();
+}
+
+
+void Node::DoToStringTree(std::string& indent, std::stringstream& ss) {
+  for (size_t i = 0u; i < node_list_.size(); i++) {
+    Node* target = node_list_[i];
+    if (target != nullptr) {
+      ToStringSelf(target, indent, ss);
+      std::string nindent = indent + "  ";
+      target->DoToStringTree(nindent, ss);
+    } else {
+      ss << indent << "[nullptr]" << "\n";
+    }
+  }
+}
+
+
+void Node::ToStringSelf(Node* target, std::string& indent, std::stringstream& ss) {
+  ss << indent << '[' << target->ToString() << ']';
+  if (target->string_value().utf8_length() > 0) {
+    ss << '[' << target->utf8_value() << ']';
+  }
+  if (target->HasNullView()) {
+    ss << '[' << target->double_value() << ']';
+  }
+  ss << '\n';
 }
 
 }}

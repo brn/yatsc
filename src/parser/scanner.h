@@ -269,7 +269,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   YATSC_INLINE SourcePosition CreateSourcePosition() {
     return SourcePosition(scanner_source_position_.start_position(),
-                          scanner_source_position_.current_position() - 1,
+                          scanner_source_position_.current_position(),
                           scanner_source_position_.start_line_number(),
                           scanner_source_position_.current_line_number());
   }

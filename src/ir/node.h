@@ -391,6 +391,15 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
 
   /**
+   * Return string value.
+   * @returns String value.
+   */
+  YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
+    return string_value_.ToUtf8Value().value();
+  }
+
+
+  /**
    * Set double value.
    * @param d Double value.
    */
@@ -543,6 +552,12 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   List node_list_;
   
  private:
+
+  void DoToStringTree(std::string& indent, std::stringstream& ss);
+
+
+  void ToStringSelf(Node* target, std::string& indent, std::stringstream& ss);
+  
   std::bitset<8> flags_;
   SourceInformation source_information_;
   NodeType node_type_;
