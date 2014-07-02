@@ -431,7 +431,8 @@ bool IsAssignmentOp(Token type) {
     type == Token::TS_ADD_LET || type == Token::TS_SUB_LET ||
     type == Token::TS_SHIFT_LEFT_LET || type == Token::TS_SHIFT_RIGHT_LET ||
     type == Token::TS_U_SHIFT_RIGHT_LET || type == Token::TS_AND_LET ||
-    type == Token::TS_NOR_LET || type == Token::TS_OR_LET;
+    type == Token::TS_NOR_LET || type == Token::TS_OR_LET ||
+    type == Token::TS_XOR_LET;
 }
 
 
@@ -621,7 +622,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool noin) {
       case Token::TS_LESS :
       case Token::TS_GREATER : {
         Next();
-        ir::Node* rhs = ParseUnaryExpression();
+        ir::Node* rhs = ParseBinaryExpression(noin);
         if (last == nullptr) {
           expr = New<ir::BinaryExprView>(type, lhs, rhs);
           expr->SetInformationForNode(lhs);
@@ -638,7 +639,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool noin) {
       case Token::TS_IN : {
         if (!noin) {
           Next();
-          ir::Node* rhs = ParseUnaryExpression();
+          ir::Node* rhs = ParseBinaryExpression(noin);
           if (last == nullptr) {
             expr = New<ir::BinaryExprView>(type, lhs, rhs);
             expr->SetInformationForNode(lhs);
@@ -667,7 +668,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool noin) {
       case Token::TS_SHIFT_RIGHT :
       case Token::TS_U_SHIFT_RIGHT :{
         Next();
-        ir::Node* rhs = ParseUnaryExpression();
+        ir::Node* rhs = ParseBinaryExpression(noin);
         if (last == nullptr) {
           expr = New<ir::BinaryExprView>(type, lhs, rhs);
           expr->SetInformationForNode(lhs);
@@ -1529,7 +1530,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowe
       Next();
       return_type = ParseTypeExpression();
     }
-    return New<ir::CallSinatureView>(parameter_list, return_type);
+    return New<ir::CallSignatureView>(parameter_list, return_type);
   }
   SYNTAX_ERROR("SyntaxError expected '('", next_token_info_);
   NO_RETURN;
@@ -1540,7 +1541,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
   ENTER(ParseArrowFunction);
   
-  ir::Node* param_list = ParseParameterList(false);
+  ir::Node* call_sig = ParseCallSignature(false);
   if (Current()->type() != Token::TS_ARROW_GLYPH) {
     SYNTAX_ERROR("SyntaxError '=>' expected", Current());
     NO_RETURN;
@@ -1553,7 +1554,7 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
   } else {
     body = ParseAssignmentExpression(false);
   }
-  return New<ir::ArrowFunctionView>(nullptr, param_list, body);
+  return New<ir::ArrowFunctionView>(call_sig, body);
 }
 
 

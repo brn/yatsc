@@ -234,16 +234,6 @@ static const Token kPunctures[] = {
   KEYWORD("yield", Token::TS_YIELD)
 
 
-// Only enabled in unit tests.
-#ifdef UNIT_TEST
-
-// Get token type string expression.
-const char* TokenInfo::ToString() const {
-  return tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
-}
-#endif
-
-
 // Get Identifier type from string.
 Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
   const int input_length = Strlen(maybe_keyword);

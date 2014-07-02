@@ -97,7 +97,7 @@ namespace yatsc {namespace ir {
   DECLARE(RestParamView)                                \
   DECLARE(ParamList)                                    \
   DECLARE(CallView)                                     \
-  DECLARE(CallSinatureView)                             \
+  DECLARE(CallSignatureView)                            \
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
   DECLARE(NameView)                                     \
@@ -1390,14 +1390,14 @@ class CommaExprView: public Node {
 // Represent function.
 class FunctionView: public Node {
  public:
-  FunctionView(Node* name, Node* param_list, Node* body)
-      : Node(NodeType::kFunctionView, 3u, {name, param_list, body}) {}
+  FunctionView(Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kFunctionView, 3u, {name, call_signature, body}) {}
 
   // Getter for name_.
   NODE_GETTER(name, 0);
 
   // Getter for param_list_.
-  NODE_GETTER(param_list, 1);
+  NODE_GETTER(call_signature, 1);
 
   // Getter for body_.
   NODE_GETTER(body, 2);
@@ -1407,17 +1407,14 @@ class FunctionView: public Node {
 // Represent function.
 class ArrowFunctionView: public Node {
  public:
-  ArrowFunctionView(Node* name, Node* param_list, Node* body)
-      : Node(NodeType::kArrowFunctionView, 3u, {name, param_list, body}) {}
-
-  // Getter for name_.
-  NODE_GETTER(name, 0);
+  ArrowFunctionView(Node* call_signature, Node* body)
+      : Node(NodeType::kArrowFunctionView, 2u, {call_signature, body}) {}
 
   // Getter for param_list_.
-  NODE_GETTER(param_list, 1);
+  NODE_GETTER(call_signature, 0);
 
   // Getter for body_.
-  NODE_GETTER(body, 2);
+  NODE_GETTER(body, 1);
 };
 
 
@@ -1481,10 +1478,10 @@ class CallView: public Node {
 };
 
 
-class CallSinatureView: public Node {
+class CallSignatureView: public Node {
  public:
-  CallSinatureView(Node* param_list, Node* return_type)
-      : Node(NodeType::kCallView, 2u, {param_list, return_type}) {}
+  CallSignatureView(Node* param_list, Node* return_type)
+      : Node(NodeType::kCallSignatureView, 2u, {param_list, return_type}) {}
 
   
   NODE_PROPERTY(param_list, 0);
@@ -1518,12 +1515,10 @@ class NewCallView: public Node {
 
 class NameView: public Node {
  public:
-  NameView(UtfString name, Node* type = nullptr)
-      : Node(NodeType::kNameView, 1u, {type}) {
+  NameView(UtfString name)
+      : Node(NodeType::kNameView, 0u) {
     set_string_value(std::move(name));
   }
-
-  NODE_PROPERTY(type_expr, 0);
 };
 
 

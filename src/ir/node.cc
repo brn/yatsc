@@ -136,7 +136,8 @@ Node::String Node::ToStringTree() {
   ToStringSelf(this, indent, ss);
   indent += "  ";
   DoToStringTree(indent, ss);
-  return ss.str();
+  std::string ret = std::move(ss.str());
+  return std::move(ret.substr(0, ret.size() - 1));
 }
 
 
@@ -156,11 +157,17 @@ void Node::DoToStringTree(std::string& indent, std::stringstream& ss) {
 
 void Node::ToStringSelf(Node* target, std::string& indent, std::stringstream& ss) {
   ss << indent << '[' << target->ToString() << ']';
-  if (target->string_value().utf8_length() > 0) {
+  if (target->HasNameView() && target->string_value().utf8_length() > 0) {
     ss << '[' << target->utf8_value() << ']';
   }
-  if (target->HasNullView()) {
+  if (target->HasStringView() && target->string_value().utf8_length() > 0) {
+    ss << "['" << target->utf8_value() << "']";
+  }
+  if (target->HasNumberView()) {
     ss << '[' << target->double_value() << ']';
+  }
+  if (target->operand() != Token::ILLEGAL) {
+    ss << '[' << TokenInfo::ToString(target->operand()) << ']';
   }
   ss << '\n';
 }

@@ -54,10 +54,9 @@ void Scanner<UCharInputIterator>::Advance()  {
     char_ = UChar::Null();
     return;
   }
-
-  size_t pos = char_.utf8_length();
+  
   char_ = *it_;
-  scanner_source_position_.AdvancePosition(pos);
+  scanner_source_position_.AdvancePosition(1);
   ++it_;
   
   if (it_ == end_) {
@@ -340,7 +339,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
     case '~':
       return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_NOR_LET, Token::TS_BIT_NOR, false);
     case '^':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_XOR_LET, Token::TS_BIT_XOR, false);
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_XOR_LET, Token::TS_BIT_XOR, true);
     case '&':
       return ScanLogicalOperator(Token::TS_LOGICAL_AND, Token::TS_AND_LET, Token::TS_BIT_AND);
     case '|':
@@ -400,7 +399,13 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
       Advance();
       return BuildToken(type2);
     } else if (has_u && lookahead1_ == char_) {
-      return BuildToken(type3);
+      Advance();
+      if (lookahead1_ == unicode::u8('=')) {
+        Advance();
+        return BuildToken(Token::TS_U_SHIFT_RIGHT_LET);
+      } else {
+        return BuildToken(type3);
+      }
     }
     return BuildToken(type1);
   } else if (lookahead1_ == unicode::u8('=')) {
@@ -437,6 +442,7 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
   if (lookahead1_ == char_) {
     Advance();
     if (!not && lookahead1_ == char_) {
+      Advance();
       return BuildToken(Token::TS_EQ);
     }
     return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);

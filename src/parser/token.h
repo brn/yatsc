@@ -192,8 +192,8 @@ class TokenInfo {
   TokenInfo(const TokenInfo& token_info)
       : utf_string_(token_info.utf_string_),
         multi_line_comment_(token_info.multi_line_comment_),
-        line_terminator_state_(token_info.line_terminator_state_),
         type_(token_info.type_),
+        line_terminator_state_(token_info.line_terminator_state_),
         source_position_(token_info.source_position_) {}
 
   
@@ -264,8 +264,14 @@ class TokenInfo {
 
   YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
 
-#ifdef UNIT_TEST
-  const char* ToString() const;
+#ifdef DEBUG
+  const char* ToString() const {
+    return tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
+  }
+
+  static const char* ToString(Token token) {
+    return tokenhelper::kTokenStringList[static_cast<uint16_t>(token)];
+  }
 #endif
   
   /**
