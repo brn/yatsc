@@ -149,7 +149,7 @@ void Node::DoToStringTree(std::string& indent, std::stringstream& ss) {
       std::string nindent = indent + "  ";
       target->DoToStringTree(nindent, ss);
     } else {
-      ss << indent << "[nullptr]" << "\n";
+      ss << indent << "[Empty]" << "\n";
     }
   }
 }

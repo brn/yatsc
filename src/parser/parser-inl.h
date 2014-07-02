@@ -718,8 +718,10 @@ ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
   ENTER(ParsePostfixExpression);
   ir::Node* node = ParseLeftHandSideExpression();
   if (Current()->type() == Token::TS_INCREMENT) {
+    Next();
     return New<ir::PostfixView>(node, Token::TS_INCREMENT);
   } else if (Current()->type() == Token::TS_DECREMENT) {
+    Next();
     return New<ir::PostfixView>(node, Token::TS_DECREMENT);
   }
   return node;

@@ -181,17 +181,17 @@ TEST(ParserTest, ParseExpression_arrow_function) {
        "    [ParamList]\n"
        "      [ParameterView]\n"
        "        [NameView][a]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
        "        [SimpleTypeExprView]\n"
        "          [NameView][string]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
        "      [ParameterView]\n"
        "        [NameView][b]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
        "        [SimpleTypeExprView]\n"
        "          [NameView][number]\n"
-       "        [nullptr]\n"
-       "    [nullptr]\n"
+       "        [Empty]\n"
+       "    [Empty]\n"
        "  [BinaryExprView][TS_PLUS]\n"
        "    [NameView][a]\n"
        "    [NameView][b]");
@@ -215,20 +215,20 @@ TEST(ParserTest, ParseExpression_parenthesized_expression_like_arrow_function) {
        "    [ParamList]\n"
        "      [ParameterView]\n"
        "        [NameView][a]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
        "      [ParameterView]\n"
        "        [NameView][b]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
        "      [ParameterView]\n"
        "        [NameView][c]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
-       "    [nullptr]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
+       "    [Empty]\n"
        "  [BinaryExprView][TS_PLUS]\n"
        "    [NameView][a]\n"
        "    [NameView][b]");
@@ -242,32 +242,32 @@ TEST(ParserTest, ParseExpression_function_type) {
        "    [ParamList]\n"
        "      [ParameterView]\n"
        "        [NameView][param1]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
        "        [FunctionTypeExprView]\n"
        "          [ParamList]\n"
        "            [ParameterView]\n"
        "              [NameView][string]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
        "            [ParameterView]\n"
        "              [NameView][number]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
        "            [ParameterView]\n"
        "              [NameView][Object]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
-       "              [nullptr]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
+       "              [Empty]\n"
        "          [SimpleTypeExprView]\n"
        "            [NameView][string]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
        "      [ParameterView]\n"
        "        [NameView][param2]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
-       "        [nullptr]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
+       "        [Empty]\n"
        "    [SimpleTypeExprView]\n"
        "      [NameView][string]\n"
        "  [BinaryExprView][TS_PLUS]\n"
@@ -378,15 +378,15 @@ TEST(ParserTest, ParseExpression_condition_expr) {
        "      [ParamList]\n"
        "        [ParameterView]\n"
        "          [NameView][a]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
        "        [ParameterView]\n"
        "          [NameView][b]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "      [nullptr]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "      [Empty]\n"
        "    [BinaryExprView][TS_PLUS]\n"
        "      [NameView][a]\n"
        "      [BinaryExprView][TS_PLUS]\n"
@@ -397,18 +397,68 @@ TEST(ParserTest, ParseExpression_condition_expr) {
        "      [ParamList]\n"
        "        [ParameterView]\n"
        "          [NameView][a]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
        "        [ParameterView]\n"
        "          [NameView][b]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "          [nullptr]\n"
-       "      [nullptr]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "          [Empty]\n"
+       "      [Empty]\n"
        "    [BinaryExprView][TS_MINUS]\n"
        "      [NameView][a]\n"
        "      [BinaryExprView][TS_PLUS]\n"
        "        [NameView][b]\n"
        "        [NameView][x]");
+}
+
+
+TEST(ParserTest, ParseExpression_unary_expr) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "++i",
+            "[UnaryExprView][TS_INCREMENT]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "--i",
+            "[UnaryExprView][TS_DECREMENT]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "delete i",
+            "[UnaryExprView][TS_DELETE]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "void i",
+            "[UnaryExprView][TS_VOID]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "typeof i",
+            "[UnaryExprView][TS_TYPEOF]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "+i",
+            "[UnaryExprView][TS_PLUS]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "-i",
+            "[UnaryExprView][TS_MINUS]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "~i",
+            "[UnaryExprView][TS_BIT_NOR]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "!i",
+            "[UnaryExprView][TS_NOT]\n"
+            "  [NameView][i]");
+}
+
+
+TEST(ParserTest, ParseExpression_postfix_expr) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "i++",
+            "[PostfixView][TS_INCREMENT]\n"
+            "  [NameView][i]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "i--",
+            "[PostfixView][TS_DECREMENT]\n"
+            "  [NameView][i]");
 }
