@@ -29,18 +29,40 @@
 #include <string>
 
 namespace yatsc { namespace testing {
+static const int kMaxWidth = 100;
+
+std::string Replace(std::string str1, std::string str2, std::string str3) {
+  std::string::size_type  pos(str1.find(str2));
+
+  while (pos != std::string::npos) {
+    str1.replace(pos, str2.length(), str3);
+    pos = str1.find(str2, pos + str3.length());
+  }
+
+  return str1;
+}
+
+
 inline ::testing::AssertionResult CompareUchar(const std::string& value, const std::string expected, int i) {
   char a = value.at(i);
   char b = expected.at(i);
   if (a == b) {
     return ::testing::AssertionSuccess();
   }
+
+  std::string cloned_value = value;
+  std::string cloned_expectation = expected;
+
+  cloned_value = Replace(cloned_value, std::string("\n"), std::string(" "));
+  cloned_expectation = Replace(cloned_expectation, std::string("\n"), std::string(" "));
+
+  size_t begin = i + 10 > kMaxWidth? (i + 10) - kMaxWidth: 0;
   return ::testing::AssertionFailure()
       << "The value of index " << i << " expected " << b << " but got " << a
-      << "\nvalue:    " << value.substr(0, i) << '\n'
-      << "           " << std::string(i - 2, '-') << "^"
-      << "\nexpected: " << expected.substr(0, i) << '\n'
-      << "           " << std::string(i - 2, '-') << "^"
+      << "\nvalue:    " << cloned_value.substr(begin, kMaxWidth + 10) << '\n'
+      << "           " << std::string(kMaxWidth - 11, '-') << "^"
+      << "\nexpected: " << cloned_expectation.substr(begin, kMaxWidth) << '\n'
+      << "           " << std::string(kMaxWidth - 11, '-') << "^"
       << '\n';
 }
 

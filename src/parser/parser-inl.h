@@ -444,6 +444,33 @@ bool IsAssignmentOp(Token type) {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool noin) {
   ENTER(ParseAssignmentExpression);
+  ir::Node* node = nullptr;
+  if (Current()->type() == Token::TS_LEFT_PAREN ||
+      Current()->type() == Token::TS_LESS) {
+    typename ParserState::ArrowFunctionScope scope(&parser_state_);
+    // First try parse as arrow function.
+    try {
+      {
+        // Enable token recording mode.
+        typename ParserState::RecordTokenScope token_scope(&parser_state_);
+        token_buffer_.PushBack(Current());
+
+        // parsae an arrow function.
+        node = ParseArrowFunction();
+      }
+      
+      token_buffer_.Clear();
+      return node;
+        
+    } catch (const SyntaxError& e) {
+      // If parse failed, try parse as an parenthesized expression in primary expression,
+      // Do nothing.
+    } catch (const std::exception& e) {
+      // Any errors except the SyntaxError are goto here.
+      throw e;
+    }    
+  }
+  
   ir::Node* expr = ParseConditionalExpression(noin);
   TokenInfo *token_info = Current();
   Token type = token_info->type();
@@ -722,6 +749,13 @@ ir::Node* Parser<UCharInputIterator>::ParseUnaryExpression() {
       ret->SetInformationForNode(node);
       return ret;
     }
+    case Token::TS_LESS: {
+      ir::Node* type_arguments = ParseTypeArguments();
+      ir::Node* expr = ParseUnaryExpression();
+      ir::Node* ret = New<ir::CastView>(type_arguments, expr);
+      ret->SetInformationForNode(type_arguments);
+      return ret;
+    }
     default:
       return ParsePostfixExpression();
   }
@@ -785,7 +819,7 @@ ir::Node* Parser<UCharInputIterator>::ParseTypeParameters() {
         ir::Node* name = ParsePrimaryExpression();
         if (Current()->type() == Token::TS_EXTENDS) {
           Next();
-          ir::Node* type_constraints = New<ir::TypeConstraintsView>(name);
+          ir::Node* type_constraints = New<ir::TypeConstraintsView>(name, ParsePrimaryExpression());
           type_constraints->SetInformationForNode(name);
           type_params->InsertLast(type_constraints);
         } else {
@@ -969,8 +1003,11 @@ ir::Node* Parser<UCharInputIterator>::ParseTypeArguments() {
       type_arguments->InsertLast(ParseTypeExpression());
       if (Current()->type() == Token::TS_COMMA) {
         Next();
-      } else {
+      } else if (Current()->type() == Token::TS_GREATER) {
+        Next();
         return type_arguments;
+      } else {
+        SYNTAX_ERROR("SyntaxError '>' or ',' expected", Current());
       }
     }
   }
@@ -1134,20 +1171,35 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
   } else {
     target = ParseMemberExpression();
   }
+
+  ir::Node* type_arguments = nullptr;
+
+  if (Current()->type() == Token::TS_LESS) {
+    type_arguments = ParseTypeArguments();
+  }
+  
   if (Current()->type() == Token::TS_LEFT_PAREN) {
     ir::Node* args = ParseArguments();
-    ir::Node* call = New<ir::CallView>(target, args);
+    ir::Node* call = New<ir::CallView>(target, args, type_arguments);
     call->SetInformationForNode(target);
+    type_arguments = nullptr;
     while (1) {
       switch (Current()->type()) {
+        case Token::TS_LESS: {
+          type_arguments = ParseTypeArguments();
+        }
         case Token::TS_LEFT_PAREN: {
           ir::Node* args = ParseArguments();
-          call = New<ir::CallView>(call, args);
+          call = New<ir::CallView>(call, args, type_arguments);
           call->SetInformationForNode(args);
+          type_arguments = nullptr;
           break;
         }
         case Token::TS_LEFT_BRACE:
         case Token::TS_DOT:
+          if (type_arguments != nullptr) {
+            SYNTAX_ERROR_POS("SyntaxError unexpected token", type_arguments->source_position());
+          }
           call = ParseGetPropOrElem(call);
           break;
         default:
@@ -1214,17 +1266,22 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression() {
     Next();
     ir::Node* member = ParseMemberExpression();
 
+    ir::Node* type_arguments = nullptr;
+    if (Current()->type() == Token::TS_LESS) {
+      type_arguments = ParseTypeArguments();
+    }
+
     // New expression can omit parens.
     // If paren exists, continue parsing.
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       ir::Node* args = ParseArguments();
-      node = New<ir::NewCallView>(member, args);
+      node = New<ir::NewCallView>(member, args, type_arguments);
       node->SetInformationForNode(member);
       return ParseGetPropOrElem(node);
     } else {
       // Parens are not exists.
       // Immediate return.
-      ir::Node* ret = New<ir::NewCallView>(member, nullptr);
+      ir::Node* ret = New<ir::NewCallView>(member, nullptr, type_arguments);
       ret->SetInformationForNode(member);
       return ret;
     }
@@ -1312,46 +1369,14 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
-      typename ParserState::ArrowFunctionScope scope(&parser_state_);
-      ir::Node* node = nullptr;
-      bool reparse_as_arrow_parameter = false;
-      // First try parse as expression.
-      try {
-        {
-          // Enable token recording mode.
-          typename ParserState::RecordTokenScope token_scope(&parser_state_);
-          token_buffer_.PushBack(Current());
-          Next();
-          // parse an expression that beggining '('
-          node = ParseExpression(false);
-
-          // If close brace is not exists, it's treat as an arrow function.
-          if (Current()->type() != Token::TS_RIGHT_PAREN || Peek()->type() == Token::TS_ARROW_GLYPH) {
-            reparse_as_arrow_parameter = true;
-          }
-        }
-
-        if (!reparse_as_arrow_parameter) {
-          token_buffer_.Clear();        
-          return node;
-        }
-        
-      } catch (const SyntaxError& e) {
-        // If failure, try parse as arrow function.
-        return ParseArrowFunction();
-      } catch (const std::exception& e) {
-        // Any errors except the SyntaxError are goto here.
-        throw e;
+      Next();
+      ir::Node* node = ParseExpression(false);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        return node;
       }
-
-      // If parse failed, try parse as an arrow parameter,
-      // and if parse success but arrow glyph(=>) exists,
-      // treat as an arrow parameter too.
-      if (reparse_as_arrow_parameter) {
-        return ParseArrowFunction();
-      }
-      
-      break;
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      NO_RETURN;
     }
     default:
       // parse a literal.
@@ -1594,6 +1619,10 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed) {
   ENTER(ParseCallSignature);
+  ir::Node* type_parameters = nullptr;
+  if (Current()->type() == Token::TS_LESS) {
+    type_parameters = ParseTypeParameters();
+  }
   if (Current()->type() == Token::TS_LEFT_PAREN) {
     TokenInfo token = (*Current());
     ir::Node* parameter_list = ParseParameterList(accesslevel_allowed);
@@ -1602,7 +1631,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowe
       Next();
       return_type = ParseTypeExpression();
     }
-    ir::Node* ret = New<ir::CallSignatureView>(parameter_list, return_type);
+    ir::Node* ret = New<ir::CallSignatureView>(parameter_list, return_type, type_parameters);
     ret->SetInformationForNode(&token);
     return ret;
   }

@@ -1207,12 +1207,15 @@ class GenericTypeExprView: public Node {
 class TypeConstraintsView: public Node {
  public:
   
-  TypeConstraintsView(Node* type_expr)
-      : Node(NodeType::kTypeConstraintsView, 1u, {type_expr}) {}
+  TypeConstraintsView(Node* derived, Node* base)
+      : Node(NodeType::kTypeConstraintsView, 2u, {derived, base}) {}
   
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(type_expr, 0);
+  NODE_PROPERTY(derived, 0);
+
+  // Getter and Setter for type_name_.
+  NODE_PROPERTY(base, 0);
 };
 
 
@@ -1467,27 +1470,33 @@ class ParamList: public Node {
 
 class CallView: public Node {
  public:
-  CallView(Node* target, Node* args)
-      : Node(NodeType::kCallView, 2u, {target, args}) {}
+  CallView(Node* target, Node* args, Node* type_expr)
+      : Node(NodeType::kCallView, 3u, {target, args, type_expr}) {}
 
   
   NODE_PROPERTY(target, 0);
 
 
   NODE_PROPERTY(args, 1);
+
+  
+  NODE_PROPERTY(type_expr, 2);
 };
 
 
 class CallSignatureView: public Node {
  public:
-  CallSignatureView(Node* param_list, Node* return_type)
-      : Node(NodeType::kCallSignatureView, 2u, {param_list, return_type}) {}
+  CallSignatureView(Node* param_list, Node* return_type, Node* type_parameters)
+      : Node(NodeType::kCallSignatureView, 3u, {param_list, return_type, type_parameters}) {}
 
   
   NODE_PROPERTY(param_list, 0);
 
 
   NODE_PROPERTY(return_type, 1);
+
+  
+  NODE_PROPERTY(type_parameters, 2);
 };
 
 
@@ -1504,12 +1513,21 @@ class CallArgsView: public Node {
 
 class NewCallView: public Node {
  public:
-  NewCallView(Node* target, Node* args)
-      : Node(NodeType::kNewCallView, 2u, {target, args}) {}
+  NewCallView(Node* target, Node* args, Node* type_expr)
+      : Node(NodeType::kNewCallView, 3u, {target, args, type_expr}) {}
 
 
   NewCallView()
-      : Node(NodeType::kNewCallView, 2u) {}
+      : Node(NodeType::kNewCallView, 3u) {}
+
+
+  NODE_PROPERTY(target, 0);
+
+
+  NODE_PROPERTY(args, 1);
+
+  
+  NODE_PROPERTY(type_expr, 2);
 };
 
 
@@ -1627,12 +1645,15 @@ class BinaryExprView: public Node {
 // Represent cast.
 class CastView: public Node {
  public:
-  CastView(Node* type_expr)
-      : Node(NodeType::kCastView, 1u, {type_expr}) {}
+  CastView(Node* type_expr, Node* expr)
+      : Node(NodeType::kCastView, 2u, {type_expr, expr}) {}
 
 
-  // Getter for type_expr.
-  NODE_GETTER(type_expr, 0);
+  // Getter and setter for type_expr.
+  NODE_PROPERTY(type_expr, 0);
+
+  // Getter and setter for expr.
+  NODE_PROPERTY(expr, 1);
 };
 
 
