@@ -65,6 +65,12 @@ class Parser {
 
   ir::Node* ParseDebuggerStatement();
 
+  ir::Node* ParseLexicalDeclaration();
+
+  ir::Node* ParseBindingPattern();
+
+  ir::Node* ParseBindingIdentifier();
+
   ir::Node* ParseVariableDeclaration(bool noin);
 
   ir::Node* ParseIfStatement();

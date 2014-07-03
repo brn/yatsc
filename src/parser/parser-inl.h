@@ -286,6 +286,85 @@ ir::Node* Parser<UCharInputIterator>::ParseDebuggerStatement() {
 }
 
 
+// lexical_declaration[in, yield]
+//   : let_or_const binding_list[?in, ?yield]
+//   ;
+// let_or_const
+//   : 'let'
+//   | 'const'
+//   ;
+// binding_list[in, yield]
+//   : lexical_binding[?in, ?yield]
+//   | binding_list[?in, ?yield] ',' lexical_binding[?in, ?yield]
+//   ;
+// lexical_binding[in, yield]
+//   : binding_identifier[?yield] initializer__opt[?in, ?yield]
+//   | binding_pattern[?yield] initializer[?in, ?yield]
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseLexicalDeclaration() {
+  return nullptr;
+}
+
+
+// binding_identifier[default, yield]
+//   : [+default] 'default'
+//   | [~yield] 'yield' identifier
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseBindingIdentifier() {
+  return nullptr;
+}
+
+
+// binding_pattern[yield,generator_parameter]
+//   : object_binding_pattern[?yield,?generator_parameter]
+//   | array_binding_pattern[?yield,?generator_parameter]
+//   ;
+// object_binding_pattern[yield,generator_parameter]
+//   : '{' '}'
+//   | '{' binding_property_list[?yield,?generator_parameter] '}'
+//   | '{' binding_property_list[?yield,?generatorParameter] ',' '}'
+//   ;
+// array_binding_pattern[yield,generator_parameter]
+//   : '[' elision__opt binding_rest_element__opt[?yield, ?generator_parameter] ']'
+//   | '[' binding_element_list[?yield, ?generator_parameter] ']'
+//   | '[' binding_element_list[?yield, ?generator_parameter] ',' elision__opt binding_rest_element__opt[?yield, ?generator_parameter] ']'
+//   ;
+// binding_property_list[yield,generator_parameter]
+//   : binding_property[?yield, ?generator_parameter]
+//   | binding_propertylist[?yield, ?generator_parameter] ',' binding_property[?yield, ?generator_parameter]
+//   ;
+// binding_element_list[yield,generator_parameter]
+//   : binding_elision_element[?yield, ?generator_parameter]
+//   | binding_element_list[?yield, ?generator_parameter] ',' binding_elision_element[?yield, ?generator_parameter]
+//   ;
+// binding_elision_element[yield,generator_parameter]
+//   : elisionopt bindingelement[?yield, ?generator_parameter]
+//   ;
+// binding_property[yield,generator_parameter]
+//   : single_name_binding [?yield, ?generator_parameter]
+//   ;
+// property_name[?yield, ?generator_parameter]
+//   : binding_element[?yield, ?generator_parameter]
+//   ;
+// binding_element[yield, generator_parameter ]
+//   : singlenamebinding[?yield, ?generator_parameter]
+//   | [+generator_parameter] binding_pattern[?yield,generator_parameter] initializer__opt[in] [~generator_parameter] binding_pattern[?yield] initializer__opt[in, ?yield]
+//   ;
+// single_name_binding[yield,generator_parameter]
+//   : [+generator_parameter] binding_identifier[yield] initializer__opt[in] [~generator_parameter] binding_identifier[?yield] initializer__opt[in, ?yield]
+//   ;
+// binding_rest_element[yield, generator_parameter]
+//   : [+generator_parameter]'...' binding_identifier[yield]
+//   | [~generator_parameter] ... binding_identifier[?yield]
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseBindingPattern() {
+  return nullptr;
+}
+
+
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseVariableDeclaration(bool noin) {
   return nullptr;
