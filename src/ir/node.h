@@ -118,7 +118,6 @@ namespace yatsc {namespace ir {
   DECLARE(UnaryExprView)                                \
   DECLARE(ThisView)                                     \
   DECLARE(NumberView)                                   \
-  DECLARE(RegExpView)                                   \
   DECLARE(NullView)                                     \
   DECLARE(NaNView)                                      \
   DECLARE(StringView)                                   \
@@ -321,7 +320,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
       || node_type_ == NodeType::kFalseView
       || node_type_ == NodeType::kStringView
       || node_type_ == NodeType::kNumberView
-      || node_type_ == NodeType::kRegExpView
+      || node_type_ == NodeType::kRegularExprView
       || node_type_ == NodeType::kUndefinedView
       || node_type_ == NodeType::kNaNView;
   }
@@ -1758,15 +1757,6 @@ class NumberView: public Node {
 };
 
 
-class RegExpView: public Node {
- public:
-  RegExpView(UtfString value)
-      : Node(NodeType::kNumberView, 0) {
-    set_string_value(value);
-  }
-};
-
-
 class NullView: public Node {
  public:
   NullView()
@@ -1793,7 +1783,7 @@ class StringView: public Node {
 class RegularExprView: public Node {
  public:
   RegularExprView(UtfString str)
-      : Node(NodeType::kStringView, 0) {
+      : Node(NodeType::kRegularExprView, 0) {
     set_string_value(str);
   }
 };

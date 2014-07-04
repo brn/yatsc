@@ -157,7 +157,7 @@ void Node::DoToStringTree(std::string& indent, std::stringstream& ss) {
 
 void Node::ToStringSelf(Node* target, std::string& indent, std::stringstream& ss) {
   ss << indent << '[' << target->ToString() << ']';
-  if (target->HasNameView() && target->string_value().utf8_length() > 0) {
+  if ((target->HasNameView() || target->HasRegularExprView()) && target->string_value().utf8_length() > 0) {
     ss << '[' << target->utf8_value() << ']';
   }
   if (target->HasStringView() && target->string_value().utf8_length() > 0) {

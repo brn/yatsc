@@ -175,7 +175,7 @@ class Parser {
 
   ir::Node* ParseFunction();
 
-  ir::Node* ParseArrowFunction();
+  ir::Node* ParseArrowFunction(ir::Node* identifier = nullptr);
 
   ir::Node* ParseFunctionBody();
 
@@ -275,6 +275,16 @@ class Parser {
    private:
     std::bitset<8> bits_;
   };
+
+
+  YATSC_INLINE void AllowRegularExpr() {
+    scanner_->AllowRegularExpression();
+  }
+
+
+  YATSC_INLINE void DisallowRegularExpr() {
+    scanner_->DisallowRegularExpression();
+  }
 
 
   YATSC_INLINE TokenInfo* Next() {

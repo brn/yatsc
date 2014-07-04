@@ -43,6 +43,11 @@ class UChar {
     UC8Bytes b {{'\0'}};
     return UChar(unicode::u32('\0'), b);
   }
+
+  YATSC_INLINE static UChar FromAscii(char uc) {
+    UC8Bytes b {{uc, '\0'}};
+    return UChar(unicode::u32(uc), b);
+  }
   
   /**
    * Constructor
@@ -105,7 +110,7 @@ class UChar {
 
 
   YATSC_INLINE bool operator != (const UChar& uc) const {
-    return uc.uchar_ == uchar_;
+    return uc.uchar_ != uchar_;
   }
   
   

@@ -46,9 +46,9 @@ namespace yatsc {
 #define ENTER(name)                                                     \
   if (print_parser_phase_) {                                            \
     if (Current() != nullptr) {                               \
-      Printf("%sEnter %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, Current()->ToString(), Peek()->ToString()); \
+      Printf("%sEnter %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
     } else {                                                            \
-      Printf("%sEnter %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, Peek()->ToString()); \
+      Printf("%sEnter %s: CurrentToken = null\n", indent_.c_str(), #name); \
     }                                                                   \
   }                                                                     \
   indent_ += "  ";                                                      \
@@ -56,9 +56,9 @@ namespace yatsc {
       indent_ = indent_.substr(0, indent_.size() - 2);                  \
       if (this->print_parser_phase_) {                                  \
         if (this->Current() != nullptr) {                     \
-          Printf("%sExit %s: CurrentToken = %s NextToken = %s\n", indent_.c_str(), #name, Current()->ToString(), this->Peek()->ToString()); \
+          Printf("%sExit %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
         } else {                                                        \
-          Printf("%sExit %s: CurrentToken = null NextToken = %s\n", indent_.c_str(), #name, this->Peek()->ToString()); \
+          Printf("%sExit %s: CurrentToken = null\n", indent_.c_str(), #name); \
         }                                                               \
       }                                                                 \
     })
@@ -480,7 +480,14 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayBindingPattern(bool has_yield, b
         binding_array->InsertLast(rest);
         exit = true;
       } else {
-        binding_array->InsertLast(ParseBindingElement(has_yield, generator_parameter));
+        ir::Node* elem = ParseBindingElement(has_yield, generator_parameter);
+        ir::Node* init = nullptr;
+        if (Current()->type() == Token::TS_ASSIGN) {
+          init = ParseAssignmentExpression(true, has_yield);
+        }
+        ir::Node* ret = New<ir::BindingElementView>(nullptr, elem, init);
+        ret->SetInformationForNode(elem);
+        binding_array->InsertLast(ret);
       }
 
       if (Current()->type() == Token::TS_RIGHT_BRACKET) {
@@ -511,6 +518,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBindingProperty(bool has_yield, bool 
   ir::Node* elem = nullptr;
   ir::Node* init = nullptr;
   if (Current()->type() == Token::TS_COLON) {
+    Next();
     elem = ParseBindingElement(has_yield, generator_parameter);
   } else if (key->HasStringView()) {
     SYNTAX_ERROR_POS("SyntaxError 'identifier' expected", key->source_position());
@@ -729,6 +737,11 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool has_in, boo
   }
   
   ir::Node* expr = ParseConditionalExpression(has_in, has_yield);
+
+  if (expr->HasNameView() && Current()->type() == Token::TS_ARROW_GLYPH) {
+    return ParseArrowFunction(expr);
+  }
+  
   TokenInfo *token_info = Current();
   Token type = token_info->type();
   if (IsAssignmentOp(type)) {
@@ -1486,7 +1499,7 @@ ir::Node* Parser<UCharInputIterator>::ParseArguments() {
       args->InsertLast(ParseAssignmentExpression(true, false));
       if (Current()->type() == Token::TS_COMMA) {
         continue;
-      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      } else if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
         return args;
       }
@@ -1595,10 +1608,19 @@ ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node) {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
   ENTER(ParsePrimaryExpression);
+
+  // Allow regular expression in this context.
+  AllowRegularExpr();
+  TokenInfo* maybe_regexp = scanner_->CheckRegularExpression();
+  if (maybe_regexp) {
+    current_token_info_ = maybe_regexp;
+  }
+  
   // Not advance scanner.
   TokenInfo* token_info = Current();
   switch (token_info->type()) {
     case Token::TS_IDENTIFIER: {
+      DisallowRegularExpr();
       // parse an identifier.
       ir::NameView* name = New<ir::NameView>(token_info->value());
       name->SetInformationForNode(Current());
@@ -1606,6 +1628,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       return name;
     }
     case Token::TS_THIS: {
+      DisallowRegularExpr();
       // parse a this.
       ir::Node* this_view = New<ir::ThisView>();
       this_view->SetInformationForNode(Current());
@@ -1613,12 +1636,15 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression() {
       return this_view;
     }
     case Token::TS_LEFT_BRACE:
+      DisallowRegularExpr();
       // parse an object literal.
       return ParseObjectLiteral();
     case Token::TS_LEFT_BRACKET:
+      DisallowRegularExpr();
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
+      DisallowRegularExpr();
       Next();
       ir::Node* node = ParseExpression(true, false);
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
@@ -1716,13 +1742,13 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayLiteral() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
   ENTER(ParseLiteral);
-  // Allow regular expression in this context.
-  typename Scanner<UCharInputIterator>::RegularExpressionScope scope(scanner_);
+  
   ir::Node* ret = nullptr;
   YATSC_SCOPED([&]{
     if (ret != nullptr) {
       ret->SetInformationForNode(this->Current());
     }
+    DisallowRegularExpr();
     this->Next();
   })
   switch(Current()->type()) {
@@ -1878,9 +1904,17 @@ ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowe
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseArrowFunction() {
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
   ENTER(ParseArrowFunction);
-  ir::Node* call_sig = ParseCallSignature(false);
+
+  ir::Node* call_sig = nullptr;
+  
+  if (identifier != nullptr) {
+    call_sig = New<ir::CallSignatureView>(identifier, nullptr, nullptr);
+    call_sig->SetInformationForNode(identifier);
+  } else {  
+    call_sig = ParseCallSignature(false);
+  }
   if (Current()->type() != Token::TS_ARROW_GLYPH) {
     SYNTAX_ERROR("SyntaxError '=>' expected", Current());
   }

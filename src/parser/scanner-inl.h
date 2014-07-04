@@ -70,27 +70,7 @@ void Scanner<UCharInputIterator>::Advance()  {
 
 template<typename UCharInputIterator>
 TokenInfo* Scanner<UCharInputIterator>::Scan() {
-  unscaned_ = false;
-  if (scanner_source_position_.start_position() > 0) {
-    token_info_ = next_token_info_;
-    current_token_info_ = &next_token_info_;
-    DoScan();
-  } else {
-    current_token_info_ = &token_info_;
-    DoScan();
-    current_token_info_ = &next_token_info_;
-    DoScan();
-  }
-
-  current_token_info_ = &token_info_;
-  return &token_info_;
-}
-
-
-template<typename UCharInputIterator>
-void Scanner<UCharInputIterator>::DoScan() {
-  line_terminator_state_.Clear();
-  scanner_source_position_.UpdateStartPosition();
+  BeforeScan();
   
   if (!char_.IsAscii()) {
     Illegal();
@@ -99,7 +79,7 @@ void Scanner<UCharInputIterator>::DoScan() {
   if (char_ == unicode::u8('\0')) {
     BuildToken(Token::END_OF_INPUT);
   } else if (char_ == unicode::u8(';')) {
-    return DoScan();
+    return Scan();
   } else if (Character::IsPuncture(char_)) {
     BuildToken(TokenInfo::GetPunctureType(char_));
     Advance();
@@ -118,9 +98,8 @@ void Scanner<UCharInputIterator>::DoScan() {
     Illegal();
   }
 
-  last_multi_line_comment_.Clear();
-  SkipWhiteSpace();
-  current_token_info_->set_line_terminator_state(line_terminator_state_);
+  AfterScan();
+  return &token_info_;
 }
 
 
@@ -329,11 +308,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
     case '*':
       return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MUL_LET, Token::TS_MUL, false);
     case '/':
-      if (!allow_regular_expression_) {
-        return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
-      } else {
-        return ScanRegularExpression();
-      }
+      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
     case '%':
       return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MOD_LET, Token::TS_MOD, false);
     case '~':
@@ -415,25 +390,41 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
 }
 
 
+// Check regular expression.
 template<typename UCharInputIterator>
-void Scanner<UCharInputIterator>::ScanRegularExpression() {
-  UtfString expr;
-  expr += char_;
-  Advance();
-  bool escaped = false;
+TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression() {
+  if (allow_regular_expression_ && token_info_.type() == Token::TS_DIV) {
+    // Prepare for scanning.
+    BeforeScan();
+    UtfString expr;
+    // In this method, char_ point next token of TS_DIV,
+    // so we now assign a '/'.
+    expr += UChar::FromAscii('/');
+    bool escaped = false;
   
-  while (1) {
-    if (char_ == unicode::u8('/') && false == escaped) {
-      return BuildToken(Token::TS_REGULAR_EXPR, expr);
+    while (1) {
+      expr += char_;
+      if (char_ == unicode::u8('\\')) {
+        escaped = !escaped;
+      } else if (char_ == unicode::u8('/') && false == escaped) {
+        BuildToken(Token::TS_REGULAR_EXPR, expr);
+        break;
+      } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
+                 char_.IsInvalid()) {
+        Error("Unterminated regular expression");
+      } else {
+        escaped = false;
+      }
+      Advance();
     }
-    if (char_ == unicode::u8('\\')) {
-      escaped = !escaped;
-    }
-    if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
-      Error("Unterminated regular expression");
-    }
+
+    // Teardown.
+    AfterScan();
     Advance();
+    return &token_info_;
   }
+  
+  return nullptr;
 }
 
 
@@ -492,8 +483,7 @@ bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
     Illegal();
     return false;
   }
-  UC8Bytes bytes{{static_cast<char>(uc8), '\0'}};
-  (*v) += UChar(uc8, bytes);
+  (*v) += UChar::FromAscii(static_cast<char>(uc8));
   return true;
 }
 

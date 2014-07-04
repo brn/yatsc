@@ -81,43 +81,26 @@ class Scanner: private Uncopyable, private Unmovable {
   TokenInfo* Scan();
 
 
-  /**
-   * Peek next token.
-   */
-  TokenInfo* Peek() {
-    return &next_token_info_;
-  }
-
-
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
 
 
-  class RegularExpressionScope: private Unmovable {
-   public:
-    RegularExpressionScope(Scanner<UCharInputIterator>* scanner)
-        : scanner_(scanner) {
-      scanner_->allow_regular_expression_ = true;
-    }
+  void AllowRegularExpression() {
+    allow_regular_expression_ = true;
+  }
 
-    RegularExpressionScope(const RegularExpressionScope& scope)
-        : scanner_(scope.scanner_) {}
-
-
-    RegularExpressionScope& operator = (const RegularExpressionScope& scope) {
-      scanner_ = scope.scanner_;
-    }
-
-    
-    ~RegularExpressionScope() {
-      scanner_->allow_regular_expression_ = false;
-    }
+  
+  void DisallowRegularExpression() {
+    allow_regular_expression_ = false;
+  }
 
 
-    YATSC_INLINE void Escape() YATSC_NOEXCEPT {scanner_->allow_regular_expression_ = false;}
-
-   private:
-    Scanner<UCharInputIterator>* scanner_;
-  };
+  /**
+   * Check whether current token is regular expression or not.
+   * If current token is regular expression return TS_REGULAR_EXPR,
+   * if not regular expr return nullptr.
+   * @returns TS_REGULAR_EXPR TokenInfo or nullptr.
+   */
+  TokenInfo* CheckRegularExpression();
   
   
  private:
@@ -155,12 +138,23 @@ class Scanner: private Uncopyable, private Unmovable {
     size_t current_line_number_;
     size_t start_line_number_;
   };
-
-
-  void DoScan();
+  
 
   void LineFeed() {
     scanner_source_position_.AdvanceLine();
+  }
+
+  
+  void BeforeScan() {
+    line_terminator_state_.Clear();
+    scanner_source_position_.UpdateStartPosition();
+  }
+
+
+  void AfterScan() {
+    last_multi_line_comment_.Clear();
+    SkipWhiteSpace();
+    token_info_.set_line_terminator_state(line_terminator_state_);
   }
   
   
@@ -251,9 +245,9 @@ class Scanner: private Uncopyable, private Unmovable {
   
 
   void UpdateTokenInfo() {
-    current_token_info_->set_multi_line_comment(last_multi_line_comment_);
-    current_token_info_->ClearValue();
-    current_token_info_->set_source_position(CreateSourcePosition());
+    token_info_.set_multi_line_comment(last_multi_line_comment_);
+    token_info_.ClearValue();
+    token_info_.set_source_position(CreateSourcePosition());
   }
   
 
@@ -278,14 +272,14 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void BuildToken(Token type, UtfString utf_string) {
     UpdateTokenInfo();
-    current_token_info_->set_value(std::move(utf_string));
-    current_token_info_->set_type(type);
+    token_info_.set_value(std::move(utf_string));
+    token_info_.set_type(type);
   }
 
 
   void BuildToken(Token type) {
     UpdateTokenInfo();
-    current_token_info_->set_type(type);
+    token_info_.set_type(type);
   }
 
 
@@ -304,8 +298,7 @@ class Scanner: private Uncopyable, private Unmovable {
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
-  TokenInfo next_token_info_;
-  TokenInfo* current_token_info_;
+  UChar last_char_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

@@ -239,6 +239,16 @@ TEST(ParserTest, ParseExpression_arrow_function) {
             "  [BinaryExprView][TS_PLUS]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x => x + 10",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [NameView][x]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][x]\n"
+            "    [NumberView][10]");
 }
 
 
@@ -408,6 +418,37 @@ TEST(ParserTest, ParseExpression_function_type) {
             "    [NameView][param1]\n"
             "    [NameView][param2]");
 }
+
+
+TEST(ParserTest, ParseExpression_regexp) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x = /a/",
+            "[AssignmentView][TS_ASSIGN]\n"
+            "  [NameView][x]\n"
+            "  [RegularExprView][/a/]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x = /**//a/",
+            "[AssignmentView][TS_ASSIGN]\n"
+            "  [NameView][x]\n"
+            "  [RegularExprView][/a/]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x = //\n/a/",
+            "[AssignmentView][TS_ASSIGN]\n"
+            "  [NameView][x]\n"
+            "  [RegularExprView][/a/]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x = /\\/abc\\/ddd\\/ee/",
+            "[AssignmentView][TS_ASSIGN]\n"
+            "  [NameView][x]\n"
+            "  [RegularExprView][/\\/abc\\/ddd\\/ee/]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "m(/a/)",
+            "[CallView]\n"
+            "  [NameView][m]\n"
+            "  [CallArgsView]\n"
+            "    [RegularExprView][/a/]\n"
+            "  [Empty]");
+}
+
 
 
 TEST(ParserTest, ParseExpression_assignment_expr) {
@@ -635,9 +676,18 @@ TEST(ParserTest, ParseLexicalDeclaration_let) {
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingArrayView]\n"
-                    "      [NameView][a]\n"
-                    "      [NameView][b]\n"
-                    "      [NameView][c]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][a]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][b]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][c]\n"
+                    "        [Empty]\n"
                     "    [ArrayLiteralView]\n"
                     "      [NumberView][1]\n"
                     "      [NumberView][2]\n"
@@ -672,14 +722,85 @@ TEST(ParserTest, ParseLexicalDeclaration_let) {
                     "        [NumberView][300]\n"
                     "    [Empty]");
 
+  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES3, "let {foo:a,b:{c:[x,y,z]},c:[{bar}]} = {a:100,b:{c:[1,2,3]},c:[{bar:100}]};",
+                    "[LexicalDeclView][TS_LET]\n"
+                    "  [VariableView]\n"
+                    "    [BindingPropListView]\n"
+                    "      [BindingElementView]\n"
+                    "        [NameView][foo]\n"
+                    "        [NameView][a]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [NameView][b]\n"
+                    "        [BindingPropListView]\n"
+                    "          [BindingElementView]\n"
+                    "            [NameView][c]\n"
+                    "            [BindingArrayView]\n"
+                    "              [BindingElementView]\n"
+                    "                [Empty]\n"
+                    "                [NameView][x]\n"
+                    "                [Empty]\n"
+                    "              [BindingElementView]\n"
+                    "                [Empty]\n"
+                    "                [NameView][y]\n"
+                    "                [Empty]\n"
+                    "              [BindingElementView]\n"
+                    "                [Empty]\n"
+                    "                [NameView][z]\n"
+                    "                [Empty]\n"
+                    "            [Empty]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [NameView][c]\n"
+                    "        [BindingArrayView]\n"
+                    "          [BindingElementView]\n"
+                    "            [Empty]\n"
+                    "            [BindingPropListView]\n"
+                    "              [BindingElementView]\n"
+                    "                [NameView][bar]\n"
+                    "                [Empty]\n"
+                    "                [Empty]\n"
+                    "            [Empty]\n"
+                    "        [Empty]\n"
+                    "    [ObjectLiteralView]\n"
+                    "      [ObjectElementView]\n"
+                    "        [NameView][a]\n"
+                    "        [NumberView][100]\n"
+                    "      [ObjectElementView]\n"
+                    "        [NameView][b]\n"
+                    "        [ObjectLiteralView]\n"
+                    "          [ObjectElementView]\n"
+                    "            [NameView][c]\n"
+                    "            [ArrayLiteralView]\n"
+                    "              [NumberView][1]\n"
+                    "              [NumberView][2]\n"
+                    "              [NumberView][3]\n"
+                    "      [ObjectElementView]\n"
+                    "        [NameView][c]\n"
+                    "        [ArrayLiteralView]\n"
+                    "          [ObjectLiteralView]\n"
+                    "            [ObjectElementView]\n"
+                    "              [NameView][bar]\n"
+                    "              [NumberView][100]\n"
+                    "    [Empty]");
+
 
   LEXICAL_DECL_TEST(yatsc::LanguageMode::ES3, "let [a, b, c]: number[] = [1,2,3];",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingArrayView]\n"
-                    "      [NameView][a]\n"
-                    "      [NameView][b]\n"
-                    "      [NameView][c]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][a]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][b]\n"
+                    "        [Empty]\n"
+                    "      [BindingElementView]\n"
+                    "        [Empty]\n"
+                    "        [NameView][c]\n"
+                    "        [Empty]\n"
                     "    [ArrayLiteralView]\n"
                     "      [NumberView][1]\n"
                     "      [NumberView][2]\n"
@@ -716,4 +837,14 @@ TEST(ParserTest, ParseLexicalDeclaration_let) {
                     "        [NumberView][300]\n"
                     "    [SimpleTypeExprView]\n"
                     "      [NameView][Object]");
+}
+
+
+TEST(ParserTest, ParseLexicalDeclaration_const) {
+  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES3, "const x = 100;",
+                    "[LexicalDeclView][TS_CONST]\n"
+                    "  [VariableView]\n"
+                    "    [NameView][x]\n"
+                    "    [NumberView][100]\n"
+                    "    [Empty]");
 }
