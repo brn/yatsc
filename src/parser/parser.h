@@ -65,11 +65,21 @@ class Parser {
 
   ir::Node* ParseDebuggerStatement();
 
-  ir::Node* ParseLexicalDeclaration();
+  ir::Node* ParseLexicalDeclaration(bool has_in, bool has_yield);
 
-  ir::Node* ParseBindingPattern();
+  ir::Node* ParseLexicalBinding(bool const_decl, bool has_in, bool has_yield);
 
-  ir::Node* ParseBindingIdentifier();
+  ir::Node* ParseBindingPattern(bool has_yield, bool generator_parameter);
+
+  ir::Node* ParseObjectBindingPattern(bool has_yield, bool generator_parameter);
+
+  ir::Node* ParseArrayBindingPattern(bool has_yield, bool generator_parameter);
+
+  ir::Node* ParseBindingProperty(bool has_yield, bool generator_parameter);
+
+  ir::Node* ParseBindingElement(bool has_yield, bool generator_parameter);
+
+  ir::Node* ParseBindingIdentifier(bool default_allowed, bool has_in, bool has_yield);
 
   ir::Node* ParseVariableDeclaration(bool noin);
 
@@ -107,15 +117,15 @@ class Parser {
 
   ir::Node* ParseClassFields();
 
-  ir::Node* ParseExpression(bool noin);
+  ir::Node* ParseExpression(bool has_in, bool has_yield);
 
-  ir::Node* ParseAssignmentExpression(bool noin);
+  ir::Node* ParseAssignmentExpression(bool has_in, bool has_yield);
 
   ir::Node* ParseYieldExpression();
 
-  ir::Node* ParseConditionalExpression(bool noin);
+  ir::Node* ParseConditionalExpression(bool has_in, bool has_yield);
 
-  ir::Node* ParseBinaryExpression(bool noin);
+  ir::Node* ParseBinaryExpression(bool has_in, bool has_yield);
 
   ir::Node* ParseUnaryExpression();
 

@@ -42,12 +42,16 @@ inline std::vector<std::string> Split(std::string buf, const char* delim) {
     return std::move(ret);
   }
 
-  while (std::string::npos != pos) {
-    ret.push_back(buf.substr(index, pos - index));
+  while (1) {
+    if (std::string::npos != pos) {
+      ret.push_back(buf.substr(index, pos - index));
+    } else {
+      ret.push_back(buf.substr(index));
+      break;
+    }
     index = pos + 1;
     pos = buf.find(delim, index);
   }
-
   return std::move(ret);
 }
 
@@ -61,6 +65,8 @@ inline std::string Join(int pos, std::vector<std::string> v) {
     if (i == pos) {
       std::string::size_type found = str.find_first_not_of(" ");
       std::string::size_type found_end = str.find_last_not_of(" ");
+      found = found == std::string::npos? 0: found;
+      found_end = found_end == std::string::npos? str.size() - 1: found_end;
       if (found != std::string::npos && found_end != std::string::npos) {
         ss << std::string(found, ' ')
            << std::string((found_end - found) + 1, '^')
@@ -68,6 +74,11 @@ inline std::string Join(int pos, std::vector<std::string> v) {
       }
     }
     i++;
+  }
+  if (i <= pos) {
+    ss << "\n" << std::string(0, ' ')
+       << std::string(v.back().size(), '^')
+       << "\n";
   }
   std::string ret = std::move(ss.str());
   ret.substr(0, ret.size() - 1);
@@ -88,6 +99,7 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
   while (1) {
     if ((*v_it) != (*e_it)) {
       return ::testing::AssertionFailure()
+        << "\nExpectation is not match to the result.\n"
         << "value:  \n" << Join(index, v) << '\n'
         << "expected:  \n" << Join(index, e) << '\n';
     }
@@ -98,15 +110,17 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
     if (v_it == v_end) {
       if (e_it != e_end) {
         return ::testing::AssertionFailure()
-          << "value:  \n" << Join(index - 1, v) << '\n'
+          << "\nExpectation is longer than result.\n"
+          << "value:  \n" << Join(index, v) << '\n'
           << "expected:  \n" << Join(index, e) << '\n';
       }
       break;
     } else if (e_it == e_end) {
       if (v_it != v_end) {
         return ::testing::AssertionFailure()
+          << "\nExpectation is shorter than result.\n"
           << "value:  \n" << Join(index, v) << '\n'
-          << "expected:  \n" << Join(index - 1, e) << '\n';
+          << "expected:  \n" << Join(index, e) << '\n';
       }
       break;
     }
@@ -117,7 +131,7 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
 
 
 inline void CompareNode(std::string value, std::string expected) {
-ASSERT_TRUE((DoCompareNode(value, expected)));
+  ASSERT_TRUE((DoCompareNode(value, expected)));
 }
 
 }}

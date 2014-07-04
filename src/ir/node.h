@@ -43,6 +43,7 @@ namespace yatsc {namespace ir {
   DECLARE(FileScopeView)                                \
   DECLARE(StatementView)                                \
   DECLARE(VariableDeclView)                             \
+  DECLARE(LexicalDeclView)                              \
   DECLARE(TrueView)                                     \
   DECLARE(FalseView)                                    \
   DECLARE(BlockView)                                    \
@@ -101,6 +102,11 @@ namespace yatsc {namespace ir {
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
   DECLARE(NameView)                                     \
+  DECLARE(BindingPropListView)                          \
+  DECLARE(BindingArrayView)                             \
+  DECLARE(BindingElementView)                           \
+  DECLARE(DefaultView)                                  \
+  DECLARE(YieldView)                                    \
   DECLARE(SuperView)                                    \
   DECLARE(PostfixView)                                  \
   DECLARE(GetPropView)                                  \
@@ -612,6 +618,22 @@ class VariableDeclView: public Node {
   
   VariableDeclView(std::initializer_list<Node*> vars):
       Node(NodeType::kVariableDeclView, 0, vars) {}
+};
+
+
+// Represent variable declarations.
+class LexicalDeclView: public Node {
+ public:
+  LexicalDeclView(Token op):
+      Node(NodeType::kLexicalDeclView, 0) {
+    set_operand(op);
+  }
+
+  
+  LexicalDeclView(Token op, std::initializer_list<Node*> vars):
+      Node(NodeType::kLexicalDeclView, 0, vars) {
+    set_operand(op);
+  }
 };
 
 
@@ -1452,6 +1474,10 @@ class RestParamView: public Node {
   RestParamView(Node* parameter)
       : Node(NodeType::kRestParamView, 1u, {parameter}){}
 
+  
+  RestParamView()
+      : Node(NodeType::kRestParamView, 1u){}
+
 
   NODE_PROPERTY(parameter, 0);
 };
@@ -1537,6 +1563,49 @@ class NameView: public Node {
       : Node(NodeType::kNameView, 0u) {
     set_string_value(std::move(name));
   }
+};
+
+
+class BindingPropListView: public Node {
+ public:
+  BindingPropListView()
+      : Node(NodeType::kBindingPropListView, 0u) {}
+};
+
+
+class BindingArrayView: public Node {
+ public:
+  BindingArrayView()
+      : Node(NodeType::kBindingArrayView, 0u) {}
+};
+
+
+class BindingElementView: public Node {
+ public:
+  BindingElementView(Node* prop, Node* elem, Node* init)
+      : Node(NodeType::kBindingElementView, 3u, {prop, elem, init}) {}
+
+  BindingElementView()
+      : Node(NodeType::kBindingElementView, 3u) {}
+
+  
+  NODE_PROPERTY(prop, 0);
+  NODE_PROPERTY(elem, 1);
+  NODE_PROPERTY(init, 2);
+};
+
+
+class DefaultView: public Node {
+ public:
+  DefaultView()
+      : Node(NodeType::kDefaultView, 0u) {}
+};
+
+
+class YieldView: public Node {
+ public:
+  YieldView()
+      : Node(NodeType::kYieldView) {}
 };
 
 

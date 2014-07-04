@@ -197,7 +197,7 @@ static const Token kPunctures[] = {
   KEYWORD("instanceof", Token::TS_INSTANCEOF)                           \
   KEYWORD("interface", Token::TS_INTERFACE)                             \
   KEYWORD_GROUP('l')                                                    \
-  KEYWORD("let", es_harmony? Token::TS_LET: Token::FUTURE_STRICT_RESERVED_WORD) \
+  KEYWORD("let", Token::TS_LET) \
   KEYWORD_GROUP('m')                                                    \
   KEYWORD("module", Token::TS_MODULE)                                   \
   KEYWORD_GROUP('n')                                                    \
