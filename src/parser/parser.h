@@ -176,6 +176,10 @@ class Parser {
   ir::Node* ParseFunction();
 
   ir::Node* ParseArrowFunction(ir::Node* identifier = nullptr);
+  
+  ir::Node* ParseArrowFunctionParameters(ir::Node* identifier = nullptr);
+
+  ir::Node* ParseArrowFunctionBody(ir::Node* call_sig);
 
   ir::Node* ParseFunctionBody();
 
@@ -359,6 +363,25 @@ class Parser {
 class SyntaxError: public std::exception {
  public:
   SyntaxError(const std::string& message)
+      : std::exception(),
+        message_(message) {}
+
+  
+  /**
+   * Return the reason of the error.
+   * @returns The error message.
+   */
+  const char* what() const throw() {return message_.c_str();}
+  
+ private:
+  std::string message_;
+};
+
+
+// Arrow function parameters exception.
+class ArrowParametersError: public std::exception {
+ public:
+  ArrowParametersError(const std::string& message)
       : std::exception(),
         message_(message) {}
 

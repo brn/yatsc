@@ -34,7 +34,7 @@ static bool show_parse_phase = false;
 #define PARSER_METHOD_CALL__(var, method_expr)  \
   var.method_expr
 
-#define PARSER_TEST__(method_expr, type, code, expected_str) {          \
+#define PARSER_TEST__(method_expr, type, code, expected_str, dothrow, error_type) { \
     typedef std::vector<yatsc::UChar>::iterator Iterator;               \
     std::string s = code;                                               \
     std::string n = "anonymous";                                        \
@@ -45,15 +45,26 @@ static bool show_parse_phase = false;
     yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, compiler_option); \
     yatsc::Parser<Iterator> parser(&scanner, &error_reporter);          \
     if (show_parse_phase) parser.EnablePrintParsePhase();               \
-    auto node = PARSER_METHOD_CALL__(parser, method_expr);              \
-    yatsc::testing::CompareNode(node->ToStringTree(), std::string(expected_str)); \
+    show_parse_phase = false;                                           \
+    if (!dothrow) {                                                     \
+      auto node = PARSER_METHOD_CALL__(parser, method_expr);            \
+      yatsc::testing::CompareNode(node->ToStringTree(), std::string(expected_str)); \
+    } else {                                                            \
+      ASSERT_THROW(PARSER_METHOD_CALL__(parser, method_expr), error_type); \
+    }                                                                   \
   }
 
-#define EXPR_TEST(type, code, expected_str)                       \
-  PARSER_TEST__(ParseExpression(true, false), type, code, expected_str)
+#define EXPR_TEST(type, code, expected_str)                             \
+  PARSER_TEST__(ParseExpression(true, false), type, code, expected_str, false, std::exception)
 
-#define LEXICAL_DECL_TEST(type, code, expected_str)                   \
-  PARSER_TEST__(ParseLexicalDeclaration(true, false), type, code, expected_str)
+#define EXPR_THROW_TEST(type, code, error_type)                         \
+  PARSER_TEST__(ParseExpression(true, false), type, code, "", true, error_type)
+
+#define LEXICAL_DECL_TEST(type, code, expected_str)                     \
+  PARSER_TEST__(ParseLexicalDeclaration(true, false), type, code, expected_str, false, std::exception)
+
+#define LEXICAL_DECL_THROW_TEST(type, code, error_type)                 \
+  PARSER_TEST__(ParseLexicalDeclaration(true, false), type, code, "", true, error_type)
 
 
 TEST(ParserTest, ParseLiteral_string) {
@@ -239,6 +250,115 @@ TEST(ParserTest, ParseExpression_arrow_function) {
             "  [BinaryExprView][TS_PLUS]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
+
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(a:string = \"aaa\") => a + b",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [ParameterView]\n"
+            "        [NameView][a]\n"
+            "        [StringView]['aaa']\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][string]\n"
+            "        [Empty]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(a?:string = foo()) => a + b",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [ParameterView]\n"
+            "        [NameView][a]\n"
+            "        [CallView]\n"
+            "          [NameView][foo]\n"
+            "          [CallArgsView]\n"
+            "          [Empty]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][string]\n"
+            "        [Empty]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
+
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(a:string, ...b) => a + b",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [ParameterView]\n"
+            "        [NameView][a]\n"
+            "        [Empty]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][string]\n"
+            "        [Empty]\n"
+            "      [RestParamView]\n"
+            "        [ParameterView]\n"
+            "          [NameView][b]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(...b) => a + b",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [RestParamView]\n"
+            "        [ParameterView]\n"
+            "          [NameView][b]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
+  
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b, a) => a + b",
+                  yatsc::ArrowParametersError);
+
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b = 1) => a + b",
+                  yatsc::ArrowParametersError);
+
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b?: string) => a + b",
+                  yatsc::ArrowParametersError);
+  
+
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(a:string, ...b:number) => a + b",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [ParameterView]\n"
+            "        [NameView][a]\n"
+            "        [Empty]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][string]\n"
+            "        [Empty]\n"
+            "      [RestParamView]\n"
+            "        [ParameterView]\n"
+            "          [NameView][b]\n"
+            "          [Empty]\n"
+            "          [SimpleTypeExprView]\n"
+            "            [NameView][number]\n"
+            "          [Empty]\n"
+            "    [Empty]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][TS_PLUS]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
+  
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x => x + 10",
             "[ArrowFunctionView]\n"

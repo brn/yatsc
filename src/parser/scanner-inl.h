@@ -325,6 +325,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       if (lookahead1_ == char_) {
         Advance();
         if (lookahead1_ == char_) {
+          Advance();
           return BuildToken(Token::TS_REST);
         }
         Illegal();

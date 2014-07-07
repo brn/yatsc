@@ -25,24 +25,48 @@
 
 namespace yatsc {
 
+// Generate SyntaxError and throw it.
+// Usage. SYNTAX_ERROR("test " << message, Current())
 #define SYNTAX_ERROR(message, token)                  \
   SYNTAX_ERROR_POS(message, token->source_position())
 
 
-#ifndef DEBUG
+// Generate ArrowParametersError and throw it.
+// Usage. ARROW_PARAMETERS_ERROR("test " << message, Current())
+#define ARROW_PARAMETERS_ERROR(message, token)                  \
+  ARROW_PARAMETERS_ERROR_POS(message, token->source_position())
+
+
+// Generate SyntaxError that is pointed specified position and throw it.
+// Usage. SYNTAX_ERROR_POS("test " << message, node->source_position())
 #define SYNTAX_ERROR_POS(message, pos)          \
+  SYNTAX_ERROR__(message, pos, SyntaxError)
+
+
+// Generate ArrowParametersError that is pointed specified position and throw it.
+// Usage. ARROW_PARAMETERS_ERROR_POS("test " << message, node->source_position())
+#define ARROW_PARAMETERS_ERROR_POS(message, pos)      \
+  SYNTAX_ERROR__(message, pos, ArrowParametersError)
+
+
+
+#ifndef DEBUG
+// Throw error and return nullptr.
+#define SYNTAX_ERROR__(message, pos, error)     \
   (*error_reporter_) << message;                \
-  error_reporter_->Throw<SyntaxError>(pos);     \
+  error_reporter_->Throw<error>(pos);           \
   return nullptr
 #else
-#define SYNTAX_ERROR_POS(message, pos)                          \
+// Throw error that has source line and number for the error thrown position.
+#define SYNTAX_ERROR__(message, pos, error)                             \
   (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
-  error_reporter_->Throw<SyntaxError>(pos);                             \
+  error_reporter_->Throw<error>(pos);                                   \
   return nullptr
 #endif
 
 
 #ifdef DEBUG
+// Logging current parse phase.
 #define ENTER(name)                                                     \
   if (print_parser_phase_) {                                            \
     if (Current() != nullptr) {                               \
@@ -63,6 +87,7 @@ namespace yatsc {
       }                                                                 \
     })
 #else
+// Disabled.
 #define ENTER(name)
 #endif
 
@@ -706,6 +731,8 @@ bool IsAssignmentOp(Token type) {
 // Parse assignment expression.
 // The assignment expression is like below
 // 'a = b' or 'a += b'
+// And, try parse arrow_function if token started as '(' or '<',
+// if parse arrow_function is failed, simply parsed as conditional expression.
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool has_in, bool has_yield) {
   ENTER(ParseAssignmentExpression);
@@ -714,36 +741,47 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool has_in, boo
       Current()->type() == Token::TS_LESS) {
     typename ParserState::ArrowFunctionScope scope(&parser_state_);
     // First try parse as arrow function.
+    bool failed = false;
     try {
       {
         // Enable token recording mode.
         typename ParserState::RecordTokenScope token_scope(&parser_state_);
         token_buffer_.PushBack(Current());
 
-        // parsae an arrow function.
-        node = ParseArrowFunction();
+        // parsae an arrow_function_parameters.
+        node = ParseArrowFunctionParameters();
       }
       
-      token_buffer_.Clear();
-      return node;
-        
     } catch (const SyntaxError& e) {
-      // If parse failed, try parse as an parenthesized expression in primary expression,
+      // If parse failed, try parse as an parenthesized_expression in primary expression,
       // Do nothing.
+      failed = true;
+    } catch (const ArrowParametersError& a) {
+      // If ArrowParameterError thrown, rethrow error because
+      // that is a ParseError for the arrow_function_parameters.
+      throw a;   
     } catch (const std::exception& e) {
-      // Any errors except the SyntaxError are goto here.
+      // Any errors except the SyntaxError and ArrowParametersError are goto here.
       throw e;
-    }    
+    }
+
+    if (!failed) {
+      token_buffer_.Clear();
+      return ParseArrowFunctionBody(node);
+    }
   }
-  
+
   ir::Node* expr = ParseConditionalExpression(has_in, has_yield);
 
   if (expr->HasNameView() && Current()->type() == Token::TS_ARROW_GLYPH) {
     return ParseArrowFunction(expr);
   }
   
+  // Expression is not an arrow_function.
   TokenInfo *token_info = Current();
   Token type = token_info->type();
+
+  // Check assignment operators.
   if (IsAssignmentOp(type)) {
     Next();
 
@@ -1790,15 +1828,22 @@ ir::Node* Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allowe
     ir::ParamList* param_list = New<ir::ParamList>();
     param_list->SetInformationForNode(Current());
     Next();
+    bool has_rest = false;
     while (1) {
+      if (has_rest) {
+        ARROW_PARAMETERS_ERROR_POS("Rest parameter must be at the end of the parameters", param_list->last_child()->source_position());
+      }
       if (Current()->type() == Token::TS_IDENTIFIER) {
         param_list->InsertLast(ParseParameter(false, accesslevel_allowed));
       } else if (Current()->type() == Token::TS_REST) {
+        has_rest = true;
         TokenInfo token = (*Current());
         Next();
         ir::Node* node = New<ir::RestParamView>(ParseParameter(true, accesslevel_allowed));
         node->SetInformationForNode(&token);
         param_list->InsertLast(node);
+      } else {
+        SYNTAX_ERROR("SyntaxError unexpected token in formal parameter list", Current());
       }
 
       if (Current()->type() == Token::TS_COMMA) {
@@ -1824,7 +1869,7 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
       access_level = New<ir::ClassFieldAccessLevelView>(Current()->type());
       access_level->SetInformationForNode(Current());
     } else {
-      SYNTAX_ERROR("SyntaxError 'private' or 'public' not allowed here", Current());
+      ARROW_PARAMETERS_ERROR("SyntaxError 'private' or 'public' not allowed here", Current());
     }
     Next();
   }
@@ -1838,7 +1883,7 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
     Next();
     if (Current()->type() == Token::TS_QUESTION_MARK) {
       if (rest) {
-        SYNTAX_ERROR("SyntaxError optional parameter not allowed in rest parameter", Current());
+        ARROW_PARAMETERS_ERROR("SyntaxError optional parameter not allowed in rest parameter", Current());
       }
       Next();
       pv->set_optional(true);
@@ -1849,7 +1894,7 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
     }
     if (Current()->type() == Token::TS_ASSIGN) {
       if (rest) {
-        SYNTAX_ERROR("SyntaxError default parameter not allowed in rest parameter", Current());
+        ARROW_PARAMETERS_ERROR("SyntaxError default parameter not allowed in rest parameter", Current());
       }
       Next();
       pv->set_value(ParseAssignmentExpression(true, false));
@@ -1905,6 +1950,13 @@ ir::Node* Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowe
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
+  ir::Node* call_sig = ParseArrowFunctionParameters(identifier);
+  return ParseArrowFunctionBody(call_sig);
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionParameters(ir::Node* identifier) {
   ENTER(ParseArrowFunction);
 
   ir::Node* call_sig = nullptr;
@@ -1919,6 +1971,12 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
     SYNTAX_ERROR("SyntaxError '=>' expected", Current());
   }
   Next();
+  return call_sig;
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionBody(ir::Node* call_sig) {
   ir::Node* body;
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     Next();
