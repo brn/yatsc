@@ -28,6 +28,10 @@
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
         './src/compiler-option.cc',
+        './src/utils/systeminfo.cc',
+        './src/utils/tls.cc',
+        './src/utils/regions.cc',
+        './src/utils/environment.cc',
         './src/utils/os.cc',
         './src/parser/token.cc',
         './lib/gtest/gtest-all.cc',

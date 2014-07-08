@@ -31,6 +31,7 @@
 #include "./uchar.h"
 #include "../utils/unicode.h"
 #include "../utils/utils.h"
+#include "../utils/regions.h"
 #include "unicode-iterator-adapter.h"
 
 namespace yatsc {
@@ -172,7 +173,7 @@ class Utf16Value {
 };
 
 
-class UtfString {
+class UtfString : public RegionalObject {
  public:
   UtfString() = default;
   
@@ -280,6 +281,16 @@ class UtfString {
 
   YATSC_INLINE Utf16Value ToUtf16Value() const {
     return Utf16Value(utf_value_cache_.utf16_value().c_str(), utf16_length());
+  };
+
+
+  YATSC_INLINE const char* utf8_value() const {
+    return utf_value_cache_.utf8_value().c_str();
+  };
+
+
+  YATSC_INLINE const UC16* utf16_value() const {
+    return utf_value_cache_.utf16_value().c_str();
   };
 
 

@@ -37,7 +37,7 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
-    : unscaned_(true),
+    : environment_(Environment::Create()),
       allow_regular_expression_(false),
       it_(it),
       end_(end),
@@ -79,7 +79,8 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
   if (char_ == unicode::u8('\0')) {
     BuildToken(Token::END_OF_INPUT);
   } else if (char_ == unicode::u8(';')) {
-    return Scan();
+    BuildToken(Token::LINE_TERMINATOR);
+    Advance();
   } else if (Character::IsPuncture(char_)) {
     BuildToken(TokenInfo::GetPunctureType(char_));
     Advance();
@@ -154,7 +155,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
     v += char_;
   }
 
-  BuildToken(Token::TS_STRING_LITERAL, std::move(v));
+  BuildToken(Token::TS_STRING_LITERAL, v);
 }
 
 
@@ -198,7 +199,7 @@ void Scanner<UCharInputIterator>::ScanHex() {
     v += char_;
     Advance();
   }
-  BuildToken(Token::TS_NUMERIC_LITERAL, std::move(v));
+  BuildToken(Token::TS_NUMERIC_LITERAL, v);
 }
 
 
@@ -209,7 +210,7 @@ void Scanner<UCharInputIterator>::ScanOctalLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::TS_OCTAL_LITERAL, std::move(str));
+  BuildToken(Token::TS_OCTAL_LITERAL, str);
 }
 
 
@@ -227,7 +228,7 @@ void Scanner<UCharInputIterator>::ScanBinaryLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::TS_BINARY_LITERAL, std::move(str));
+  BuildToken(Token::TS_BINARY_LITERAL, str);
 }
 
 
@@ -274,7 +275,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
     return Illegal();
   }
   
-  BuildToken(Token::TS_NUMERIC_LITERAL, std::move(v));
+  BuildToken(Token::TS_NUMERIC_LITERAL, v);
 }
 
 
@@ -294,7 +295,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
   Utf8Value utf8_value = v.ToUtf8Value();
   Token type = TokenInfo::GetIdentifierType(utf8_value.value(),
                                             LanguageModeUtil::IsHarmony(compiler_option_));
-  BuildToken(type, std::move(v));
+  BuildToken(type, v);
 }
 
 

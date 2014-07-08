@@ -66,6 +66,7 @@ namespace yatsc {namespace ir {
   DECLARE(ThrowStatementView)                           \
   DECLARE(ForStatementView)                             \
   DECLARE(ForInStatementView)                           \
+  DECLARE(ForOfStatementView)                           \
   DECLARE(WhileStatementView)                           \
   DECLARE(DoWhileStatementView)                         \
   DECLARE(ClassDeclView)                                \
@@ -703,15 +704,15 @@ class ImportView: public Node {
 // Represent variable.
 class VariableView : public Node {
  public:
-  VariableView(Node* name, Node* value, Node* type):
-      Node(NodeType::kVariableView, 3u, {name, value, type}) {}
+  VariableView(Node* binding_identifier, Node* value, Node* type):
+      Node(NodeType::kVariableView, 3u, {binding_identifier, value, type}) {}
 
 
   VariableView():
       Node(NodeType::kVariableView, 3u) {}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(binding_identifier, 0);
   NODE_PROPERTY(value, 1);
   NODE_PROPERTY(type, 2);
 };
@@ -968,6 +969,29 @@ class ForInStatementView: public Node {
 
   ForInStatementView()
       : Node(NodeType::kForInStatementView, 3u) {}
+
+
+  // Getter and Setter for cond_init.
+  NODE_PROPERTY(property_name, 0);
+
+
+  // Getter and Setter for expr.
+  NODE_PROPERTY(expr, 1);
+
+  
+  // Getter and Setter for body.
+  NODE_PROPERTY(body, 2);
+};
+
+
+// Represent for in statement.
+class ForOfStatementView: public Node {
+ public:
+  ForOfStatementView(Node* property_name, Node* expr, Node* body)
+      : Node(NodeType::kForOfStatementView, 3u, {property_name, expr, body}) {}
+
+  ForOfStatementView()
+      : Node(NodeType::kForOfStatementView, 3u) {}
 
 
   // Getter and Setter for cond_init.

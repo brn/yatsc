@@ -22,48 +22,25 @@
  * THE SOFTWARE.
  */
 
+#ifndef PARSER_LITERLBUFFER_H
+#define PARSER_LITERLBUFFER_H
 
-#ifndef ENVIRONMENT_H
-#define ENVIRONMENT_H
-
-#include "./tls.h"
-#include "./regions.h"
-#include "../parser/literalbuffer.h"
+#include <unordered_map>
+#include "./utfstring.h"
 
 namespace yatsc {
-class Environment : private Uncopyable {
+class LiteralBuffer: private Unmovable, private Uncopyable {
+  typedef std::unordered_map<std::string, UtfString*> UtfStringBuffer;
  public:
-  static Environment* Create() YATSC_NOEXCEPT {
-    Environment* environment = reinterpret_cast<Environment*>(tls_.Get());
-    if (environment == nullptr) {
-      environment = new Environment();
-      tls_.Set(environment);
-    }
-    return environment;
+  LiteralBuffer() {}
+
+  UtfString* InsertValue(const UtfString& utf_string, Regions* regions) {
+    auto ret = buffer_.emplace(utf_string.utf8_value(), regions->New<UtfString>(utf_string));
+    return ret.first->second;
   }
-
-  template <typename T, typename ... Args>
-  YATSC_INLINE T* New(Args ... args) {
-    return regions_.New<T>(std::forward<Args>(args)...);
-  }
-
-
-  YATSC_INLINE LiteralBuffer* literal_buffer() YATSC_NOEXCEPT {
-    return &literal_buffer_;
-  }
-
-
-  YATSC_INLINE Regions* regions() YATSC_NOEXCEPT {
-    return &regions_;
-  }
-
- private:
-  Environment() = default;
-
-  LiteralBuffer literal_buffer_;
   
-  static ThreadLocalStorage::Slot tls_;
-  static Regions regions_;
+ private:
+  UtfStringBuffer buffer_;
 };
 }
 

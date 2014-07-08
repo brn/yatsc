@@ -81,15 +81,19 @@ class Parser {
 
   ir::Node* ParseBindingIdentifier(bool default_allowed, bool has_in, bool has_yield);
 
-  ir::Node* ParseVariableDeclaration(bool noin);
+  ir::Node* ParseVariableStatement(bool has_in, bool has_yield);
+  
+  ir::Node* ParseVariableDeclaration(bool has_in, bool has_yield);
 
-  ir::Node* ParseIfStatement();
+  ir::Node* ParseIfStatement(bool has_yield);
 
-  ir::Node* ParseWhileStatement();
+  ir::Node* ParseWhileStatement(bool has_yield);
 
-  ir::Node* ParseDoWhileStatement();
+  ir::Node* ParseDoWhileStatement(bool has_yield);
 
-  ir::Node* ParseForStatement();
+  ir::Node* ParseForStatement(bool has_yield);
+
+  ir::Node* ParseForIterationStatement(ir::Node* reciever, TokenInfo* info, bool has_yield);
 
   ir::Node* ParseContinueStatement();
 
@@ -131,7 +135,7 @@ class Parser {
 
   ir::Node* ParsePostfixExpression();
 
-  ir::Node* ParseLeftHandSideExpression();
+  ir::Node* ParseLeftHandSideExpression(bool has_in, bool has_yield);
 
   ir::Node* ParseTypeExpression();
 
@@ -343,6 +347,10 @@ class Parser {
   T* New(std::initializer_list<ir::Node*> list) {
     return irfactory_.New<T>(list);
   }
+
+
+  void CheckLineTermination();
+  
 
   bool print_parser_phase_;
   Scanner<UCharInputSourceIterator>* scanner_;

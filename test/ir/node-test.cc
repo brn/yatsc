@@ -199,15 +199,15 @@ TEST_F(NodeTest, VariableView_test) {
   yatsc::ir::Node* value = irfactory.New<DummyView>();
   yatsc::ir::Node* type = irfactory.New<DummyView>();
   yatsc::ir::VariableView* vv = irfactory.New<yatsc::ir::VariableView>(name, value, type);
-  ASSERT_EQ(vv->name(), name);
+  ASSERT_EQ(vv->binding_identifier(), name);
   ASSERT_EQ(vv->value(), value);
   ASSERT_EQ(vv->type(), type);
 
-  vv->set_name(value);
+  vv->set_binding_identifier(value);
   vv->set_value(type);
   vv->set_type(name);
 
-  ASSERT_EQ(vv->name(), value);
+  ASSERT_EQ(vv->binding_identifier(), value);
   ASSERT_EQ(vv->value(), type);
   ASSERT_EQ(vv->type(), name);
 }

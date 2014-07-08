@@ -32,6 +32,7 @@
 #include "error_reporter.h"
 #include "lineterminator-state.h"
 #include "../compiler-option.h"
+#include "../utils/environment.h"
 
 
 namespace yatsc {
@@ -245,7 +246,11 @@ class Scanner: private Uncopyable, private Unmovable {
   
 
   void UpdateTokenInfo() {
-    token_info_.set_multi_line_comment(last_multi_line_comment_);
+    if (last_multi_line_comment_.utf8_length() > 0) {
+      auto p_multi_line_comment = environment_->literal_buffer()->InsertValue(last_multi_line_comment_, environment_->regions());
+      token_info_.set_multi_line_comment(p_multi_line_comment);
+    }
+    last_multi_line_comment_.Clear();
     token_info_.ClearValue();
     token_info_.set_source_position(CreateSourcePosition());
   }
@@ -270,9 +275,10 @@ class Scanner: private Uncopyable, private Unmovable {
   }
   
 
-  void BuildToken(Token type, UtfString utf_string) {
+  void BuildToken(Token type, const UtfString& utf_string) {
     UpdateTokenInfo();
-    token_info_.set_value(std::move(utf_string));
+    UtfString* p_utf_string = environment_->literal_buffer()->InsertValue(utf_string, environment_->regions());
+    token_info_.set_value(p_utf_string);
     token_info_.set_type(type);
   }
 
@@ -293,6 +299,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   bool unscaned_;
   bool allow_regular_expression_;
+  Environment* environment_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;

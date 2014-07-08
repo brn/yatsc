@@ -576,33 +576,228 @@ ir::Node* Parser<UCharInputIterator>::ParseBindingElement(bool has_yield, bool g
 }
 
 
+// variable_statement[yield]
+//  : 'var' variable_declaration_list[in, ?yield]
+//  ;
+// variable_declaration_list[in, yield]
+//  : variable_declaration[?in, ?yield]
+//  | variable_declaration_list[?in, ?yield] ',' variable_declaration[?in, ?yield]
+//  ;
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseVariableDeclaration(bool has_in) {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseVariableStatement(bool has_in, bool has_yield) {
+  if (Current()->type() == Token::TS_VAR) {
+    Next();
+    ir::VariableDeclView* vars = New<ir::VariableDeclView>();
+    while (1) {
+      ir::Node* node = ParseVariableDeclaration();
+      vars->InsertLast(node);
+    }
+    return vars;
+  }
+  SYNTAX_ERROR("SyntaxError 'var' expected", Current());
+}
+
+
+// variable_declaration[in, yield]
+//  : binding_identifier[?yield] initializer[?in, ?yield]__opt
+//  | binding_pattern[yield] initializer[?in, ?yield]
+//  ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseVariableDeclaration(bool has_in, bool has_yield) {
+  ENTER(ParseVariableDeclaration);
+  ir::Node* value = nullptr;
+  ir::Node* lhs = nullptr;
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    lhs = ParseBindingIdentifier(false, has_in, has_yield);
+  } else {
+    lhs = ParseBindingPattern(has_yield, false);
+  }
+
+  if (lhs == nullptr) {
+    SYNTAX_ERROR("SyntaxError left hand side of variable declaration is invalid", Current());
+  }
+
+  ir::Node* type_expr = nullptr;
+  if (Current()->type() == Token::TS_COLON) {
+    Next();
+    type_expr = ParseTypeExpression();
+  }
+  
+  if (Current()->type() == Token::TS_ASSIGN) {
+    Next();
+    value = ParseAssignmentExpression(has_in, has_yield);
+  }
+
+  ir::Node* ret = New<ir::VariableView>(lhs, value, type_expr);
+  ret->SetInformationForNode(lhs);
+  return ret;
+}
+
+
+// if_statement[yield, return]
+//   : 'if' '(' expression[in, ?yield] ')' statement[?yield, ?return] 'else' statement[?yield, ?return]
+//   | 'if' '(' expression[in, ?yield] ')' statement[?yield, ?return]
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseIfStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_IF) {
+    TokenInfo info = *(Current());
+    Next();
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* expr = ParseExpression(true, has_yield);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        ir::Node* then_stmt = ParseStatement();
+        ir::Node* else_stmt = nullptr;
+        if (Current()->type() == Token::TS_ELSE) {
+          else_stmt = ParseStatement();
+        }
+        ir::IfStatementView* if_stmt = New<ir::IfStatementView>(expr, then_stmt, else_stmt);
+        if_stmt->SetInformationForNode(&info);
+        return if_stmt;
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'if' expected", Current());
+}
+
+
+// while_statment
+//   : 'while' '(' expression[in, ?yield] ')' statement[?yield, ?return]
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseWhileStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_WHILE) {
+    TokenInfo info = *(Current());
+    Next();
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* expr = ParseExpression(true, has_yield);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        ir::Node* stmt = ParseStatement();
+        ir::WhileStatementView* while_stmt = New<ir::WhileStatementView>(expr, stmt);
+        while_stmt->SetInformationForNode(&info);
+        return while_stmt;
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'while' expected", Current());
+}
+
+
+// do_while_statement
+//   : 'do' statement[?yield, ?return] 'while' '(' expression[in, ?yield] ')' ;__opt
+//   ;
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseDoWhileStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_DO) {
+    TokenInfo info = *(Current());
+    Next();
+    ir::Node* stmt = ParseStatement();
+    if (Current()->type() == Token::TS_WHILE) {
+      Next();
+      if (Current()->type() == Token::TS_LEFT_PAREN) {
+        ir::Node* expr = ParseExpression(true, has_yield);
+        if (Current()->type() == Token::TS_RIGHT_PAREN) {
+          CheckLineTermination();
+          ir::DoWhileStatementView* do_while = New<ir::DoWhileStatementView>(expr, stmt);
+          do_while->SetInformationForNode(&info);
+          return do_while;
+        }
+        SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      }
+      SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError 'while' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'do' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseIfStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseForStatement(bool has_yield) {
+  if (Current() == Token::TS_FOR) {
+    TokenInfo info = *(Current());
+    Next();
+    if (Current() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* reciever = nullptr;
+      switch (Current()->type()) {
+        case Token::TS_VAR:
+          reciever = ParseVariableStatement(true, has_yield);
+        case Token::TS_LET:
+          reciever = ParseLexicalDeclaration(true, has_yield);
+        default: {
+          {
+            typename Scanner<UCharInputIterator>::RecordTokenScope scope;
+            reciever = ParseExpression(true, has_yield);
+          }
+          if (Current()->type() == Token::LINE_TERMINATOR) {
+            token_buffer_.Clear();
+          } else {
+            reciever = ParseLeftHandSideExpression(true, has_yield);
+          }
+        }
+      }
+      return ParseForIterationStatement(reciever, &info, has_yield);
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'for' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseWhileStatement() {
-  return nullptr;
-}
-
-
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseDoWhileStatement() {
-  return nullptr;
-}
-
-
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseForStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseForIterationStatement(ir::Node* reciever, TokenInfo* token_info, bool has_yield) {
+  ir::Node* target = nullptr;
+  if (Current()->type() == Token::LINE_TERMINATOR) {
+    // for (var i = 0; i < 10; i++) ...
+    token_buffer_.Clear();
+    Next();
+    ir::Node* cond = ParseExpression(true, has_yield);
+    if (Current()->type() == Token::LINE_TERMINATOR) {
+      Next();
+      ir::Node* incr = ParseExpression(true, has_yield);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        ir::Node* stmt = ParseStatement(has_yield);
+        ir::ForStatementView* for_stmt = New<ir::ForStatementView>(reciever, cond, incr, stmt);
+        for_stmt->SetInformationForNode(token_info);
+        return for_stmt;
+      }
+    }
+  } else if (Current()->type() == Token::TS_IDENTIFIER &&
+             Current()->value() == "of") {
+    // for (var i in obj) ...
+    Next();
+    target = ParseAssignmentExpression(true, has_yield);
+    if (Current()->type() == Token::TS_RIGHT_PAREN) {
+      Next();
+      ir::Node* stmt = ParseStatement(has_yield);
+      ir::ForOfStatementView* for_stmt = New<ir::ForOfStatementView>(reciever, target, stmt);
+      for_stmt->SetInformationForNode(token_info);
+      return for_stmt;
+    }
+    SYNTAX_ERROR("SyntaxError ')' expected", Current());
+  } else if (Current()->type() == Token::TS_IN) {
+    // for (var i of obj) ...
+    Next();
+    target = ParseAssignmentExpression(false, has_yield);
+    if (Current()->type() == Token::TS_RIGHT_PAREN) {
+      Next();
+      ir::Node* stmt = ParseStatement(has_yield);
+      ir::ForInStatementView* for_stmt = New<ir::ForInStatementView>(reciever, target, stmt);
+      for_stmt->SetInformationForNode(token_info);
+      return for_stmt;
+    }
+    SYNTAX_ERROR("SyntaxError 'in' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError ';' or 'in' or 'of' expected", Current());
 }
 
 
@@ -1073,7 +1268,7 @@ ir::Node* Parser<UCharInputIterator>::ParseUnaryExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
   ENTER(ParsePostfixExpression);
-  ir::Node* node = ParseLeftHandSideExpression();
+  ir::Node* node = ParseLeftHandSideExpression(true, false);
   if (Current()->type() == Token::TS_INCREMENT ||
       Current()->type() == Token::TS_DECREMENT) {
     ir::Node* ret = New<ir::PostfixView>(node, Current()->type());
@@ -1091,10 +1286,24 @@ ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
 // 	| call_expression
 // 	;
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression() {
+ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression(bool has_in, bool has_yield) {
   ENTER(ParseLeftHandSideExpression);
   if (Current()->type() == Token::TS_NEW) {
     return ParseMemberExpression();
+  } else {
+    try {
+      {
+        typename ParserState::RecordTokenScope scope_(&parser_state_);
+        switch (Current()->type()) {
+          case Token::TS_LEFT_BRACE:
+            return ParseObjectLiteral();
+          case Token::TS_LEFT_BRACKET:
+            return ParseArrayLiteral();
+        }
+      }
+    } catch (const SyntaxError& e) {
+      return ParseBindingPattern(has_in, has_yield);
+    }
   }
   return ParseCallExpression();
 }
@@ -2013,6 +2222,21 @@ ir::Node* Parser<UCharInputIterator>::ParseFunctionBody() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFormalParameterList() {
   return nullptr;
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::CheckLineTermination() {
+  bool line_terminated = Current()->has_line_break_before_next() ||
+    Current()->has_line_terminator_before_next();
+  Next();
+  if (Current()->type() == Token::LINE_TERMINATOR) {
+    Next();
+    return;
+  }
+  if (Current()->type() != Token::END_OF_INPUT && !line_terminated) {
+    SYNTAX_ERROR("SyntaxError ';' expected", Current());
+  }
 }
 }
 

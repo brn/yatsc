@@ -185,6 +185,8 @@ class TokenInfo {
 
   // Default constructor.
   TokenInfo() :
+      utf_string_(nullptr),
+      multi_line_comment_(nullptr),
       type_(Token::NULL_TOKEN) {}
   
 
@@ -204,8 +206,8 @@ class TokenInfo {
    * Set token value.
    * @param utf_string The token value that is unicode encoded string.
    */
-  YATSC_INLINE void set_value(UtfString&& utf_string) {
-    utf_string_ = std::move(utf_string);
+  YATSC_INLINE void set_value(UtfString* utf_string) {
+    utf_string_ = utf_string;
   }
 
 
@@ -213,11 +215,11 @@ class TokenInfo {
    * Remove token value.
    */
   YATSC_INLINE void ClearValue() {
-    utf_string_.Clear();
+    utf_string_->Clear();
   }
 
 
-  YATSC_INLINE void set_multi_line_comment(UtfString multi_line_comment) {
+  YATSC_INLINE void set_multi_line_comment(UtfString* multi_line_comment) {
     multi_line_comment_ = multi_line_comment;
   }
 
@@ -226,7 +228,7 @@ class TokenInfo {
    * Remove token value.
    */
   YATSC_INLINE void ClearComment() {
-    multi_line_comment_.Clear();
+    multi_line_comment_->Clear();
   }
   
 
@@ -235,12 +237,12 @@ class TokenInfo {
    * @returns The token value that is unicode encoded string.
    */
   YATSC_INLINE const UtfString& value() YATSC_NO_SE {
-    return utf_string_;
+    return *utf_string_;
   }
 
 
   YATSC_INLINE const UtfString& comment() YATSC_NO_SE {
-    return multi_line_comment_;
+    return *multi_line_comment_;
   }
 
 
@@ -292,8 +294,8 @@ class TokenInfo {
   static TokenInfo kNullToken;
   
  private:  
-  UtfString utf_string_;
-  UtfString multi_line_comment_;
+  UtfString* utf_string_;
+  UtfString* multi_line_comment_;
   Token type_;
   LineTerminatorState line_terminator_state_;
   SourcePosition source_position_;
