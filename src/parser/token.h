@@ -215,7 +215,7 @@ class TokenInfo {
    * Remove token value.
    */
   YATSC_INLINE void ClearValue() {
-    utf_string_->Clear();
+    utf_string_ = nullptr;
   }
 
 
@@ -228,7 +228,7 @@ class TokenInfo {
    * Remove token value.
    */
   YATSC_INLINE void ClearComment() {
-    multi_line_comment_->Clear();
+    multi_line_comment_ = nullptr;
   }
   
 
