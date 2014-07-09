@@ -28,11 +28,10 @@
   TEST(ScannerTest, ScanIdentifier_keyword_##keyword)           \
   {                                                             \
     INIT(token, #keyword);                                      \
-    ASSERT_STREQ(#token_type, token->ToString());                \
-    ASSERT_EQ(yatsc::Token::token_type, token->type());           \
-    yatsc::Utf8Value utf8 = token->value().ToUtf8Value();         \
-    ASSERT_STREQ(utf8.value(), #keyword);                       \
-    ASSERT_EQ(utf8.size(), strlen(#keyword));                   \
+    ASSERT_STREQ(#token_type, token->ToString());               \
+    ASSERT_EQ(yatsc::Token::token_type, token->type());         \
+    ASSERT_STREQ(token->utf8_value(), #keyword);                \
+    ASSERT_EQ(token->value().utf8_length(), strlen(#keyword)); \
     END_SCAN;                                                   \
   }
 

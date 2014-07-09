@@ -247,7 +247,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void UpdateTokenInfo() {
     if (last_multi_line_comment_.utf8_length() > 0) {
-      auto p_multi_line_comment = environment_->literal_buffer()->InsertValue(last_multi_line_comment_, environment_->regions());
+      auto p_multi_line_comment = environment_->literal_buffer()->InsertValue(last_multi_line_comment_);
       token_info_.set_multi_line_comment(p_multi_line_comment);
     }
     last_multi_line_comment_.Clear();
@@ -277,7 +277,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void BuildToken(Token type, const UtfString& utf_string) {
     UpdateTokenInfo();
-    UtfString* p_utf_string = environment_->literal_buffer()->InsertValue(utf_string, environment_->regions());
+    UtfString* p_utf_string = environment_->literal_buffer()->InsertValue(utf_string);
     token_info_.set_value(p_utf_string);
     token_info_.set_type(type);
   }

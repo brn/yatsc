@@ -30,13 +30,13 @@
 
 namespace yatsc {
 class LiteralBuffer: private Unmovable, private Uncopyable {
-  typedef std::unordered_map<std::string, UtfString*> UtfStringBuffer;
+  typedef std::unordered_map<std::string, UtfString> UtfStringBuffer;
  public:
   LiteralBuffer() {}
 
-  UtfString* InsertValue(const UtfString& utf_string, Regions* regions) {
-    auto ret = buffer_.emplace(utf_string.utf8_value(), regions->New<UtfString>(utf_string));
-    return ret.first->second;
+  UtfString* InsertValue(const UtfString& utf_string) {
+    auto ret = buffer_.emplace(utf_string.utf8_value(), std::move(utf_string));
+    return &(ret.first->second);
   }
   
  private:

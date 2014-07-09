@@ -187,7 +187,7 @@ class TokenInfo {
   TokenInfo() :
       utf_string_(nullptr),
       multi_line_comment_(nullptr),
-      type_(Token::NULL_TOKEN) {}
+      type_(Token::END_OF_INPUT) {}
   
 
   // Copy constructor
@@ -238,6 +238,23 @@ class TokenInfo {
    */
   YATSC_INLINE const UtfString& value() YATSC_NO_SE {
     return *utf_string_;
+  }
+
+  /**
+   * Return token value.
+   * @returns The token value that is unicode encoded string.
+   */
+  YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
+    return utf_string_->utf8_value();
+  }
+
+
+  /**
+   * Return token value.
+   * @returns The token value that is unicode encoded string.
+   */
+  YATSC_INLINE const UC16* utf16_value() YATSC_NO_SE {
+    return utf_string_->utf16_value();
   }
 
 

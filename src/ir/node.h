@@ -401,7 +401,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * @returns String value.
    */
   YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
-    return string_value_.ToUtf8Value().value();
+    return string_value_.utf8_value();
   }
 
 
@@ -1772,7 +1772,7 @@ class NumberView: public Node {
  public:
   NumberView(UtfString value)
       : Node(NodeType::kNumberView, 0) {
-    const char* val = value.ToUtf8Value().value();
+    const char* val = value.utf8_value();
     set_string_value(value);
     double d = 0l;
     sscanf(val, "%lf", &d);

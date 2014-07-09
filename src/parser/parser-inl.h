@@ -733,13 +733,10 @@ ir::Node* Parser<UCharInputIterator>::ParseForStatement(bool has_yield) {
         case Token::TS_LET:
           reciever = ParseLexicalDeclaration(true, has_yield);
         default: {
-          {
-            typename Scanner<UCharInputIterator>::RecordTokenScope scope;
-            reciever = ParseExpression(true, has_yield);
-          }
-          if (Current()->type() == Token::LINE_TERMINATOR) {
-            token_buffer_.Clear();
-          } else {
+          TokenCursor cursor = token_buffer_.cursor();
+          reciever = ParseExpression(true, has_yield);
+          if (Current()->type() != Token::LINE_TERMINATOR) {
+            token_buffer_.SetCursorPosition(cursor);
             reciever = ParseLeftHandSideExpression(true, has_yield);
           }
         }
@@ -934,19 +931,13 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool has_in, boo
   ir::Node* node = nullptr;
   if (Current()->type() == Token::TS_LEFT_PAREN ||
       Current()->type() == Token::TS_LESS) {
-    typename ParserState::ArrowFunctionScope scope(&parser_state_);
     // First try parse as arrow function.
     bool failed = false;
+    // Enable token recording mode.
+    TokenCursor cursor = token_buffer_.cursor();
     try {
-      {
-        // Enable token recording mode.
-        typename ParserState::RecordTokenScope token_scope(&parser_state_);
-        token_buffer_.PushBack(Current());
-
-        // parsae an arrow_function_parameters.
-        node = ParseArrowFunctionParameters();
-      }
-      
+      // parsae an arrow_function_parameters.
+      node = ParseArrowFunctionParameters();
     } catch (const SyntaxError& e) {
       // If parse failed, try parse as an parenthesized_expression in primary expression,
       // Do nothing.
@@ -961,9 +952,10 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool has_in, boo
     }
 
     if (!failed) {
-      token_buffer_.Clear();
       return ParseArrowFunctionBody(node);
     }
+    
+    token_buffer_.SetCursorPosition(cursor);
   }
 
   ir::Node* expr = ParseConditionalExpression(has_in, has_yield);
@@ -1291,17 +1283,16 @@ ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression(bool has_in, b
   if (Current()->type() == Token::TS_NEW) {
     return ParseMemberExpression();
   } else {
+    TokenCursor cursor = token_buffer_.cursor();
     try {
-      {
-        typename ParserState::RecordTokenScope scope_(&parser_state_);
-        switch (Current()->type()) {
-          case Token::TS_LEFT_BRACE:
-            return ParseObjectLiteral();
-          case Token::TS_LEFT_BRACKET:
-            return ParseArrayLiteral();
-        }
+      switch (Current()->type()) {
+        case Token::TS_LEFT_BRACE:
+          return ParseObjectLiteral();
+        case Token::TS_LEFT_BRACKET:
+          return ParseArrayLiteral();
       }
     } catch (const SyntaxError& e) {
+      token_buffer_.SetCursorPosition(cursor);
       return ParseBindingPattern(has_in, has_yield);
     }
   }

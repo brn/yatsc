@@ -199,89 +199,100 @@ class Parser {
   
  private:
 
+  typedef size_t TokenCursor;
+
+  /**
+   * The buffer of the tokens.
+   */
   class TokenBuffer: private Uncopyable, private Unmovable {
    public:
+    
     TokenBuffer()
-        : index_(0) {}
+        : cursor_(0) {}
 
-  
+
+    /**
+     * Append a token to the buffer.
+     * @param token_info A new token.
+     */
     YATSC_INLINE void PushBack(TokenInfo* token_info) {
-      buffer_.push_back(*token_info);
+      buffer_.emplace_back(*token_info);
     }
 
+
+    /**
+     * Check whether buffer is empty or not.
+     * @returns true if buffer is empty, otherwise false.
+     */
     YATSC_INLINE bool IsEmpty() YATSC_NO_SE {
       return buffer_.empty();
     }
 
 
+    /**
+     * Return current token and advance cursor.
+     * @returns Current token.
+     */
     YATSC_INLINE TokenInfo* Next() {
-      if (index_ >= (buffer_.size() - 1)) {return nullptr;}
-      return &(buffer_[++index_]);
+      if (cursor_ >= (buffer_.size() - 1)) {return &null_token_info_;}
+      return &(buffer_[cursor_++]);
     }
 
 
+    /**
+     * Retrun current token.
+     * @returns Current token.
+     */
     YATSC_INLINE TokenInfo* Current() {
-      if (index_ >= buffer_.size()) {return nullptr;}
-      return &(buffer_[index_]);
+      if (cursor_ >= buffer_.size()) {return &null_token_info_;}
+      return &(buffer_[cursor_]);
     }
 
 
+    /**
+     * Peek next token.
+     * @returns Next token.
+     */
     YATSC_INLINE TokenInfo* Peek() {
-      if (index_ >= buffer_.size()) {return nullptr;}
-      return &(buffer_[index_ + 1]);
+      if (cursor_ >= buffer_.size()) {return &null_token_info_;}
+      return &(buffer_[cursor_ + 1]);
     }
 
 
-    YATSC_INLINE void Clear() {
-      buffer_.clear();
-      index_ = 0;
-    }    
+    /**
+     * Set current token position.
+     * @param pos New cursor position.
+     */
+    YATSC_INLINE void SetCursorPosition(TokenCursor pos) YATSC_NOEXCEPT {
+      ASSERT(pos >= 0u, true);
+      cursor_ = pos;
+    }
+
+
+    /**
+     * Return current cursor position.
+     * @returns Current cursor position.
+     */
+    YATSC_INLINE TokenCursor cursor() YATSC_NOEXCEPT {
+      return cursor_;
+    }
+
+
+    /**
+     * Check whether cursor position is end of buffer or not.
+     * @returns true if cursor position is end of buffer, otherwise false.
+     */
+    YATSC_INLINE bool CursorUpdated() {
+      if (buffer_.empty()) {
+        return true;
+      }
+      return cursor_ == (buffer_.size() - 1);
+    }
 
    private:
-    size_t index_;
+    TokenCursor cursor_;
     std::vector<TokenInfo> buffer_;
-  };
-  
-
-  class ParserState: private Unmovable, private Uncopyable {
-   public:
-    ParserState() {}
-
-#define SCOPE(name, bit)                                              \
-    class name: private Unmovable, private Uncopyable {               \
-     public:                                                          \
-     name(ParserState* parser_state)                                  \
-         : parser_state_(parser_state) {                              \
-       if (1 == parser_state->bits_.test(bit)) {                      \
-         nested_ = true;                                              \
-       } else {                                                       \
-         nested_ = false;                                             \
-       }                                                              \
-       parser_state_->bits_.set(bit);                                 \
-     }                                                                \
-                                                                      \
-     ~name() {                                                        \
-       if (!nested_) {                                                \
-         parser_state_->bits_.reset(bit);                             \
-       }                                                              \
-     }                                                                \
-     private:                                                         \
-     bool nested_;                                                    \
-     ParserState* parser_state_;                                      \
-    };                                                                \
-    YATSC_INLINE bool IsIn##name() {                                  \
-      return 1 == bits_.test(bit);                                    \
-    }                                                                 \
-    
-
-    SCOPE(ArrowFunctionScope, 0);
-    SCOPE(MethodScope, 1);
-    SCOPE(RecordTokenScope, 1);
-
-#undef SCOPE
-    
-   private:
-    std::bitset<8> bits_;
+    TokenInfo null_token_info_;
   };
 
 
@@ -296,42 +307,18 @@ class Parser {
 
 
   YATSC_INLINE TokenInfo* Next() {
-    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
-      current_token_info_ = token_buffer_.Next();
-      if (current_token_info_ != nullptr) {
-        return current_token_info_;
-      }
-      token_buffer_.Clear();
+    if (!token_buffer_.CursorUpdated()) {
+      return token_buffer_.Next();
     }
-    
-    TokenInfo* token = scanner_->Scan();
-    if (parser_state_.IsInRecordTokenScope()) {
-      token_buffer_.PushBack(token);
-    }
-    current_token_info_ = token;
-    return current_token_info_;
-  }
-
-
-  YATSC_INLINE TokenInfo* Peek() {
-    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
-      next_token_info_ = token_buffer_.Peek();
-      if (next_token_info_ != nullptr) {
-        return next_token_info_;
-      }
-    }
-    next_token_info_ = scanner_->Peek();
-    return next_token_info_;
+    current_token_info_ = scanner_->Scan();
+    token_buffer_.PushBack(current_token_info_);
+    return token_buffer_.Next();
   }
 
 
   YATSC_INLINE TokenInfo* Current() {
-    if (!token_buffer_.IsEmpty() && !parser_state_.IsInRecordTokenScope()) {
-      TokenInfo* token = token_buffer_.Current();
-      if (token != nullptr) {
-        current_token_info_ = token;
-        return current_token_info_;
-      }
+    if (!token_buffer_.CursorUpdated()) {
+      return token_buffer_.Current();
     }
     return current_token_info_;
   }
@@ -358,7 +345,6 @@ class Parser {
   TokenInfo* next_token_info_;
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
-  ParserState parser_state_;
   TokenBuffer token_buffer_;
 
 #ifdef DEBUG

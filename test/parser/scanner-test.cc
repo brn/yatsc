@@ -30,8 +30,7 @@
 TEST(ScannerTest, ScanStringLiteralTest_normal) {
   INIT(token, "'test string'")
   ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "test string");
+  ASSERT_STREQ(token->utf8_value(), "test string");
   END_SCAN;
 }
 
@@ -39,8 +38,7 @@ TEST(ScannerTest, ScanStringLiteralTest_normal) {
 TEST(ScannerTest, ScanStringLiteralTest_escaped_string) {
   INIT(token, "'test \\'string'")
   ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "test \\'string");
+  ASSERT_STREQ(token->utf8_value(), "test \\'string");
   END_SCAN;
 }
 
@@ -48,8 +46,7 @@ TEST(ScannerTest, ScanStringLiteralTest_escaped_string) {
 TEST(ScannerTest, ScanStringLiteralTest_double_escaped_string) {
   INIT(token, "'test \\\\'string'")
   ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "test \\\\");
+  ASSERT_STREQ(token->utf8_value(), "test \\\\");
 }
 
 
@@ -61,8 +58,7 @@ TEST(ScannerTest, ScanStringLiteralTest_unterminated_string) {
 TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string) {
   INIT(token, "'\\u0061_foo_\\u0062_bar_\\u0063_baz'")
   ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "a_foo_b_bar_c_baz");
+  ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
 }
 
 
@@ -84,8 +80,7 @@ TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string3) {
 TEST(ScannerTest, ScanStringLiteralTest_ascii_escaped_string) {
   INIT(token, "'\\x61_foo_\\x62_bar_\\x63_baz'")
   ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "a_foo_b_bar_c_baz");
+  ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
 }
 
 
@@ -107,8 +102,7 @@ TEST(ScannerTest, ScanStringLiteralTest_invalid_ascii_escaped_string3) {
 TEST(ScannerTest, ScanDigit_double) {
   INIT(token, ".3032")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), ".3032");
+  ASSERT_STREQ(token->utf8_value(), ".3032");
   END_SCAN;
 }
 
@@ -121,8 +115,7 @@ TEST(ScannerTest, ScanDigit_double_illegal) {
 TEST(ScannerTest, ScanDigit_hex) {
   INIT(token, "0xFFCC33")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "0xFFCC33");
+  ASSERT_STREQ(token->utf8_value(), "0xFFCC33");
   END_SCAN;
 }
 
@@ -130,8 +123,7 @@ TEST(ScannerTest, ScanDigit_hex) {
 TEST(ScannerTest, ScanDigit_int) {
   INIT(token, "1349075")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "1349075");
+  ASSERT_STREQ(token->utf8_value(), "1349075");
   END_SCAN;
 }
 
@@ -139,8 +131,7 @@ TEST(ScannerTest, ScanDigit_int) {
 TEST(ScannerTest, ScanDigit_double2) {
   INIT(token, "1349.075")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "1349.075");
+  ASSERT_STREQ(token->utf8_value(), "1349.075");
   END_SCAN;
 }
 
@@ -153,8 +144,7 @@ TEST(ScannerTest, ScanDigit_double2_illegal) {
 TEST(ScannerTest, ScanDigit_exponent) {
   INIT(token, "1349e+2")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "1349e+2");
+  ASSERT_STREQ(token->utf8_value(), "1349e+2");
   END_SCAN;
 }
 
@@ -162,8 +152,7 @@ TEST(ScannerTest, ScanDigit_exponent) {
 TEST(ScannerTest, ScanDigit_exponent2) {
   INIT(token, "1.3e+1")
   ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "1.3e+1");
+  ASSERT_STREQ(token->utf8_value(), "1.3e+1");
   END_SCAN;
 }
 
@@ -181,8 +170,7 @@ TEST(ScannerTest, ScanDigit_exponent_illegal2) {
 TEST(ScannerTest, ScanOcatalLiteral_valid) {
   INIT(token, "07771");
   ASSERT_EQ(token->type(), yatsc::Token::TS_OCTAL_LITERAL);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "07771");
+  ASSERT_STREQ(token->utf8_value(), "07771");
   END_SCAN;
 }
 
@@ -196,9 +184,8 @@ TEST(ScannerTest, ScanBinaryLiteral_valid1) {
   const char* binary = "0o01111001";
   INIT_HARMONY(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
-  yatsc::Utf8Value v = token->value().ToUtf8Value();
-  ASSERT_STREQ(v.value(), binary);
-  ASSERT_EQ(v.size(), strlen(binary));
+  ASSERT_STREQ(token->utf8_value(), binary);
+  ASSERT_EQ(token->value().utf8_length(), strlen(binary));
 }
 
 
@@ -206,9 +193,8 @@ TEST(ScannerTest, ScanBinaryLiteral_valid2) {
   const char* binary = "0O01111001";
   INIT_HARMONY(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
-  yatsc::Utf8Value v = token->value().ToUtf8Value();
-  ASSERT_STREQ(v.value(), binary);
-  ASSERT_EQ(v.size(), strlen(binary));
+  ASSERT_STREQ(token->utf8_value(), binary);
+  ASSERT_EQ(token->value().utf8_length(), strlen(binary));
 }
 
 
@@ -240,8 +226,7 @@ TEST(ScannerTest, ScanBinaryLiteral_invalid5) {
 TEST(ScannerTest, ScanIdentifier_identifier) {
   INIT(token, "fooBarBaz");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "fooBarBaz");
+  ASSERT_STREQ(token->utf8_value(), "fooBarBaz");
   END_SCAN;
 }
 
@@ -249,8 +234,7 @@ TEST(ScannerTest, ScanIdentifier_identifier) {
 TEST(ScannerTest, ScanIdentifier_identifier2) {
   INIT(token, "$_$_foobar");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "$_$_foobar");
+  ASSERT_STREQ(token->utf8_value(), "$_$_foobar");
   END_SCAN;
 }
 
@@ -258,8 +242,7 @@ TEST(ScannerTest, ScanIdentifier_identifier2) {
 TEST(ScannerTest, ScanIdentifier_identifier3) {
   INIT(token, "$_$_foobar333_4");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "$_$_foobar333_4");
+  ASSERT_STREQ(token->utf8_value(), "$_$_foobar333_4");
   END_SCAN;
 }
 
@@ -268,8 +251,7 @@ TEST(ScannerTest, ScanIdentifier_long_long_identifier) {
   const char* id = "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephallioki";
   INIT(token, id);
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), id);
+  ASSERT_STREQ(token->utf8_value(), id);
   END_SCAN;
 }
 
@@ -277,8 +259,7 @@ TEST(ScannerTest, ScanIdentifier_long_long_identifier) {
 TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape) {
   INIT(token, "\\u0061\\u0062\\u0063");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "abc");
+  ASSERT_STREQ(token->utf8_value(), "abc");
   END_SCAN;
 }
 
@@ -286,8 +267,7 @@ TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape) {
 TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape_with_ascii) {
   INIT(token, "\\u0061_foo_\\u0062_bar_\\u0063_baz");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  yatsc::Utf8Value utf8 = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8.value(), "a_foo_b_bar_c_baz");
+  ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
   END_SCAN;
 }
 
@@ -391,12 +371,10 @@ TEST(ScannerTest, SkipSingleLineComment) {
 TEST(ScannerTest, SkipSingleLineComment_with_line_feed) {
   const char* comment = "foo//abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()-_|\\`~{}[]\"\':;/?.<>,\naaa";
   INIT(token, comment);
-  yatsc::Utf8Value utf8_value = token->value().ToUtf8Value();
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_STREQ(utf8_value.value(), "foo");
+  ASSERT_STREQ(token->utf8_value(), "foo");
   token = scanner.Scan();
-  utf8_value = token->value().ToUtf8Value();
-  ASSERT_STREQ(utf8_value.value(), "aaa");
+  ASSERT_STREQ(token->utf8_value(), "aaa");
   END_SCAN;
 }
 
@@ -405,14 +383,12 @@ TEST(ScannerTest, SkipMultiLineComment) {
   const char* comment = "foo/*aaaaaaaa\nbbbbbbbbbb\ncccccccccccc\nddddddddddddd*/aaa";
   const char* comment_part = "/*aaaaaaaa\nbbbbbbbbbb\ncccccccccccc\nddddddddddddd*/";
   INIT(token, comment);
-  yatsc::Utf8Value utf8_value = token->value().ToUtf8Value();
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_STREQ("foo", utf8_value.value());
+  ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
-  utf8_value = token->value().ToUtf8Value();
-  ASSERT_STREQ("aaa", utf8_value.value());
+  ASSERT_STREQ("aaa", token->utf8_value());
   yatsc::UtfString utf_string = token->comment();
-  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
+  ASSERT_STREQ(comment_part, utf_string.utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }
@@ -422,14 +398,12 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   const char* comment = "foo/*aaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccccc\r\nddddddddddddd*/aaa";
   const char* comment_part = "/*aaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccccc\r\nddddddddddddd*/";
   INIT(token, comment);
-  yatsc::Utf8Value utf8_value = token->value().ToUtf8Value();
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
-  ASSERT_STREQ("foo", utf8_value.value());
+  ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
-  utf8_value = token->value().ToUtf8Value();
-  ASSERT_STREQ("aaa", utf8_value.value());
+  ASSERT_STREQ("aaa", token->utf8_value());
   yatsc::UtfString utf_string = token->comment();
-  ASSERT_STREQ(comment_part, utf_string.ToUtf8Value().value());
+  ASSERT_STREQ(comment_part, utf_string.utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }

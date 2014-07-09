@@ -114,65 +114,6 @@ class UtfValueCache {
 };
 
 
-class Utf8Value {
- public:
-  Utf8Value(const char* utf8, size_t size)
-      : utf8_(utf8),
-        size_(size){}
-
-  
-  Utf8Value(const Utf8Value& uv)
-      : utf8_(uv.utf8_),
-        size_(uv.size_){}
-
-
-  operator const char*() const {
-    return value();
-  }
-  
-  
-  YATSC_INLINE const char* value() YATSC_NO_SE {
-    return utf8_;
-  }
-
-  
-  YATSC_INLINE size_t size() YATSC_NO_SE {
-    return size_;
-  }
-  
- private:
-  const char* utf8_;
-  size_t size_;
-};
-
-
-class Utf16Value {
- public:
-  Utf16Value(const UC16* utf16, size_t size)
-      : utf16_(utf16),
-        size_(size){}
-
-  
-  Utf16Value(const Utf16Value& uv)
-      : utf16_(uv.utf16_),
-        size_(uv.size_){}
-
-  
-  YATSC_INLINE const UC16* value() const {
-    return utf16_;
-  }
-
-  
-  YATSC_INLINE size_t size() const {
-    return size_;
-  }
-  
- private:
-  const UC16* utf16_;
-  size_t size_;
-};
-
-
 class UtfString : public RegionalObject {
  public:
   UtfString() = default;
@@ -274,16 +215,6 @@ class UtfString : public RegionalObject {
   }
 
 
-  YATSC_INLINE Utf8Value ToUtf8Value() const {
-    return Utf8Value(utf_value_cache_.utf8_value().c_str(), utf8_length());
-  };
-
-
-  YATSC_INLINE Utf16Value ToUtf16Value() const {
-    return Utf16Value(utf_value_cache_.utf16_value().c_str(), utf16_length());
-  };
-
-
   YATSC_INLINE const char* utf8_value() const {
     return utf_value_cache_.utf8_value().c_str();
   };
@@ -291,6 +222,16 @@ class UtfString : public RegionalObject {
 
   YATSC_INLINE const UC16* utf16_value() const {
     return utf_value_cache_.utf16_value().c_str();
+  };
+
+
+  YATSC_INLINE const Utf8String& utf8_string() const {
+    return utf_value_cache_.utf8_value();
+  };
+
+
+  YATSC_INLINE const Utf16String& utf16_string() const {
+    return utf_value_cache_.utf16_value();
   };
 
 

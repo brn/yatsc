@@ -292,8 +292,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
       Advance();
     }
   }
-  Utf8Value utf8_value = v.ToUtf8Value();
-  Token type = TokenInfo::GetIdentifierType(utf8_value.value(),
+  Token type = TokenInfo::GetIdentifierType(v.utf8_value(),
                                             LanguageModeUtil::IsHarmony(compiler_option_));
   BuildToken(type, v);
 }
