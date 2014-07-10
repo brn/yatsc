@@ -165,7 +165,7 @@ ir::Node* Parser<UCharInputIterator>::ParseSourceElement() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseStatementList() {
+ir::Node* Parser<UCharInputIterator>::ParseStatementList(bool has_yield) {
   return nullptr;
 }
 
@@ -262,7 +262,7 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseBlockStatement() {
+ir::Node* Parser<UCharInputIterator>::ParseBlockStatement(bool has_yield) {
   // const TokenInfo* token_info = Seek();
   // BlockView* block_view = New<BlockView>();
 
@@ -914,7 +914,7 @@ ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool has_yield) {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool has_yield) {
-  ir::CaseListView case_list = New<ir::CaseListView>();
+  ir::CaseListView* case_list = New<ir::CaseListView>();
   case_list->SetInformationForNode(Current());
   while (1) {
     ir::Node* expr = nullptr;
@@ -954,7 +954,7 @@ ir::Node* Parser<UCharInputIterator>::ParseThrowStatement() {
       TokenCursor cursor = token_buffer_.cursor();
       Next();
       ir::Node* expr = ParseExpression(false, false);
-      ir::ThrowStatementView throw_stmt = New<ir::ThrowStatementView>(expr);
+      ir::ThrowStatementView* throw_stmt = New<ir::ThrowStatementView>(expr);
       throw_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
       return throw_stmt;
     }
@@ -994,7 +994,7 @@ ir::Node* Parser<UCharInputIterator>::ParseTryStatement(bool has_yield) {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCatchBlock() {
+ir::Node* Parser<UCharInputIterator>::ParseCatchBlock(bool has_yield) {
   if (Current()->type() == Token::TS_CATCH) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
@@ -1002,14 +1002,14 @@ ir::Node* Parser<UCharInputIterator>::ParseCatchBlock() {
       Next();
       ir::Node* catch_parameter = nullptr;
       if (Current()->type() == Token::TS_IDENTIFIER) {
-        catch_parameter = ParseBindingIdentifier(false, has_in, has_yield);
+        catch_parameter = ParseBindingIdentifier(false, false, has_yield);
       } else {
         catch_parameter = ParseBindingPattern(has_yield, false);
       }
 
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
-        ir::Node* block = ParseBlockStatement();
+        ir::Node* block = ParseBlockStatement(has_yield);
         ir::CatchStatementView* catch_stmt = New<ir::CatchStatementView>(catch_parameter, block);
         catch_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
         return catch_stmt;
@@ -1023,11 +1023,11 @@ ir::Node* Parser<UCharInputIterator>::ParseCatchBlock() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFinallyBlock() {
+ir::Node* Parser<UCharInputIterator>::ParseFinallyBlock(bool has_yield) {
   if (Current()->type() == Token::TS_FINALLY) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
-    ir::Node* block = ParseBlockStatement();
+    ir::Node* block = ParseBlockStatement(has_yield);
     ir::FinallyStatementView* finally_stmt = New<ir::FinallyStatementView>(block);
     finally_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
     return finally_stmt;

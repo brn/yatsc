@@ -52,11 +52,11 @@ class Parser {
 
   ir::Node* ParseSourceElement();
 
-  ir::Node* ParseStatementList();
+  ir::Node* ParseStatementList(bool has_yield);
 
   ir::Node* ParseStatement();
 
-  ir::Node* ParseBlockStatement();
+  ir::Node* ParseBlockStatement(bool has_yield);
 
   ir::Node* ParseModuleStatement();
 
@@ -112,11 +112,11 @@ class Parser {
 
   ir::Node* ParseThrowStatement();
 
-  ir::Node* ParseTryStatement();
+  ir::Node* ParseTryStatement(bool has_yield);
 
-  ir::Node* ParseCatchBlock();
+  ir::Node* ParseCatchBlock(bool has_yield);
 
-  ir::Node* ParseFinallyBlock();
+  ir::Node* ParseFinallyBlock(bool has_yield);
 
   ir::Node* ParseClassDeclaration();
 
