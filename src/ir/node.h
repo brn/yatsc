@@ -824,20 +824,20 @@ class LabelledStatementView: public Node {
 // Represent switch statement.
 class SwitchStatementView: public Node {
  public:
-  SwitchStatementView(Node* case_list, Node* default_case)
-      : Node(NodeType::kSwitchStatementView, 2u, {case_list, default_case}) {}
+  SwitchStatementView(Node* expr, Node* case_list)
+      : Node(NodeType::kSwitchStatementView, 3u, {expr, case_list}) {}
 
 
   SwitchStatementView()
-      : Node(NodeType::kSwitchStatementView, 2u) {}
+      : Node(NodeType::kSwitchStatementView, 3u) {}
 
+
+  // Getter and Setter for expr.
+  NODE_PROPERTY(expr, 0);
+  
 
   // Getter and Setter for case_list.
-  NODE_PROPERTY(case_list, 0);
-
-
-  // Getter and Setter for default_case.
-  NODE_PROPERTY(default_case, 1);
+  NODE_PROPERTY(case_list, 1);
 };
 
 

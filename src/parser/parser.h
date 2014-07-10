@@ -104,9 +104,9 @@ class Parser {
 
   ir::Node* ParseWithStatement(bool has_yield);
 
-  ir::Node* ParseSwitchStatement();
+  ir::Node* ParseSwitchStatement(bool has_yield);
 
-  ir::Node* ParseCaseClauses();
+  ir::Node* ParseCaseClauses(bool has_yield);
 
   ir::Node* ParseLabelledStatement();
 

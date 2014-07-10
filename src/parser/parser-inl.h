@@ -305,7 +305,12 @@ ir::Node* Parser<UCharInputIterator>::ParseExportStatement()  {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseDebuggerStatement() {
-  return nullptr;
+  if (Current()->type() == Token::TS_DEBUGGER) {
+    ir::Node* ret = New<ir::DebuggerView>();
+    ret->SetInformationForNode(Current());
+    Next();
+    return ret;
+  }
 }
 
 
@@ -878,14 +883,61 @@ ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool has_yield) {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_SWITCH) {
+    TokenCursor cursor = token_buffer_.cursor();
+    Next();
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* expr = ParseExpression(true, has_yield);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        if (Current()->type() == Token::TS_LEFT_BRACE) {
+          Next();
+          ir::Node* case_clauses = ParseCaseClauses();
+          if (Current()->type() == Token::TS_RIGHT_BRACE) {
+            Next();
+            ir::Node* switch_stmt = New<ir::SwitchStatementView>(expr, case_clauses);
+            switch_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+            return switch_stmt;
+          }
+          SYNTAX_ERROR("SyntaxError '}' expected", Current());
+        }
+        SYNTAX_ERROR("SyntaxError '{' expected", Current());
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'switch' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCaseClauses() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool has_yield) {
+  ir::CaseListView case_list = New<ir::CaseListView>();
+  case_list->SetInformationForNode(Current());
+  while (1) {
+    ir::Node* expr = nullptr;
+    TokenCursor cursor = token_buffer_.cursor();
+    switch (Current()->type()) {
+      case Token::TS_CASE: {
+        Next();
+        expr = ParseExpression(true, has_yield);
+      }
+      case Token::TS_DEFAULT: {
+        ir::Node* stmt_list = ParseStatementList(has_yield);
+        ir::CaseView* case_view = New<ir::CaseView>(expr, stmt_list);
+        case_view->SetInformationForNode(token_buffer_.Peek(cursor));
+        case_list->InsertLast(case_view);
+        break;
+      }
+      case Token::TS_RIGHT_BRACE: {
+        return case_list;
+      }
+      default:
+        SYNTAX_ERROR("SyntaxError unexpected token", Current());
+    }
+  }
 }
 
 
@@ -897,25 +949,90 @@ ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseThrowStatement() {
-  return nullptr;
+  if (Current()->type() == Token::TS_THROW) {
+    if (!CheckLineTermination()) {
+      TokenCursor cursor = token_buffer_.cursor();
+      Next();
+      ir::Node* expr = ParseExpression(false, false);
+      ir::ThrowStatementView throw_stmt = New<ir::ThrowStatementView>(expr);
+      throw_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+      return throw_stmt;
+    }
+    SYNTAX_ERROR("SyntaxError throw statement expected expression", Current());
+  }
+  SYNTAX_ERROR("SyntaxError throw expected", Current());
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseTryStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseTryStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_TRY) {
+    TokenCursor cursor = token_buffer_.cursor();
+    Next();
+    ir::Node* block = ParseBlockStatement(has_yield);
+    ir::Node* catch_block = nullptr;
+    ir::Node* finally_block = nullptr;
+    bool has_catch_or_finally = false;
+    if (Current()->type() == Token::TS_CATCH) {
+      has_catch_or_finally = true;
+      catch_block = ParseCatchBlock(has_yield);
+    }
+    if (Current()->type() == Token::TS_FINALLY) {
+      has_catch_or_finally = true;
+      finally_block = ParseFinallyBlock(has_yield);
+    }
+
+    if (!has_catch_or_finally) {
+      SYNTAX_ERROR("SyntaxError try statement need catch block or finally block", Current());
+    }
+    ir::TryStatementView* try_stmt = New<ir::TryStatementView>(block, catch_block, finally_block);
+    try_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+    return try_stmt;
+  }
+  SYNTAX_ERROR("SyntaxError 'try' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseCatchBlock() {
-  return nullptr;
+  if (Current()->type() == Token::TS_CATCH) {
+    TokenCursor cursor = token_buffer_.cursor();
+    Next();
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* catch_parameter = nullptr;
+      if (Current()->type() == Token::TS_IDENTIFIER) {
+        catch_parameter = ParseBindingIdentifier(false, has_in, has_yield);
+      } else {
+        catch_parameter = ParseBindingPattern(has_yield, false);
+      }
+
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        ir::Node* block = ParseBlockStatement();
+        ir::CatchStatementView* catch_stmt = New<ir::CatchStatementView>(catch_parameter, block);
+        catch_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+        return catch_stmt;
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'catch' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFinallyBlock() {
-  return nullptr;
+  if (Current()->type() == Token::TS_FINALLY) {
+    TokenCursor cursor = token_buffer_.cursor();
+    Next();
+    ir::Node* block = ParseBlockStatement();
+    ir::FinallyStatementView* finally_stmt = New<ir::FinallyStatementView>(block);
+    finally_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+    return finally_stmt;
+  }
+  SYNTAX_ERROR("SyntaxError 'finally' expected", Current());
 }
 
 
