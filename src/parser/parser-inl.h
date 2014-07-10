@@ -813,6 +813,7 @@ ir::Node* Parser<UCharInputIterator>::ParseContinueStatement() {
     }
     return result = New<ir::ContinueStatementView>();
   }
+  SYNTAX_ERROR("SyntaxError 'continue' expected", Current());
 }
 
 
@@ -830,6 +831,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBreakStatement() {
     }
     return result = New<ir::BreakStatementView>();
   }
+  SYNTAX_ERROR("SyntaxError 'break' expected", Current());
 }
 
 
@@ -847,12 +849,32 @@ ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool has_yield) {
     ir::Node* expr = ParseExpression(true, has_yield);
     return result = New<ir::ReturnStatementView>(expr);
   }
+  SYNTAX_ERROR("SyntaxError 'return' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseWithStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_WITH) {
+    TokenCursor cursor_ = token_buffer_.cursor();
+    ir::Node* result;
+    YATSC_SCOPED([&]{
+      result->SetInformationForNode(token_buffer_.Peek(cursor));
+    });
+    Next();
+    if (Current()->type() == Token::TS_LEFT_PAREN) {
+      Next();
+      ir::Node* expr = ParseExpression(true, has_yield);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        ir::Node stmt = ParseStatement(has_yield);
+        return New<ir::WithStatementView>(expr, stmt);
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'with' expected", Current());
 }
 
 
