@@ -509,18 +509,19 @@ int Scanner<UCharInputIterator>::ToHexValue(const T& uchar) YATSC_NO_SE {
 template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
   bool skip = false;
-  while(Character::IsWhiteSpace(char_, lookahead1_) || char_ == unicode::u8(';') ||
+  while(Character::IsWhiteSpace(char_, lookahead1_) ||
         Character::IsSingleLineCommentStart(char_, lookahead1_) ||
         Character::IsMultiLineCommentStart(char_, lookahead1_)) {
-    if (char_ == unicode::u8(';')) {
-      line_terminator_state_.set_line_terminator_before_next();
-    } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+    if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
       line_terminator_state_.set_line_break_before_next();
     }
     skip = true;
     if (!ConsumeLineBreak() && !SkipSingleLineComment() && !SkipMultiLineComment()) {
       Advance();
     }
+  }
+  if (char_ == unicode::u8(';')) {
+    line_terminator_state_.set_line_terminator_before_next();
   }
   return skip;
 }

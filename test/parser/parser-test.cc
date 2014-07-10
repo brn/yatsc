@@ -813,7 +813,7 @@ TEST(ParserTest, ParseLexicalDeclaration_let) {
                     "      [NumberView][2]\n"
                     "      [NumberView][3]\n"
                     "    [Empty]");
-
+  
   LEXICAL_DECL_TEST(yatsc::LanguageMode::ES3, "let {a,b,c} = {a:100,b:200,c:300};",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"

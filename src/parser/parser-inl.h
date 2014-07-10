@@ -547,7 +547,9 @@ ir::Node* Parser<UCharInputIterator>::ParseBindingProperty(bool has_yield, bool 
     elem = ParseBindingElement(has_yield, generator_parameter);
   } else if (key->HasStringView()) {
     SYNTAX_ERROR_POS("SyntaxError 'identifier' expected", key->source_position());
-  } else if (Current()->type() == Token::TS_ASSIGN) {
+  }
+
+  if (Current()->type() == Token::TS_ASSIGN) {
     Next();
     init = ParseAssignmentExpression(true, has_yield);
   }
@@ -754,7 +756,6 @@ ir::Node* Parser<UCharInputIterator>::ParseForIterationStatement(ir::Node* recie
   ir::Node* target = nullptr;
   if (Current()->type() == Token::LINE_TERMINATOR) {
     // for (var i = 0; i < 10; i++) ...
-    token_buffer_.Clear();
     Next();
     ir::Node* cond = ParseExpression(true, has_yield);
     if (Current()->type() == Token::LINE_TERMINATOR) {
@@ -800,19 +801,52 @@ ir::Node* Parser<UCharInputIterator>::ParseForIterationStatement(ir::Node* recie
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseContinueStatement() {
-  return nullptr;
+  if (Current()->type() == Token::TS_CONTINUE) {
+    TokenCursor cursor_ = token_buffer_.cursor();
+    Next();
+    ir::Node* result;
+    YATSC_SCOPED([&]{
+      result->SetInformationForNode(token_buffer_.Peek(cursor));
+    });
+    if (Current()->type() == Token::TS_IDENTIFIER) {
+      return result = New<ir::ContinueStatementView>(ParsePrimaryExpression());
+    }
+    return result = New<ir::ContinueStatementView>();
+  }
 }
 
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseBreakStatement() {
-  return nullptr;
+  if (Current()->type() == Token::TS_BREAK) {
+    TokenCursor cursor_ = token_buffer_.cursor();
+    Next();
+    ir::Node* result;
+    YATSC_SCOPED([&]{
+      result->SetInformationForNode(token_buffer_.Peek(cursor));
+    });
+    if (Current()->type() == Token::TS_IDENTIFIER) {
+      return result = New<ir::BreakStatementView>(ParsePrimaryExpression());
+    }
+    return result = New<ir::BreakStatementView>();
+  }
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseReturnStatement() {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool has_yield) {
+  if (Current()->type() == Token::TS_RETURN) {
+    TokenCursor cursor_ = token_buffer_.cursor();
+    ir::Node* result;
+    YATSC_SCOPED([&]{
+      result->SetInformationForNode(token_buffer_.Peek(cursor));
+    });
+    if (CheckLineTermination()) {
+      return result = New<ir::ReturnStatementView>();
+    }
+    ir::Node* expr = ParseExpression(true, has_yield);
+    return result = New<ir::ReturnStatementView>(expr);
+  }
 }
 
 
@@ -1280,20 +1314,35 @@ ir::Node* Parser<UCharInputIterator>::ParsePostfixExpression() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLeftHandSideExpression(bool has_in, bool has_yield) {
   ENTER(ParseLeftHandSideExpression);
+
+  TokenCursor cursor = token_buffer_.cursor();
+  
+  auto parse_binding = [&]{
+    token_buffer_.SetCursorPosition(cursor);
+    return ParseBindingPattern(has_in, has_yield);
+  };
+  
   if (Current()->type() == Token::TS_NEW) {
     return ParseMemberExpression();
   } else {
-    TokenCursor cursor = token_buffer_.cursor();
     try {
+      ir::Node* ret = nullptr;
       switch (Current()->type()) {
         case Token::TS_LEFT_BRACE:
-          return ParseObjectLiteral();
+          ret = ParseObjectLiteral();
+          break;
         case Token::TS_LEFT_BRACKET:
-          return ParseArrayLiteral();
+          ret = ParseArrayLiteral();
+          break;
+      }
+      if (ret != nullptr) {
+        if (IsAssignmentOp(Current()->type())) {
+          return parse_binding();
+        }
+        return ret;
       }
     } catch (const SyntaxError& e) {
-      token_buffer_.SetCursorPosition(cursor);
-      return ParseBindingPattern(has_in, has_yield);
+      return parse_binding();
     }
   }
   return ParseCallExpression();
@@ -2217,17 +2266,17 @@ ir::Node* Parser<UCharInputIterator>::ParseFormalParameterList() {
 
 
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::CheckLineTermination() {
-  bool line_terminated = Current()->has_line_break_before_next() ||
-    Current()->has_line_terminator_before_next();
-  Next();
-  if (Current()->type() == Token::LINE_TERMINATOR) {
+bool Parser<UCharInputIterator>::CheckLineTermination() {
+  if (Current()->has_line_break_before_next()) {
+    return true;
+  }
+
+  if (Current()->has_line_terminator_before_next()) {
     Next();
-    return;
+    return true;
   }
-  if (Current()->type() != Token::END_OF_INPUT && !line_terminated) {
-    SYNTAX_ERROR("SyntaxError ';' expected", Current());
-  }
+
+  return false;
 }
 }
 

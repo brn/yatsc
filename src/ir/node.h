@@ -741,7 +741,14 @@ class IfStatementView : public Node {
 class ContinueStatementView: public Node {
  public:
   ContinueStatementView()
-      : Node(NodeType::kContinueStatementView, 0u){}
+      : Node(NodeType::kContinueStatementView, 1u){}
+
+
+  ContinueStatementView(Node* labelled_identifier)
+      : Node(NodeType::kContinueStatementView, 1u, {labelled_identifier}) {}
+
+
+  NODE_PROPERTY(label, 0);
 };
 
 
