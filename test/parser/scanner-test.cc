@@ -276,6 +276,7 @@ TEST(ScannerTest, ScanLineTerminator_line_terminator) {
   INIT(token, "aaa;");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
   ASSERT_TRUE(token->has_line_terminator_before_next());
+  ASSERT_EQ(scanner.Scan()->type(), yatsc::Token::LINE_TERMINATOR);
   END_SCAN;
 }
 
@@ -292,6 +293,7 @@ TEST(ScannerTest, ScanLineTerminator_line_terminator_with_space) {
   INIT(token, "aaa  ;");
   ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
   ASSERT_TRUE(token->has_line_terminator_before_next());
+  ASSERT_EQ(scanner.Scan()->type(), yatsc::Token::LINE_TERMINATOR);
   END_SCAN;
 }
 

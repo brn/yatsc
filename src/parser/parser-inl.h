@@ -329,9 +329,8 @@ ir::Node* Parser<UCharInputIterator>::ParseLexicalDeclaration(bool has_in, bool 
       lexical_decl->InsertLast(ParseLexicalBinding(has_const, has_in, has_yield));
       if (Current()->type() == Token::TS_COMMA) {
         Next();
-      } else if (Current()->has_line_break_before_next() ||
-                 Current()->has_line_terminator_before_next() ||
-                 Current()->type() == Token::END_OF_INPUT) {
+      } else if (CheckLineTermination(token_buffer_.Rewind(1))) {
+        if (Current()->type() == Token::LINE_TERMINATOR) {Next();}
         break;
       } else {
         SYNTAX_ERROR("SyntaxError unexpected token in lexical declaration", Current());
@@ -802,7 +801,7 @@ ir::Node* Parser<UCharInputIterator>::ParseForIterationStatement(ir::Node* recie
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseContinueStatement() {
   if (Current()->type() == Token::TS_CONTINUE) {
-    TokenCursor cursor_ = token_buffer_.cursor();
+    TokenCursor cursor = token_buffer_.cursor();
     Next();
     ir::Node* result;
     YATSC_SCOPED([&]{
@@ -820,7 +819,7 @@ ir::Node* Parser<UCharInputIterator>::ParseContinueStatement() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseBreakStatement() {
   if (Current()->type() == Token::TS_BREAK) {
-    TokenCursor cursor_ = token_buffer_.cursor();
+    TokenCursor cursor = token_buffer_.cursor();
     Next();
     ir::Node* result;
     YATSC_SCOPED([&]{
@@ -838,7 +837,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBreakStatement() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool has_yield) {
   if (Current()->type() == Token::TS_RETURN) {
-    TokenCursor cursor_ = token_buffer_.cursor();
+    TokenCursor cursor = token_buffer_.cursor();
     ir::Node* result;
     YATSC_SCOPED([&]{
       result->SetInformationForNode(token_buffer_.Peek(cursor));
@@ -856,7 +855,7 @@ ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool has_yield) {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool has_yield) {
   if (Current()->type() == Token::TS_WITH) {
-    TokenCursor cursor_ = token_buffer_.cursor();
+    TokenCursor cursor = token_buffer_.cursor();
     ir::Node* result;
     YATSC_SCOPED([&]{
       result->SetInformationForNode(token_buffer_.Peek(cursor));
@@ -2288,13 +2287,13 @@ ir::Node* Parser<UCharInputIterator>::ParseFormalParameterList() {
 
 
 template <typename UCharInputIterator>
-bool Parser<UCharInputIterator>::CheckLineTermination() {
-  if (Current()->has_line_break_before_next()) {
+bool Parser<UCharInputIterator>::CheckLineTermination(TokenInfo* target_token_info) {
+  TokenInfo* token_info = (target_token_info == nullptr)? Current(): target_token_info;
+  if (token_info->has_line_break_before_next()) {
     return true;
   }
 
-  if (Current()->has_line_terminator_before_next()) {
-    Next();
+  if (token_info->has_line_terminator_before_next()) {
     return true;
   }
 

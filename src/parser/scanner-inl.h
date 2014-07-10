@@ -523,6 +523,9 @@ bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
   if (char_ == unicode::u8(';')) {
     line_terminator_state_.set_line_terminator_before_next();
   }
+  if (char_ == unicode::u8('\0')) {
+    line_terminator_state_.set_line_break_before_next();
+  }
   return skip;
 }
 

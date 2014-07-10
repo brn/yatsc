@@ -102,7 +102,7 @@ class Parser {
 
   ir::Node* ParseReturnStatement(bool has_yield);
 
-  ir::Node* ParseWithStatement();
+  ir::Node* ParseWithStatement(bool has_yield);
 
   ir::Node* ParseSwitchStatement();
 
@@ -263,11 +263,20 @@ class Parser {
 
 
     /**
+     * Rewind cursor with passed number.
+     * @returns Next token.
+     */
+    YATSC_INLINE TokenInfo* Rewind(size_t num) {
+      return Peek(cursor_ - num);
+    }
+
+
+    /**
      * Peek specified index token.
      * @param pos The position.
      */
     YATSC_INLINE TokenInfo* Peek(size_t pos) {
-      if (pos >= buffer_->size()) {return &null_token_info_;}
+      if (pos < 0 || pos >= buffer_->size()) {return &null_token_info_;}
       return &((*buffer_)[pos]);
     }
 
@@ -367,7 +376,7 @@ class Parser {
   }
 
 
-  bool CheckLineTermination();
+  bool CheckLineTermination(TokenInfo* info = nullptr);
   
 
   bool print_parser_phase_;
