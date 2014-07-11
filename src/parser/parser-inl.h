@@ -165,99 +165,124 @@ ir::Node* Parser<UCharInputIterator>::ParseSourceElement() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseStatementList(bool has_yield) {
-  return nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseStatementListItem(bool has_yield) {
+  ir::Node* node = ParseDeclaration(false, has_yield, false);
+  if (node == nullptr) {
+    return ParseStatement(has_yield);
+  }
+  return node;
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseStatement() {
-  // ir::Node* result = nullptr;
+ir::Node* Parser<UCharInputIterator>::ParseDeclaration(bool error, bool has_yield, bool has_default) {
+  switch (Current()->type()) {
+    case Token::TS_FUNCTION:
+      return ParseFunction(has_yield, has_default);
+    case Token::TS_CLASS:
+      return ParseClassDeclaration(has_yield, has_default);
+    case Token::TS_LET:
+    case Token::TS_CONST:
+      return ParseLexicalDeclaration(true, has_yield);
+    default:
+      if (!error) {
+        return nullptr;
+      }
+      SYNTAX_ERROR("SyntaxError unexpected token", Current());
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseStatement(bool has_yield) {
+  ENTER(ParseStatement);
+  ir::Node* result = nullptr;
   
-  // const TokenInfo* token_info = Peek();
-  // switch (token_info->type()) {
-  //   case Token::TS_LEFT_BRACE:
-  //     result = ParseBlockStatement();
-  //     break;
+  switch (Current()->type()) {
+    case Token::TS_LEFT_BRACE:
+      result = ParseBlockStatement(has_yield);
+      break;
 
-  //   case Token::TS_MODULE:
-  //     result = ParseModuleStatement();
-  //     break;
+    case Token::TS_MODULE:
+      result = ParseModuleStatement();
+      break;
 
-  //   case Token::TS_EXPORT:
-  //     result = ParseExportStatement();
-  //     break;
+    case Token::TS_EXPORT:
+      result = ParseExportStatement();
+      break;
 
-  //   case Token::TS_VAR:
-  //     result = ParseVariableDeclaration();
-  //     break;
+    case Token::TS_VAR:
+      result = ParseVariableDeclaration(true, has_yield);
+      break;
 
-  //   case Token::TS_IF:
-  //     result = ParseIfStatement();
-  //     break;
+    case Token::TS_IF:
+      result = ParseIfStatement(has_yield);
+      break;
 
-  //   case Token::TS_FOR:
-  //     result = ParseForStatement();
-  //     break;
+    case Token::TS_FOR:
+      result = ParseForStatement(has_yield);
+      break;
 
-  //   case Token::TS_WHILE:
-  //     result = ParseWhileStatement();
-  //     break;
+    case Token::TS_WHILE:
+      result = ParseWhileStatement(has_yield);
+      break;
 
-  //   case Token::TS_DO:
-  //     result = ParseDoWhileStatement();
-  //     break;
+    case Token::TS_DO:
+      result = ParseDoWhileStatement(has_yield);
+      break;
 
-  //   case Token::TS_CONTINUE:
-  //     result = ParseContinueStatement();
-  //     break;
+    case Token::TS_CONTINUE:
+      result = ParseContinueStatement(has_yield);
+      break;
 
-  //   case Token::TS_BREAK:
-  //     result = ParseBreakStatement();
-  //     break;
+    case Token::TS_BREAK:
+      result = ParseBreakStatement();
+      break;
 
-  //   case Token::TS_RETURN:
-  //     result = ParseReturnStatement();
-  //     break;
+    case Token::TS_RETURN:
+      result = ParseReturnStatement(has_yield);
+      break;
 
-  //   case Token::TS_WITH:
-  //     result = ParseWithStatement();
-  //     break;
+    case Token::TS_WITH:
+      result = ParseWithStatement(has_yield);
+      break;
 
-  //   case Token::TS_SWITCH:
-  //     result = ParseSwitchStatement();
-  //     break;
+    case Token::TS_SWITCH:
+      result = ParseSwitchStatement(has_yield);
+      break;
 
-  //   case Token::TS_THROW:
-  //     result = ParseThrowStatement();
-  //     break;
+    case Token::TS_THROW:
+      result = ParseThrowStatement();
+      break;
 
-  //   case Token::TS_TRY:
-  //     result = ParseTryStatement();
-  //     break;
+    case Token::TS_TRY:
+      result = ParseTryStatement(has_yield);
+      break;
 
-  //   case Token::TS_IMPORT:
-  //     result = ParseImportStatement();
-  //     break;
+    case Token::TS_IMPORT:
+      result = ParseImportStatement();
+      break;
 
-  //   case Token::TS_FUNCTION:
-  //     result = ParseFunction();
-  //     break;
+    case Token::TS_FUNCTION:
+      result = ParseFunction(has_yield, false);
+      break;
 
-  //   case Token::TS_DEBUGGER:
-  //     result = ParseDebuggerStatement();
-  //     break;
+    case Token::TS_DEBUGGER:
+      result = ParseDebuggerStatement();
+      break;
 
-  //   case Token::END_OF_INPUT:
-  //     SYNTAX_ERROR("Unexpected end of input.", token_info);
+    case Token::END_OF_INPUT:
+      SYNTAX_ERROR("SyntaxError Unexpected end of input", Current());
       
-  //   default: {
-  //     SYNTAX_ERROR("Illegal token.", token_info);
-  //   }
-  // }
+    default: {
+      TokenCursor cursor = token_buffer_.cursor();
+      result = ParseExpression(true, has_yield);
+      result = New<ir::StatementView>(result);
+      result->SetInformationForNode(token_buffer_.Peek(cursor));
+    }
+  }
   
-  // return result;
-  return nullptr;
+  return result;
 }
 
 
@@ -925,8 +950,22 @@ ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool has_yield) {
         expr = ParseExpression(true, has_yield);
       }
       case Token::TS_DEFAULT: {
-        ir::Node* stmt_list = ParseStatementList(has_yield);
-        ir::CaseView* case_view = New<ir::CaseView>(expr, stmt_list);
+        ir::Node* body = New<ir::CaseBody>();
+     LOOP: while (1) {
+          if (Current()->type() == Token::TS_LEFT_BRACE) {
+            body->InsertLast(ParseBlockStatement(has_yield));
+          } else {
+            body->InsertLast(ParseStatementListItem(has_yield));
+          }
+          switch (Current()->type()) {
+            case Token::TS_CASE:
+            case Token::TS_DEFAULT:
+              break LOOP;
+            default:
+              SYNTAX_ERROR("SyntaxError unexpected token", Current());
+          }
+        }
+        ir::CaseView* case_view = New<ir::CaseView>(expr, body);
         case_view->SetInformationForNode(token_buffer_.Peek(cursor));
         case_list->InsertLast(case_view);
         break;
@@ -1977,7 +2016,7 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression() {
   } else {
     if (token_info->type() == Token::TS_FUNCTION) {
       // Parse function.
-      node = ParseFunction();
+      node = ParseFunction(has_yield, false);
     } else {
       node = ParsePrimaryExpression();
     }
@@ -2293,17 +2332,22 @@ ir::Node* Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslevel
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFunction() {
+ir::Node* Parser<UCharInputIterator>::ParseFunction(bool has_yield, bool has_default) {
   ENTER(ParseFunction);
   if (Current()->type() == Token::TS_FUNCTION) {
+    bool generator = false;
     TokenInfo token = (*Current());
     Next();
+    if (Current()->type() == Token::TS_MOD) {
+      generator = true;
+      Next();
+    }
     ir::Node* name = nullptr;
     if (Current()->type() == Token::TS_IDENTIFIER) {
       name = ParseLiteral();
     }
     ir::Node* call_signature = ParseCallSignature(false);
-    ir::Node* body = ParseFunctionBody();
+    ir::Node* body = ParseFunctionBody(has_yield? has_yield: generator);
     ir::Node* ret = New<ir::FunctionView>(name, call_signature, body);
     ret->SetInformationForNode(&token);
     return ret;
@@ -2367,7 +2411,7 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionBody(ir::Node* call_sig)
   ir::Node* body;
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     Next();
-    body = ParseFunctionBody();
+    body = ParseFunctionBody(false);
   } else {
     body = ParseAssignmentExpression(true, false);
   }
@@ -2378,14 +2422,14 @@ ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionBody(ir::Node* call_sig)
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFunctionBody() {
+ir::Node* Parser<UCharInputIterator>::ParseFunctionBody(bool has_yield) {
   ENTER(ParseFunctionBody);
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     auto block = New<ir::BlockView>();
     block->SetInformationForNode(Current());
     Next();
     while (1) {
-      auto node = ParseSourceElement();
+      auto node = ParseSourceElement(has_yield);
       block->InsertLast(node);
       if (Current()->type() == Token::TS_RIGHT_BRACE) {
         break;

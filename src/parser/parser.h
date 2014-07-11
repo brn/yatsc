@@ -54,7 +54,7 @@ class Parser {
 
   ir::Node* ParseStatementList(bool has_yield);
 
-  ir::Node* ParseStatement();
+  ir::Node* ParseStatement(bool has_yield);
 
   ir::Node* ParseBlockStatement(bool has_yield);
 
@@ -178,7 +178,7 @@ class Parser {
 
   ir::Node* ParseLiteral();
 
-  ir::Node* ParseFunction();
+  ir::Node* ParseFunction(bool has_yield, bool has_default);
 
   ir::Node* ParseArrowFunction(ir::Node* identifier = nullptr);
   
@@ -186,7 +186,7 @@ class Parser {
 
   ir::Node* ParseArrowFunctionBody(ir::Node* call_sig);
 
-  ir::Node* ParseFunctionBody();
+  ir::Node* ParseFunctionBody(bool has_yield);
 
   ir::Node* ParseFormalParameterList();
 

@@ -66,6 +66,9 @@ static bool show_parse_phase = false;
 #define LEXICAL_DECL_THROW_TEST(type, code, error_type)                 \
   PARSER_TEST__(ParseLexicalDeclaration(true, false), type, code, "", true, error_type)
 
+#define STATEMENT_TEST(type, code, expected_str)                        \
+  PARSER_TEST__(ParseStatement(false), type, code, expected_str, false, std::exception)
+
 
 TEST(ParserTest, ParseLiteral_string) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "'aaaaaaa'", "[StringView]['aaaaaaa']");

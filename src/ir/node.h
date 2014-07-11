@@ -59,6 +59,7 @@ namespace yatsc {namespace ir {
   DECLARE(LabelledStatementView)                        \
   DECLARE(SwitchStatementView)                          \
   DECLARE(CaseView)                                     \
+  DECLARE(CaseBody)                                     \
   DECLARE(CaseListView)                                 \
   DECLARE(TryStatementView)                             \
   DECLARE(CatchStatementView)                           \
@@ -869,6 +870,18 @@ class CaseView: public Node {
 
   // Getter and Setter for body.
   NODE_PROPERTY(body, 1);
+};
+
+
+// Represent case.
+class CaseBody: public Node {
+ public:
+  CaseBody(std::initializer_list<Node*> case_body)
+      : Node(NodeType::kCaseBody, 0u, case_body) {}
+
+
+  CaseView()
+      : Node(NodeType::kCaseView, 0u) {}
 };
 
 
