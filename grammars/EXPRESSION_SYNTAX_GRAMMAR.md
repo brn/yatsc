@@ -259,7 +259,8 @@
 
 ### <a name="BindingIdentifier"> BindingIdentifier\[Default, Yield]  
 - \[+Default] ___default___  
-- \[~Yield] ___yield___ [Identifier](#Identifier)  
+- \[~Yield] ___yield___ [Identifier](#Identifier)
+- [Identifier](#Identifier)
 
 ### <a name="LabelIdentifier"> LabelIdentifier\[Yield]  
 - [Identifier](#Identifier)  
