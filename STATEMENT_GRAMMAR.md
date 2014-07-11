@@ -223,7 +223,7 @@ SwitchStatement[Yield, Return]
 - [StatementList\[?Yield, Return\]\(opt\)](#StatementList)
 
 ### ArrowFunction[In,Yield]
-- \[ArrowParameters\\[?Yield\\]\](#ArrowParameters) \\[no LineTerminator here\\] ___=>___ \[ConciseBody\\[?In\\]\](#ConciseBody)
+- [ArrowParameters\[?Yield\]](#ArrowParameters) \[no LineTerminator here\] ___=>___ [ConciseBody\[?In\]](#ConciseBody)
 
 ### ArrowParameters[Yield]
 - [BindingIdentifier\[?Yield\]](#BindingIdentifier)
