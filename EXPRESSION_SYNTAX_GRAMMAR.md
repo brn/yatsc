@@ -216,7 +216,7 @@
 - ___{___ [PropertyDefinitionList\[?Yield\]](#PropertyDefinitionList) ___}___  
 - ___{___ [PropertyDefinitionList\[?Yield\]](#PropertyDefinitionList) ___,___ ___}___  
 
-### <a name="PropertyDefinitionList"> PropertyDefinitionList\[YieldYield]  
+### <a name="PropertyDefinitionList"> PropertyDefinitionList\[Yield]  
 - [PropertyDefinition\[?YieldYield\]](#PropertyDefinition)  
 - [PropertyDefinitionList\[?YieldYield\]](#PropertyDefinitionList) ___,___ [PropertyDefinition\[?YieldYield\]](#PropertyDefinition)  
 
