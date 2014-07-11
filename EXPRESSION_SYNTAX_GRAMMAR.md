@@ -30,7 +30,7 @@
 
 ### <a name="AssignmentProperty"> AssignmentProperty\[Yield] :  
 - [IdentifierReference\[?Yield\]](#IdentifierReference) [Initializer\[In,?Yield\]\(opt\)](#Initializer)  
-- [PropertyName](#PropertyName) ___:___ [AssignmentElement](#AssignmentElement)\[?Yield]  
+- [PropertyName](#PropertyName) ___:___ [AssignmentElement\[?Yield\]](#AssignmentElement)  
 
 ### <a name="AssignmentElement"> AssignmentElement\[Yield]  
 - [DestructuringAssignmentTarget\[?Yield\]](#DestructuringAssignmentTarget) [Initializer\[In,?Yield\]\(opt\)](#Initializer)  
