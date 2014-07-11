@@ -147,7 +147,7 @@
 ### <a name="WithStatement"> WithStatement[Yield, Return]
 - ___with___ ___(___ [Expression\[In, ?Yield\]](#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 
-SwitchStatement[Yield, Return]
+### <a name="SwitchStatement"> SwitchStatement[Yield, Return]
 - ___switch___ ___(___ [Expression\[In, ?Yield\]](#Expression) ___)___ [CaseBlock\[?Yield, ?Return\]](#CaseBlock)
 
 ### <a name="CaseBlock"> CaseBlock[Yield, Return]
