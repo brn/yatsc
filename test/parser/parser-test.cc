@@ -971,3 +971,13 @@ TEST(ParserTest, ParseLexicalDeclaration_const) {
                     "    [NumberView][100]\n"
                     "    [Empty]");
 }
+
+
+TEST(ParserTest, ParseForStatement) {
+  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES3, "const x = 100;",
+                    "[LexicalDeclView][TS_CONST]\n"
+                    "  [VariableView]\n"
+                    "    [NameView][x]\n"
+                    "    [NumberView][100]\n"
+                    "    [Empty]");
+}
