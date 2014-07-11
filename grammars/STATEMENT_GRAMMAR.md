@@ -50,7 +50,7 @@
 - [BindingList\[?In, ?Yield\]](#BindingList) , [LexicalBinding\[?In, ?Yield\]](#LexicalBinding)
 
 ### <a name="LexicalBinding"> LexicalBinding[In, Yield]
-- [BindingIdentifier\[?Yield\]](#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
 - [BindingPattern\[?Yield\]](#BindingPattern) [Initializer\[?In, ?Yield\]](#Initializer)
 
 ### <a name="VariableStatement"> VariableStatement[Yield]
@@ -61,7 +61,7 @@
 - [VariableDeclarationList\[?In, ?Yield\]](#VariableDeclarationList) ___,___ [VariableDeclaration\[?In, ?Yield\]](#VariableDeclaration)
 
 ### <a name="VariableDeclaration"> VariableDeclaration[In, Yield]
-- [BindingIdentifier\[?Yield\]](#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
 - [BindingPattern\[Yield\]](#BindingPattern) [Initializer\[?In, ?Yield\]](#Initializer)
 
 ### <a name="BindingPattern"> BindingPattern[Yield,GeneratorParameter]
@@ -101,12 +101,12 @@
 - \[~GeneratorParameter\] [BindingPattern\[?Yield\]](#BindingPattern) [Initializer\[In, ?Yield\]\(opt\)](#Initializer)
 
 ### <a name="SingleNameBinding"> SingleNameBinding[Yield,GeneratorParameter]
-- \[+GeneratorParameter\] [BindingIdentifier\[Yield\]](#BindingIdentifier) [Initializer\[In\]\(opt\)](#Initializer)
-- \[~GeneratorParameter\] [BindingIdentifier\[?Yield\]](#BindingIdentifier) [Initializer\[In, ?Yield\]\(opt\)](#Initializer)
+- \[+GeneratorParameter\] [BindingIdentifier\[Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[In\]\(opt\)](#Initializer)
+- \[~GeneratorParameter\] [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[In, ?Yield\]\(opt\)](#Initializer)
 
 ### <a name="BindingRestElement"> BindingRestElement[Yield, GeneratorParameter]
-- \[+GeneratorParameter\] ___...___ [BindingIdentifier\[Yield\]](#BindingIdentifier)
-- \[~GeneratorParameter\] ___...___ [BindingIdentifier\[?Yield\]](#BindingIdentifier)
+- \[+GeneratorParameter\] ___...___ [BindingIdentifier\[Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
+- \[~GeneratorParameter\] ___...___ [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
 
 ### <a name="EmptyStatement"> EmptyStatement
 - ___;___
@@ -182,17 +182,17 @@
 - ___finally___ [Block\[?Yield, ?Return\]](#Block)
 
 ### <a name="CatchParameter"> CatchParameter[Yield]
-- [BindingIdentifier\[?Yield\]](#BindingIdentifier)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
 - [BindingPattern\[?Yield\]](#BindingPattern)
 
 ### <a name="DebuggerStatement"> DebuggerStatement
 - ___debugger___ ___;___
 
 ### <a name="FunctionDeclaration"> FunctionDeclaration[Yield,Default]
-- ___function___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="FunctionExpression"> FunctionExpression
-- ___function___ [BindingIdentifier\(opt\)](#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="StrictFormalParameters"> StrictFormalParameters[Yield, GeneratorParameter]
 - [FormalParameters\[?Yield, ?GeneratorParameter\]](#FormalParameters)
@@ -226,7 +226,7 @@
 - [ArrowParameters\[?Yield\]](#ArrowParameters) \[no LineTerminator here\] ___=>___ [ConciseBody\[?In\]](#ConciseBody)
 
 ### <a name="ArrowParameters"> ArrowParameters[Yield]
-- [BindingIdentifier\[?Yield\]](#BindingIdentifier)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
 - [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](#CoverParenthesizedExpressionAndArrowParameterList)
 
 ### <a name="ConciseBody"> ConciseBody[In]
