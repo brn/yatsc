@@ -2,7 +2,7 @@
 - [BlockStatement\[?Yield, ?Return\]](#BlockStatement)
 - [VariableStatement\[?Yield\]](#VariableStatement)
 - [EmptyStatement](#EmptyStatemen)
-- [ExpressionStatement\[?Yield\]](./EXPRESSION_GRAMMAR.md#ExpressionStatement)
+- [ExpressionStatement\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#ExpressionStatement)
 - [IfStatement\[?Yield, ?Return\]](#IfStatement)
 - [BreakableStatement\[?Yield, ?Return\]](#BreakableStatement)
 - [ContinueStatement\[?Yield\]](#ContinueStatement)
@@ -112,23 +112,23 @@
 - ___;___
 
 ### <a name="ExpressionStatement"> ExpressionStatement[Yield]
-- \[lookahead  {___{___, ___function___, ___class___, ___let___ ___\[___ }\] [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___;___
+- \[lookahead  {___{___, ___function___, ___class___, ___let___ ___\[___ }\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
 
 ### <a name="IfStatement"> IfStatement[Yield, Return]
-- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement) ___else___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
-- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
+- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement) ___else___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
+- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
 
 ### <a name="IterationStatement"> IterationStatement[Yield, Return]
-- ___do___ [Statement\[?Yield, ?Return\]](#Statement) ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ ___;___\(opt\)
-- ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ \[lookahead  {___let___ ___\[___ }\] [Expression\[?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___)___
+- ___do___ [Statement\[?Yield, ?Return\]](#Statement) ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ ___;___\(opt\)
+- ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ \[lookahead  {___let___ ___\[___ }\] [Expression\[?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___
 
 ### <a name="Statement"> Statement[?Yield, ?Return]
-- ___for___ ___(___ ___var___ [VariableDeclarationList\[?Yield\]](#VariableDeclarationList) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ [LexicalDeclaration\[?Yield\]](#LexicalDeclaration) [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ \[lookahead  {___let___ ___\[___ }\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ ___var___ [VariableDeclarationList\[?Yield\]](#VariableDeclarationList) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ [LexicalDeclaration\[?Yield\]](#LexicalDeclaration) [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___ [Expression\[In, ?Yield\]\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ \[lookahead  {___let___ ___\[___ }\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 - ___for___ ___(___ ___var___ ForBinding\[?Yield\] ___in___ Expression\[In, ?Yield\] ___)___ Statement\[?Yield, ?Return\]
-- ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 - ___for___ ___(___ \[lookahead ≠ {___let___}\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 - ___for___ ___(___ ___var___ [ForBinding\[?Yield\]](#ForBinding) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 - ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
@@ -142,13 +142,13 @@
 
 ### <a name="ReturnStatement"> ReturnStatement[Yield]
 - ___return___ ___;___
-- ___return___ \[no LineTerminator here\] [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___;___
+- ___return___ \[no LineTerminator here\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
 
 ### <a name="WithStatement"> WithStatement[Yield, Return]
-- ___with___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___with___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="SwitchStatement"> SwitchStatement[Yield, Return]
-- ___switch___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___)___ [CaseBlock\[?Yield, ?Return\]](#CaseBlock)
+- ___switch___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [CaseBlock\[?Yield, ?Return\]](#CaseBlock)
 
 ### <a name="CaseBlock"> CaseBlock[Yield, Return]
 - ___{___ [CaseClauses\[?Yield, ?Return\]\(opt\)](#CaseClauses) ___}___
@@ -159,7 +159,7 @@
 - [CaseClauses\[?Yield, ?Return\]](#CaseClauses) [CaseClause\[?Yield, ?Return\]](#CaseClause)
 
 ### <a name="CaseClause"> CaseClause[Yield, Return]
-- ___case___ [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___:___ [StatementList\[?Yield, ?Return\]\(opt\)](#StatementList)
+- ___case___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___:___ [StatementList\[?Yield, ?Return\]\(opt\)](#StatementList)
 
 ### <a name="DefaultClause"> DefaultClause[Yield, Return]
 - ___default___ ___:___ [StatementList\[?Yield, ?Return\]\(opt\)](#StatementList)
@@ -168,7 +168,7 @@
 - [LabelIdentifier\[?Yield\]](#LabelIdentifier) ___:___ [Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="ThrowStatement"> ThrowStatement[Yield]
-- ___throw___ \[no LineTerminator here\] [Expression\[In, ?Yield\]](./EXPRESSION_GRAMMAR.md#Expression) ___;___
+- ___throw___ \[no LineTerminator here\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
 
 ### <a name="TryStatement"> TryStatement[Yield, Return]
 - ___try___ [Block\[?Yield, ?Return\]](#Block) [Catch\[?Yield, ?Return\]](#Catch)
