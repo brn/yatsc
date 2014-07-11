@@ -227,7 +227,7 @@
 
 ### <a name="ArrowParameters"> ArrowParameters[Yield]
 - [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
-- [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](#CoverParenthesizedExpressionAndArrowParameterList)
+- [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#CoverParenthesizedExpressionAndArrowParameterList)
 
 ### <a name="ConciseBody"> ConciseBody[In]
 - \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
