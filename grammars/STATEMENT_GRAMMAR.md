@@ -138,7 +138,7 @@
 
 ### <a name="ContinueStatement"> ContinueStatement[Yield]
 - ___continue___ ___;___
-- ___continue___ \[no LineTerminator here\] [LabelIdentifier\[?Yield\]](#LabelIdentifier) ___;___
+- ___continue___ \[no LineTerminator here\] [LabelIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#LabelIdentifier) ___;___
 
 ### <a name="ReturnStatement"> ReturnStatement[Yield]
 - ___return___ ___;___
@@ -165,7 +165,7 @@
 - ___default___ ___:___ [StatementList\[?Yield, ?Return\]\(opt\)](#StatementList)
 
 ### <a name="LabelledStatement"> LabelledStatement[Yield, Return]
-- [LabelIdentifier\[?Yield\]](#LabelIdentifier) ___:___ [Statement\[?Yield, ?Return\]](#Statement)
+- [LabelIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#LabelIdentifier) ___:___ [Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="ThrowStatement"> ThrowStatement[Yield]
 - ___throw___ \[no LineTerminator here\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
@@ -231,3 +231,49 @@
 
 ### <a name="ConciseBody"> ConciseBody[In]
 - \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
+
+### <a name="GeneratorMethod"> GeneratorMethod[Yield]
+- ___*___ PropertyName[?Yield] (StrictFormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+
+### <a name="GeneratorDeclaration"> GeneratorDeclaration[Yield, Default]
+- function * BindingIdentifier[?Yield, ?Default] ( FormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+
+### <a name="GeneratorExpression"> GeneratorExpression
+- function * BindingIdentifier[Yield]opt ( FormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+
+### <a name="YieldExpression"> YieldExpression[In]
+- ___yield___ 
+- ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
+- ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
+
+### <a name="MethodDefinition" >MethodDefinition[Yield]
+- [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters](#StrictFormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- [GeneratorMethod\[?Yield\]](#GeneratorMethod)
+- ___get___ [PropertyName\[?Yield\]](#PropertyName) ___(___ ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- ___set___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [PropertySetParameterList](#PropertySetParameterList) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+
+
+### <a name="ClassDeclaration"> ClassDeclaration\[Yield, Default\]
+- ___class___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [ClassTail\[?Yield\]](#ClassTail)
+
+### <a name="ClassExpression"> ClassExpression\[Yield,GeneratorParameter\]
+- ___class___ [BindingIdentifier\[?Yield\]\(opt\)](#BindingIdentifier) [ClassTail\[?Yield,?GeneratorParameter\]](#ClassTail)
+
+### <a name="ClassTail"> ClassTail\[Yield,GeneratorParameter\] :
+- \[~GeneratorParameter\] [ClassHeritage\[?Yield\]\(opt\)](#ClassHeritage) ___{___ [ClassBody\[?Yield\]\(opt\)](#ClassBody) ___}___
+- \[+GeneratorParameter\] [ClassHeritage\(opt\)](#ClassHeritageopt) ___{___ [ClassBodyopt](#ClassBodyopt) ___}___
+
+### <a name="ClassHeritage"> ClassHeritage\[Yield\]
+- ___extends___ [LeftHandSideExpression\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#LeftHandSideExpression)
+
+### <a name="ClassBody"> ClassBody\[Yield\]
+- [ClassElementList\[?Yield\]](#ClassElementList)
+
+### <a name="ClassElementList"> ClassElementList\[Yield\]
+- [ClassElement\[?Yield\]](#ClassElement)
+- [ClassElementList\[?Yield\]](#ClassElementList) [ClassElement\[?Yield\]](#ClassElement)
+
+### <a name="ClassElement"> ClassElement\[Yield\]
+- [MethodDefinition\[?Yield\]](#MethodDefinition)
+- ___static___ [MethodDefinition\[?Yield\]](#MethodDefinition)
+- ___;___

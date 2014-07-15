@@ -196,7 +196,7 @@
 - ___\[___ [Comprehension\[?Yield\]](#Comprehension) ___]___  
 
 ### <a name="Comprehension"> Comprehension\[Yield]  
-- [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail)  
+- [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail)
 
 ### <a name="ComprehensionTail"> ComprehensionTail\[Yield]  
 - [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail) [ComprehensionIf\[?Yield\]](#ComprehensionIf) [ComprehensionTail\[?Yield\]](#ComprehensionTail)  
@@ -205,7 +205,10 @@
 - ___for___ ___\(___ [ForBinding\[?Yield\]](#ForBinding) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___  
 
 ### <a name="ComprehensionIf"> ComprehensionIf\[Yield]  
-- ___if___ ___\(___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___  
+- ___if___ ___\(___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___
+
+### <a name="GeneratorComprehension"> GeneratorComprehension[Yield]
+- ___(___ [Comprehension\[?Yield\]](#Comprehension) ___)___
 
 ### <a name="ForBinding"> ForBinding\[Yield]  
 - [BindingIdentifier\[?Yield\]](#BindingIdentifier)  
