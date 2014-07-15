@@ -115,8 +115,8 @@
 - \[lookahead  {___{___, ___function___, ___class___, ___let___ ___\[___ }\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
 
 ### <a name="IfStatement"> IfStatement[Yield, Return]
-- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement) ___else___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
-- ___if___ ___(___ \[Expression\\[In, ?Yield\\]\](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\\[?Yield, ?Return\\]\](#Statement)
+- ___if___ ___(___ \[Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\[?Yield, ?Return\]](#Statement) ___else___ \[Statement\[?Yield, ?Return\]](#Statement)
+- ___if___ ___(___ \[Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="IterationStatement"> IterationStatement[Yield, Return]
 - ___do___ [Statement\[?Yield, ?Return\]](#Statement) ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ ___;___\(opt\)
@@ -233,13 +233,13 @@
 - \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="GeneratorMethod"> GeneratorMethod[Yield]
-- ___*___ PropertyName[?Yield] (StrictFormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+- ___*___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters\[Yield,GeneratorParameter\]](#StrictFormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorDeclaration"> GeneratorDeclaration[Yield, Default]
-- function * BindingIdentifier[?Yield, ?Default] ( FormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+- ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) ___(___ [FormalParameters\[Yield,GeneratorParameter\]](#FormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorExpression"> GeneratorExpression
-- function * BindingIdentifier[Yield]opt ( FormalParameters[Yield,GeneratorParameter] ) { FunctionBody[Yield] }
+- ___function___ ___*___ [BindingIdentifier\[Yield\]\(opt\)](#BindingIdentifier) ___(___ [FormalParameters\[Yield,GeneratorParameter\]](#FormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="YieldExpression"> YieldExpression[In]
 - ___yield___ 
