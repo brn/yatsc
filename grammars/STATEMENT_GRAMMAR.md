@@ -36,7 +36,8 @@
 - [StatementList\[?Yield, ?Return\]](#StatementList) [StatementListItem\[?Yield, ?Return\]](#StatementListItem)
 
 ### <a name="StatementListItem"> StatementListItem[Yield, Return]
-- [Statement\[?Yield, ?Return\]](#Statement) [Declaration\[?Yield\]](#Declaration)
+- [Statement\[?Yield, ?Return\]](#Statement)
+- [Declaration\[?Yield\]](#Declaration)
 
 ### <a name="LexicalDeclaration"> LexicalDeclaration[In, Yield]
 - [LetOrConst](#LetOrConst) [BindingList\[?In, ?Yield\]](#BindingList) ___;___
