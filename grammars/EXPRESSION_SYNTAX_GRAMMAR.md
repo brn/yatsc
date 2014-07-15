@@ -273,25 +273,25 @@
 ### <a name="Identifier"> Identifier  
 - [IdentifierName](#IdentifierName) __but not ReservedWord__  
 
-### IdentifierName
+### <a name="IdentifierName"> IdentifierName
 - [IdentifierStart](#IdentifierStart)
 - [IdentifierName](#IdentifierName) [IdentifierPart](#IdentifierPart)
 
-### IdentifierStart
+### <a name="IdentifierStart"> IdentifierStart
 - [UnicodeIDStart](#UnicodeIDStart)
 - ___$___
 - ___\____
 - ___\\___ [UnicodeEscapeSequence](#UnicodeEscapeSequence)
 
-### IdentifierPart
+### <a name="IdentifierPart"> IdentifierPart
 - [UnicodeIDContinue](#UnicodeIDContinue)
 - ___$___
 - ___\____
 - ___\\___ [UnicodeEscapeSequence](#UnicodeEscapeSequence) ___\<ZWNJ\>___
 - ___\<ZWJ\>___
 
-### UnicodeIDStart
+### <a name="UnicodeIDStart"> UnicodeIDStart
 - ___any Unicode code point with the Unicode property___ ___ID_Start___
 
-### UnicodeIDContinue
+### <a name="UnicodeIDContinue">  UnicodeIDContinue
 - ___any Unicode code point with the Unicode property___ ___ID_Continue___
