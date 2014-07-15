@@ -130,9 +130,9 @@
 - ___for___ ___(___ \[lookahead  {___let___ ___\[___ }\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 - ___for___ ___(___ ___var___ ForBinding\[?Yield\] ___in___ Expression\[In, ?Yield\] ___)___ Statement\[?Yield, ?Return\]
 - ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___in___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ \[lookahead ≠ {___let___}\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ ___var___ [ForBinding\[?Yield\]](#ForBinding) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
-- ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ \[lookahead ≠ {___let___}\] [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) ___of___ [AssignmentExpression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ ___var___ [ForBinding\[?Yield\]](#ForBinding) ___of___ [AssignmentExpression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___for___ ___(___ [ForDeclaration\[?Yield\]](#ForDeclaration) ___of___ [AssignmentExpression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="ForDeclaration"> ForDeclaration[Yield] :
 - [LetOrConst](#LetOrConst) [ForBinding\[?Yield\]](#ForBinding)
@@ -231,7 +231,7 @@
 - [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#CoverParenthesizedExpressionAndArrowParameterList)
 
 ### <a name="ConciseBody"> ConciseBody[In]
-- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
+- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="GeneratorMethod"> GeneratorMethod[Yield]
 - ___*___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters\[Yield,GeneratorParameter\]](#StrictFormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
@@ -244,8 +244,8 @@
 
 ### <a name="YieldExpression"> YieldExpression[In]
 - ___yield___ 
-- ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
-- ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
+- ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
+- ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
 
 ### <a name="MethodDefinition" >MethodDefinition[Yield]
 - [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters](#StrictFormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
