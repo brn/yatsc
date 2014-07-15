@@ -115,8 +115,8 @@
 - \[lookahead  {___{___, ___function___, ___class___, ___let___ ___\[___ }\] [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___;___
 
 ### <a name="IfStatement"> IfStatement[Yield, Return]
-- ___if___ ___(___ \[Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\[?Yield, ?Return\]](#Statement) ___else___ \[Statement\[?Yield, ?Return\]](#Statement)
-- ___if___ ___(___ \[Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ \[Statement\[?Yield, ?Return\]](#Statement)
+- ___if___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement) ___else___ [Statement\[?Yield, ?Return\]](#Statement)
+- ___if___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ [Statement\[?Yield, ?Return\]](#Statement)
 
 ### <a name="IterationStatement"> IterationStatement[Yield, Return]
 - ___do___ [Statement\[?Yield, ?Return\]](#Statement) ___while___ ___(___ [Expression\[In, ?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#Expression) ___)___ ___;___\(opt\)
