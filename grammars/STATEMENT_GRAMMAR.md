@@ -65,6 +65,10 @@
 - [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
 - [BindingPattern\[Yield\]](#BindingPattern) [Initializer\[?In, ?Yield\]](#Initializer)
 
+### <a name="TypeAnnotation"> TypeAnnotation
+- ___:___ [Type](#./TYPE_SYNTAX_GRAMMAR.md#Type)
+- ___:___ ___yield___ [Type](#./TYPE_SYNTAX_GRAMMAR.md#Type)
+
 ### <a name="BindingPattern"> BindingPattern[Yield,GeneratorParameter]
 - [ObjectBindingPattern\[?Yield,?GeneratorParameter\]](#ObjectBindingPattern)
 - [ArrayBindingPattern\[?Yield,?GeneratorParameter\]](#ArrayBindingPattern)
@@ -208,7 +212,7 @@
 - [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [FunctionRestParameter\[?Yield, ?GeneratorParameter\]](./STATEMENT_GRAMMAR#FunctionRestParameter)
 - [RequiredParameterList\[?Yield, ?GeneratorParameter\]](#RequiredParameterList) ___,___ [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [FunctionRestParameter\[?Yield, ?GeneratorParameter\]](./STATEMENT_GRAMMAR#FunctionRestParameter)
 
-### <a name="OptionalParameterList"> OptionalParameterList[Yield,GeneratorParameter]
+### <a name="OptionalParameterList"> OptionalParameterList\[Yield,GeneratorParameter\]
 - [OptionalParameter\[?Yield, ?GeneratorParameter\]](#OptionalParameter)
 - [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [OptionalParameter\[?Yield, ?GeneratorParameter\]](#OptionalParameter)
 
@@ -216,7 +220,7 @@
 - [PublicOrPrivateopt](#PublicOrPrivateopt) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) ___?___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 - [PublicOrPrivateopt](#PublicOrPrivateopt) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initialiser](#Initialiser)
 
-### <a name="FormalParameterList"> FormalParameterList[Yield,GeneratorParameter]
+### <a name="FormalParameterList"> FormalParameterList\[Yield,GeneratorParameter\]
 - [FunctionRestParameter\[?Yield\]](#FunctionRestParameter)
 - [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList)
 - [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList) ___,___ [FunctionRestParameter\[?Yield\]](#FunctionRestParameter)

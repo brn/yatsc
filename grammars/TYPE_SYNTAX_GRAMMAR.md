@@ -97,8 +97,8 @@
 - [StringLiteral](#StringLiteral)
 - [NumericLiteral](#NumericLiteral)
 
-### <a name="CallSignature"> CallSignature:
-- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](./STATEMENT_GRAMMAR.md#FormalParameters) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
+### <a name="CallSignature"> CallSignature
+- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\[?Yield,?GeneratorParameter\]\(opt\)](./STATEMENT_GRAMMAR.md#FormalParameters) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 
 ### <a name="[ConstructSignature](#ConstructSignature)"> [ConstructSignature](#ConstructSignature)
 - ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](#FormalParameters\) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
