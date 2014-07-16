@@ -167,13 +167,7 @@
 - [GeneratorComprehension\[?Yield\]](#GeneratorComprehension)  
 - [RegularExpressionLiteral](#RegularExpressionLiteral)  
 - [TemplateLiteral\[?Yield\]](#TemplateLiteral)  
-- [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](#CoverParenthesizedExpressionAndArrowParameterList)  
-
-### <a name="CoverParenthesizedExpressionAndArrowParameterList"> CoverParenthesizedExpressionAndArrowParameterList\[Yield]  
 - ___\(___ [Expression\[In, ?Yield\]](#Expression) ___)___  
-- ___\(___ ___)___    
-- ___\(___ ___...___ [BindingIdentifier\[?Yield\]](#BindingIdentifier) )  
-- ___\(___ [Expression\[In, ?Yield\]](#Expression) ___,___ ___...___ [BindingIdentifier\[?Yield\]](#BindingIdentifier) )  
 
 ### <a name="ArrayLiteral"> ArrayLiteral\[Yield]  
 - ___\[___ [Elision\(opt\)](#Elision) ___]___  

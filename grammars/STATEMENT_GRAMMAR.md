@@ -195,6 +195,17 @@
 
 ### <a name="FunctionDeclaration"> FunctionDeclaration[Yield,Default]
 - ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- [FunctionOverloads\(opt\)](#FunctionOverloads) [FunctionImplementation](#FunctionImplementation)
+
+### <a name="FunctionOverloads"> FunctionOverloads
+- [FunctionOverload](#FunctionOverload)
+- [FunctionOverloads](#FunctionOverloads) [FunctionOverload](#FunctionOverload)
+
+### <a name="FunctionOverload"> FunctionOverload
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature)
+
+### <a name="FunctionImplementation"> FunctionImplementation
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="FunctionExpression"> FunctionExpression
 - ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
@@ -256,7 +267,7 @@
 
 ### <a name="ArrowParameters"> ArrowParameters[Yield]
 - [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
-- [CoverParenthesizedExpressionAndArrowParameterList\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#CoverParenthesizedExpressionAndArrowParameterList)
+- [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature)
 
 ### <a name="ConciseBody"> ConciseBody[In]
 - \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
