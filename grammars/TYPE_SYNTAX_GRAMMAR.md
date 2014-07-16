@@ -67,10 +67,10 @@
 - [ArrayType](#ArrayType)
 
 ### <a name="FunctionType"> FunctionType
-- [TypeParameters\(opt\)](#TypeParameters) ___(___ [ParameterList\(opt\)](#ParameterList) ___)___ ___=>___ [Type](#Type)
+- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList) ___)___ ___=>___ [Type](#Type)
 
 ### <a name="ConstructorType"> ConstructorType
-- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [ParameterList\(opt\)](#ParameterList) ___)___ ___=>___ [Type](#Type)
+- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList) ___)___ ___=>___ [Type](#Type)
 
 ### <a name="ObjectType"> ObjectType
 - ___{___ [TypeBody\(opt\)](#TypeBody) ___}___
@@ -97,39 +97,11 @@
 - [StringLiteral](#StringLiteral)
 - [NumericLiteral](#NumericLiteral)
 
-### <a name="ParameterList"> ParameterList
-- [RequiredParameterList](#RequiredParameterList)
-- [OptionalParameterList](#OptionalParameterList)
-- [RestParameter](#RestParameter)
-- [RequiredParameterList](#RequiredParameterList) ___,___ [OptionalParameterList](#OptionalParameterList)
-- [RequiredParameterList](#RequiredParameterList) ___,___ [RestParameter](#RestParameter)
-- [OptionalParameterList](#OptionalParameterList) ___,___ [RestParameter](#RestParameter)
-- [RequiredParameterList](#RequiredParameterList) ___,___ [OptionalParameterList](#OptionalParameterList) ___,___ [RestParameter](#RestParameter)
-
-### <a name="RequiredParameterList"> RequiredParameterList
-- [RequiredParameter](#RequiredParameter) ___,___ [RequiredParameterList](#RequiredParameterList)
-
-### <a name="RequiredParameter"> RequiredParameter
-- [PublicOrPrivate\(opt\)](#PublicOrPrivate) [Identifier](#Identifier) [TypeAnnotation\(opt\)](#TypeAnnotation)
-- [Identifier](#Identifier) ___:___ [StringLiteral](#StringLiteral)
-
-### <a name="PublicOrPrivate"> PublicOrPrivate:
-- ___public___
-- ___private___
-
-### <a name="OptionalParameterList"> OptionalParameterList
-- [OptionalParameter](#OptionalParameter)
-- [OptionalParameterList](#OptionalParameterList) ___,___ [OptionalParameter](#OptionalParameter)
-
-### <a name="OptionalParameter"> OptionalParameter
-- [PublicOrPrivateopt](#PublicOrPrivateopt) [Identifier](#Identifier) ___?___ [TypeAnnotation\(opt\)](#TypeAnnotation)
-- [PublicOrPrivateopt](#PublicOrPrivateopt) [Identifier](#Identifier) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initialiser](#Initialiser)
-
-### <a name="[RestParameter](#RestParameter)"> [RestParameter](#RestParameter)
-- ___...___ [Identifier](#Identifier) [TypeAnnotation\(opt\)](#TypeAnnotation)
+### <a name="CallSignature"> CallSignature:
+- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](./STATEMENT_GRAMMAR#FormalParameterList) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 
 ### <a name="[ConstructSignature](#ConstructSignature)"> [ConstructSignature](#ConstructSignature)
-- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [ParameterList\(opt\)](#ParameterList\) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
+- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList\) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 
 ### <a name="IndexSignature"> IndexSignature
 - ___\[___ [Identifier](#Identifier) ___:___ ___string___ ___\]___ [TypeAnnotation](#TypeAnnotation)

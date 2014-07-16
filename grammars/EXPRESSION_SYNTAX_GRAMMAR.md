@@ -161,7 +161,7 @@
 - [Literal](#Literal)  
 - [ArrayInitializer\[?Yield\]](#ArrayInitializer)  
 - [ObjectLiteral\[?Yield\]](#ObjectLiteral)  
-- [FunctionExpression](#FunctionExpression)  
+- [FunctionExpression](./STATEMENT_GRAMMAR#FunctionExpression)  
 - [ClassExpression](#ClassExpression)  
 - [GeneratorExpression](#GeneratorExpression)  
 - [GeneratorComprehension\[?Yield\]](#GeneratorComprehension)  
