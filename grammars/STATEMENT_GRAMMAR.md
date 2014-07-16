@@ -193,7 +193,7 @@
 - ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="FunctionExpression"> FunctionExpression
-- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
+- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="StrictFormalParameters"> StrictFormalParameters[Yield, GeneratorParameter]
 - [FormalParameters\[?Yield, ?GeneratorParameter\]](#FormalParameters)
@@ -222,14 +222,14 @@
 - [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList) ___,___ [FunctionRestParameter\[?Yield\]](#FunctionRestParameter)
 
 ### <a name="FormalsList"> FormalsList[Yield,GeneratorParameter]
-- [FormalParameter\[?Yield, ?GeneratorParameter\]](#FormalParameter) [TypeAnnotation](./TYPE_SYNTAX_GRAMMAR#TypeAnnotation)
+- [FormalParameter\[?Yield, ?GeneratorParameter\]](#FormalParameter) [TypeAnnotation](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 - [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList) ___,___ [FormalParameter\[?Yield,?GeneratorParameter\]](#FormalParameter)
 
 ### <a name="FunctionRestParameter"> FunctionRestParameter[Yield]
-- [BindingRestElement\[Yield\]](#BindingRestElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR#TypeAnnotation)
+- [BindingRestElement\[Yield\]](#BindingRestElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 
 ### <a name="FormalParameter"> FormalParameter[Yield,GeneratorParameter]
-- [PublicOrPrivate\(opt\)](#PublicOrPrivate) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR#TypeAnnotation)
+- [PublicOrPrivate\(opt\)](#PublicOrPrivate) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 - [Identifier](./EXPRESSION_SYNTAX_GRAMMAR#Identifier) ___:___ [StringLiteral](./EXPRESSION_SYNTAX_GRAMMAR#StringLiteral)
 
 ### <a name="PublicOrPrivate"> PublicOrPrivate
@@ -269,11 +269,11 @@
 ### <a name="MethodDefinition" >MethodDefinition[Yield]
 - [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters](#StrictFormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 - [GeneratorMethod\[?Yield\]](#GeneratorMethod)
-- ___get___ [PropertyName\[?Yield\]](#PropertyName) ___(___ ___)___ [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR#TypeAnnotation) ___{___ [FunctionBody](#FunctionBody) ___}___
+- ___get___ [PropertyName\[?Yield\]](#PropertyName) ___(___ ___)___ [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation) ___{___ [FunctionBody](#FunctionBody) ___}___
 - ___set___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [PropertySetParameterList](#PropertySetParameterList) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="PropertySetParameterList"> PropertySetParameterList
-- [FormalParameter](#FormalParameter) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR#TypeAnnotation)
+- [FormalParameter](#FormalParameter) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 
 ### <a name="ClassDeclaration"> ClassDeclaration\[Yield, Default\]
 - ___class___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [ClassTail\[?Yield\]](#ClassTail)
