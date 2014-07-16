@@ -67,10 +67,10 @@
 - [ArrayType](#ArrayType)
 
 ### <a name="FunctionType"> FunctionType
-- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList) ___)___ ___=>___ [Type](#Type)
+- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___=>___ [Type](#Type)
 
 ### <a name="ConstructorType"> ConstructorType
-- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList) ___)___ ___=>___ [Type](#Type)
+- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___=>___ [Type](#Type)
 
 ### <a name="ObjectType"> ObjectType
 - ___{___ [TypeBody\(opt\)](#TypeBody) ___}___
@@ -98,10 +98,10 @@
 - [NumericLiteral](#NumericLiteral)
 
 ### <a name="CallSignature"> CallSignature:
-- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](./STATEMENT_GRAMMAR.md#FormalParameterList) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
+- [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](./STATEMENT_GRAMMAR.md#FormalParameters) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 
 ### <a name="[ConstructSignature](#ConstructSignature)"> [ConstructSignature](#ConstructSignature)
-- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameterList\(opt\)](#FormalParameterList\) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
+- ___new___ [TypeParameters\(opt\)](#TypeParameters) ___(___ [FormalParameters\(opt\)](#FormalParameters\) ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation)
 
 ### <a name="IndexSignature"> IndexSignature
 - ___\[___ [Identifier](#Identifier) ___:___ ___string___ ___\]___ [TypeAnnotation](#TypeAnnotation)
