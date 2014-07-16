@@ -51,8 +51,8 @@
 - [BindingList\[?In, ?Yield\]](#BindingList) , [LexicalBinding\[?In, ?Yield\]](#LexicalBinding)
 
 ### <a name="LexicalBinding"> LexicalBinding[In, Yield]
-- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
-- [BindingPattern\[?Yield\]](#BindingPattern) [Initializer\[?In, ?Yield\]](#Initializer)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
+- [BindingPattern\[?Yield\]](#BindingPattern) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initializer\[?In, ?Yield\]](#Initializer)
 
 ### <a name="VariableStatement"> VariableStatement[Yield]
 - ___var___ [VariableDeclarationList\[In, ?Yield\]](#VariableDeclarationList) ___;___
@@ -62,8 +62,8 @@
 - [VariableDeclarationList\[?In, ?Yield\]](#VariableDeclarationList) ___,___ [VariableDeclaration\[?In, ?Yield\]](#VariableDeclaration)
 
 ### <a name="VariableDeclaration"> VariableDeclaration[In, Yield]
-- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
-- [BindingPattern\[Yield\]](#BindingPattern) [Initializer\[?In, ?Yield\]](#Initializer)
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initializer\[?In, ?Yield\]\(opt\)](#Initializer)
+- [BindingPattern\[Yield\]](#BindingPattern) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initializer\[?In, ?Yield\]](#Initializer)
 
 ### <a name="TypeAnnotation"> TypeAnnotation
 - ___:___ [Type](#./TYPE_SYNTAX_GRAMMAR.md#Type)
