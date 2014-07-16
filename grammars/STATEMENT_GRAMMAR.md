@@ -229,8 +229,13 @@
 - [BindingRestElement\[Yield\]](#BindingRestElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 
 ### <a name="FormalParameter"> FormalParameter[Yield,GeneratorParameter]
-- [PublicOrPrivate\(opt\)](#PublicOrPrivate) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
+- [PublicOrPrivate\(opt\)](#PublicOrPrivate)  [FormalParameterElement\[?Yield, ?GeneratorParameter\]](#FormalParameterElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 - [Identifier](./EXPRESSION_SYNTAX_GRAMMAR#Identifier) ___:___ [StringLiteral](./EXPRESSION_SYNTAX_GRAMMAR#StringLiteral)
+
+### <a name="FormalParameter"> FormalParameterElement[Yield,GeneratorParameter]
+- [BindingIdentifier\[?Yield\]](#BindingIdentifier)]
+- \[+GeneratorParameter\] [BindingPattern\[?Yield,GeneratorParameter\]](#BindingPattern)
+- \[~GeneratorParameter\] [BindingPattern\[?Yield\]](#BindingPattern)
 
 ### <a name="PublicOrPrivate"> PublicOrPrivate
 - ___public___
