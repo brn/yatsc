@@ -271,25 +271,29 @@
 ### <a name="ConciseBody"> ConciseBody[In]
 - \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
 
-### <a name="GeneratorMethod"> GeneratorMethod[Yield]
-- ___*___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters\[Yield,GeneratorParameter\]](#StrictFormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+### <a name="GeneratorMethodDeclaration"> GeneratorMethodDeclaration[Yield]
+- [GeneratorMethodOverloads\(opt\)](#GeneratorMethodOverloads) [GeneratorMethodImplementation](#GeneratorMethodImplementation)
+
+### <a name="GeneratorMethodOverloads"> GeneratorMethodOverloads[Yield]
+- [GeneratorMethodOverload](#GeneratorMethodOverload)
+- [GeneratorMethodOverloads](#GeneratorMethodOverloads) [GeneratorMethodOverload](#GeneratorMethodOverload)
+
+### <a name="GeneratorMethodOverload"> GeneratorMethodOverload
+- [PublicOrPrivate\(opt\)](#PublicOrPrivate) ___*___ [PropertyName\[?Yield\]](#PropertyName) [CallSignature](#CallSignature) ___;___
+
+### <a name="GeneratorMethodImplementation"> GeneratorMethodImplementation
+- [PublicOrPrivate\(opt\)](#PublicOrPrivate) ___*___ [PropertyName\[?Yield\]](#PropertyName) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorDeclaration"> GeneratorDeclaration[Yield, Default]
-- ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) ___(___ [FormalParameters\[Yield,GeneratorParameter\]](#FormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+- ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorExpression"> GeneratorExpression
-- ___function___ ___*___ [BindingIdentifier\[Yield\]\(opt\)](#BindingIdentifier) ___(___ [FormalParameters\[Yield,GeneratorParameter\]](#FormalParameters) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+- ___function___ ___*___ [BindingIdentifier\[Yield\]\(opt\)](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="YieldExpression"> YieldExpression[In]
 - ___yield___ 
 - ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
 - ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
-
-### <a name="MethodDefinition" >MethodDefinition[Yield]
-- [PropertyName\[?Yield\]](#PropertyName) ___(___ [StrictFormalParameters](#StrictFormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
-- [GeneratorMethod\[?Yield\]](#GeneratorMethod)
-- ___get___ [PropertyName\[?Yield\]](#PropertyName) ___(___ ___)___ [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation) ___{___ [FunctionBody](#FunctionBody) ___}___
-- ___set___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [PropertySetParameterList](#PropertySetParameterList) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 
 ### <a name="PropertySetParameterList"> PropertySetParameterList
 - [FormalParameter](#FormalParameter) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
@@ -304,8 +308,11 @@
 - \[~GeneratorParameter\] [ClassHeritage\[?Yield\]\(opt\)](#ClassHeritage) ___{___ [ClassBody\[?Yield\]\(opt\)](#ClassBody) ___}___
 - \[+GeneratorParameter\] [ClassHeritage\(opt\)](#ClassHeritageopt) ___{___ [ClassBodyopt](#ClassBodyopt) ___}___
 
-### <a name="ClassHeritage"> ClassHeritage\[Yield\]
-- ___extends___ [LeftHandSideExpression\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#LeftHandSideExpression)
+### <a name="ClassHeritage"> ClassHeritage
+- ___extends___ [ClassType](#ClassType)
+
+### <a name="ClassType"> ClassType
+- [TypeReference](#TypeReference)
 
 ### <a name="ClassBody"> ClassBody\[Yield\]
 - [ClassElementList\[?Yield\]](#ClassElementList)
@@ -315,6 +322,69 @@
 - [ClassElementList\[?Yield\]](#ClassElementList) [ClassElement\[?Yield\]](#ClassElement)
 
 ### <a name="ClassElement"> ClassElement\[Yield\]
-- [MethodDefinition\[?Yield\]](#MethodDefinition)
-- ___static___ [MethodDefinition\[?Yield\]](#MethodDefinition)
-- ___;___
+- [ConstructorDeclaration](#ConstructorDeclaration)
+- [PropertyMemberDeclaration](#PropertyMemberDeclaration)
+- [IndexMemberDeclaration](#IndexMemberDeclaration)
+
+### <a name="ConstructorDeclaration"> ConstructorDeclaration
+- [ConstructorOverloadsopt](#ConstructorOverloadsopt) [ConstructorImplementation](#ConstructorImplementation)
+
+### <a name="ConstructorOverloads"> ConstructorOverloads
+- [ConstructorOverload](#ConstructorOverload)
+- [ConstructorOverloads](#ConstructorOverloads) [ConstructorOverload](#ConstructorOverload)
+
+### <a name="ConstructorOverload"> ConstructorOverload
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___constructor___ ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___;___
+
+### <a name="ConstructorImplementation"> ConstructorImplementation
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___constructor___ ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+
+### <a name="PropertyMemberDeclaration"> PropertyMemberDeclaration
+- [MemberVariableDeclaration](#MemberVariableDeclaration)
+- [MemberFunctionDeclaration](#MemberFunctionDeclaration)
+- [MemberAccessorDeclaration](#MemberAccessorDeclaration)
+- [GeneratorMethodDeclaration\[?Yield\]](#GeneratorMethodDeclaration)
+
+### <a name="MemberVariableDeclaration"> MemberVariableDeclaration
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initialiser\(opt\)](#Initialiser) ___;___
+
+### <a name="MemberFunctionDeclaration"> MemberFunctionDeclaration
+- [MemberFunctionOverloads\(opt\)](#MemberFunctionOverloads) [MemberFunctionImplementation](#MemberFunctionImplementation)
+
+### <a name="MemberFunctionOverloads"> MemberFunctionOverloads
+- [MemberFunctionOverload](#MemberFunctionOverload)
+- [MemberFunctionOverloads](#MemberFunctionOverloads) [MemberFunctionOverload](#MemberFunctionOverload)
+
+### <a name="MemberFunctionOverload"> MemberFunctionOverload
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___;___
+
+### <a name="MemberFunctionImplementation"> MemberFunctionImplementation
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
+
+### <a name="MemberAccessorDeclaration"> MemberAccessorDeclaration
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [GetAccessor](#GetAccessor)
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [SetAccessor](#SetAccessor)
+
+### <a name="IndexMemberDeclaration"> IndexMemberDeclaration
+- [IndexSignature](#IndexSignature) ___;___
+
+### <a name="EnumDeclaration"> EnumDeclaration
+- ___enum___ [Identifier](#Identifier) ___{___ [EnumBody\(opt\)](#EnumBody) ___}___
+
+### <a name="EnumBody"> EnumBody
+- [ConstantEnumMembers](#ConstantEnumMembers) ___,___\(opt\)
+- [ConstantEnumMembers](#ConstantEnumMembers) ___,___ [EnumMemberSections](#EnumMemberSections) ___,\(opt\)___ [EnumMemberSections](#EnumMemberSections) ___,\(opt\)___
+
+### <a name="InterfaceDeclaration"> InterfaceDeclaration
+- ___interface___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) [TypeParameters\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeParameters) [InterfaceExtendsClause\(opt\)](#InterfaceExtendsClause) [ObjectType](./TYPE_SYNTAX_GRAMMAR.md#ObjectType)
+
+### <a name="InterfaceExtendsClause"> InterfaceExtendsClause
+- ___extends___ [ClassOrInterfaceTypeList](#ClassOrInterfaceTypeList)
+
+### <a name="ClassOrInterfaceTypeList"> ClassOrInterfaceTypeList
+- [ClassOrInterfaceType](#ClassOrInterfaceType)
+- [ClassOrInterfaceTypeList](#ClassOrInterfaceTypeList) ___,___ [ClassOrInterfaceType](#ClassOrInterfaceType)
+
+### ClassOrInterfaceType
+- [TypeReference](./TYPE_SYNTAX_GRAMMAR.md#TypeReference)
+
