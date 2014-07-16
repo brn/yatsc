@@ -385,6 +385,6 @@
 - [ClassOrInterfaceType](#ClassOrInterfaceType)
 - [ClassOrInterfaceTypeList](#ClassOrInterfaceTypeList) ___,___ [ClassOrInterfaceType](#ClassOrInterfaceType)
 
-### ClassOrInterfaceType
+### <a name="ClassOrInterfaceType"> ClassOrInterfaceType
 - [TypeReference](./TYPE_SYNTAX_GRAMMAR.md#TypeReference)
 
