@@ -194,7 +194,6 @@
 - ___debugger___ ___;___
 
 ### <a name="FunctionDeclaration"> FunctionDeclaration[Yield,Default]
-- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) ___(___ [FormalParameters](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
 - [FunctionOverloads\(opt\)](#FunctionOverloads) [FunctionImplementation](#FunctionImplementation)
 
 ### <a name="FunctionOverloads"> FunctionOverloads
