@@ -1,6 +1,10 @@
-### <a name="Program"> Program[Script,Module]
+### <a name="Program"> Program[Script,Module,TsModule]
 - \[+Script\] [Script](#Script)
 - \[+Module\] [Module](./MODULE_SYNTAX_GRAMMAR.md#Module)
+- \[+TsModule\] [ModuleDeclaration](#ModuleDeclaration)
+- \[+TsModule\] ___export___ ___=___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) ___;___
+- \[+TsModule\] ___export\(opt\)___ [ExternalImportDeclaration](#ExternalImportDeclaration)
+- ___export\(opt\)___ [AmbientDeclaration](#AmbientDeclaration)
 
 ### <a name="SourceElements"> Script
 - [ScriptBody](#ScriptBody)

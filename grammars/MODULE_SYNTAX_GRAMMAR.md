@@ -86,8 +86,8 @@
 - [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
 - [ModuleName](#ModuleName) ___.___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
 
-### <a name="ModuleDeclaration"> ModuleDeclaration[TsModule]
-- \[+TsModule\] ___module___ [IdentifierPath](#IdentifierPath) ___{___ [ModuleBody](#ModuleBody) ___}___
+### <a name="ModuleDeclaration"> ModuleDeclaration
+- ___module___ [IdentifierPath](#IdentifierPath) ___{___ [ModuleBody](#ModuleBody) ___}___
 
 ### <a name="IdentifierPath"> IdentifierPath
 - [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
