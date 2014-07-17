@@ -1,3 +1,13 @@
+### <a name="Program"> Program[Script,Module]
+- \[+Script\] [Script](#Script)
+- \[+Module\] [Module](./MODULE_SYNTAX_GRAMMAR.md#Module)
+
+### <a name="SourceElements"> Script
+- [ScriptBody](#ScriptBody)
+
+### <a name="ScriptBody"> ScriptBody
+- [StatementList](#StatementList)
+
 ### <a name="Statement"> Statement[Yield, Return]
 - [BlockStatement\[?Yield, ?Return\]](#BlockStatement)
 - [VariableStatement\[?Yield\]](#VariableStatement)

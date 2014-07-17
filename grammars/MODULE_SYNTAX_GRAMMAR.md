@@ -1,4 +1,4 @@
-### <a name="ModuleDeclaration"> Module
+### <a name="Module"> Module
 - [ModuleBody](#ModuleBody)
 
 ### <a name="ModuleBody"> ModuleBody
@@ -9,9 +9,16 @@
 - [MouduleItemList](#MouduleItemList) [ModuleItem](#ModuleItem)
 
 ### <a name="ModuleItem"> ModuleItem
+- [ExternalImportDeclaration](#ExternalImportDeclaration)
 - [ImportDeclaration](#ImportDeclaration)
 - [ExportDeclaration](#ExportDeclaration)
 - [StatementListItem](#StatementListItem)
+
+### ExternalImportDeclaration
+- ___import___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) ___=___ [ExternalModuleReference](#ExternalModuleReference) ___;___
+
+### <a name="ExternalModuleReference"> ExternalModuleReference
+- ___require___ ___(___ [StringLiteral](./EXPRESSION_SYNTAX_GRAMMAR.md#StringLiteral) ___)___
 
 ### <a name="ImportDeclaration"> ImportDeclaration
 - [ModuleImport](#ModuleImport)
@@ -40,7 +47,7 @@
 
 ### <a name="ImportSpecifier"> ImportSpecifier
 - [ImportedBinding](#ImportedBinding)
-- [IdentifierName](#IdentifierName) ___as___ [ImportedBinding](#ImportedBinding)
+- [IdentifierName](./EXPRESSION_SYNTAX_GRAMMAR.md#IdentifierName) ___as___ [ImportedBinding](#ImportedBinding)
 
 ### <a name="ModuleSpecifier"> ModuleSpecifier
 - [StringLiteral](./EXPRESSION_SYNTAX_GRAMMAR.md#StringLiteral)
@@ -69,12 +76,43 @@
 ### <a name="ExportSpecifier"> ExportSpecifier[NoReference]
 - [~NoReference] [IdentifierReference](#IdentifierReference)
 - [~NoReference] [IdentifierReference](#IdentifierReference) ___as___ [IdentifierName](#IdentifierName)
-- [+NoReference] [IdentifierName](#IdentifierName)
-- [+NoReference] [IdentifierName](#IdentifierName) ___as___ [IdentifierName](#IdentifierName)
+- [+NoReference] [IdentifierName](./EXPRESSION_SYNTAX_GRAMMAR.md#IdentifierName)
+- [+NoReference] [IdentifierName](./EXPRESSION_SYNTAX_GRAMMAR.md#IdentifierName) ___as___ [IdentifierName](#IdentifierName)
 
 ### <a name="ImportDeclaration"> ImportDeclaration
-- ___import___ [Identifier](#Identifier) ___=___ [EntityName](#EntityName) ___;___
+- ___import___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) ___=___ [EntityName](#EntityName) ___;___
 
 ### <a name="EntityName"> EntityName
-- [Identifier](#Identifier)
-- [ModuleName](#ModuleName) ___.___ [Identifier](#Identifier)
+- [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
+- [ModuleName](#ModuleName) ___.___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
+
+### <a name="ModuleDeclaration"> ModuleDeclaration[TsModule]
+- \[+TsModule\] ___module___ [IdentifierPath](#IdentifierPath) ___{___ [ModuleBody](#ModuleBody) ___}___
+
+### <a name="IdentifierPath"> IdentifierPath
+- [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
+- [IdentifierPath](#IdentifierPath) ___.___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
+
+### <a name="ModuleBody"> ModuleBody
+- [ModuleElements\(opt\)](#ModuleElements)
+
+### <a name="ModuleElements"> ModuleElements
+- [ModuleElement](#ModuleElement)
+- [ModuleElements](#ModuleElements) [ModuleElement](#ModuleElement)
+
+### <a name="ModuleElement"> ModuleElement
+- [Statement](#Statement)
+- ___export\(opt\)___ [VariableDeclaration](#VariableDeclaration)
+- ___export\(opt\)___ [FunctionDeclaration](#FunctionDeclaration)
+- ___export\(opt\)___ [ClassDeclaration](#ClassDeclaration)
+- ___export\(opt\)___ [InterfaceDeclaration](#InterfaceDeclaration)
+- ___export\(opt\)___ [EnumDeclaration](#EnumDeclaration)
+- ___export\(opt\)___ [ModuleDeclaration](#ModuleDeclaration)
+- ___export\(opt\)___ [ImportDeclaration](#ImportDeclaration)
+
+### <a name="ImportDeclaration"> ImportDeclaration
+- ___import___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) ___=___ [EntityName](#EntityName) ___;___
+
+### <a name="EntityName"> EntityName
+- [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
+- [ModuleName](#ModuleName) ___.___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier)
