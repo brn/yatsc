@@ -396,37 +396,6 @@
 ### <a name="InterfaceDeclaration"> InterfaceDeclaration
 - ___interface___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) [TypeParameters\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeParameters) [InterfaceExtendsClause\(opt\)](#InterfaceExtendsClause) [ObjectType](./TYPE_SYNTAX_GRAMMAR.md#ObjectType)
 
-### <a name="ModuleDeclaration"> ModuleDeclaration
-- ___module___ [IdentifierPath](#IdentifierPath) ___{___ [ModuleBody](#ModuleBody) ___}___
-
-### <a name="IdentifierPath"> IdentifierPath
-- [Identifier](#Identifier)
-- [IdentifierPath](#IdentifierPath) ___.___ [Identifier](#Identifier)
-
-### <a name="ModuleBody"> ModuleBody
-- [ModuleElements\(opt\)](#ModuleElements)
-
-### <a name="ModuleElements"> ModuleElements
-- [ModuleElement](#ModuleElement)
-- [ModuleElements](#ModuleElements) [ModuleElement](#ModuleElement)
-
-### <a name="ModuleElement"> ModuleElement
-- [Statement](#Statement)
-- ___export\(opt\)___ [VariableDeclaration](#VariableDeclaration)
-- ___export\(opt\)___ [FunctionDeclaration](#FunctionDeclaration)
-- ___export\(opt\)___ [ClassDeclaration](#ClassDeclaration)
-- ___export\(opt\)___ [InterfaceDeclaration](#InterfaceDeclaration)
-- ___export\(opt\)___ [EnumDeclaration](#EnumDeclaration)
-- ___export\(opt\)___ [ModuleDeclaration](#ModuleDeclaration)
-- ___export\(opt\)___ [ImportDeclaration](#ImportDeclaration)
-
-### <a name="ImportDeclaration"> ImportDeclaration
-- ___import___ [Identifier](#Identifier) ___=___ [EntityName](#EntityName) ___;___
-
-### <a name="EntityName"> EntityName
-- [Identifier](#Identifier)
-- [ModuleName](#ModuleName) ___.___ [Identifier](#Identifier)
-
 ### <a name="InterfaceExtendsClause"> InterfaceExtendsClause
 - ___extends___ [ClassOrInterfaceTypeList](#ClassOrInterfaceTypeList)
 
