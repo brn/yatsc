@@ -31,46 +31,48 @@
 
 namespace yatsc {
 
-/**
- * The expression parser traits.
- * This class parse expressions, but to parser expression,
- * need below requirements.
- * Module must be implemented follow methods.
- *
- * TokenInfo* Next();
- * TokenInfo* Current();
- * void RewindBuffer(size_t num);
- * TokenInfo* PeekBuffer(size_t num);
- */
-template <typename Module>
-class ExpressionParser {
-  YATSC_CHECK_CONSTRAINTS(Module, ParserConstraints);  
- public:
-  ExpressionParser(Module* module);
 
+// The expression parser traits.
+// This class parse expressions, but to parser expression,
+// require ParserConstraints.
+template <typename Parser>
+class ExpressionParser {
+  // Check constraints of Parser.
+  YATSC_CHECK_CONSTRAINTS(Parser, ParserConstraints);  
+ public:
+  // Parser is a instance of the core parser.
+  ExpressionParser(Parser* parser);
+
+  // Begin parse the expression.
   ir::Node* Parse();
   
  VISIBLE_FOR_TESTING:
+  // Parse expression.
   ir::Node* ParseExpression(bool in, bool yield);
 
+  // Parse destructuring assignment.
   ir::Node* ParseAssignmentPattern(bool yield);
 
+  // Parse destructuring assignment object pattern.
   ir::Node* ParseObjectAssignmentPattern(bool yield);
 
+  // Parse destructuring assignment array pattern.
+  // To simplify, we parse AssignmentElementList together.
   ir::Node* ParseArrayAssignmentPattern(bool yield);
 
+  // Parse destructuring assignment object pattern properties.
   ir::Node* ParseAssignmentPropertyList(bool yield);
 
-  ir::Node* ParseAssignmentElementList(bool yield);
-
-  ir::Node* ParseAssignmentElisionElement(bool yield);
-
+  // Parse destructuring assignment object pattern property.
   ir::Node* ParseAssignmentProperty(bool yield);
 
+  // Parse destructuring assignment array pattern element.
   ir::Node* ParseAssignmentElement(bool yield);
 
+  // Parse destructuring assignment array pattern rest element.
   ir::Node* ParseAssignmentRestElement(bool yield);
 
+  // Parse destructuring assignment target node.
   ir::Node* ParseDestructuringAssignmentTarget(bool yield);
 
   ir::Node* ParseAssignmentExpression(bool in, bool yield);
@@ -148,7 +150,8 @@ class ExpressionParser {
   ir::Node* ParseIdentifier();
   
  private:
-  Module* module_;
+  YATSC_GETTER(Parser* parser, parser_);
+  Parser* parser_;
 };
 } // yatsc
 

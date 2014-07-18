@@ -305,6 +305,10 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   // Getter for children list.
   YATSC_CONST_GETTER(const List&, node_list, node_list_);
 
+  
+  // Getter for size.
+  YATSC_CONST_GETTER(size_t, size, node_list_.size());
+
 
   // Getter for environment.
   YATSC_PROPERTY(Environment*, environment, environment_);
