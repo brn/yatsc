@@ -158,6 +158,14 @@ static const size_t kSizeTSize = sizeof(size_t);
   YATSC_SETTER(type, name, field)
 
 
+#define YATSC_CHECK_CONSTRAINTS(type_var, concept)                      \
+  typedef void (concept <type_var>::* func##type_var##concept)();       \
+  template <func##type_var##concept Tp1_>                               \
+  struct concept_checking_##type_var##concept { };                      \
+  typedef concept_checking_##type_var##concept<&concept <type_var>::constraints> \
+  concept_checking_typedef_##type_var##concept
+
+
 template <typename T>
 class YatscScoped__ {
  public:

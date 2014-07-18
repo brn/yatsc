@@ -29,78 +29,15 @@
 #include "../ir/irfactory.h"
 #include "../parser/scanner.h"
 #include "../utils/mmap.h"
-
-// Generate SyntaxError and throw it.
-// Usage. SYNTAX_ERROR("test " << message, Current())
-#define PARSER_SYNTAX_ERROR(message, token)                   \
-  PARSER_SYNTAX_ERROR_POS(message, token->source_position())
-
-
-// Generate ArrowParametersError and throw it.
-// Usage. ARROW_PARAMETERS_ERROR("test " << message, Current())
-#define PARSER_ARROW_PARAMETERS_ERROR(message, token)                   \
-  PARSER_ARROW_PARAMETERS_ERROR_POS(message, token->source_position())
-
-
-// Generate SyntaxError that is pointed specified position and throw it.
-// Usage. SYNTAX_ERROR_POS("test " << message, node->source_position())
-#define PARSER_SYNTAX_ERROR_POS(message, pos)       \
-  PARSER_SYNTAX_ERROR__(message, pos, SyntaxError)
-
-
-// Generate ArrowParametersError that is pointed specified position and throw it.
-// Usage. ARROW_PARAMETERS_ERROR_POS("test " << message, node->source_position())
-#define PARSER_ARROW_PARAMETERS_ERROR_POS(message, pos)     \
-  PARSER_SYNTAX_ERROR__(message, pos, ArrowParametersError)
-
-
-
-#ifndef DEBUG
-// Throw error and return nullptr.
-#define PARSER_SYNTAX_ERROR__(message, pos, error)  \
-  (*error_reporter_) << message;                    \
-  error_reporter_->Throw<error>(pos);               \
-  return nullptr
-#else
-// Throw error that has source line and number for the error thrown position.
-#define PARSER_SYNTAX_ERROR__(message, pos, error)                      \
-  (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
-  error_reporter_->Throw<error>(pos);                                   \
-  return nullptr
-#endif
-
-
-#ifdef DEBUG
-// Logging current parse phase.
-#define PARSER_LOG_PHASE(name)                                          \
-  if (print_parser_phase_) {                                            \
-    if (Current() != nullptr) {                                         \
-      Printf("%sEnter %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
-    } else {                                                            \
-      Printf("%sEnter %s: CurrentToken = null\n", indent_.c_str(), #name); \
-    }                                                                   \
-  }                                                                     \
-  indent_ += "  ";                                                      \
-  YATSC_SCOPED([&]{                                                     \
-    indent_ = indent_.substr(0, indent_.size() - 2);                    \
-    if (this->print_parser_phase_) {                                    \
-      if (this->Current() != nullptr) {                                 \
-        Printf("%sExit %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
-      } else {                                                          \
-        Printf("%sExit %s: CurrentToken = null\n", indent_.c_str(), #name); \
-      }                                                                 \
-    }                                                                   \
-  })
-#else
-// Disabled.
-#define PARSER_LOG_PHASE(name)
-#endif
+#include "./parser-util.h"
 
 
 namespace yatsc {
 template <typename UCharInputSourceIterator>
-class ParserBase {
+class ParserBase: private Uncopyable, private Unmovable {
  public:
+  typedef size_t TokenCursor;
+  
   /**
    * @param scanner Scanner instance that is not consume token yet.
    * @param error_reporter ErrorReporter instance to use report parse error.
@@ -122,8 +59,56 @@ class ParserBase {
    */
   void DisablePrintParsePhase() {print_parser_phase_ = false;};
 
+  
+  /**
+   * Return a next TokenInfo.
+   * @return Next TokenInfo.
+   */
+  YATSC_INLINE TokenInfo* Next();
+
+
+  /**
+   * Return current TokenInfo.
+   * @return Current TokenInfo.
+   */
+  YATSC_INLINE TokenInfo* Current();
+
+
+  /**
+   * Append TokenInfo to the TokenBuffer.
+   * @param token_info Newly appended TokenInfo.
+   */
+  YATSC_INLINE void PushBackBuffer(TokenInfo* token_info);
+  
+
+  /**
+   * Rewind TokenBuffer cursor position by the passed position.
+   * @param num Rewind position.
+   */
+  YATSC_INLINE void RewindBuffer(size_t num);
+
+
+  /**
+   * Peek forward TokenInfo.
+   * @param Forward position.
+   */
+  YATSC_INLINE TokenInfo* PeekBuffer(size_t num = 1);
+
+
+  /**
+   * Return current TokenBuffer cursor position.
+   * @returns Current TokenBuffer cursor position.
+   */
+  YATSC_INLINE TokenCursor GetBufferCursorPosition() YATSC_NOEXCEPT;
+
+
+  /**
+   * Set TokenBuffer cursor position.
+   * @param cursor New TokenBuffer cursor position.
+   */
+  YATSC_INLINE void SetBufferCursorPosition(TokenCursor cursor) YATSC_NOEXCEPT;
+
  private:
-  typedef size_t TokenCursor;
 
   /**
    * The buffer of the tokens.
@@ -224,22 +209,6 @@ class ParserBase {
     LazyInitializer<Vector> buffer_init_once_;
     TokenInfo null_token_info_;
   };
-
-
-  /**
-   * Return a next token if token buffer's cursor is in the end of input,
-   * otherwise return a current token from the token buffer and advance token buffer cursor.
-   * @return Next token.
-   */
-  YATSC_INLINE TokenInfo* Next();
-
-
-  /**
-   * Return current token if token buffer's cursor is in the end of input,
-   * otherwise return current token from token buffer.
-   * @returns Current token.
-   */
-  YATSC_INLINE TokenInfo* Current();
   
   
   template <typename T, typename ... Args>
