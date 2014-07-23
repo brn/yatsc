@@ -117,6 +117,24 @@
 - [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) \[no LineTerminator here\] ___++___  
 - [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression) \[no LineTerminator here\] ___--___  
 
+### <a name="LeftHandSideExpression"> LeftHandSideExpression\[Yield]  
+- [NewExpression\[?Yield\]](#NewExpression)  
+- [CallExpression\[?Yield\]](#CallExpression)  
+
+### <a name="NewExpression"> NewExpression\[Yield]  
+- [MemberExpression\[?Yield\]](#MemberExpression)  
+- ___new___ [NewExpression\[?Yield\]](#NewExpression)  
+- ___new___ ___super___
+
+### <a name="CallExpression"> CallExpression\[Yield]  
+- [MemberExpression\[?Yield\]](#MemberExpression) [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]](#Arguments)  
+- ___super___ [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]](#Arguments)
+- ___super___ ___.___ [IdentifierName](#IdentifierName)
+- [CallExpression\[?Yield\]](#CallExpression) [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]](#Arguments)  
+- [CallExpression\[?Yield\]](#CallExpression) ___\[___ [Expression\[In, ?Yield\]](#Expression) ___]___  
+- [CallExpression\[?Yield\]](#CallExpression) ___.___ [IdentifierName](#IdentifierName)  
+- [CallExpression\[?Yield\]](#CallExpression) [TemplateLiteral\[?Yield\]](#TemplateLiteral)  
+
 ### <a name="MemberExpression"> MemberExpression\[Yield]  
 - \[Lexical goal InputElementRegExp\] [PrimaryExpression\[?Yield\]](#PrimaryExpression)  
 - [MemberExpression\[?Yield\]](#MemberExpression) ___\[___ [Expression\[In, ?Yield\]](#Expression) ___]___  
@@ -124,22 +142,8 @@
 - [MemberExpression\[?Yield\]](#MemberExpression) [TemplateLiteral\[?Yield\]](#TemplateLiteral)  
 - ___super___ \[ [Expression\[In, ?Yield\]](#Expression) ]  
 - ___super___ ___.___ [IdentifierName](#IdentifierName)  
-- ___new___ ___super___ [Arguments\[?Yield\]\(opt\)](#Arguments)  
+- ___new___ ___super___ [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]\(opt\)](#Arguments)  
 - ___new___ ___\[___ *lookahead*  ___{___ ___super___ ___}___ ___]___ [MemberExpression\[?Yield\]](#MemberExpression)  
-
-### <a name="NewExpression"> NewExpression\[Yield]  
-- [MemberExpression\[?Yield\]](#MemberExpression)  
-- ___new___ [NewExpression\[?Yield\]](#NewExpression)  
-- ___new___ ___super___  
-
-### <a name="CallExpression"> CallExpression\[Yield]  
-- [MemberExpression\[?Yield\]](#MemberExpression) [Arguments\[?Yield\]](#Arguments)  
-- ___super___ [Arguments\[?Yield\]](#Arguments)
-- ___super___ ___.___ [IdentifierName](#IdentifierName)
-- [CallExpression\[?Yield\]](#CallExpression) [Arguments\[?Yield\]](#Arguments)  
-- [CallExpression\[?Yield\]](#CallExpression) ___\[___ [Expression\[In, ?Yield\]](#Expression) ___]___  
-- [CallExpression\[?Yield\]](#CallExpression) ___.___ [IdentifierName](#IdentifierName)  
-- [CallExpression\[?Yield\]](#CallExpression) [TemplateLiteral\[?Yield\]](#TemplateLiteral)  
 
 ### <a name="Arguments"> Arguments\[Yield]
 - ___\(___ ___)___  
@@ -150,10 +154,6 @@
 - ___...___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)  
 - [ArgumentList\[?Yield\]](#ARgumentList) ___,___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)  
 - [ArgumentList\[?Yield\]](#ARgumentList) ___,___ ___...___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)  
-
-### <a name="LeftHandSideExpression"> LeftHandSideExpression\[Yield]  
-- [NewExpression\[?Yield\]](#NewExpression)  
-- [CallExpression\[?Yield\]](#CallExpression)  
 
 ### <a name="PrimaryExpression"> PrimaryExpression\[Yield]  
 - ___this___  

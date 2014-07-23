@@ -75,19 +75,27 @@ class ExpressionParser {
   // Parse destructuring assignment target node.
   ir::Node* ParseDestructuringAssignmentTarget(bool yield);
 
+  // Parse assignment expression.
   ir::Node* ParseAssignmentExpression(bool in, bool yield);
 
+  // Parse conditional expression.
   ir::Node* ParseConditionalExpression(bool in, bool yield);
 
+  // Parse binary expression.
+  // To simplify, we parser all binary expression(like MultiplicativeExpression AdditiveExpression, etc...) together.
   ir::Node* ParseBinaryExpression(bool in, bool yield);
 
+  // Parse unary expression.
   ir::Node* ParseUnaryExpression(bool yield);
 
+  // Parse postfix expression.
   ir::Node* ParsePostfixExpression(bool yield);
 
+  // Parse member expression.
   ir::Node* ParseMemberExpression(bool yield);
 
-  ir::Node* ParseNewExpression(bool yield);
+  // Parser getprop or getelem expression.
+  ir::Node* ParseGetPropOrElem(ir::Node* node, bool yield);
 
   ir::Node* ParseCallExpression(bool yield);
 
