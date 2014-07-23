@@ -258,7 +258,7 @@ class Character : private Static {
       CharType::PUNCTURES,  // 93 ]
       CharType::OPERATORS,  // 94 ^
       CharType::IDENTIFIER, // 95 _
-      CharType::OTHER,      // 96 `
+      CharType::PUNCTURES,  // 96 `
       CharType::IDENTIFIER, // 97 a
       CharType::IDENTIFIER, // 98 b
       CharType::IDENTIFIER, // 99 c

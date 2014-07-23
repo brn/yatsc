@@ -321,6 +321,8 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       return ScanLogicalOperator(Token::TS_LOGICAL_OR, Token::TS_OR_LET, Token::TS_BIT_OR);
     case ',':
       return BuildToken(Token::TS_COMMA);
+    case '`'
+      return BuildToken(Token::TS_BACKQUOTE);
     case '.':
       if (lookahead1_ == char_) {
         Advance();

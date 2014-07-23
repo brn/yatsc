@@ -37,7 +37,8 @@
 namespace yatsc {
 
 #define TOKEN_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST)  \
-  DECLARE_FIRST(TS_BREAK)                                 \
+  DECLARE_FIRST(TS_BACKQUOTE)                             \
+  DECLARE(TS_BREAK)                                       \
   DECLARE(TS_CASE)                                        \
   DECLARE(TS_CATCH)                                       \
   DECLARE(TS_CLASS)                                       \

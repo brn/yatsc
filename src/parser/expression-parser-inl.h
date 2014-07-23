@@ -616,8 +616,17 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePostfixExpression(bool yiel
 }
 
 
+// CallExpression[Yield]
+//   MemberExpression[?Yield] TypeArguments(opt) Arguments[?Yield]
+//   super TypeArguments(opt) Arguments[?Yield]
+//   super . IdentifierName
+//   CallExpression[?Yield] TypeArguments(opt) Arguments[?Yield]
+//   CallExpression[?Yield] [ Expression[In, ?Yield] ]
+//   CallExpression[?Yield] . IdentifierName
+//   CallExpression[?Yield] TemplateLiteral[?Yield]
+//
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
+ir::Node* ExpressionParser<UCharInputIterator>::ParseCallExpression() {
   PARSER_ENTER(ParseCallExpression);
   ir::Node* target;
   if (parser()->Current()->type() == Token::TS_SUPER) {
@@ -672,11 +681,76 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression() {
           return call;
       }
     }
+  } else if (parser()->Current()->type() == Token::TS_BACKQUOTE) {
+    ir::Node* template_literal = ParseTemplateLiteral(yield);
+    ir::Node* call = parser()->New<ir::CallView>(target, template_literal, type_arguments);
+    call->SetInformationForNode(target);
+    return call;
   }
   return target;
 }
 
 
+// Arguments[Yield]
+//   ( )
+//   ( ArgumentList[?Yield] )
+//
+// ArgumentList[Yield]
+//   AssignmentExpression[In, ?Yield]
+//   ... AssignmentExpression[In, ?Yield]
+//   ArgumentList[?Yield] , AssignmentExpression[In, ?Yield]
+//   ArgumentList[?Yield] , ... AssignmentExpression[In, ?Yield]
+//
+template <typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseArguments(bool yield) {
+  PARSER_ENTER(ParseArguments);
+  if (parser()->Current()->type() == Token::TS_LEFT_PAREN) {
+    ir::CallArgsView* args = parser()->New<ir::CallArgsView>();
+    args->SetInformationForNode(parser()->Current());
+    parser()->Next();
+    if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+      parser()->Next();
+      return args;
+    }
+    bool has_rest = false;
+    while (1) {
+      if (parser()->Current()->type() == Token::TS_REST) {
+        TokenCursor cursor = parser()->GetBufferCursorPosition();
+        parser()->Next();
+        ir::Node* expr = ParseAssignmentExpression(true, yield);
+        auto rest = parser()->New<ir::RestParamView>(expr);
+        rest->SetInformationForNode(parser()->PeekBuffer(cursor));
+        args->InsertLast(rest);
+        has_rest = true;
+      } else {
+        args->InsertLast(ParseAssignmentExpression(true, yield));
+      }
+      if (parser()->Current()->type() == Token::TS_COMMA) {
+        if (has_rest) {
+          PARSER_SYNTAX_ERROR("SyntaxError the spread argument must be the end of arguments", parser()->Current());
+        }
+        continue;
+      } else if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+        parser()->Next();
+        return args;
+      }
+      PARSER_SYNTAX_ERROR("SyntaxError unexpected token in 'arguments'", parser()->Current());
+    }
+  }
+  return nullptr;
+}
+
+
+// MemberExpression[Yield]
+//   [Lexical goal InputElementRegExp] PrimaryExpression[?Yield]
+//   MemberExpression[?Yield] [ Expression[In, ?Yield] ]
+//   MemberExpression[?Yield] . IdentifierName
+//   MemberExpression[?Yield] TemplateLiteral[?Yield]
+//   super [ Expression[In, ?Yield] ]
+//   super . IdentifierName
+//   new super TypeArguments(opt) Arguments[?Yield](opt)
+//   new [ lookahead  { super } ] MemberExpression[?Yield]
+//
 template <typename UCharInputIterator>
 ir::Node* ExpressionParser<UCharInputIterator>::ParseMemberExpression(bool yield) {
   PARSER_LOG_PHASE(ParseMemberExpression);
@@ -684,9 +758,16 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseMemberExpression(bool yield
   TokenInfo* token_info = parser()->Current();
   ir::Node* node;
   if (token_info->type() ==  Token::TS_NEW) {
+    TokenCursor cursor = parser()->GetBufferCursorPosition();
     // Parse new Foo() expression.
     parser()->Next();
-    ir::Node* member = ParseMemberExpression(yield);
+    ir::Node* member = nullptr;
+    if (parser()->Current()->type() == Token::TS_SUPER) {
+      member = parser()->New<ir::SuperView>();
+      member->SetInformationForNode(parser()->PeekBuffer(cursor));
+    } else {
+      member = ParseMemberExpression(yield);
+    }
 
     ir::Node* type_arguments = nullptr;
     if (parser()->Current()->type() == Token::TS_LESS) {
@@ -711,7 +792,6 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseMemberExpression(bool yield
     auto super = parser()->New<ir::SuperView>();
     super->SetInformationForNode(token_info);
     return ParseGetPropOrElem(super);
-    return ParseGetPropOrElem();
   } else {
     return ParseGetPropOrElem(ParsePrimaryExpression(yield));
   }
@@ -721,7 +801,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseMemberExpression(bool yield
 // Parse member expression suffix.
 // Like 'new foo.bar.baz()', 'new foo["bar"]', '(function(){return {a:1}}).a'
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node, bool yield) {
+ir::Node* ExpressionParser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node, bool yield) {
   PARSER_ENTER(ParseGetPropOrElem);
   
   switch (parser()->Current()->type()) {
@@ -749,6 +829,75 @@ ir::Node* Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node, bool yi
     }
     default:
       return node;
+  }
+}
+
+
+// PrimaryExpression[Yield]
+//   this
+//   IdentifierReference[?Yield]
+//   Literal
+//   ArrayInitializer[?Yield]
+//   ObjectLiteral[?Yield]
+//   FunctionExpression
+//   ClassExpression
+//   GeneratorExpression
+//   GeneratorComprehension[?Yield]
+//   RegularExpressionLiteral
+//   TemplateLiteral[?Yield]
+//   ( Expression[In, ?Yield] )
+//
+template <typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
+  PARSER_ENTER(ParsePrimaryExpression);
+
+  // Allow regular expression in this context.
+  parser()->AllowRegularExpr();
+  TokenInfo* maybe_regexp = scanner_->CheckRegularExpression();
+  if (maybe_regexp) {
+    current_token_info_ = maybe_regexp;
+  }
+  
+  // Not advance scanner.
+  TokenInfo* token_info = Current();
+  switch (token_info->type()) {
+    case Token::TS_IDENTIFIER: {
+      parser()->DisallowRegularExpr();
+      // parse an identifier.
+      ir::NameView* name = New<ir::NameView>(token_info->value());
+      name->SetInformationForNode(Current());
+      Next();
+      return name;
+    }
+    case Token::TS_THIS: {
+      parser()->DisallowRegularExpr();
+      // parse a this.
+      ir::Node* this_view = New<ir::ThisView>();
+      this_view->SetInformationForNode(Current());
+      Next();
+      return this_view;
+    }
+    case Token::TS_LEFT_BRACE:
+      parser()->DisallowRegularExpr();
+      // parse an object literal.
+      return ParseObjectLiteral();
+    case Token::TS_LEFT_BRACKET:
+      parser()->DisallowRegularExpr();
+      // parse an array literal.
+      return ParseArrayLiteral();
+    case Token::TS_LEFT_PAREN: {
+      parser()->DisallowRegularExpr();
+      Next();
+      ir::Node* node = ParseExpression(true, false);
+      if (Current()->type() == Token::TS_RIGHT_PAREN) {
+        Next();
+        return node;
+      }
+      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+    }
+    default:
+      // parse a literal.
+      return ParseLiteral();
   }
 }
 }
