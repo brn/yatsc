@@ -249,7 +249,11 @@
 
 ### <a name="ValueLiteral"> ValueLiteral  
 - [BooleanLiteral](#BooleanLiteral)  
-- [NumericLiteral](#NumericLiteral) [StringLiteral](#StringLiteral)  
+- [NumericLiteral](#NumericLiteral) [StringLiteral](#StringLiteral)
+
+### <a name="ArrayInitializer"> ArrayInitializer\[Yield\]
+- [ArrayLiteral\[?Yield\]](#ArrayLiteral)
+- [ArrayComprehension\[?Yield\]](#ArrayComprehension)
 
 ### <a name="IdentifierReference"> IdentifierReference\[Yield]  
 - [Identifier](#Identifier)  

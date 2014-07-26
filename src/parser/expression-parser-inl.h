@@ -851,49 +851,45 @@ template <typename UCharInputIterator>
 ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
   PARSER_ENTER(ParsePrimaryExpression);
 
+  TokenInfo* token_info = nullptr;
+  
   // Allow regular expression in this context.
-  parser()->AllowRegularExpr();
-  TokenInfo* maybe_regexp = scanner_->CheckRegularExpression();
+  TokenInfo* maybe_regexp = parser()->CheckRegularExpression();
   if (maybe_regexp) {
-    current_token_info_ = maybe_regexp;
+    token_info = maybe_regexp;
+  } else {
+    token_info = parser()->Current();
   }
   
-  // Not advance scanner.
-  TokenInfo* token_info = Current();
   switch (token_info->type()) {
     case Token::TS_IDENTIFIER: {
-      parser()->DisallowRegularExpr();
       // parse an identifier.
       ir::NameView* name = New<ir::NameView>(token_info->value());
-      name->SetInformationForNode(Current());
-      Next();
+      name->SetInformationForNode(token_info);
+      parser()->Next();
       return name;
     }
     case Token::TS_THIS: {
-      parser()->DisallowRegularExpr();
       // parse a this.
       ir::Node* this_view = New<ir::ThisView>();
-      this_view->SetInformationForNode(Current());
-      Next();
+      this_view->SetInformationForNode(token_info);
+      parser()->Next();
       return this_view;
     }
     case Token::TS_LEFT_BRACE:
-      parser()->DisallowRegularExpr();
       // parse an object literal.
       return ParseObjectLiteral();
     case Token::TS_LEFT_BRACKET:
-      parser()->DisallowRegularExpr();
       // parse an array literal.
       return ParseArrayLiteral();
     case Token::TS_LEFT_PAREN: {
-      parser()->DisallowRegularExpr();
-      Next();
+      parser()->Next();
       ir::Node* node = ParseExpression(true, false);
-      if (Current()->type() == Token::TS_RIGHT_PAREN) {
-        Next();
+      if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+        parser()->Next();
         return node;
       }
-      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
     }
     default:
       // parse a literal.
