@@ -227,7 +227,10 @@
 - [IdentifierReference\[?Yield\]](#IdentifierReference)  
 - [CoverInitializedName\[?Yield\]](#CoverInitializedName)  
 - [PropertyName\[?Yield\]](#PropertyName) ___:___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)  
-- [MethodDefinition\[?Yield\]](#MethodDefinition)  
+- [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](./STATEMENT_GRAMMAR.md#FunctionBody) ___}___
+- [GeneratorMethod\[?Yield\]](#GeneratorMethod)
+- [GetAccessor\[?Yield\]](./STATMENT_GRAMMAR.md#GetAccessor)
+- [SetAccessor\[?Yield\]](./STATMENT_GRAMMAR.md#SetAccessor)
 
 ### <a name="PropertyName"> PropertyName\[Yield,GeneratorParameter]  
 - [LiteralPropertyName](#LiteralPropertyName)  

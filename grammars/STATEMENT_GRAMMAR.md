@@ -217,11 +217,11 @@
 ### <a name="FunctionOverload"> FunctionOverload
 - ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature)
 
-### <a name="FunctionImplementation"> FunctionImplementation
-- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
+### <a name="FunctionImplementation"> FunctionImplementation\[Yield\]
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature) ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
 
-### <a name="FunctionExpression"> FunctionExpression
-- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
+### <a name="FunctionExpression"> FunctionExpression\[Yield\]
+- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="StrictFormalParameters"> StrictFormalParameters[Yield, GeneratorParameter]
 - [FormalParameters\[?Yield, ?GeneratorParameter\]](#FormalParameters)
@@ -283,7 +283,7 @@
 - [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature)
 
 ### <a name="ConciseBody"> ConciseBody[In]
-- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody](#FunctionBody) ___}___
+- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorMethodDeclaration"> GeneratorMethodDeclaration[Yield]
 - [GeneratorMethodOverloads\(opt\)](#GeneratorMethodOverloads) [GeneratorMethodImplementation](#GeneratorMethodImplementation)
@@ -295,14 +295,11 @@
 ### <a name="GeneratorMethodOverload"> GeneratorMethodOverload
 - [PublicOrPrivate\(opt\)](#PublicOrPrivate) ___*___ [PropertyName\[?Yield\]](#PropertyName) [CallSignature](#CallSignature) ___;___
 
-### <a name="GeneratorMethodImplementation"> GeneratorMethodImplementation
+### <a name="GeneratorMethodImplementation"> GeneratorMethodImplementation\[Yield\]
 - [PublicOrPrivate\(opt\)](#PublicOrPrivate) ___*___ [PropertyName\[?Yield\]](#PropertyName) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorDeclaration"> GeneratorDeclaration[Yield, Default]
-- ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
-
-### <a name="GeneratorExpression"> GeneratorExpression
-- ___function___ ___*___ [BindingIdentifier\[Yield\]\(opt\)](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+- ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
 
 ### <a name="YieldExpression"> YieldExpression[In]
 - ___yield___ 
@@ -351,7 +348,7 @@
 - [PublicOrPrivateopt](#PublicOrPrivateopt) ___constructor___ ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___;___
 
 ### <a name="ConstructorImplementation"> ConstructorImplementation
-- [PublicOrPrivateopt](#PublicOrPrivateopt) ___constructor___ ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___{___ [FunctionBody](#FunctionBody) ___}___
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___constructor___ ___(___ [FormalParameters\(opt\)](#FormalParameters) ___)___ ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
 
 ### <a name="PropertyMemberDeclaration"> PropertyMemberDeclaration
 - [MemberVariableDeclaration](#MemberVariableDeclaration)
@@ -372,12 +369,18 @@
 ### <a name="MemberFunctionOverload"> MemberFunctionOverload
 - [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___;___
 
-### <a name="MemberFunctionImplementation"> MemberFunctionImplementation
-- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody](#FunctionBody) ___}___
+### <a name="MemberFunctionImplementation"> MemberFunctionImplementation\[Yield\]
+- [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [PropertyName](#PropertyName) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
 
 ### <a name="MemberAccessorDeclaration"> MemberAccessorDeclaration
 - [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [GetAccessor](#GetAccessor)
 - [PublicOrPrivateopt](#PublicOrPrivateopt) ___static\(opt\)___ [SetAccessor](#SetAccessor)
+
+### <a name="GetAccessor"> GetAccessor[Yield]
+- ___get___ [PropertyName\[?Yield\]](#PropertyName) ___(___ ___)___ [TypeAnnotation\(opt\)](#TypeAnnotation) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___ 
+
+### <a name="SetAccessor"> SetAccessor[Yield]
+- ___set___ [PropertyName\[?Yield\]](#PropertyName) ___(___ [Identifier\[?Yield\]](#Identifier) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation) ___)___ ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="IndexMemberDeclaration"> IndexMemberDeclaration
 - [IndexSignature](#IndexSignature) ___;___

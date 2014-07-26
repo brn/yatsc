@@ -129,6 +129,7 @@ namespace yatsc {namespace ir {
   DECLARE(ArrayLiteralView)                             \
   DECLARE(UndefinedView)                                \
   DECLARE(TemplateLiteralView)                          \
+  DECLARE(ComprehensionExprView)                        \
   DECLARE_LAST(DebuggerView)
 
 
@@ -727,19 +728,21 @@ class VariableView : public Node {
 // Represent if statement.
 class IfStatementView : public Node {
  public:
-  IfStatementView(Node* if_block_Node, Node* else_block_node)
-      : Node(NodeType::kIfStatementView, 2u, {if_block_Node, else_block_node}) {}
+  IfStatementView(Node* expr, Node* if_block_Node, Node* else_block_node)
+      : Node(NodeType::kIfStatementView, 3u, {expr, if_block_Node, else_block_node}) {}
 
 
   IfStatementView()
-      : Node(NodeType::kIfStatementView, 2u) {}
+      : Node(NodeType::kIfStatementView, 3u) {}
 
+  // Getter and setter for expr.
+  NODE_PROPERTY(expr, 0);
   
-  // Getter and Setter for then_block_.
-  NODE_PROPERTY(then_block, 0);
+  // Getter and Setter for then_block.
+  NODE_PROPERTY(then_block, 1);
   
-  // Getter and Setter for else_block_.
-  NODE_PROPERTY(else_block, 1);
+  // Getter and Setter for else_block.
+  NODE_PROPERTY(else_block, 2);
 };
 
 
@@ -1895,6 +1898,21 @@ class DebuggerView: public Node {
   DebuggerView():
       Node(NodeType::kDebuggerView, 0){}
 };
+
+
+class ComprehensionExprView: public Node {
+ public:
+  ComprehensionExprView(Node* for_expr, Node* tail)
+      : Node(NodeType::kComprehensionExprView, 2, {for_expr, tail}) {}
+
+  ComprehensionExprView()
+      : Node(NodeType::kComprehensionExprView, 2) {}
+
+  
+  NODE_PROPERTY(for_expr, 0);
+
+  NODE_PROPERTY(tail, 1);
+}
 
 
 }} //yatsc::ir

@@ -890,7 +890,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yiel
       } catch (SyntaxError& e) {
         // If SyntaxError thrown, try parse as generator comprehensions.
         try {
-          return ParseGeneratorComprehensions(yield);
+          return ParseGeneratorComprehension(yield);
         } catch (GeneratorSyntaxError& e) {
           // If GeneratorSyntaxError thrown, throw error.
           throw e;
@@ -994,6 +994,136 @@ template<typename UCharInputIterator>
 ir::Node* ExpressionParser<UCharInputIterator>::ParseComprehension(bool yield) {
   ir::Node* comp_for = ParseComprehensionFor(yield);
   ir::Node* comp_tail = ParseComprehensionTail(yield);
-  
+  auto expr = parser()->New<ir::ComprehensionExprView>(comp_for, comp_tail);
+  expr->SetInformationForNode(comp_for);
+  return expr;
 };
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseComprehensionTail(bool yield) {
+  if (parser()->Current()->type() == Token::TS_FOR) {
+    ir::Node* for_expr = ParseComprehensionFor(yield);
+    ir::ForStatementView* stmt = for_expr->ToForStatementView();
+    stmt->set_body(ParseComprehensionTail(yield));
+    return stmt;
+  } else if (parser()->Current()->type() == Token::TS_IF) {
+    ir::Node* if_expr = ParseComprehensionIf(yield);
+    ir::IfStatementView* stmt = if_expr->ToIfStatementView();
+    stmt->set_body(ParseComprehensionTail(yield));
+    return stmt;
+  }
+  return ParseAssignmentExpression(true, yield);
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
+  if (parser()->Current()->type() == Token::TS_FOR) {
+    TokenCursor cursor = parser()->GetBufferCursorPosition();
+    parser()->Next();
+    if (parser()->Current()->type() == Token::TS_LEFT_PAREN) {
+      parser()->Next();
+      ir::Node* for_bindig = ParseForBinding();
+      if (parser()->Current()->type() == Token::TS_IDENTIFIER &&
+          parser()->Current()->value() == "of") {
+        parser()->Next();
+        ir::Node* expr = ParseAssignmentExpression(true, yield);
+        if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+          parser()->Next();
+          auto for_expr = parser()->New<ir::ForOfStatementView>();
+          for_expr->set_property_name(for_bindig);
+          for_expr->set_expr(expr);
+          for_expr->SetInformationForNode(parser()->PeekBuffer(cursor));
+          return for_expr;
+        }
+        PARSER_SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
+      }
+      PARSER_SYNTAX_ERROR("SyntaxError 'of' expected", parser()->Current());
+    }
+    PARSER_SYNTAX_ERROR("SyntaxError '(' expected", parser()->Current());
+  }
+  PARSER_SYNTAX_ERROR("SyntaxError 'for' expected", parser()->Currn());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseComprehensionIf(bool yield) {
+  if (parser()->Current()->type() == Token::TS_IF) {
+    TokenCursor cursor = parser()->GetBufferCursorPosition();
+    parser()->Next();
+    if (parser()->Current()->type() == Token::TS_LEFT_PAREN) {
+      parser()->Next();
+      ir::Node* expr = ParseAssignmentExpression(true, yield);
+      if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+        parser()->Next();
+        auto if_expr = parser()->New<ir::IfStatementView>();
+        if_expr->set_expr(expr);
+        if_expr->SetInformationForNode(parser()->PeekBuffer(cursor));
+        return if_expr;
+      }
+      PARSER_SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
+    }
+    PARSER_SYNTAX_ERROR("SyntaxError '(' expected", parser()->Current());
+  }
+  PARSER_SYNTAX_ERROR("SyntaxError 'if' expected", parser()->Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseGeneratorComprehension(bool yield) {
+  if (parser()->Current()->type() == Token::TS_LEFT_PAREN) {
+    parser()->Next();
+    ir::Node* comp = ParseComprehension(yield);
+    if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+      return comp;
+    }
+    PARSER_SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
+  }
+  PARSER_SYNTAX_ERROR("SyntaxError '(' expected", parser()->Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseForBinding(bool yield) {
+  switch (parser()->Current()->type()) {
+    case Token::TS_LEFT_BRACE: // FALL THROUGH
+    case Token::TS_LEFT_BRACKET:
+      return ParseBindingPattern(yield);
+    default:
+      return ParseBindingIdentifier(yield);
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
+  PARSER_LOG_PHASE(ParseObjectLiteral);
+  if (parser()->Current()->type() == Token::TS_LEFT_BRACE) {
+    ir::ObjectLiteralView* object_literal = parser()->New<ir::ObjectLiteralView>();
+    object_literal->SetInformationForNode(parser()->Current());
+    parser()->Next();
+    while (1) {
+      ir::Node* key = ParsePropertyDefinition(yield);
+      ir::Node* value = nullptr;
+      if (parser()->Current()->type() == Token::TS_COLON) {
+        parser()->Next();
+        value = ParseAssignmentExpression(true, false);
+      }
+      ir::ObjectElementView* element = New<ir::ObjectElementView>(key, value);
+      element->SetInformationForNode(key);
+      object_literal->InsertLast(element);
+      if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        Next();
+        break;
+      } else {
+        SYNTAX_ERROR("SyntaxError expected ',' or '}'", Current());
+      }
+    }
+    return object_literal;
+  }
+  SYNTAX_ERROR("Unexpected token.", Current());
+}
 }
