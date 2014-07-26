@@ -849,7 +849,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* nod
 //
 template <typename UCharInputIterator>
 ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
-  PARSER_ENTER(ParsePrimaryExpression);
+  PARSER_LOG_PHASE(ParsePrimaryExpression);
 
   TokenInfo* token_info = nullptr;
   
@@ -863,11 +863,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yiel
   
   switch (token_info->type()) {
     case Token::TS_IDENTIFIER: {
-      // parse an identifier.
-      ir::NameView* name = New<ir::NameView>(token_info->value());
-      name->SetInformationForNode(token_info);
-      parser()->Next();
-      return name;
+      return ParseIdentifierReference(yield);
     }
     case Token::TS_THIS: {
       // parse a this.
@@ -878,27 +874,126 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yiel
     }
     case Token::TS_LEFT_BRACE:
       // parse an object literal.
-      return ParseObjectLiteral();
+      return ParseObjectLiteral(yield);
     case Token::TS_LEFT_BRACKET:
       // parse an array literal.
-      return ParseArrayInitializer();
+      return ParseArrayInitializer(yield);
     case Token::TS_LEFT_PAREN: {
       parser()->Next();
-      ir::Node* node = ParseExpression(true, false);
-      if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
-        parser()->Next();
-        return node;
+      try {
+        // First, try parse as parenthesized expression.
+        ir::Node* node = ParseExpression(true, false);
+        if (parser()->Current()->type() == Token::TS_RIGHT_PAREN) {
+          parser()->Next();
+          return node;
+        }
+      } catch (SyntaxError& e) {
+        // If SyntaxError thrown, try parse as generator comprehensions.
+        try {
+          return ParseGeneratorComprehensions(yield);
+        } catch (GeneratorSyntaxError& e) {
+          // If GeneratorSyntaxError thrown, throw error.
+          throw e;
+        } catch (SyntaxError& _) {
+          // If Generic SyntaxError thrown, throw previous error.
+          throw e;
+        } catch (std::exception& e) {
+          throw e;
+        }
+      } catch (std::exception& e) {
+        throw e;
       }
       SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
+    }
+    case Token::TS_REGULAR_EXPR: {
+      auto reg_expr = parser()->New<ir::RegularExprView>(token_info->value());
+      reg_expr->SetInformationForNode(token_info);
+      return reg_expr;
+    }
+    case Token::TS_TEMPLATE_LITERAL: {
+      auto template_literal = parser()->New<ir::TemplateLiteral>(token_info->value());
+      template_literal->SetInformationForNode(token_info);
     }
     case Token::TS_FUNCTION:
       return ParseFunction();
     case Token::TS_CLASS:
       return ParseClassExpression(yield, false);
-    case Token::TS_
     default:
       // parse a literal.
       return ParseLiteral();
   }
 }
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
+  PARSER_LOG_PHASE(ParseArrayLiteral);
+  if (parser()->Current()->type() == Token::TS_LEFT_BRACKET) {
+    ir::ArrayLiteralView* array_literal = parser()->New<ir::ArrayLiteralView>();
+    array_literal->SetInformationForNode(parser()->Current());
+    parser()->Next();
+    while (1) {
+      ir::Node* expr = nullptr;
+      bool spread = false;
+      if (parser()->Current()->type() == Token::TS_COMMA) {
+        expr = parser()->New<ir::UndefinedView>();
+        expr->SetInformationForNode(parser()->Current());
+        parser()->Next();
+      } else if (parser()->Current()->type() == Token::TS_REST) {
+        expr = ParseSpreadElement(yield);
+        spread = true;
+      } else {
+        expr = ParseAssignmentExpression(true, yield);
+      }
+      array_literal->InsertLast(expr);
+      if (parser()->Current()->type() == Token::TS_COMMA) {
+        if (spread) {
+          PARSER_SYNTAX_ERROR("SyntaxError array spread element must be the end of the array element list",
+                              parser()->Current());
+        }
+        parser()->Next();
+      } else if (parser()->Current()->type() == Token::TS_RIGHT_BRACKET) {
+        parser()->Next();
+        break;
+      } else {
+        SYNTAX_ERROR("SyntaxError unexpected token in 'array literal'", parser()->Current());
+      }
+    }
+    return array_literal;
+  }
+  SYNTAX_ERROR("Unexpected token.", Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseSpreadElement(bool yield) {
+  if (parser()->Current()->type() == Token::TS_REST) {
+    parser()->Next();
+    return ParseAssignmentExpression(true, yield);
+  }
+  SYNTAX_ERROR("SyntaxError '...' expected", parser()->Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
+  if (parser()->Current()->type() == Token::TS_LEFT_BRACKET) {
+    parser()->Next();
+    ir::Node* expr = ParseComprehension(yield);
+    if (parser()->Current()->type() == Token::TS_RIGHT_BRACKET) {
+      parser()->Next();
+      return expr;
+    }
+    SYNTAX_ERROR("SyntaxError ']' expected", parser()->Current());
+  }
+  SYNTAX_ERROR("SyntaxError '[' expected", parser()->Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParseComprehension(bool yield) {
+  ir::Node* comp_for = ParseComprehensionFor(yield);
+  ir::Node* comp_tail = ParseComprehensionTail(yield);
+  
+};
 }

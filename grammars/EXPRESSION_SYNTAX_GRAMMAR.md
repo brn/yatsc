@@ -197,7 +197,9 @@
 - [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail)
 
 ### <a name="ComprehensionTail"> ComprehensionTail\[Yield]  
-- [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail) [ComprehensionIf\[?Yield\]](#ComprehensionIf) [ComprehensionTail\[?Yield\]](#ComprehensionTail)  
+- [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)
+- [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail)
+- [ComprehensionIf\[?Yield\]](#ComprehensionIf) [ComprehensionTail\[?Yield\]](#ComprehensionTail)
 
 ### <a name="ComprehensionFor"> ComprehensionFor\[Yield]  
 - ___for___ ___\(___ [ForBinding\[?Yield\]](#ForBinding) ___of___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___)___  

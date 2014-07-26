@@ -128,6 +128,7 @@ namespace yatsc {namespace ir {
   DECLARE(ObjectLiteralView)                            \
   DECLARE(ArrayLiteralView)                             \
   DECLARE(UndefinedView)                                \
+  DECLARE(TemplateLiteralView)                          \
   DECLARE_LAST(DebuggerView)
 
 
@@ -1877,6 +1878,15 @@ class UndefinedView: public Node {
  public:
   UndefinedView():
       Node(NodeType::kUndefinedView, 0){}
+};
+
+
+class TemplateLiteralView: public Node {
+ public:
+  TemplateLiteralView(UtfString expr):
+      Node(NodeType::kUndefinedView, 0) {
+    set_string_value(expr);
+  }
 };
 
 
