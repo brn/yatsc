@@ -188,7 +188,10 @@
 - ___...___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression)  
 
 ### <a name="ArrayComprehension"> ArrayComprehension\[Yield]  
-- ___\[___ [Comprehension\[?Yield\]](#Comprehension) ___]___  
+- ___\[___ [Comprehension\[?Yield\]](#Comprehension) ___]___
+
+### <a name="GeneratorExpression"> GeneratorExpression
+- ___function___ ___*___ [BindingIdentifier\[Yield\]\(opt\)](#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody\[Yield\]](./STATEMENT_GRAMMAR.md#FunctionBody) ___}___
 
 ### <a name="Comprehension"> Comprehension\[Yield]  
 - [ComprehensionFor\[?Yield\]](#ComprehensionFor) [ComprehensionTail\[?Yield\]](#ComprehensionTail)

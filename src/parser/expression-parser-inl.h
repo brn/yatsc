@@ -881,7 +881,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yiel
       return ParseObjectLiteral();
     case Token::TS_LEFT_BRACKET:
       // parse an array literal.
-      return ParseArrayLiteral();
+      return ParseArrayInitializer();
     case Token::TS_LEFT_PAREN: {
       parser()->Next();
       ir::Node* node = ParseExpression(true, false);
@@ -891,6 +891,11 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParsePrimaryExpression(bool yiel
       }
       SYNTAX_ERROR("SyntaxError ')' expected", parser()->Current());
     }
+    case Token::TS_FUNCTION:
+      return ParseFunction();
+    case Token::TS_CLASS:
+      return ParseClassExpression(yield, false);
+    case Token::TS_
     default:
       // parse a literal.
       return ParseLiteral();
