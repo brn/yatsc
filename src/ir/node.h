@@ -1167,7 +1167,7 @@ class InstancePropertyView: public FieldBase {
 // Represent instance property.
 class InstanceMethodView: public FieldBase {
  public:
-  InstanceMethodView(Node* access_level, Node* name, Node* value)
+  InstanceMethodView(bool getter, bool setter, Node* access_level, Node* name, Node* value)
       : FieldBase(NodeType::kInstanceMethodView, access_level, name, value) {}
 
   InstanceMethodView()
@@ -1466,8 +1466,23 @@ class CommaExprView: public Node {
 // Represent function.
 class FunctionView: public Node {
  public:
+  FunctionView(bool getter, bool setter, bool generator, Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kFunctionView, 3u, {name, call_signature, body}) {
+    if (getter) {
+      set_flag(0);
+    } else if (setter) {
+      set_flag(1);
+    } else if (generator) {
+      set_flag(2);
+    }
+  }
+
   FunctionView(Node* name, Node* call_signature, Node* body)
       : Node(NodeType::kFunctionView, 3u, {name, call_signature, body}) {}
+
+  
+  FunctionView()
+      : Node(NodeType::kFunctionView, 3u) {}
 
   // Getter for name_.
   NODE_GETTER(name, 0);
@@ -1477,6 +1492,12 @@ class FunctionView: public Node {
 
   // Getter for body_.
   NODE_GETTER(body, 2);
+
+  NODE_FLAG_PROPERTY(getter, 0);
+
+  NODE_FLAG_PROPERTY(setter, 1);
+
+  NODE_FLAG_PROPERTY(generator, 2);
 };
 
 

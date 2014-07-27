@@ -1104,14 +1104,7 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     object_literal->SetInformationForNode(parser()->Current());
     parser()->Next();
     while (1) {
-      ir::Node* key = ParsePropertyDefinition(yield);
-      ir::Node* value = nullptr;
-      if (parser()->Current()->type() == Token::TS_COLON) {
-        parser()->Next();
-        value = ParseAssignmentExpression(true, false);
-      }
-      ir::ObjectElementView* element = New<ir::ObjectElementView>(key, value);
-      element->SetInformationForNode(key);
+      ir::Node* element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);
       if (Current()->type() == Token::TS_COMMA) {
         Next();
@@ -1125,5 +1118,61 @@ ir::Node* ExpressionParser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     return object_literal;
   }
   SYNTAX_ERROR("Unexpected token.", Current());
+}
+
+template <typename UCharInputIterator>
+ir::Node* ExpressionParser<UCharInputIterator>::ParsePropertyDefinition(bool yield) {
+  ir::Node* value = nullptr;
+  ir::Node* key = nullptr;
+  bool generator = false;
+  bool getter = false;
+  bool setter = false;
+  TokenCursor cursor = parser()->GetBufferCursorPosition();
+   
+  if (parser()->Current()->type() == Token::TS_IDENTIFIER &&
+      parser()->Current()->value() == "get") {
+      getter = true;
+      parser()->Next();
+  } else if (parser()->Current()->type() == Token::TS_IDENTIFIER &&
+             parser()->Current()->value() == "set") {
+      setter = true;
+      parser()->Next();
+  }
+
+  try {
+    if (parser()->Current()->type() == Token::TS_IDENTIFIER) {
+      key = ParseIdentifierReference(yield);
+    } else {
+      key = ParsePropertyName(yield);
+    }
+  } catch (const SyntaxError& e) {
+    if (getter || setter) {
+      key = parser()->PeekBuffer(cursor);
+    } else {
+      throw e;
+    }
+  }
+
+  if (parser()->Current()->type() == Token::TS_MUL) {
+    generator = true;
+    parser()->Next();
+  }
+  
+  if (parser()->Current()->type() == Token::TS_LEFT_PAREN) {
+    ir::Node* call_sig = ParseCallSignature(yield);
+    if (parser()->Current()->type() == Token::TS_LEFT_BRACE) {
+      parser()->Next();
+      ir::Node* body = ParseFunctionBody(yield || generator);
+      value = parser()->New<ir::FunctionView>(getter, setter, generator, nullptr, call_sig, body);
+    }
+  } else if (generator) {
+    PARSER_SYNTAX_ERROR("SyntaxError '(' expected", parser()->Current());
+  } else if (parser()->Current()->type() == Token::TS_COLON) {
+    parser()->Next();
+    value = ParseAssignmentExpression(true, false);
+  }
+  ir::ObjectElementView* element = New<ir::ObjectElementView>(key, value);
+  element->SetInformationForNode(parser()->PeekBuffer(cursor));
+  return element;
 }
 }
