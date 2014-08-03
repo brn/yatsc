@@ -22,415 +22,196 @@
  * THE SOFTWARE.
  */
 
-#ifndef PARSER_PARSER_H
-#define PARSER_PARSER_H
+#ifndef YATSC_H
+#define YATSC_H
 
-#include <memory>
-#include "../ir/node.h"
-#include "../ir/irfactory.h"
-#include "../parser/scanner.h"
-#include "../utils/mmap.h"
+#include "./parser-base.h"
 
 namespace yatsc {
-template <typename UCharInputSourceIterator>
-class Parser {
+
+// Generate SyntaxError and throw it.
+// Usage. SYNTAX_ERROR("test " << message, Current())
+#define SYNTAX_ERROR(message, token)                   \
+  SYNTAX_ERROR_POS(message, token->source_position())
+
+
+// Generate ArrowParametersError and throw it.
+// Usage. ARROW_PARAMETERS_ERROR("test " << message, Current())
+#define ARROW_PARAMETERS_ERROR(message, token)                   \
+  ARROW_PARAMETERS_ERROR_POS(message, token->source_position())
+
+
+// Generate SyntaxError that is pointed specified position and throw it.
+// Usage. SYNTAX_ERROR_POS("test " << message, node->source_position())
+#define SYNTAX_ERROR_POS(message, pos)       \
+  SYNTAX_ERROR_INTERNAL(message, pos, SyntaxError)
+
+
+// Generate ArrowParametersError that is pointed specified position and throw it.
+// Usage. ARROW_PARAMETERS_ERROR_POS("test " << message, node->source_position())
+#define ARROW_PARAMETERS_ERROR_POS(message, pos)     \
+  SYNTAX_ERROR_INTERNAL(message, pos, ArrowParametersError)
+
+
+
+#ifndef DEBUG
+// Throw error and return nullptr.
+#define SYNTAX_ERROR_INTERNAL(message, pos, error)  \
+  (*error_reporter_) << message;                    \
+  error_reporter_->Throw<error>(pos);               \
+  return nullptr
+#else
+// Throw error that has source line and number for the error thrown position.
+#define SYNTAX_ERROR_INTERNAL(message, pos, error)                      \
+  (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
+  error_reporter_->Throw<error>(pos);                                   \
+  return nullptr
+#endif
+
+
+#ifdef DEBUG
+// Logging current parse phase.
+#define LOG_PHASE(name)                                          \
+  if (print_parser_phase_) {                                            \
+    if (Current() != nullptr) {                                         \
+      Printf("%sEnter %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
+    } else {                                                            \
+      Printf("%sEnter %s: CurrentToken = null\n", indent_.c_str(), #name); \
+    }                                                                   \
+  }                                                                     \
+  indent_ += "  ";                                                      \
+  YATSC_SCOPED([&]{                                                     \
+    indent_ = indent_.substr(0, indent_.size() - 2);                    \
+    if (this->print_parser_phase_) {                                    \
+      if (this->Current() != nullptr) {                                 \
+        Printf("%sExit %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
+      } else {                                                          \
+        Printf("%sExit %s: CurrentToken = null\n", indent_.c_str(), #name); \
+      }                                                                 \
+    }                                                                   \
+  })
+#else
+// Disabled.
+#define LOG_PHASE(name)
+#endif
+
+class Parser : public ParserBase {
  public:
   Parser(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
-      : print_parser_phase_(false),
-        scanner_(scanner),
-        current_token_info_(nullptr),
-        next_token_info_(nullptr),
-        error_reporter_(error_reporter) {Next();}
+      : ParserBase(scanner, error_reporter);
 
+ VISIBLE_FOR_TESTING:
+  // Parse expression.
+  ir::Node* ParseExpression(bool in, bool yield);
 
-  ir::Node* Parse();
+  // Parse destructuring assignment.
+  ir::Node* ParseAssignmentPattern(bool yield);
 
- VISIBLE_FOR_TEST:
-  ir::Node* ParseProgram();
+  // Parse destructuring assignment object pattern.
+  ir::Node* ParseObjectAssignmentPattern(bool yield);
 
-  ir::Node* ParseSourceElements();
+  // Parse destructuring assignment array pattern.
+  // To simplify, we parse AssignmentElementList together.
+  ir::Node* ParseArrayAssignmentPattern(bool yield);
 
-  ir::Node* ParseSourceElement();
+  // Parse destructuring assignment object pattern properties.
+  ir::Node* ParseAssignmentPropertyList(bool yield);
 
-  ir::Node* ParseStatementList(bool has_yield);
+  // Parse destructuring assignment object pattern property.
+  ir::Node* ParseAssignmentProperty(bool yield);
 
-  ir::Node* ParseStatement(bool has_yield);
+  // Parse destructuring assignment array pattern element.
+  ir::Node* ParseAssignmentElement(bool yield);
 
-  ir::Node* ParseBlockStatement(bool has_yield);
+  // Parse destructuring assignment array pattern rest element.
+  ir::Node* ParseAssignmentRestElement(bool yield);
 
-  ir::Node* ParseModuleStatement();
+  // Parse destructuring assignment target node.
+  ir::Node* ParseDestructuringAssignmentTarget(bool yield);
 
-  ir::Node* ParseImportStatement();
+  // Parse assignment expression.
+  ir::Node* ParseAssignmentExpression(bool in, bool yield);
 
-  ir::Node* ParseExportStatement();
+  // Parse conditional expression.
+  ir::Node* ParseConditionalExpression(bool in, bool yield);
 
-  ir::Node* ParseDebuggerStatement();
+  // Parse binary expression.
+  // To simplify, we parser all binary expression(like MultiplicativeExpression AdditiveExpression, etc...) together.
+  ir::Node* ParseBinaryExpression(bool in, bool yield);
 
-  ir::Node* ParseLexicalDeclaration(bool has_in, bool has_yield);
+  // Parse unary expression.
+  ir::Node* ParseUnaryExpression(bool yield);
 
-  ir::Node* ParseLexicalBinding(bool const_decl, bool has_in, bool has_yield);
+  // Parse postfix expression.
+  ir::Node* ParsePostfixExpression(bool yield);
 
-  ir::Node* ParseBindingPattern(bool has_yield, bool generator_parameter);
+  // Parse member expression.
+  ir::Node* ParseMemberExpression(bool yield);
 
-  ir::Node* ParseObjectBindingPattern(bool has_yield, bool generator_parameter);
+  // Parser getprop or getelem expression.
+  ir::Node* ParseGetPropOrElem(ir::Node* node, bool yield);
 
-  ir::Node* ParseArrayBindingPattern(bool has_yield, bool generator_parameter);
+  ir::Node* ParseCallExpression(bool yield);
 
-  ir::Node* ParseBindingProperty(bool has_yield, bool generator_parameter);
+  ir::Node* ParseArguments(bool yield);
 
-  ir::Node* ParseBindingElement(bool has_yield, bool generator_parameter);
+  ir::Node* ParseMemberExpression(bool yield);
 
-  ir::Node* ParseBindingIdentifier(bool default_allowed, bool has_in, bool has_yield);
+  ir::Node* ParseGetPropOrElem(ir::Node* node, bool yield);
 
-  ir::Node* ParseVariableStatement(bool has_in, bool has_yield);
-  
-  ir::Node* ParseVariableDeclaration(bool has_in, bool has_yield);
+  ir::Node* ParsePrimaryExpression(bool yield);
 
-  ir::Node* ParseIfStatement(bool has_yield);
+  ir::Node* ParseArrayLiteral(bool yield);
 
-  ir::Node* ParseWhileStatement(bool has_yield);
+  ir::Node* ParseSpreadElement(bool yield);
 
-  ir::Node* ParseDoWhileStatement(bool has_yield);
+  ir::Node* ParseArrayComprehension(bool yield);
 
-  ir::Node* ParseForStatement(bool has_yield);
+  ir::Node* ParseComprehension(bool yield);
 
-  ir::Node* ParseForIterationStatement(ir::Node* reciever, TokenInfo* info, bool has_yield);
+  ir::Node* ParseComprehensionTail(bool yield);
 
-  ir::Node* ParseContinueStatement();
+  ir::Node* ParseComprehensionFor(bool yield);
 
-  ir::Node* ParseBreakStatement();
+  ir::Node* ParseComprehensionIf(bool yield);
 
-  ir::Node* ParseReturnStatement(bool has_yield);
+  ir::Node* ParseGeneratorComprehension(bool yield);
 
-  ir::Node* ParseWithStatement(bool has_yield);
+  ir::Node* ParseForBinding(bool yield);
 
-  ir::Node* ParseSwitchStatement(bool has_yield);
+  ir::Node* ParseObjectLiteral(bool yield);
 
-  ir::Node* ParseCaseClauses(bool has_yield);
+  ir::Node* ParsePropertyDefinition(bool yield);
 
-  ir::Node* ParseLabelledStatement();
+  ir::Node* ParsePropertyName(bool yield, bool generator_parameter);
 
-  ir::Node* ParseThrowStatement();
+  ir::Node* ParseLiteralPropertyName();
 
-  ir::Node* ParseTryStatement(bool has_yield);
-
-  ir::Node* ParseCatchBlock(bool has_yield);
-
-  ir::Node* ParseFinallyBlock(bool has_yield);
-
-  ir::Node* ParseClassDeclaration();
-
-  ir::Node* ParseClassFields();
-
-  ir::Node* ParseExpression(bool has_in, bool has_yield);
-
-  ir::Node* ParseAssignmentExpression(bool has_in, bool has_yield);
-
-  ir::Node* ParseYieldExpression();
-
-  ir::Node* ParseConditionalExpression(bool has_in, bool has_yield);
-
-  ir::Node* ParseBinaryExpression(bool has_in, bool has_yield);
-
-  ir::Node* ParseUnaryExpression();
-
-  ir::Node* ParsePostfixExpression();
-
-  ir::Node* ParseLeftHandSideExpression(bool has_in, bool has_yield);
-
-  ir::Node* ParseTypeExpression();
-
-  ir::Node* ParseReferencedType();
-
-  ir::Node* ParseGenericType();
-
-  ir::Node* ParseTypeArguments();
-
-  ir::Node* ParseTypeParameters();
-
-  ir::Node* ParseTypeQueryExpression();
-
-  ir::Node* ParseArrayType(ir::Node* type_expr);
-
-  ir::Node* ParseObjectTypeExpression();
-
-  ir::Node* ParseObjectTypeElement();
-
-  ir::Node* ParseCallExpression();
-
-  ir::Node* ParseArguments();
-
-  ir::Node* ParseParameterList(bool accesslevel_allowed);
-  
-  ir::Node* ParseParameter(bool rest, bool accesslevel_allowed);
-
-  ir::Node* ParseMemberExpression();
-
-  ir::Node* ParseGetPropOrElem(ir::Node* node);
-
-  ir::Node* ParsePrimaryExpression();
-
-  ir::Node* ParseTypedParameterOrNameExpression();
-
-  ir::Node* ParseObjectLiteral();
-
-  ir::Node* ParseArrayLiteral();
+  ir::Node* ParseComputedPropertyName(bool yield);
 
   ir::Node* ParseLiteral();
 
-  ir::Node* ParseFunction(bool has_yield, bool has_default);
+  ir::Node* ParsePropertyDefinition();
 
-  ir::Node* ParseArrowFunction(ir::Node* identifier = nullptr);
-  
-  ir::Node* ParseArrowFunctionParameters(ir::Node* identifier = nullptr);
+  ir::Node* ParseArrayInitializer(bool yield);
 
-  ir::Node* ParseArrowFunctionBody(ir::Node* call_sig);
+  ir::Node* ParseIdentifierReference(bool yield);
 
-  ir::Node* ParseFunctionBody(bool has_yield);
+  ir::Node* ParseBindingIdentifier(bool default_allowed, bool yield);
 
-  ir::Node* ParseFormalParameterList();
+  ir::Node* ParseLabelIdentifier(bool yield);
 
-  ir::Node* ParseCallSignature(bool accesslevel_allowed);
-
-  ir::Node* ParseObjectKey();
-
-  void EnablePrintParsePhase() {print_parser_phase_ = true;};
-
-  void DisablePrintParsePhase() {print_parser_phase_ = false;};
-  
- private:
-
-  typedef size_t TokenCursor;
-
-  /**
-   * The buffer of the tokens.
-   */
-  class TokenBuffer: private Uncopyable, private Unmovable {
-   public:
-    
-    TokenBuffer()
-        : cursor_(0) {
-      // Initialize std::vector for mmap allocator.
-      buffer_ = buffer_init_once_(Mmap::MmapStandardAllocator<TokenInfo>(&mmap_));
-    }
-
-
-    /**
-     * Append a token to the buffer.
-     * @param token_info A new token.
-     */
-    YATSC_INLINE void PushBack(TokenInfo* token_info) {
-      buffer_->emplace_back(*token_info);
-    }
-
-
-    /**
-     * Check whether buffer is empty or not.
-     * @returns true if buffer is empty, otherwise false.
-     */
-    YATSC_INLINE bool IsEmpty() YATSC_NO_SE {
-      return buffer_->empty();
-    }
-
-
-    /**
-     * Return current token and advance cursor.
-     * @returns Current token.
-     */
-    YATSC_INLINE TokenInfo* Next() {
-      if (cursor_ >= (buffer_->size() - 1)) {return &null_token_info_;}
-      return &((*buffer_)[cursor_++]);
-    }
-
-
-    /**
-     * Retrun current token.
-     * @returns Current token.
-     */
-    YATSC_INLINE TokenInfo* Current() {
-      if (cursor_ >= buffer_->size()) {return &null_token_info_;}
-      return &((*buffer_)[cursor_]);
-    }
-
-
-    /**
-     * Peek next token.
-     * @returns Next token.
-     */
-    YATSC_INLINE TokenInfo* Peek() {
-      return Peek(cursor_ + 1);
-    }
-
-
-    /**
-     * Rewind cursor with passed number.
-     * @returns Next token.
-     */
-    YATSC_INLINE TokenInfo* Rewind(size_t num) {
-      return Peek(cursor_ - num);
-    }
-
-
-    /**
-     * Peek specified index token.
-     * @param pos The position.
-     */
-    YATSC_INLINE TokenInfo* Peek(size_t pos) {
-      if (pos < 0 || pos >= buffer_->size()) {return &null_token_info_;}
-      return &((*buffer_)[pos]);
-    }
-
-
-    /**
-     * Set current token position.
-     * @param pos New cursor position.
-     */
-    YATSC_INLINE void SetCursorPosition(TokenCursor pos) YATSC_NOEXCEPT {
-      ASSERT(pos >= 0u, true);
-      cursor_ = pos;
-    }
-
-
-    /**
-     * Return current cursor position.
-     * @returns Current cursor position.
-     */
-    YATSC_INLINE TokenCursor cursor() YATSC_NOEXCEPT {
-      return cursor_;
-    }
-
-
-    /**
-     * Check whether cursor position is end of buffer or not.
-     * @returns true if cursor position is end of buffer, otherwise false.
-     */
-    YATSC_INLINE bool CursorUpdated() {
-      if (buffer_->empty()) {
-        return true;
-      }
-      return cursor_ == (buffer_->size() - 1);
-    }
-
-   private:
-    
-    typedef std::vector<TokenInfo, Mmap::MmapStandardAllocator<TokenInfo>> Vector;
-    Mmap mmap_;
-    TokenCursor cursor_;
-    Vector* buffer_;
-    LazyInitializer<Vector> buffer_init_once_;
-    TokenInfo null_token_info_;
-  };
-
-
-  /**
-   * Accept '/' as regular expression begging token.
-   */
-  YATSC_INLINE void AllowRegularExpr() {
-    scanner_->AllowRegularExpression();
-  }
-
-
-  /**
-   * Deny '/' as regular expression begging token.
-   */
-  YATSC_INLINE void DisallowRegularExpr() {
-    scanner_->DisallowRegularExpression();
-  }
-
-
-  /**
-   * Return a next token if token buffer's cursor is in the end of input,
-   * otherwise return a current token from the token buffer and advance token buffer cursor.
-   */
-  YATSC_INLINE TokenInfo* Next() {
-    if (!token_buffer_.CursorUpdated()) {
-      return token_buffer_.Next();
-    }
-    current_token_info_ = scanner_->Scan();
-    token_buffer_.PushBack(current_token_info_);
-    return token_buffer_.Next();
-  }
-
-
-  /**
-   * Return current token if token buffer's cursor is in the end of input,
-   * otherwise return current token from token buffer.
-   */
-  YATSC_INLINE TokenInfo* Current() {
-    if (!token_buffer_.CursorUpdated()) {
-      return token_buffer_.Current();
-    }
-    return current_token_info_;
-  }
-  
-  
-  template <typename T, typename ... Args>
-  T* New(Args ... args) {
-    return irfactory_.New<T>(std::forward<Args>(args)...);
-  }
-
-
-  template <typename T>
-  T* New(std::initializer_list<ir::Node*> list) {
-    return irfactory_.New<T>(list);
-  }
-
-
-  bool CheckLineTermination(TokenInfo* info = nullptr);
-  
-
-  bool print_parser_phase_;
-  Scanner<UCharInputSourceIterator>* scanner_;
-  TokenInfo* current_token_info_;
-  TokenInfo* next_token_info_;
-  ir::IRFactory irfactory_;
-  ErrorReporter* error_reporter_;
-  TokenBuffer token_buffer_;
-
-#ifdef DEBUG
-  std::string indent_;
-#endif
+  ir::Node* ParsePropertyDefinition();
 };
 
+#include 'expression-parser-partial.h'
 
-// Syntax error exception.
-class SyntaxError: public std::exception {
- public:
-  SyntaxError(const std::string& message)
-      : std::exception(),
-        message_(message) {}
-
-  
-  /**
-   * Return the reason of the error.
-   * @returns The error message.
-   */
-  const char* what() const throw() {return message_.c_str();}
-  
- private:
-  std::string message_;
-};
-
-
-// Arrow function parameters exception.
-class ArrowParametersError: public std::exception {
- public:
-  ArrowParametersError(const std::string& message)
-      : std::exception(),
-        message_(message) {}
-
-  
-  /**
-   * Return the reason of the error.
-   * @returns The error message.
-   */
-  const char* what() const throw() {return message_.c_str();}
-  
- private:
-  std::string message_;
-};
+#undef SYNTAX_ERROR
+#undef ARROW_PARAMETERS_ERROR
+#undef SYNTAX_ERROR_POS
+#undef ARROW_PARAMETERS_ERROR_POS
+#undef SYNTAX_ERROR_INTERAL
+#undef LOG_PHASE
 }
-
-#include "./parser-inl.h"
 
 #endif

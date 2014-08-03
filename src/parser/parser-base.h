@@ -49,6 +49,9 @@ class ParserBase: private Uncopyable, private Unmovable {
         next_token_info_(nullptr),
         error_reporter_(error_reporter) {Next();}
 
+
+ VISIBLE_FOR_TESTING:
+  
   /**
    * Enable printing current parser phase.
    */
@@ -59,6 +62,8 @@ class ParserBase: private Uncopyable, private Unmovable {
    */
   void DisablePrintParsePhase() {print_parser_phase_ = false;};
 
+
+ protected:
   
   /**
    * Return a next TokenInfo.
@@ -108,7 +113,21 @@ class ParserBase: private Uncopyable, private Unmovable {
    */
   YATSC_INLINE void SetBufferCursorPosition(TokenCursor cursor) YATSC_NOEXCEPT;
 
- private:
+  
+  template <typename T, typename ... Args>
+  T* New(Args ... args) {
+    return irfactory_.New<T>(std::forward<Args>(args)...);
+  }
+
+
+  template <typename T>
+  T* New(std::initializer_list<ir::Node*> list) {
+    return irfactory_.New<T>(list);
+  }
+
+
+  bool CheckLineTermination(TokenInfo* info = nullptr);
+  
 
   /**
    * The buffer of the tokens.
@@ -210,21 +229,6 @@ class ParserBase: private Uncopyable, private Unmovable {
     TokenInfo null_token_info_;
   };
   
-  
-  template <typename T, typename ... Args>
-  T* New(Args ... args) {
-    return irfactory_.New<T>(std::forward<Args>(args)...);
-  }
-
-
-  template <typename T>
-  T* New(std::initializer_list<ir::Node*> list) {
-    return irfactory_.New<T>(list);
-  }
-
-
-  bool CheckLineTermination(TokenInfo* info = nullptr);
-
 
   bool print_parser_phase_;
   Scanner<UCharInputSourceIterator>* scanner_;

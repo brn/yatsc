@@ -1676,8 +1676,13 @@ class DefaultView: public Node {
 
 class YieldView: public Node {
  public:
+  YieldView(Node* expr)
+      : Node(NodeType::kYieldView, 1u, {expr}) {}
+
   YieldView()
-      : Node(NodeType::kYieldView) {}
+      : Node(NodeType::kYieldView, 1u) {}
+
+  NODE_PROPERTY(expr, 0);
 };
 
 
