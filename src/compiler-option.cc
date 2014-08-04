@@ -26,5 +26,11 @@
 
 namespace yatsc {
 CompilerOption::CompilerOption()
-    : language_mode_(LanguageMode::ES3) {}
+    : language_mode_(LanguageMode::ES6),
+      module_type_(ModuleType::ES6),
+      output_language_mode_(LanguageMode::ES5_STRICT) {}
+
+const char* LanguageModeUtil::kEs3 = {"es3"};
+const char* LanguageModeUtil::kEs5Strict = {"es5strict"};
+const char* LanguageModeUtil::kEs6 = {"es6"};
 }

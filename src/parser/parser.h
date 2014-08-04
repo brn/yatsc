@@ -22,10 +22,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef YATSC_H
-#define YATSC_H
+#ifndef YATSC_PARSER_PARSER_H
+#define YATSC_PARSER_PARSER_H
 
 #include "./parser-base.h"
+#include "../compiler-option.h"
 
 namespace yatsc {
 
@@ -95,10 +96,11 @@ namespace yatsc {
 #define LOG_PHASE(name)
 #endif
 
-class Parser : public ParserBase {
+template <typename UCharInputSourceIterator>
+class Parser : public ParserBase<UCharInputSourceIterator> {
  public:
-  Parser(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
-      : ParserBase(scanner, error_reporter);
+  Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
+      : ParserBase(co, scanner, error_reporter) {}
 
  VISIBLE_FOR_TESTING:
   // Parse expression.
@@ -155,10 +157,6 @@ class Parser : public ParserBase {
 
   ir::Node* ParseArguments(bool yield);
 
-  ir::Node* ParseMemberExpression(bool yield);
-
-  ir::Node* ParseGetPropOrElem(ir::Node* node, bool yield);
-
   ir::Node* ParsePrimaryExpression(bool yield);
 
   ir::Node* ParseArrayLiteral(bool yield);
@@ -191,7 +189,7 @@ class Parser : public ParserBase {
 
   ir::Node* ParseLiteral();
 
-  ir::Node* ParsePropertyDefinition();
+  ir::Node* ParseValueLiteral();
 
   ir::Node* ParseArrayInitializer(bool yield);
 
@@ -201,10 +199,11 @@ class Parser : public ParserBase {
 
   ir::Node* ParseLabelIdentifier(bool yield);
 
-  ir::Node* ParsePropertyDefinition();
+  ir::Node* ParseIdentifier();
 };
+} // yatsc
 
-#include 'expression-parser-partial.h'
+#include "./expression-parser-partial.h"
 
 #undef SYNTAX_ERROR
 #undef ARROW_PARAMETERS_ERROR
@@ -212,6 +211,5 @@ class Parser : public ParserBase {
 #undef ARROW_PARAMETERS_ERROR_POS
 #undef SYNTAX_ERROR_INTERAL
 #undef LOG_PHASE
-}
 
 #endif

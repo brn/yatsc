@@ -182,7 +182,7 @@ TEST(ScannerTest, ScanOcatalLiteral_invalid) {
 
 TEST(ScannerTest, ScanBinaryLiteral_valid1) {
   const char* binary = "0o01111001";
-  INIT_HARMONY(token, binary);
+  INIT_ES6(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
   ASSERT_STREQ(token->utf8_value(), binary);
   ASSERT_EQ(token->value().utf8_length(), strlen(binary));
@@ -191,7 +191,7 @@ TEST(ScannerTest, ScanBinaryLiteral_valid1) {
 
 TEST(ScannerTest, ScanBinaryLiteral_valid2) {
   const char* binary = "0O01111001";
-  INIT_HARMONY(token, binary);
+  INIT_ES6(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
   ASSERT_STREQ(token->utf8_value(), binary);
   ASSERT_EQ(token->value().utf8_length(), strlen(binary));
@@ -209,17 +209,17 @@ TEST(ScannerTest, ScanBinaryLiteral_invalid2) {
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid3) {
-  INIT_HARMONY_THROW(token, "0ox", yatsc::TokenException);
+  INIT_ES6_THROW(token, "0ox", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid4) {
-  INIT_HARMONY_THROW(token, "0o2", yatsc::TokenException);
+  INIT_ES6_THROW(token, "0o2", yatsc::TokenException);
 }
 
 
 TEST(ScannerTest, ScanBinaryLiteral_invalid5) {
-  INIT_HARMONY_THROW(token, "0o!", yatsc::TokenException);
+  INIT_ES6_THROW(token, "0o!", yatsc::TokenException);
 }
 
 

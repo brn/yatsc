@@ -171,7 +171,7 @@ static const Token kPunctures[] = {
   KEYWORD("case", Token::TS_CASE)                                       \
   KEYWORD("catch", Token::TS_CATCH)                                     \
   KEYWORD("class", Token::TS_CLASS)                                     \
-  KEYWORD("const", Token::TS_CONST)                                     \
+  KEYWORD("const", LanguageModeUtil::IsES6(co)? Token::TS_CONST: Token::TS_IDENTIFIER) \
   KEYWORD("continue", Token::TS_CONTINUE)                               \
   KEYWORD_GROUP('d')                                                    \
   KEYWORD("debugger", Token::TS_DEBUGGER)                               \
@@ -197,18 +197,19 @@ static const Token kPunctures[] = {
   KEYWORD("instanceof", Token::TS_INSTANCEOF)                           \
   KEYWORD("interface", Token::TS_INTERFACE)                             \
   KEYWORD_GROUP('l')                                                    \
-  KEYWORD("let", Token::TS_LET) \
+  KEYWORD("let", Token::TS_LET)                                         \
   KEYWORD_GROUP('m')                                                    \
-  KEYWORD("module", Token::TS_MODULE)                                   \
+  KEYWORD("module", ModuleTypeUtil::IsModuleKeywordAllowed(co)? Token::TS_MODULE: Token::TS_IDENTIFIER) \
   KEYWORD_GROUP('n')                                                    \
   KEYWORD("new", Token::TS_NEW)                                         \
   KEYWORD("null", Token::TS_NULL)                                       \
   KEYWORD_GROUP('N')                                                    \
   KEYWORD("NaN", Token::TS_NAN)                                         \
   KEYWORD_GROUP('p')                                                    \
-  KEYWORD("package", Token::FUTURE_STRICT_RESERVED_WORD)                \
+  KEYWORD("package", LanguageModeUtil::IsFutureReservedWord(co)?        \
+          Token::FUTURE_STRICT_RESERVED_WORD: Token::TS_IDENTIFIER)     \
   KEYWORD("private", Token::TS_PRIVATE)                                 \
-  KEYWORD("protected", Token::FUTURE_STRICT_RESERVED_WORD)              \
+  KEYWORD("protected", Token::TS_PROTECTED)                             \
   KEYWORD("public", Token::TS_PUBLIC)                                   \
   KEYWORD_GROUP('r')                                                    \
   KEYWORD("return", Token::TS_RETURN)                                   \
@@ -231,11 +232,11 @@ static const Token kPunctures[] = {
   KEYWORD("while", Token::TS_WHILE)                                     \
   KEYWORD("with", Token::TS_WITH)                                       \
   KEYWORD_GROUP('y')                                                    \
-  KEYWORD("yield", Token::TS_YIELD)
+  KEYWORD("yield", LanguageModeUtil::IsES6(co)? Token::TS_YIELD: Token::TS_IDENTIFIER)
 
 
 // Get Identifier type from string.
-Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
+Token TokenInfo::GetIdentifierType(const char* maybe_keyword, const CompilerOption& co) {
   const int input_length = Strlen(maybe_keyword);
   const int min_length = 2;
   const int max_length = 10;
@@ -268,7 +269,7 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, bool es_harmony) {
         }                                                               \
       }
       KEYWORDS(KEYWORD_GROUP_CASE, KEYWORD)
-          }
+        }
   return Token::TS_IDENTIFIER;
 }
 

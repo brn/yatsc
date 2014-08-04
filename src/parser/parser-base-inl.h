@@ -148,7 +148,7 @@ void ParserBase<UCharInputIterator>::SetBufferCursorPosition(size_t num) {
  * Check whether cursor is end of buffer or not.
  */
 template <typename UCharInputIterator>
-bool ParserBase::TokenBuffer::CursorUpdated() {
+bool ParserBase<UCharInputIterator>::TokenBuffer::CursorUpdated() {
   if (buffer_->empty()) {
     return true;
   }

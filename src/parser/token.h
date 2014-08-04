@@ -32,6 +32,7 @@
 #include "./uchar.h"
 #include "../utils/utils.h"
 #include "../utils/os.h"
+#include "../compiler-option.h"
 
 
 namespace yatsc {
@@ -299,7 +300,7 @@ class TokenInfo {
    * @param maybe_keyword An identifier value.
    * @param es_harmony Harmony option.
    */
-  static Token GetIdentifierType(const char* maybe_keyword, bool es_harmony = false);
+  static Token GetIdentifierType(const char* maybe_keyword, const CompilerOption& co);
 
 
   /**

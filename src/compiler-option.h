@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef COMPILER_OPTION_H_
-#define COMPILER_OPTION_H_
+#ifndef YATSC_COMPILER_OPTION_H_
+#define YATSC_COMPILER_OPTION_H_
 
 #include "utils/utils.h"
 
@@ -31,40 +31,51 @@ namespace yatsc {
 enum class LanguageMode : uint8_t {
   ES3 = 0,
   ES5_STRICT,
-  HARMONY
+  ES6
+};
+
+enum class ModuleType: uint8_t {
+  TYPE_SCRIPT = 0,
+  ES6
 };
 
 
 class CompilerOption {
  public:
   CompilerOption();
-  YATSC_INLINE void set_language_mode(LanguageMode language_mode) {
-    language_mode_ = language_mode;
-  }
   
-  YATSC_INLINE LanguageMode language_mode() const {
-    return language_mode_;
-  }
+  YATSC_CONST_PROPERTY(LanguageMode, language_mode, language_mode_);
+
+  YATSC_CONST_PROPERTY(LanguageMode, output_language_mode, output_language_mode_);
+  
+  YATSC_CONST_PROPERTY(ModuleType, module_type, module_type_);
   
  private:
   LanguageMode language_mode_;
+  LanguageMode output_language_mode_;
+  ModuleType module_type_;
 };
 
 
 class LanguageModeUtil : private Static {
  public:
+
+  YATSC_INLINE static bool IsFutureReservedWord(const CompilerOption& co) {
+    return co.language_mode() != LanguageMode::ES3;
+  }
+  
   YATSC_INLINE static bool IsOctalLiteralAllowed(const CompilerOption& co) {
     return co.language_mode() == LanguageMode::ES3;
   }
 
   
   YATSC_INLINE static bool IsBinaryLiteralAllowed(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::HARMONY;
+    return co.language_mode() == LanguageMode::ES6;
   }
 
   
-  YATSC_INLINE static bool IsHarmony(const CompilerOption& co) {
-    return co.language_mode() == LanguageMode::HARMONY;
+  YATSC_INLINE static bool IsES6(const CompilerOption& co) {
+    return co.language_mode() == LanguageMode::ES6;
   }
 
   
@@ -75,6 +86,32 @@ class LanguageModeUtil : private Static {
   
   YATSC_INLINE static bool IsES3(const CompilerOption& co) {
     return co.language_mode() == LanguageMode::ES3;
+  }
+
+  YATSC_INLINE static const char* ToString(const CompilerOption& co) {
+    switch (co.language_mode()) {
+      case LanguageMode::ES3:
+        return kEs3;
+      case LanguageMode::ES5_STRICT:
+        return kEs5Strict;
+      case LanguageMode::ES6:
+        return kEs6;
+      default:
+        return kEs3;
+    }
+  }
+
+ private:
+  static const char* kEs3;
+  static const char* kEs5Strict;
+  static const char* kEs6;
+};
+
+
+class ModuleTypeUtil: private Static {
+ public:
+  YATSC_INLINE static bool IsModuleKeywordAllowed(const CompilerOption& co) {
+    return co.module_type() == ModuleType::TYPE_SCRIPT;
   }
 };
 }

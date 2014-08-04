@@ -58,8 +58,8 @@
 #define INIT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES3, ex_type)
 #define INIT_STRICT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES5_STRICT, nullptr)
 #define INIT_STRICT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES5_STRICT, ex_type)
-#define INIT_HARMONY(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::HARMONY, nullptr)
-#define INIT_HARMONY_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::HARMONY, ex_type)
+#define INIT_ES6(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES6, nullptr)
+#define INIT_ES6_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES6, ex_type)
 
 
 #define END_SCAN                                      \

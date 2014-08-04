@@ -22,8 +22,6 @@
  * THE SOFTWARE.
  */
 
-#include "./parser-util.h"
-
 namespace yatsc {
 
 // Expression[In, Yield]
@@ -67,11 +65,11 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) {
   ir::Node* node = nullptr;
   switch(Current()->type()) {
     case Token::TS_LEFT_BRACE: {
-      node = ParseObjectPattern(yield);
+      node = ParseObjectAssignmentPattern(yield);
       break;
     }
     case Token::TS_LEFT_BRACKET: {
-      node = ParseArrayPattern(yield);
+      node = ParseArrayAssignmentPattern(yield);
       break;
     }
     default:
@@ -286,7 +284,18 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentRestElement(bool yield) {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool yield) {
   LOG_PHASE(ParseDestructuringAssignmentTarget);
-  return ParseLeftHandSideExpression(yield);
+  TokenCursor cursor = GetBufferCursorPosition();
+  ir::Node* ret = ParseLeftHandSideExpression(yield);
+  // Check whether DestructuringAssignmentTarget is IsValidAssignmentTarget or not.
+  if (!ret->IsValidLhs()) {
+    if (ret->HasObjectLiteralView() || ret->HasArrayLiteralView()) {
+      SetCursorPosition(cursor);
+      ret = ParseAssignmentPattern(yield);
+    } else {
+      SYNTAX_ERROR_POS("SyntaxError invalid Left-Hand-Side expression", ret->source_position());
+    }
+  }
+  return ret;
 }
 
 
@@ -344,6 +353,11 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     try {
       expr = ParseConditionalExpression(in, yield);
     } catch (const SyntaxError& e) {
+
+      if (!LanguageModeUtil::IsES6(compiler_option_)) {
+        throw e;
+      }
+      
       SetBufferCursorPosition(cursor);
       expr = ParseAssignmentPattern(yield);
       parsed_as_assignment_pattern = true;
@@ -363,6 +377,11 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     if (!parsed_as_assignment_pattern &&
         expr->HasObjectLiteralView() ||
         expr->HasArrayLiteralView()) {
+
+      if (!LanguageModeUtil::IsES6(compiler_option_)) {
+        SYNTAX_ERROR_POS("Invalid Left-Hand-Side expression", expr->source_position());
+      }
+      
       SetBufferCursorPosition(cursor);
       expr = ParseAssignmentPattern(yield);
     }
@@ -651,9 +670,11 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
 
   if (Current()->type() == Token::TS_LESS) {
     type_arguments = ParseTypeArguments();
+    target->MarkAsInValidLhs();
   }
   
   if (Current()->type() == Token::TS_LEFT_PAREN) {
+    target->MarkAsInValidLhs();
     ir::Node* args = ParseArguments(yield);
     ir::Node* call = New<ir::CallView>(target, args, type_arguments);
     call->SetInformationForNode(target);
@@ -666,6 +687,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
         case Token::TS_LEFT_PAREN: {
           ir::Node* args = ParseArguments(yield);
           call = New<ir::CallView>(call, args, type_arguments);
+          call->MarkAsInValidLhs();
           call->SetInformationForNode(args);
           type_arguments = nullptr;
           break;
@@ -685,6 +707,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
     ir::Node* template_literal = ParseTemplateLiteral(yield);
     ir::Node* call = New<ir::CallView>(target, template_literal, type_arguments);
     call->SetInformationForNode(target);
+    call->MarkAsInValidLhs();
     return call;
   }
   return target;
@@ -772,6 +795,7 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
     ir::Node* type_arguments = nullptr;
     if (Current()->type() == Token::TS_LESS) {
       type_arguments = ParseTypeArguments();
+      member->MarkAsInValidLhs();
     }
 
     // New expression can omit parens.
@@ -780,6 +804,7 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
       ir::Node* args = ParseArguments(yield);
       node = New<ir::NewCallView>(member, args, type_arguments);
       node->SetInformationForNode(member);
+      node->MarkAsInValidLhs();
       return ParseGetPropOrElem(node);
     } else {
       // Parens are not exists.
@@ -888,6 +913,9 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
           return node;
         }
       } catch (SyntaxError& e) {
+        if (!LanguageModeUtil::IsES6(compiler_option_)) {
+          throw e;
+        }
         // If SyntaxError thrown, try parse as generator comprehensions.
         try {
           return ParseGeneratorComprehension(yield);
@@ -1236,7 +1264,7 @@ ir::Node* Parser<UCharInputIterator>::ParseLiteral() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParsePropertyDefinition() {
+ir::Node* Parser<UCharInputIterator>::ParseValueLiteral() {
   switch (Current()->type()) {
     case Token::TS_TRUE: // FALL THROUGH
     case Token::TS_FALSE:
@@ -1259,6 +1287,11 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayInitializer(bool yield) {
     try {
       ret = ParseArrayLiteral(yield);
     } catch (const SyntaxError& e) {
+      
+      if (!LanguageModeUtil::IsES6(compiler_option_)) {
+        throw e;
+      }
+      
       ret = ParseArrayComprehension(yield);
     }
     return ret;

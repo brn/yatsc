@@ -186,9 +186,9 @@ class YatscScoped__ {
 
 
 #ifdef UNIT_TEST
-#define VISIBLE_FOR_TEST public
+#define VISIBLE_FOR_TESTING public
 #else
-#define VISIBLE_FOR_TEST private
+#define VISIBLE_FOR_TESTING private
 #endif
 
 

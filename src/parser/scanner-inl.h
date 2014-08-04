@@ -30,6 +30,12 @@
 #include "token.h"
 #include "../utils/utils.h"
 
+#define SYNTAX_ERROR(message) {                 \
+  std::stringstream ss;                         \
+  ss << message;                                \
+  std::string&& s = std::move(ss.str());        \
+  return Error(s.c_str());                      \
+}
 
 namespace yatsc {
 template<typename UCharInputIterator>
@@ -168,12 +174,12 @@ void Scanner<UCharInputIterator>::ScanDigit() {
   if (char_ == unicode::u8('0')) {
     if (Character::IsNumericLiteral(lookahead1_)) {
       if (!LanguageModeUtil::IsOctalLiteralAllowed(compiler_option_)) {
-        return Error("Octal literals are not allowed in strict mode.");
+        SYNTAX_ERROR("Octal literals are not allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
       return ScanOctalLiteral();
     } else if (lookahead1_ == unicode::u8('o') || lookahead1_ == unicode::u8('O')) {
       if (!LanguageModeUtil::IsBinaryLiteralAllowed(compiler_option_)) {
-        return Error("Binary literals are allowed only in harmony mode.");
+        SYNTAX_ERROR("Binary literals are allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
       return ScanBinaryLiteral();
     }
@@ -292,8 +298,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
       Advance();
     }
   }
-  Token type = TokenInfo::GetIdentifierType(v.utf8_value(),
-                                            LanguageModeUtil::IsHarmony(compiler_option_));
+  Token type = TokenInfo::GetIdentifierType(v.utf8_value(), compiler_option_);
   BuildToken(type, v);
 }
 
@@ -321,7 +326,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       return ScanLogicalOperator(Token::TS_LOGICAL_OR, Token::TS_OR_LET, Token::TS_BIT_OR);
     case ',':
       return BuildToken(Token::TS_COMMA);
-    case '`'
+    case '`':
       return BuildToken(Token::TS_BACKQUOTE);
     case '.':
       if (lookahead1_ == char_) {
@@ -598,6 +603,7 @@ bool Scanner<UCharInputIterator>::ConsumeLineBreak() {
   return is_break;
 }
 
+#undef SYNTAX_ERROR
 } //namespace yatsc
 
 #endif

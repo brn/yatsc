@@ -22,28 +22,31 @@
  * THE SOFTWARE.
  */
 
-#ifndef PARSER_PARSER_BASE_H
-#define PARSER_PARSER_BASE_H
+#ifndef YATSC_PARSER_PARSER_BASE_H
+#define YATSC_PARSER_PARSER_BASE_H
 
 #include "../ir/node.h"
 #include "../ir/irfactory.h"
 #include "../parser/scanner.h"
 #include "../utils/mmap.h"
-#include "./parser-util.h"
+#include "../compiler-option.h"
+#include "../utils/utils.h"
 
 
 namespace yatsc {
+typedef size_t TokenCursor;
+
 template <typename UCharInputSourceIterator>
 class ParserBase: private Uncopyable, private Unmovable {
  public:
-  typedef size_t TokenCursor;
   
   /**
    * @param scanner Scanner instance that is not consume token yet.
    * @param error_reporter ErrorReporter instance to use report parse error.
    */
-  ParserBase(Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
+  ParserBase(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
       : print_parser_phase_(false),
+        compiler_option_(co),
         scanner_(scanner),
         current_token_info_(nullptr),
         next_token_info_(nullptr),
@@ -153,7 +156,7 @@ class ParserBase: private Uncopyable, private Unmovable {
      * Check whether buffer is empty or not.
      * @returns true if buffer is empty.
      */
-    YATSC_INLINE bool IsEmpty();
+    YATSC_INLINE bool IsEmpty() YATSC_NO_SE;
 
 
     /**
@@ -231,6 +234,7 @@ class ParserBase: private Uncopyable, private Unmovable {
   
 
   bool print_parser_phase_;
+  const CompilerOption& compiler_option_;
   Scanner<UCharInputSourceIterator>* scanner_;
   TokenInfo* current_token_info_;
   TokenInfo* next_token_info_;

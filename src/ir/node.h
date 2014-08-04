@@ -888,7 +888,7 @@ class CaseBody: public Node {
       : Node(NodeType::kCaseBody, 0u, case_body) {}
 
 
-  CaseView()
+  CaseBody()
       : Node(NodeType::kCaseView, 0u) {}
 };
 
@@ -1938,7 +1938,7 @@ class ComprehensionExprView: public Node {
   NODE_PROPERTY(for_expr, 0);
 
   NODE_PROPERTY(tail, 1);
-}
+};
 
 
 }} //yatsc::ir
