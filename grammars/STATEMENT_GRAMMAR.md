@@ -207,9 +207,83 @@
 ### <a name="DebuggerStatement"> DebuggerStatement
 - ___debugger___ ___;___
 
+### <a name="FunctionDeclaration"> FunctionDeclaration[Yield,Default]
+- [FunctionOverloads\(opt\)](#FunctionOverloads) [FunctionImplementation](#FunctionImplementation)
+
+### <a name="FunctionOverloads"> FunctionOverloads
+- [FunctionOverload](#FunctionOverload)
+- [FunctionOverloads](#FunctionOverloads) [FunctionOverload](#FunctionOverload)
+
+### <a name="FunctionOverload"> FunctionOverload
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature)
+
+### <a name="FunctionImplementation"> FunctionImplementation\[Yield\]
+- ___function___ [BindingIdentifier\[?Yield, ?Default\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR#CallSignature) ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
+
+### <a name="FunctionExpression"> FunctionExpression\[Yield\]
+- ___function___ [BindingIdentifier\(opt\)](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier) [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+
+### <a name="StrictFormalParameters"> StrictFormalParameters[Yield, GeneratorParameter]
+- [FormalParameters\[?Yield, ?GeneratorParameter\]](#FormalParameters)
+
+### <a name="FormalParameters"> FormalParameters[Yield,GeneratorParameter]
+- \[empty\]
+- [FormalParameterList\[?Yield, ?GeneratorParameter\]](#FormalParameterList)
+- [RequiredParameterList\[?Yield, ?GeneratorParameter\]](#RequiredParameterList)
+- [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList)
+- [RequiredParameterList\[?Yield, ?GeneratorParameter\]](#RequiredParameterList) ___,___ [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList)
+- [RequiredParameterList\[?Yield, ?GeneratorParameter\]](#RequiredParameterList) ___,___ [FunctionRestParameter\[?Yield, ?GeneratorParameter\]](./STATEMENT_GRAMMAR#FunctionRestParameter)
+- [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [FunctionRestParameter\[?Yield, ?GeneratorParameter\]](./STATEMENT_GRAMMAR#FunctionRestParameter)
+- [RequiredParameterList\[?Yield, ?GeneratorParameter\]](#RequiredParameterList) ___,___ [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [FunctionRestParameter\[?Yield, ?GeneratorParameter\]](./STATEMENT_GRAMMAR#FunctionRestParameter)
+
+### <a name="OptionalParameterList"> OptionalParameterList\[Yield,GeneratorParameter\]
+- [OptionalParameter\[?Yield, ?GeneratorParameter\]](#OptionalParameter)
+- [OptionalParameterList\[?Yield, ?GeneratorParameter\]](#OptionalParameterList) ___,___ [OptionalParameter\[?Yield, ?GeneratorParameter\]](#OptionalParameter)
+
+### <a name="OptionalParameter"> OptionalParameter
+- [PublicOrPrivateopt](#PublicOrPrivateopt) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) ___?___ [TypeAnnotation\(opt\)](#TypeAnnotation)
+- [PublicOrPrivateopt](#PublicOrPrivateopt) [BindingElement\[?Yield, ?GeneratorParameter\]](#BindingElement) [TypeAnnotation\(opt\)](#TypeAnnotation) [Initialiser](#Initialiser)
+
+### <a name="FormalParameterList"> FormalParameterList\[Yield,GeneratorParameter\]
+- [FunctionRestParameter\[?Yield\]](#FunctionRestParameter)
+- [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList)
+- [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList) ___,___ [FunctionRestParameter\[?Yield\]](#FunctionRestParameter)
+
+### <a name="FormalsList"> FormalsList[Yield,GeneratorParameter]
+- [FormalParameter\[?Yield, ?GeneratorParameter\]](#FormalParameter) [TypeAnnotation](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
+- [FormalsList\[?Yield, ?GeneratorParameter\]](#FormalsList) ___,___ [FormalParameter\[?Yield,?GeneratorParameter\]](#FormalParameter)
+
+### <a name="FunctionRestParameter"> FunctionRestParameter[Yield]
+- [BindingRestElement\[Yield\]](#BindingRestElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
+
+### <a name="FormalParameter"> FormalParameter[Yield,GeneratorParameter]
+- [PublicOrPrivate\(opt\)](#PublicOrPrivate)  [FormalParameterElement\[?Yield, ?GeneratorParameter\]](#FormalParameterElement) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
+- [Identifier](./EXPRESSION_SYNTAX_GRAMMAR#Identifier) ___:___ [StringLiteral](./EXPRESSION_SYNTAX_GRAMMAR#StringLiteral)
+
+### <a name="FormalParameter"> FormalParameterElement[Yield,GeneratorParameter]
+- [BindingIdentifier\[?Yield\]](#BindingIdentifier)]
+- \[+GeneratorParameter\] [BindingPattern\[?Yield,GeneratorParameter\]](#BindingPattern)
+- \[~GeneratorParameter\] [BindingPattern\[?Yield\]](#BindingPattern)
+
 ### <a name="PublicOrPrivate"> PublicOrPrivate
 - ___public___
 - ___private___
+
+### <a name="FunctionBody"> FunctionBody[Yield]
+- [FunctionStatementList\[?Yield\]](#FunctionStatementList)
+
+### <a name="FunctionStatementList"> FunctionStatementList[Yield]
+- [StatementList\[?Yield, Return\]\(opt\)](#StatementList)
+
+### <a name="ArrowFunction"> ArrowFunction[In,Yield]
+- [ArrowParameters\[?Yield\]](#ArrowParameters) \[no LineTerminator here\] ___=>___ [ConciseBody\[?In\]](#ConciseBody)
+
+### <a name="ArrowParameters"> ArrowParameters[Yield]
+- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
+- [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature)
+
+### <a name="ConciseBody"> ConciseBody[In]
+- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
 
 ### <a name="GeneratorMethodDeclaration"> GeneratorMethodDeclaration[Yield]
 - [GeneratorMethodOverloads\(opt\)](#GeneratorMethodOverloads) [GeneratorMethodImplementation](#GeneratorMethodImplementation)
