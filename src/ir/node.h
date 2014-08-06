@@ -1676,13 +1676,19 @@ class DefaultView: public Node {
 
 class YieldView: public Node {
  public:
-  YieldView(Node* expr)
-      : Node(NodeType::kYieldView, 1u, {expr}) {}
+  YieldView(bool continuation, Node* expr)
+      : Node(NodeType::kYieldView, 1u, {expr}) {
+    if (continuation) {
+      set_flag(0);
+    }
+  }
 
   YieldView()
       : Node(NodeType::kYieldView, 1u) {}
 
   NODE_PROPERTY(expr, 0);
+
+  NODE_FLAG_PROPERTY(continuation, 0);
 };
 
 

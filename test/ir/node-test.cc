@@ -216,7 +216,8 @@ TEST_F(NodeTest, VariableView_test) {
 TEST_F(NodeTest, IfStatementView_test) {
   yatsc::ir::Node* then_block = irfactory.New<DummyView>();
   yatsc::ir::Node* else_block = irfactory.New<DummyView>();
-  yatsc::ir::IfStatementView* ifv = irfactory.New<yatsc::ir::IfStatementView>(then_block, else_block);
+  yatsc::ir::Node* expr = irfactory.New<DummyView>();
+  yatsc::ir::IfStatementView* ifv = irfactory.New<yatsc::ir::IfStatementView>(expr, then_block, else_block);
   ASSERT_EQ(ifv->then_block(), then_block);
   ASSERT_EQ(ifv->else_block(), else_block);
 

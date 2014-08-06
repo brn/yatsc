@@ -333,7 +333,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     bool failed = false;
     try {
       // parsae an arrow_function_parameters.
-      node = ParseArrowFunctionParameters();
+      node = ParseArrowFunctionParameters(yield);
     } catch (const SyntaxError& e) {
       // If parse failed, try parse as an parenthesized_expression in primary expression,
       // Do nothing.
@@ -348,7 +348,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     }
 
     if (!failed) {
-      return ParseArrowFunctionBody(node);
+      return ParseConciseBody(in, node);
     }
     
     SetBufferCursorPosition(cursor);
@@ -361,7 +361,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     if (!yield) {
       SYNTAX_ERROR("SyntaxError invalid use of 'yield' keyword", Current());
     }
-    expr = ParseYieldExpression();
+    expr = ParseYieldExpression(in);
   } else {  
     try {
       expr = ParseConditionalExpression(in, yield);
@@ -378,7 +378,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
   }
 
   if (expr->HasNameView() && Current()->type() == Token::TS_ARROW_GLYPH) {
-    return ParseArrowFunction(expr);
+    return ParseArrowFunction(in, yield, expr);
   }
   
   // Expression is not an arrow_function.
@@ -414,6 +414,49 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     SYNTAX_ERROR("SyntaxError destructuring assignment must be initialized", Current());
   }
   return expr;
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(bool in, bool yield, ir::Node* identifier) {
+  LOG_PHASE(ParseArrowFunction);
+  ir::Node* call_sig = ParseArrowFunctionParameters(yield, identifier);
+  return ParseConciseBody(in, call_sig);
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionParameters(bool yield, ir::Node* identifier) {
+  LOG_PHASE(ParseArrowFunction);
+
+  ir::Node* call_sig = nullptr;
+  
+  if (identifier != nullptr) {
+    call_sig = New<ir::CallSignatureView>(identifier, nullptr, nullptr);
+    call_sig->SetInformationForNode(identifier);
+  } else {  
+    call_sig = ParseCallSignature(false);
+  }
+  if (Current()->type() != Token::TS_ARROW_GLYPH) {
+    SYNTAX_ERROR("SyntaxError '=>' expected", Current());
+  }
+  Next();
+  return call_sig;
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseConciseBody(bool in, ir::Node* call_sig) {
+  ir::Node* body;
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    Next();
+    body = ParseFunctionBody(false);
+  } else {
+    body = ParseAssignmentExpression(true, false);
+  }
+  ir::Node* ret = New<ir::ArrowFunctionView>(call_sig, body);
+  ret->SetInformationForNode(call_sig);
+  return ret;
 }
 
 
@@ -785,7 +828,7 @@ ir::Node* Parser<UCharInputIterator>::ParseArguments(bool yield) {
 //   super [ Expression[In, ?Yield] ]
 //   super . IdentifierName
 //   new super TypeArguments(opt) Arguments[?Yield](opt)
-//   new [ lookahead  { super } ] MemberExpression[?Yield]
+//   new [ lookahead != { super } ] MemberExpression[?Yield]
 //
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
@@ -1122,6 +1165,45 @@ ir::Node* Parser<UCharInputIterator>::ParseGeneratorComprehension(bool yield) {
     SYNTAX_ERROR("SyntaxError ')' expected", Current());
   }
   SYNTAX_ERROR("SyntaxError '(' expected", Current());
+}
+
+
+template<typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseYieldExpression(bool in) {
+  if (Current()->type() == Token::TS_YIELD) {
+    Next();
+
+    TokenCursor cursor = GetBufferCursorPosition();
+    bool end = Current()->type() == Token::LINE_TERMINATOR;
+    
+    if (PeekBuffer(cursor)->has_line_break_before_next() ||
+        PeekBuffer(cursor)->has_line_terminator_before_next() ||
+        end) {
+
+      auto yield_expr = New<ir::YieldView>(false, nullptr);
+      yield_expr->SetInformationForNode(Current());
+      
+      if (end) {
+        Next();
+      }
+      
+      return yield_expr;
+    }
+    
+    bool continuation = false;
+    Next();
+    
+    if (Current()->type() == Token::TS_MUL) {
+      Next();
+      continuation = true;
+    }
+
+    ir::Node* expr = ParseAssignmentExpression(in, true);
+    auto yield_expr = New<ir::YieldView>(continuation, expr);
+    yield_expr->SetInformationForNode(Current());
+    return yield_expr;
+  }
+  SYNTAX_ERROR("SyntaxError 'yield' expected", Current());
 }
 
 

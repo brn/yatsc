@@ -134,6 +134,12 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
   // Parse assignment expression.
   ir::Node* ParseAssignmentExpression(bool in, bool yield);
 
+  ir::Node* ParseArrowFunction(bool in, bool yield, ir::Node* identifier = nullptr);
+
+  ir::Node* ParseArrowFunctionParameters(bool yield, ir::Node* identifier = nullptr);
+
+  ir::Node* ParseConciseBody(bool in, ir::Node* call_sig);
+
   // Parse conditional expression.
   ir::Node* ParseConditionalExpression(bool in, bool yield);
 
@@ -174,6 +180,8 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
   ir::Node* ParseComprehensionIf(bool yield);
 
   ir::Node* ParseGeneratorComprehension(bool yield);
+
+  ir::Node* ParseYieldExpression(bool in);
 
   ir::Node* ParseForBinding(bool yield);
 
