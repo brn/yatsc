@@ -54,6 +54,48 @@ ir::Node* Parser<UCharInputIterator>::ParseExpression(bool in, bool yield) {
 }
 
 
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
+  ir::Node* call_sig = ParseArrowFunctionParameters(identifier);
+  return ParseArrowFunctionBody(call_sig);
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionParameters(ir::Node* identifier) {
+  ENTER(ParseArrowFunction);
+
+  ir::Node* call_sig = nullptr;
+  
+  if (identifier != nullptr) {
+    call_sig = New<ir::CallSignatureView>(identifier, nullptr, nullptr);
+    call_sig->SetInformationForNode(identifier);
+  } else {  
+    call_sig = ParseCallSignature(false);
+  }
+  if (Current()->type() != Token::TS_ARROW_GLYPH) {
+    SYNTAX_ERROR("SyntaxError '=>' expected", Current());
+  }
+  Next();
+  return call_sig;
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionBody(ir::Node* call_sig) {
+  ir::Node* body;
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    Next();
+    body = ParseFunctionBody(false);
+  } else {
+    body = ParseAssignmentExpression(true, false);
+  }
+  ir::Node* ret = New<ir::ArrowFunctionView>(call_sig, body);
+  ret->SetInformationForNode(call_sig);
+  return ret;
+}
+
+
 // AssignmentPattern[Yield]
 //   ObjectAssignmentPattern[?Yield]
 //   ArrayAssignmentPattern[?Yield]
