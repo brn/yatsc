@@ -54,48 +54,6 @@ ir::Node* Parser<UCharInputIterator>::ParseExpression(bool in, bool yield) {
 }
 
 
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
-  ir::Node* call_sig = ParseArrowFunctionParameters(identifier);
-  return ParseArrowFunctionBody(call_sig);
-}
-
-
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionParameters(ir::Node* identifier) {
-  ENTER(ParseArrowFunction);
-
-  ir::Node* call_sig = nullptr;
-  
-  if (identifier != nullptr) {
-    call_sig = New<ir::CallSignatureView>(identifier, nullptr, nullptr);
-    call_sig->SetInformationForNode(identifier);
-  } else {  
-    call_sig = ParseCallSignature(false);
-  }
-  if (Current()->type() != Token::TS_ARROW_GLYPH) {
-    SYNTAX_ERROR("SyntaxError '=>' expected", Current());
-  }
-  Next();
-  return call_sig;
-}
-
-
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseArrowFunctionBody(ir::Node* call_sig) {
-  ir::Node* body;
-  if (Current()->type() == Token::TS_LEFT_BRACE) {
-    Next();
-    body = ParseFunctionBody(false);
-  } else {
-    body = ParseAssignmentExpression(true, false);
-  }
-  ir::Node* ret = New<ir::ArrowFunctionView>(call_sig, body);
-  ret->SetInformationForNode(call_sig);
-  return ret;
-}
-
-
 // AssignmentPattern[Yield]
 //   ObjectAssignmentPattern[?Yield]
 //   ArrayAssignmentPattern[?Yield]
@@ -341,6 +299,19 @@ ir::Node* Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool yi
 }
 
 
+
+// Return true if token type is assignment operator.
+bool IsAssignmentOp(Token type) {
+  return type == Token::TS_ASSIGN || type == Token::TS_MUL_LET ||
+    type == Token::TS_DIV_LET || type == Token::TS_MOD_LET ||
+    type == Token::TS_ADD_LET || type == Token::TS_SUB_LET ||
+    type == Token::TS_SHIFT_LEFT_LET || type == Token::TS_SHIFT_RIGHT_LET ||
+    type == Token::TS_U_SHIFT_RIGHT_LET || type == Token::TS_AND_LET ||
+    type == Token::TS_NOR_LET || type == Token::TS_OR_LET ||
+    type == Token::TS_XOR_LET;
+}
+
+
 // AssignmentExpression[In, Yield]
 //   ConditionalExpression[?In, ?Yield]
 //   [+Yield] YieldExpression[?In]
@@ -433,7 +404,7 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
     // If left hand side expression is like 'func()',
     // that is invalid expression.
     if (expr->IsValidLhs()) {
-      ir::Node* rhs = ParseAssignmentExpression(has_in, has_yield);
+      ir::Node* rhs = ParseAssignmentExpression(in, yield);
       ir::Node* result = New<ir::AssignmentView>(type, expr, rhs);
       result->SetInformationForNode(expr);
       return result;
@@ -461,7 +432,7 @@ ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool y
     ti = Current();
     if (ti->type() == Token::TS_COLON) {
       Next();
-      ir::Node* right = ParseAssignmentExpression(has_in, has_yield);
+      ir::Node* right = ParseAssignmentExpression(in, yield);
       ir::TemaryExprView* temary = New<ir::TemaryExprView>(expr, left, right);
       temary->SetInformationForNode(expr);
       temary->MarkAsInValidLhs();
@@ -545,7 +516,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool in, bool yield)
       case Token::TS_LESS :
       case Token::TS_GREATER : {
         Next();
-        ir::Node* rhs = ParseBinaryExpression(has_in, has_yield);
+        ir::Node* rhs = ParseBinaryExpression(in, yield);
         if (last == nullptr) {
           expr = New<ir::BinaryExprView>(type, lhs, rhs);
           expr->SetInformationForNode(lhs);

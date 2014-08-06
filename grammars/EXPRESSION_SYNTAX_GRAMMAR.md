@@ -41,6 +41,11 @@
 ### <a name="DestructuringAssignmentTarget"> DestructuringAssignmentTarget\[Yield]  
 - [LeftHandSideExpression\[?Yield\]](#LeftHandSideExpression)  
 
+### <a name="YieldExpression"> YieldExpression[In]
+- ___yield___ 
+- ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
+- ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](#AssignmentExpression)
+
 ### <a name="AssignmentExpression"> AssignmentExpression\[In, Yield]  
 - [ConditionalExpression\[?In, ?Yield\]](#ConditionalExpression)  
 - \[+Yield\] [YieldExpression\[?In\]](#YieldExpression)  

@@ -301,11 +301,6 @@
 ### <a name="GeneratorDeclaration"> GeneratorDeclaration[Yield, Default]
 - ___function___ ___*___ [BindingIdentifier\[?Yield, ?Default\]](#BindingIdentifier) [CallSignature](#CallSignature) ___{___ [FunctionBody\[?Yield\]](#FunctionBody) ___}___
 
-### <a name="YieldExpression"> YieldExpression[In]
-- ___yield___ 
-- ___yield___ \[no LineTerminator here\] \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
-- ___yield___ \[no LineTerminator here\] ___*___ \[Lexical goal InputElementRegExp\] [AssignmentExpression\[?In, Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression)
-
 ### <a name="PropertySetParameterList"> PropertySetParameterList
 - [FormalParameter](#FormalParameter) [TypeAnnotation\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeAnnotation)
 
