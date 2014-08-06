@@ -56,6 +56,17 @@
 ### <a name="AssignmentOperator"> AssignmentOperator  
 - *one of* `*= /= %= += -= <<= >>= >>>= &= ^= |=`  
 
+### <a name="ArrowFunction"> ArrowFunction[In,Yield]
+- [ArrowParameters\[?Yield\]](#ArrowParameters) \[no LineTerminator here\] ___=>___ [ConciseBody\[?In\]](#ConciseBody)
+
+### <a name="ArrowParameters"> ArrowParameters[Yield]
+- [BindingIdentifier\[?Yield\]](#BindingIdentifier)
+- [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature)
+
+### <a name="ConciseBody"> ConciseBody[In]
+- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](#AssignmentExpression)
+- ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
+
 ### <a name="ConditionalExpression"> ConditionalExpression\[In, Yield]  
 - [LogicalORExpression\[?In, ?Yield\]](#LogicalORExpression)  
 - [LogicalORExpression\[?In,?Yield\]](#LogicalORExpression) ___?___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___:___ [AssignmentExpression\[?In, ?Yield\]](#AssignmentExpression)  

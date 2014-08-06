@@ -275,16 +275,6 @@
 ### <a name="FunctionStatementList"> FunctionStatementList[Yield]
 - [StatementList\[?Yield, Return\]\(opt\)](#StatementList)
 
-### <a name="ArrowFunction"> ArrowFunction[In,Yield]
-- [ArrowParameters\[?Yield\]](#ArrowParameters) \[no LineTerminator here\] ___=>___ [ConciseBody\[?In\]](#ConciseBody)
-
-### <a name="ArrowParameters"> ArrowParameters[Yield]
-- [BindingIdentifier\[?Yield\]](./EXPRESSION_SYNTAX_GRAMMAR.md#BindingIdentifier)
-- [CallSignature](./TYPE_SYNTAX_GRAMMAR.md#CallSignature)
-
-### <a name="ConciseBody"> ConciseBody[In]
-- \[lookahead ≠ { ___{___ }\] [AssignmentExpression\[?In\]](./EXPRESSION_SYNTAX_GRAMMAR.md#AssignmentExpression) ___{___ [FunctionBody\[Yield\]](#FunctionBody) ___}___
-
 ### <a name="GeneratorMethodDeclaration"> GeneratorMethodDeclaration[Yield]
 - [GeneratorMethodOverloads\(opt\)](#GeneratorMethodOverloads) [GeneratorMethodImplementation](#GeneratorMethodImplementation)
 
