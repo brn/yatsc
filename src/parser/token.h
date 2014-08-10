@@ -149,6 +149,7 @@ namespace yatsc {
   DECLARE(TS_LEFT_BRACE)                                  \
   DECLARE(TS_RIGHT_BRACE)                                 \
   DECLARE(TS_ARROW_GLYPH)                                 \
+  DECLARE(TS_TEMPLATE_LITERAL)                            \
   DECLARE(LINE_TERMINATOR)                                \
   DECLARE(FUTURE_STRICT_RESERVED_WORD)                    \
   DECLARE(FUTURE_RESERVED_WORD)                           \

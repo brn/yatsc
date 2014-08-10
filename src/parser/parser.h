@@ -103,6 +103,112 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
       : ParserBase(co, scanner, error_reporter) {}
 
  VISIBLE_FOR_TESTING:
+  ir::Node* ParseProgram();
+
+  ir::Node* ParseSourceElements();
+
+  ir::Node* ParseSourceElement();
+
+  ir::Node* ParseStatementListItem(bool yield, bool has_return);
+
+  ir::Node* ParseStatementList(bool yield, bool has_return);
+
+  ir::Node* ParseStatement(bool yield, bool has_return);
+
+  ir::Node* ParseBlockStatement(bool yield, bool has_return);
+
+  ir::Node* ParseModuleStatement();
+
+  ir::Node* ParseImportStatement();
+
+  ir::Node* ParseExportStatement();
+
+  ir::Node* ParseDeclaration(bool error, bool yield, bool has_default);
+  
+  ir::Node* ParseDebuggerStatement();
+
+  ir::Node* ParseLexicalDeclaration(bool in, bool yield);
+
+  ir::Node* ParseLexicalBinding(bool const_decl, bool in, bool yield);
+
+  ir::Node* ParseBindingPattern(bool yield, bool generator_parameter);
+
+  ir::Node* ParseObjectBindingPattern(bool yield, bool generator_parameter);
+
+  ir::Node* ParseArrayBindingPattern(bool yield, bool generator_parameter);
+
+  ir::Node* ParseBindingProperty(bool yield, bool generator_parameter);
+
+  ir::Node* ParseBindingElement(bool yield, bool generator_parameter);
+
+  ir::Node* ParseBindingIdentifier(bool default_allowed, bool in, bool yield);
+
+  ir::Node* ParseVariableStatement(bool in, bool yield);
+  
+  ir::Node* ParseVariableDeclaration(bool in, bool yield);
+
+  ir::Node* ParseIfStatement(bool yield, bool has_return);
+
+  ir::Node* ParseWhileStatement(bool yield, bool has_return);
+
+  ir::Node* ParseDoWhileStatement(bool yield, bool has_return);
+
+  ir::Node* ParseForStatement(bool yield, bool has_return);
+
+  ir::Node* ParseForIterationStatement(ir::Node* reciever, TokenInfo* info, bool yield, bool has_return);
+
+  ir::Node* ParseContinueStatement();
+
+  ir::Node* ParseBreakStatement();
+
+  ir::Node* ParseReturnStatement(bool yield);
+
+  ir::Node* ParseWithStatement(bool yield, bool has_return);
+
+  ir::Node* ParseSwitchStatement(bool yield, bool has_return);
+
+  ir::Node* ParseCaseClauses(bool yield, bool has_return);
+
+  ir::Node* ParseLabelledStatement();
+
+  ir::Node* ParseThrowStatement();
+
+  ir::Node* ParseTryStatement(bool yield, bool has_return);
+
+  ir::Node* ParseCatchBlock(bool yield, bool has_return);
+
+  ir::Node* ParseFinallyBlock(bool yield, bool has_return);
+
+  ir::Node* ParseClassDeclaration();
+
+  ir::Node* ParseFunction(bool yield, bool has_default);
+
+  ir::Node* ParseParameterList(bool accesslevel_allowed);
+  
+  ir::Node* ParseParameter(bool rest, bool accesslevel_allowed);
+
+  ir::Node* ParseFunctionBody(bool yield);
+
+  ir::Node* ParseTypeExpression();
+
+  ir::Node* ParseReferencedType();
+
+  ir::Node* ParseGenericType();
+
+  ir::Node* ParseTypeArguments();
+
+  ir::Node* ParseTypeParameters();
+
+  ir::Node* ParseTypeQueryExpression();
+
+  ir::Node* ParseArrayType(ir::Node* type_expr);
+
+  ir::Node* ParseObjectTypeExpression();
+
+  ir::Node* ParseObjectTypeElement();
+
+  ir::Node* ParseCallSignature(bool accesslevel_allowed);
+  
   // Parse expression.
   ir::Node* ParseExpression(bool in, bool yield);
 
@@ -152,6 +258,8 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
 
   // Parse postfix expression.
   ir::Node* ParsePostfixExpression(bool yield);
+
+  ir::Node* ParseLeftHandSideExpression(bool yield);
 
   // Parse member expression.
   ir::Node* ParseMemberExpression(bool yield);
@@ -208,10 +316,18 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
   ir::Node* ParseLabelIdentifier(bool yield);
 
   ir::Node* ParseIdentifier();
+
+  ir::Node* ParseStringLiteral();
+
+  ir::Node* ParseNumericLiteral();
+
+  ir::Node* ParseBooleanLiteral();
 };
 } // yatsc
 
 #include "./expression-parser-partial.h"
+#include "./type-parser-partial.h"
+#include "./statement-parser-partial.h"
 
 #undef SYNTAX_ERROR
 #undef ARROW_PARAMETERS_ERROR

@@ -1,5 +1,5 @@
-### <a name="Program"> Program[Script,Module,TsModule]
-- \[+Script\] [Script](#Script)
+### <a name="Program"> Program[TsModule]
+- [SourceElements](#SourceElements)
 - \[+Module\] [Module](./MODULE_SYNTAX_GRAMMAR.md#Module)
 - \[+TsModule\] [ModuleDeclaration](#ModuleDeclaration)
 - \[+TsModule\] ___export___ ___=___ [Identifier](./EXPRESSION_SYNTAX_GRAMMAR.md#Identifier) ___;___

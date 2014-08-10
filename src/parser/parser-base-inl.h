@@ -123,7 +123,7 @@ void ParserBase<UCharInputIterator>::RewindBuffer(size_t num) {
  */
 template <typename UCharInputIterator>
 TokenInfo* ParserBase<UCharInputIterator>::PeekBuffer(size_t num) {
-  token_buffer_.Peek(num);
+  return token_buffer_.Peek(num);
 }
 
 
