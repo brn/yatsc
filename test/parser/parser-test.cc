@@ -54,6 +54,12 @@ static bool show_parse_phase = false;
     }                                                                   \
   }
 
+
+#define EXPR_TEST_ALL(code, expected_str)                             \
+  []{PARSER_TEST__(ParseExpression(true, false), yatsc::LanguageMode::ES3, code, expected_str, false, std::exception); }(); \
+  []{PARSER_TEST__(ParseExpression(true, false), yatsc::LanguageMode::ES5_STRICT, code, expected_str, false, std::exception);}(); \
+  []{PARSER_TEST__(ParseExpression(true, false), yatsc::LanguageMode::ES6, code, expected_str, false, std::exception)}()
+
 #define EXPR_TEST(type, code, expected_str)                             \
   PARSER_TEST__(ParseExpression(true, false), type, code, expected_str, false, std::exception)
 
@@ -71,43 +77,43 @@ static bool show_parse_phase = false;
 
 
 TEST(ParserTest, ParseLiteral_string) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "'aaaaaaa'", "[StringView]['aaaaaaa']");
+  EXPR_TEST_ALL("'aaaaaaa'", "[StringView]['aaaaaaa']");
 }
 
 
 TEST(ParserTest, ParseLiteral_numeric) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "12345", "[NumberView][12345]");
+  EXPR_TEST_ALL("12345", "[NumberView][12345]");
 }
 
 
 TEST(ParserTest, ParseLiteral_boolean) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "true", "[TrueView]");
-  EXPR_TEST(yatsc::LanguageMode::ES3, "false", "[FalseView]");
+  EXPR_TEST_ALL("true", "[TrueView]");
+  EXPR_TEST_ALL("false", "[FalseView]");
 }
 
 
 TEST(ParserTest, ParseLiteral_undefined) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "undefined", "[UndefinedView]");
+  EXPR_TEST_ALL("undefined", "[UndefinedView]");
 }
 
 
 TEST(ParserTest, ParseLiteral_null) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "null", "[NullView]");
+  EXPR_TEST_ALL("null", "[NullView]");
 }
 
 
 TEST(ParserTest, ParseLiteral_NaN) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "NaN", "[NaNView]");
+  EXPR_TEST_ALL("NaN", "[NaNView]");
 }
 
 
 TEST(ParserTest, ParsePrimaryExpression_this) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "this", "[ThisView]");
+  EXPR_TEST_ALL("this", "[ThisView]");
 }
 
 
 TEST(ParserTest, ParsePrimaryExpression_identifier) {
-  EXPR_TEST(yatsc::LanguageMode::ES3, "Identifier", "[NameView][Identifier]");
+  EXPR_TEST_ALL("Identifier", "[NameView][Identifier]");
 }
 
 
@@ -133,6 +139,7 @@ TEST(ParserTest, ParseExpression_object) {
             "  [ObjectElementView]\n"
             "    [NameView][c]\n"
             "    [NumberView][400]");
+  
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "({a:{b:{c:{d:{e:{f:100}}}}}})",
             "[ObjectLiteralView]\n"
@@ -154,6 +161,34 @@ TEST(ParserTest, ParseExpression_object) {
             "                      [ObjectElementView]\n"
             "                        [NameView][f]\n"
             "                        [NumberView][100]");
+}
+
+
+TEST(ParserTest, ParseExpression_array_comprehension) {
+  EXPR_TEST(yatsc::LanguageMode::ES6, "[for (x of m) x]",
+            "[ArrayLiteralView]\n"
+            "  [ComprehensionExprView]\n"
+            "    [ForOfStatementView]\n"
+            "      [NameView][x]\n"
+            "      [NameView][m]\n"
+            "      [Empty]\n"
+            "    [NameView][x]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES6, "[for (x of m) if (x % 2 === 0) x]",
+            "[ArrayLiteralView]\n"
+            "  [ComprehensionExprView]\n"
+            "    [ForOfStatementView]\n"
+            "      [NameView][x]\n"
+            "      [NameView][m]\n"
+            "      [Empty]\n"
+            "    [IfStatementView]\n"
+            "      [BinaryExprView][TS_EQ]\n"
+            "        [BinaryExprView][TS_MOD]\n"
+            "          [NameView][x]\n"
+            "          [NumberView][2]\n"
+            "        [NumberView][0]\n"
+            "      [NameView][x]\n"
+            "      [Empty]");
 }
 
 
@@ -564,6 +599,7 @@ TEST(ParserTest, ParseExpression_regexp) {
             "  [NameView][x]\n"
             "  [RegularExprView][/\\/abc\\/ddd\\/ee/]");
 
+  
   EXPR_TEST(yatsc::LanguageMode::ES3, "m(/a/)",
             "[CallView]\n"
             "  [NameView][m]\n"
@@ -666,7 +702,7 @@ TEST(ParserTest, ParseExpression_condition_expr) {
             "  [NameView][z]");
 
 
-  EXPR_TEST(yatsc::LanguageMode::ES3, "x === 100? (a,b) => a + b + x: (a,b) => a - b + x",
+  EXPR_TEST(yatsc::LanguageMode::ES3, "x === 100? (a,b) => a + b + x: (a,b) => a - b + x / 2",
             "[TemaryExprView]\n"
             "  [BinaryExprView][TS_EQ]\n"
             "    [NameView][x]\n"
@@ -687,10 +723,10 @@ TEST(ParserTest, ParseExpression_condition_expr) {
             "      [Empty]\n"
             "      [Empty]\n"
             "    [BinaryExprView][TS_PLUS]\n"
-            "      [NameView][a]\n"
             "      [BinaryExprView][TS_PLUS]\n"
+            "        [NameView][a]\n"
             "        [NameView][b]\n"
-            "        [NameView][x]\n"
+            "      [NameView][x]\n"
             "  [ArrowFunctionView]\n"
             "    [CallSignatureView]\n"
             "      [ParamList]\n"
@@ -706,11 +742,28 @@ TEST(ParserTest, ParseExpression_condition_expr) {
             "          [Empty]\n"
             "      [Empty]\n"
             "      [Empty]\n"
-            "    [BinaryExprView][TS_MINUS]\n"
-            "      [NameView][a]\n"
+            "    [BinaryExprView][TS_DIV]\n"
             "      [BinaryExprView][TS_PLUS]\n"
-            "        [NameView][b]\n"
-            "        [NameView][x]");
+            "        [BinaryExprView][TS_MINUS]\n"
+            "          [NameView][a]\n"
+            "          [NameView][b]\n"
+            "        [NameView][x]\n"
+            "      [NumberView][2]");
+}
+
+
+TEST(ParserTest, ParseExpression_binary_expr) {
+  EXPR_TEST_ALL("1 + 1",
+                "[BinaryExprView][TS_PLUS]\n"
+                "  [NumberView][1]\n"
+                "  [NumberView][1]");
+  
+  EXPR_TEST_ALL("2 + (3 - 1)",
+                "[BinaryExprView][TS_PLUS]\n"
+                "  [NumberView][2]\n"
+                "  [BinaryExprView][TS_MINUS]\n"
+                "    [NumberView][3]\n"
+                "    [NumberView][1]");
 }
 
 

@@ -322,6 +322,14 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
   ir::Node* ParseNumericLiteral();
 
   ir::Node* ParseBooleanLiteral();
+
+  ir::Node* ParseUndefinedLiteral();
+
+  ir::Node* ParseNaNLiteral();
+
+  ir::Node* ParseRegularExpression();
+
+  ir::Node* ParseTemplateLiteral();
 };
 } // yatsc
 

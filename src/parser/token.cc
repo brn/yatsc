@@ -171,7 +171,7 @@ static const Token kPunctures[] = {
   KEYWORD("case", Token::TS_CASE)                                       \
   KEYWORD("catch", Token::TS_CATCH)                                     \
   KEYWORD("class", Token::TS_CLASS)                                     \
-  KEYWORD("const", LanguageModeUtil::IsES6(co)? Token::TS_CONST: Token::TS_IDENTIFIER) \
+  KEYWORD("const", LanguageModeUtil::IsES6(co)? Token::TS_CONST: Token::FUTURE_RESERVED_WORD) \
   KEYWORD("continue", Token::TS_CONTINUE)                               \
   KEYWORD_GROUP('d')                                                    \
   KEYWORD("debugger", Token::TS_DEBUGGER)                               \
@@ -197,7 +197,7 @@ static const Token kPunctures[] = {
   KEYWORD("instanceof", Token::TS_INSTANCEOF)                           \
   KEYWORD("interface", Token::TS_INTERFACE)                             \
   KEYWORD_GROUP('l')                                                    \
-  KEYWORD("let", Token::TS_LET)                                         \
+  KEYWORD("let", LanguageModeUtil::IsES6(co)? Token::TS_LET: Token::TS_IDENTIFIER) \
   KEYWORD_GROUP('m')                                                    \
   KEYWORD("module", ModuleTypeUtil::IsModuleKeywordAllowed(co)? Token::TS_MODULE: Token::TS_IDENTIFIER) \
   KEYWORD_GROUP('n')                                                    \
@@ -277,6 +277,49 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, const CompilerOpti
 // Get puncture type from char.
 Token TokenInfo::GetPunctureType(const UChar& uchar) {
   return kPunctures[uchar.ToUC8Ascii()];
+}
+
+
+uint6_t GetOperandPriority(Token t) {
+  bool GetOperandPriority(Token t) {
+  switch (t->type()) {
+    case Token::TS_MOD:
+    case Token::TS_DIV:
+    case Token::TS_MUL:
+      return 1;
+    case Token::TS_PLUS:
+    case Token::TS_MINUS:
+      return 2;
+    case Token::TS_SHIFT_RIGHT:
+    case Token::TS_U_SHIFT_RIGHT:
+    case Token::TS_SHIFT_LEFT:
+      return 3;
+    case Token::TS_LESS:
+    case Token::TS_GREATER:
+    case Token::TS_GREATER_EQUAL:
+    case Token::TS_LESS_EQUAL:
+    case Token::TS_IN:
+    case Token::TS_INSTANCEOF
+      return 4;
+    case Token::TS_EQ:
+    case Token::TS_EQUAL:
+    case Token::TS_NOT_EQ:
+    case Token::TS_NOT_EQUAL:
+      return 5;
+    case Token::TS_BIT_AND:
+      return 6;
+    case Token::TS_BIT_XOR:
+      return 7;
+    case Token::TS_BIT_OR:
+      return 8;
+    case Token::TS_LOGICAL_AND:
+      return 9;
+    case Token::TS_LOGICAL_OR:
+      return 10;
+    default:
+      return 0;
+  }
+}
 }
 
 

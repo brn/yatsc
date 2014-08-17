@@ -85,16 +85,6 @@ class Scanner: private Uncopyable, private Unmovable {
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
 
 
-  void AllowRegularExpression() {
-    allow_regular_expression_ = true;
-  }
-
-  
-  void DisallowRegularExpression() {
-    allow_regular_expression_ = false;
-  }
-
-
   /**
    * Check whether current token is regular expression or not.
    * If current token is regular expression return TS_REGULAR_EXPR,
@@ -298,7 +288,6 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
   bool unscaned_;
-  bool allow_regular_expression_;
   Environment* environment_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;

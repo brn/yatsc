@@ -23,74 +23,110 @@
  */
 
 #include "./scanner-test-prelude.h"
+#ifdef interface
+#undef interface
+#endif
 
-#define KEYWORD_TEST(keyword, token_type)                       \
-  TEST(ScannerTest, ScanIdentifier_keyword_##keyword)           \
-  {                                                             \
-    INIT(token, #keyword);                                      \
-    ASSERT_STREQ(#token_type, token->ToString());               \
-    ASSERT_EQ(yatsc::Token::token_type, token->type());         \
-    ASSERT_STREQ(token->utf8_value(), #keyword);                \
-    ASSERT_EQ(token->value().utf8_length(), strlen(#keyword)); \
-    END_SCAN;                                                   \
+#define KEYWORD_TEST_ALL(keyword, token_type)   \
+  KEYWORD_TEST(keyword, token_type);            \
+  KEYWORD_TEST_STRICT(keyword, token_type);     \
+  KEYWORD_TEST_ES6(keyword, token_type);
+
+
+#define KEYWORD_TEST(keyword, token_type)             \
+  TEST(ScannerTest, ScanIdentifier_keyword_##keyword) \
+  {                                                   \
+    INIT(token, #keyword);                            \
+    KEYWORD_TEST__(keyword, token_type);              \
   }
+
+
+#define KEYWORD_TEST_STRICT(keyword, token_type)              \
+  TEST(ScannerTest, ScanIdentifier_keyword_strict_##keyword)  \
+  {                                                           \
+    INIT_STRICT(token, #keyword);                             \
+    KEYWORD_TEST__(keyword, token_type);                      \
+  }
+
+
+#define KEYWORD_TEST_ES6(keyword, token_type)             \
+  TEST(ScannerTest, ScanIdentifier_keyword_es6_##keyword) \
+  {                                                       \
+    INIT_ES6(token, #keyword);                            \
+    KEYWORD_TEST__(keyword, token_type);                  \
+  }
+
+
+#define KEYWORD_TEST__(keyword, token_type)                   \
+  ASSERT_STREQ(#token_type, token->ToString());               \
+  ASSERT_EQ(yatsc::Token::token_type, token->type());         \
+  ASSERT_STREQ(token->utf8_value(), #keyword);                \
+  ASSERT_EQ(token->value().utf8_length(), strlen(#keyword));  \
+  END_SCAN;                                                   \
 
 
 #define RESERVED_KW_TEST(keyword)               \
   KEYWORD_TEST(keyword, FUTURE_RESERVED_WORD)
 
 
-#define STRICT_RESERVED_KW_TEST(keyword)        \
-  KEYWORD_TEST(keyword, FUTURE_STRICT_RESERVED_WORD)
+#define STRICT_RESERVED_KW_TEST(keyword)                    \
+  KEYWORD_TEST_STRICT(keyword, FUTURE_STRICT_RESERVED_WORD)
+
+#define ES6_RESERVED_KW_TEST(keyword)                       \
+  KEYWORD_TEST_ES6(keyword, FUTURE_STRICT_RESERVED_WORD)
 
 
-KEYWORD_TEST(declare, TS_DECLARE);
-KEYWORD_TEST(break, TS_BREAK);
-KEYWORD_TEST(case, TS_CASE);
-KEYWORD_TEST(catch, TS_CATCH);
-KEYWORD_TEST(class, TS_CLASS);
-KEYWORD_TEST(const, TS_CONST);
-KEYWORD_TEST(continue, TS_CONTINUE);
-KEYWORD_TEST(debugger, TS_DEBUGGER);
-KEYWORD_TEST(default, TS_DEFAULT);
-KEYWORD_TEST(delete, TS_DELETE);
-KEYWORD_TEST(do, TS_DO);
-KEYWORD_TEST(else, TS_ELSE);
-KEYWORD_TEST(enum, TS_ENUM);
-KEYWORD_TEST(export, TS_EXPORT);
-KEYWORD_TEST(extends, TS_EXTENDS);
-KEYWORD_TEST(false, TS_FALSE);
-KEYWORD_TEST(finally, TS_FINALLY);
-KEYWORD_TEST(for, TS_FOR);
-KEYWORD_TEST(function, TS_FUNCTION);
-KEYWORD_TEST(if, TS_IF);
-KEYWORD_TEST(implements, TS_IMPLEMENTS);
-KEYWORD_TEST(import, TS_IMPORT);
-KEYWORD_TEST(in, TS_IN);
-KEYWORD_TEST(instanceof, TS_INSTANCEOF);
-KEYWORD_TEST(interface, TS_INTERFACE);
-KEYWORD_TEST(let, TS_LET);
-KEYWORD_TEST(NaN, TS_NAN);
-KEYWORD_TEST(new, TS_NEW);
-KEYWORD_TEST(null, TS_NULL);
+KEYWORD_TEST_ALL(declare, TS_DECLARE);
+KEYWORD_TEST_ALL(break, TS_BREAK);
+KEYWORD_TEST_ALL(case, TS_CASE);
+KEYWORD_TEST_ALL(catch, TS_CATCH);
+KEYWORD_TEST_ALL(class, TS_CLASS);
+KEYWORD_TEST(const, FUTURE_RESERVED_WORD);
+KEYWORD_TEST_STRICT(const, FUTURE_RESERVED_WORD);
+KEYWORD_TEST_ES6(const, TS_CONST);
+KEYWORD_TEST_ALL(continue, TS_CONTINUE);
+KEYWORD_TEST_ALL(debugger, TS_DEBUGGER);
+KEYWORD_TEST_ALL(default, TS_DEFAULT);
+KEYWORD_TEST_ALL(delete, TS_DELETE);
+KEYWORD_TEST_ALL(do, TS_DO);
+KEYWORD_TEST_ALL(else, TS_ELSE);
+KEYWORD_TEST_ALL(enum, TS_ENUM);
+KEYWORD_TEST_ALL(export, TS_EXPORT);
+KEYWORD_TEST_ALL(extends, TS_EXTENDS);
+KEYWORD_TEST_ALL(false, TS_FALSE);
+KEYWORD_TEST_ALL(finally, TS_FINALLY);
+KEYWORD_TEST_ALL(for, TS_FOR);
+KEYWORD_TEST_ALL(function, TS_FUNCTION);
+KEYWORD_TEST_ALL(if, TS_IF);
+KEYWORD_TEST_ALL(implements, TS_IMPLEMENTS);
+KEYWORD_TEST_ALL(import, TS_IMPORT);
+KEYWORD_TEST_ALL(in, TS_IN);
+KEYWORD_TEST_ALL(instanceof, TS_INSTANCEOF);
+KEYWORD_TEST_ALL(interface, TS_INTERFACE);
+KEYWORD_TEST(let, TS_IDENTIFIER);
+KEYWORD_TEST_STRICT(let, TS_IDENTIFIER);
+KEYWORD_TEST_ES6(let, TS_LET);
+KEYWORD_TEST_ALL(NaN, TS_NAN);
+KEYWORD_TEST_ALL(new, TS_NEW);
+KEYWORD_TEST_ALL(null, TS_NULL);
 STRICT_RESERVED_KW_TEST(package);
-KEYWORD_TEST(private, TS_PRIVATE);
-STRICT_RESERVED_KW_TEST(protected);
-KEYWORD_TEST(public, TS_PUBLIC);
-KEYWORD_TEST(return, TS_RETURN);
-KEYWORD_TEST(static, TS_STATIC);
-KEYWORD_TEST(super, TS_SUPER);
-KEYWORD_TEST(switch, TS_SWITCH);
-KEYWORD_TEST(this, TS_THIS);
-KEYWORD_TEST(throw, TS_THROW);
-KEYWORD_TEST(true, TS_TRUE);
-KEYWORD_TEST(try, TS_TRY);
-KEYWORD_TEST(typeof, TS_TYPEOF);
-KEYWORD_TEST(undefined, TS_UNDEFINED);
-KEYWORD_TEST(var, TS_VAR);
-KEYWORD_TEST(void, TS_VOID);
-KEYWORD_TEST(while, TS_WHILE);
-KEYWORD_TEST(with, TS_WITH);
-KEYWORD_TEST(yield, TS_YIELD);
-
+ES6_RESERVED_KW_TEST(package);
+KEYWORD_TEST_ALL(private, TS_PRIVATE);
+KEYWORD_TEST_ALL(protected, TS_PROTECTED);
+KEYWORD_TEST_ALL(public, TS_PUBLIC);
+KEYWORD_TEST_ALL(return, TS_RETURN);
+KEYWORD_TEST_ALL(static, TS_STATIC);
+KEYWORD_TEST_ALL(super, TS_SUPER);
+KEYWORD_TEST_ALL(switch, TS_SWITCH);
+KEYWORD_TEST_ALL(this, TS_THIS);
+KEYWORD_TEST_ALL(throw, TS_THROW);
+KEYWORD_TEST_ALL(true, TS_TRUE);
+KEYWORD_TEST_ALL(try, TS_TRY);
+KEYWORD_TEST_ALL(typeof, TS_TYPEOF);
+KEYWORD_TEST_ALL(undefined, TS_UNDEFINED);
+KEYWORD_TEST_ALL(var, TS_VAR);
+KEYWORD_TEST_ALL(void, TS_VOID);
+KEYWORD_TEST_ALL(while, TS_WHILE);
+KEYWORD_TEST_ALL(with, TS_WITH);
+KEYWORD_TEST_ES6(yield, TS_YIELD);
 

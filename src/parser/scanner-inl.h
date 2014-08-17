@@ -44,7 +44,6 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
     : environment_(Environment::Create()),
-      allow_regular_expression_(false),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
@@ -401,7 +400,7 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
 // Check regular expression.
 template<typename UCharInputIterator>
 TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression() {
-  if (allow_regular_expression_ && token_info_.type() == Token::TS_DIV) {
+  if (token_info_.type() == Token::TS_DIV) {
     // Prepare for scanning.
     BeforeScan();
     UtfString expr;

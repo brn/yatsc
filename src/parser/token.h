@@ -312,6 +312,9 @@ class TokenInfo {
 
   
   static TokenInfo kNullToken;
+
+
+  static uint6_t GetOperandPriority(Token t);
   
  private:  
   UtfString* utf_string_;

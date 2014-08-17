@@ -64,15 +64,18 @@ namespace yatsc {
 #define YATSC_UNUSED
 #endif
 
-
-#ifndef __PRETTY_FUNCTION__
 #ifdef __func__
-#define __PRETTY_FUNCTION__ __func__
+#define FUNCTION_NAME __func__
 #elif defined(__FUNCTION__)
-#define __PRETTY_FUNCTION__ __FUNCTION__
-#else
-#define __PRETTY_FUNCTION__ "unknown"
-#endif
+#define FUNCTION_NAME __FUNCTION__
+#elif defined(__PRETTY_FUNCTION__)
+#define FUNCTION_NAME __PRETTY_FUNCTION__
+#elif defined(__FUNCDNAME__)
+#define FUNCTION_NAME __FUNCDNAME__
+#elif defined(__FUNCSIG__)
+#define FUNCTION_NAME __FUNCSIG__
+#ese
+#define FUNCTION_NAME "anonymous()"
 #endif
 
 
@@ -94,18 +97,18 @@ YATSC_INLINE void Fatal__(const char* file, int line, const char* function, cons
 
 // ASSERT macro definition.
 #ifdef DEBUG
-#define ASSERT(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define ASSERT(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, FUNCTION_NAME)
 #elif defined(NDEBUG) || !defined(DEBUG)
 #define ASSERT(expect, result)
 #endif
 
 
-#define YATSC_CHECK(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define YATSC_CHECK(expect, result) yatsc::Assert__(result == expect, #result, #expect, __FILE__, __LINE__, FUNCTION_NAME)
 
 // ASSERT macro definition end.
 
 
-#define FATAL(msg) {std::stringstream err_stream__;err_stream__ << msg;yatsc::Fatal__(__FILE__, __LINE__, __PRETTY_FUNCTION__, err_stream__.str());}
+#define FATAL(msg) {std::stringstream err_stream__;err_stream__ << msg;yatsc::Fatal__(__FILE__, __LINE__, FUNCTION_NAME, err_stream__.str());}
 
 #define UNREACHABLE FATAL("UNREACHABLE CODE ACCESSED.")
 
