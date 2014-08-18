@@ -391,8 +391,8 @@ ir::Node* Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool yi
   // Check assignment operators.
   if (IsAssignmentOp(type)) {
     if (!parsed_as_assignment_pattern &&
-        expr->HasObjectLiteralView() ||
-        expr->HasArrayLiteralView()) {
+        (expr->HasObjectLiteralView() ||
+         expr->HasArrayLiteralView())) {
 
       if (!LanguageModeUtil::IsES6(compiler_option_)) {
         SYNTAX_ERROR_POS("Invalid Left-Hand-Side expression", expr->source_position());

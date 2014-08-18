@@ -280,9 +280,8 @@ Token TokenInfo::GetPunctureType(const UChar& uchar) {
 }
 
 
-uint6_t GetOperandPriority(Token t) {
-  bool GetOperandPriority(Token t) {
-  switch (t->type()) {
+uint8_t GetOperandPriority(Token t) {
+  switch (t) {
     case Token::TS_MOD:
     case Token::TS_DIV:
     case Token::TS_MUL:
@@ -299,7 +298,7 @@ uint6_t GetOperandPriority(Token t) {
     case Token::TS_GREATER_EQUAL:
     case Token::TS_LESS_EQUAL:
     case Token::TS_IN:
-    case Token::TS_INSTANCEOF
+    case Token::TS_INSTANCEOF:
       return 4;
     case Token::TS_EQ:
     case Token::TS_EQUAL:
@@ -319,7 +318,6 @@ uint6_t GetOperandPriority(Token t) {
     default:
       return 0;
   }
-}
 }
 
 

@@ -74,7 +74,7 @@ namespace yatsc {
 #define FUNCTION_NAME __FUNCDNAME__
 #elif defined(__FUNCSIG__)
 #define FUNCTION_NAME __FUNCSIG__
-#ese
+#else
 #define FUNCTION_NAME "anonymous()"
 #endif
 

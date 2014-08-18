@@ -24,45 +24,16 @@
 
 namespace yatsc {
 /**
- * Return next token  if token buffer's cursor is in the end of input,
- * otherwise return a current token from the token buffer and advance token buffer cursor.
- */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::Next() {
-  if (!token_buffer_.CursorUpdated()) {
-    return token_buffer_.Next();
-  }
-  current_token_info_ = scanner_->Scan();
-  token_buffer_.PushBack(current_token_info_);
-  return token_buffer_.Next();
-}
-
-
-/**
- * Return current token  if token buffer's cursor is in the end of input,
- * otherwise return current token from token buffer.
- */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::Current() {
-  if (!token_buffer_.CursorUpdated()) {
-    return token_buffer_.Current();
-  }
-  return current_token_info_;
-}
-
-
-/**
  * Append token to the buffer.
  * A passed TokenInfo is copied by the copy constructor.
  */
-template <typename UCharInputIterator>
-void ParserBase<UCharInputIterator>::TokenBuffer::PushBack(TokenInfo* token_info) {
+void ParserBase::TokenBuffer::PushBack(TokenInfo* token_info) {
   buffer_->emplace_back(*token_info);
 }
 
 
-template <typename UCharInputIterator>
-bool ParserBase<UCharInputIterator>::TokenBuffer::IsEmpty() YATSC_NO_SE {
+
+bool ParserBase::TokenBuffer::IsEmpty() YATSC_NO_SE {
   return buffer_->empty();
 }
 
@@ -71,8 +42,7 @@ bool ParserBase<UCharInputIterator>::TokenBuffer::IsEmpty() YATSC_NO_SE {
  * Return next TokenInfo.
  * If cursor is end of buffer, return invalid token info.
  */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Next() {
+TokenInfo* ParserBase::TokenBuffer::Next() {
   if (cursor_ >= (buffer_->size() - 1)) {return &null_token_info_;}
   return &((*buffer_)[cursor_++]);
 }
@@ -82,8 +52,7 @@ TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Next() {
  * Return current TokenInfo.
  * If cursor is end of buffer, return invalid token info.
  */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Current() {
+TokenInfo* ParserBase::TokenBuffer::Current() {
   if (cursor_ >= buffer_->size()) {return &null_token_info_;}
   return &((*buffer_)[cursor_]);
 }
@@ -93,8 +62,7 @@ TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Current() {
  * Peek next TokenInfo.
  * If cursor is end of buffer, return invalid token info.
  */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Peek(size_t pos) {
+TokenInfo* ParserBase::TokenBuffer::Peek(size_t pos) {
   if (pos < 0 || pos >= buffer_->size()) {return &null_token_info_;}
   return &((*buffer_)[pos]);
 }
@@ -103,8 +71,7 @@ TokenInfo* ParserBase<UCharInputIterator>::TokenBuffer::Peek(size_t pos) {
 /**
  * Call token_buffer_.PushBack.
  */
-template <typename UCharInputIterator>
-void ParserBase<UCharInputIterator>::PushBackBuffer(TokenInfo* token_info) {
+void ParserBase::PushBackBuffer(TokenInfo* token_info) {
   token_buffer_.PushBack(token_info);
 }
 
@@ -112,8 +79,7 @@ void ParserBase<UCharInputIterator>::PushBackBuffer(TokenInfo* token_info) {
 /**
  * Call token_buffer_.Rewind.
  */
-template <typename UCharInputIterator>
-void ParserBase<UCharInputIterator>::RewindBuffer(size_t num) {
+void ParserBase::RewindBuffer(size_t num) {
   token_buffer_.Rewind(num);
 }
 
@@ -121,8 +87,7 @@ void ParserBase<UCharInputIterator>::RewindBuffer(size_t num) {
 /**
  * Call token_buffer_.Peek.
  */
-template <typename UCharInputIterator>
-TokenInfo* ParserBase<UCharInputIterator>::PeekBuffer(size_t num) {
+TokenInfo* ParserBase::PeekBuffer(size_t num) {
   return token_buffer_.Peek(num);
 }
 
@@ -130,8 +95,7 @@ TokenInfo* ParserBase<UCharInputIterator>::PeekBuffer(size_t num) {
 /**
  * Call token_buffer_.cursor.
  */
-template <typename UCharInputIterator>
-TokenCursor ParserBase<UCharInputIterator>::GetBufferCursorPosition() YATSC_NOEXCEPT {
+TokenCursor ParserBase::GetBufferCursorPosition() YATSC_NOEXCEPT {
   return token_buffer_.cursor();
 }
 
@@ -139,16 +103,14 @@ TokenCursor ParserBase<UCharInputIterator>::GetBufferCursorPosition() YATSC_NOEX
 /**
  * Call token_buffer.SetCursorPosition.
  */
-template <typename UCharInputIterator>
-void ParserBase<UCharInputIterator>::SetBufferCursorPosition(size_t num) {
+void ParserBase::SetBufferCursorPosition(size_t num) YATSC_NOEXCEPT {
   token_buffer_.SetCursorPosition(num);
 }
 
 /**
  * Check whether cursor is end of buffer or not.
  */
-template <typename UCharInputIterator>
-bool ParserBase<UCharInputIterator>::TokenBuffer::CursorUpdated() {
+bool ParserBase::TokenBuffer::CursorUpdated() {
   if (buffer_->empty()) {
     return true;
   }

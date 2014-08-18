@@ -97,10 +97,26 @@ namespace yatsc {
 #endif
 
 template <typename UCharInputSourceIterator>
-class Parser : public ParserBase<UCharInputSourceIterator> {
+class Parser: public ParserBase {
  public:
   Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
-      : ParserBase(co, scanner, error_reporter) {}
+      : ParserBase(co, error_reporter),
+        scanner_(scanner) {Next();}
+
+ private:
+  /**
+   * Return a next TokenInfo.
+   * @return Next TokenInfo.
+   */
+  YATSC_INLINE TokenInfo* Next();
+
+
+  /**
+   * Return current TokenInfo.
+   * @return Current TokenInfo.
+   */
+  YATSC_INLINE TokenInfo* Current();
+  
 
  VISIBLE_FOR_TESTING:
   ir::Node* ParseProgram();
@@ -330,9 +346,13 @@ class Parser : public ParserBase<UCharInputSourceIterator> {
   ir::Node* ParseRegularExpression();
 
   ir::Node* ParseTemplateLiteral();
+
+ private:
+  Scanner<UCharInputSourceIterator>* scanner_;
 };
 } // yatsc
 
+#include "./parser-inl.h"
 #include "./expression-parser-partial.h"
 #include "./type-parser-partial.h"
 #include "./statement-parser-partial.h"

@@ -36,7 +36,6 @@
 namespace yatsc {
 typedef size_t TokenCursor;
 
-template <typename UCharInputSourceIterator>
 class ParserBase: private Uncopyable, private Unmovable {
  public:
   
@@ -44,13 +43,12 @@ class ParserBase: private Uncopyable, private Unmovable {
    * @param scanner Scanner instance that is not consume token yet.
    * @param error_reporter ErrorReporter instance to use report parse error.
    */
-  ParserBase(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
+  ParserBase(const CompilerOption& co, ErrorReporter* error_reporter)
       : print_parser_phase_(false),
         compiler_option_(co),
-        scanner_(scanner),
         current_token_info_(nullptr),
         next_token_info_(nullptr),
-        error_reporter_(error_reporter) {Next();}
+        error_reporter_(error_reporter) {}
 
 
  VISIBLE_FOR_TESTING:
@@ -67,21 +65,6 @@ class ParserBase: private Uncopyable, private Unmovable {
 
 
  protected:
-  
-  /**
-   * Return a next TokenInfo.
-   * @return Next TokenInfo.
-   */
-  YATSC_INLINE TokenInfo* Next();
-
-
-  /**
-   * Return current TokenInfo.
-   * @return Current TokenInfo.
-   */
-  YATSC_INLINE TokenInfo* Current();
-
-
   /**
    * Append TokenInfo to the TokenBuffer.
    * @param token_info Newly appended TokenInfo.
@@ -235,7 +218,6 @@ class ParserBase: private Uncopyable, private Unmovable {
 
   bool print_parser_phase_;
   const CompilerOption& compiler_option_;
-  Scanner<UCharInputSourceIterator>* scanner_;
   TokenInfo* current_token_info_;
   TokenInfo* next_token_info_;
   ir::IRFactory irfactory_;

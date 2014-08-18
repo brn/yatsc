@@ -842,7 +842,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_retu
       }
       case Token::TS_DEFAULT: {
         ir::Node* body = New<ir::CaseBody>();
-     LOOP: while (1) {
+        while (1) {
           if (Current()->type() == Token::TS_LEFT_BRACE) {
             body->InsertLast(ParseBlockStatement(yield));
           } else {
@@ -851,7 +851,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_retu
           switch (Current()->type()) {
             case Token::TS_CASE:
             case Token::TS_DEFAULT:
-              break LOOP;
+              continue;
             default:
               SYNTAX_ERROR("SyntaxError unexpected token", Current());
           }
