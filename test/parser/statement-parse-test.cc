@@ -26,17 +26,26 @@
 #include <gtest/gtest.h>
 #include "../parser-util.h"
 
+bool breakable = false;
+#define STATEMENT_TEST(type, code, expected_str)                        \
+  PARSER_TEST(ParseStatement(false, false, breakable), type, code, expected_str, false, std::exception)
 
-#define STATEMENT_TEST(type, code, expected_str)                     \
-  PARSER_TEST(ParseStatement(false, false), type, code, expected_str, false, std::exception)
+#define STATEMENT_TEST_THROW(type, code)                                \
+  PARSER_TEST(ParseStatement(false, false, breakable), type, code, "", true, std::exception)
 
 #define STATEMENT_TEST_ALL(code, expected_str)                          \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();  \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES6, code, expected_str)}()
 
+#define STATEMENT_TEST_ALL_THROW(code)                                \
+  []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES3, code);}();        \
+  []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES5_STRICT, code);}(); \
+  []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES6, code)}()
+
 
 TEST(StatementParseTest, ParseForStatement) {
+  breakable = true;
   STATEMENT_TEST_ALL("for (var i = 0; i < 10; i++) {}",
                      "[ForStatementView]\n"
                      "  [VariableDeclView]\n"
@@ -50,6 +59,22 @@ TEST(StatementParseTest, ParseForStatement) {
                      "  [PostfixView][TS_INCREMENT]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]");
+
+  STATEMENT_TEST_ALL("for (var i = 0; i < 10; i++) {break;}",
+                     "[ForStatementView]\n"
+                     "  [VariableDeclView]\n"
+                     "    [VariableView]\n"
+                     "      [NameView][i]\n"
+                     "      [NumberView][0]\n"
+                     "      [Empty]\n"
+                     "  [BinaryExprView][TS_LESS]\n"
+                     "    [NameView][i]\n"
+                     "    [NumberView][10]\n"
+                     "  [PostfixView][TS_INCREMENT]\n"
+                     "    [NameView][i]\n"
+                     "  [BlockView]\n"
+                     "    [BreakStatementView]\n"
+                     "      [Empty]");
 
 
   STATEMENT_TEST_ALL("for (i = 0; i < 10; i++) {}",
@@ -151,6 +176,7 @@ TEST(StatementParseTest, ParseForStatement) {
 
 
 TEST(StatementParseTest, ParseWhileStatement) {
+  breakable = true;
   STATEMENT_TEST_ALL("while (true) {}",
                      "[WhileStatementView]\n"
                      "  [TrueView]\n"
@@ -166,4 +192,105 @@ TEST(StatementParseTest, ParseWhileStatement) {
                      "      [NameView][x]\n"
                      "      [NumberView][10]\n"
                      "  [BlockView]");
+}
+
+
+TEST(StatementParseTest, ParseDoWhileStatement) {
+  breakable = true;
+  STATEMENT_TEST_ALL("do {} while (true);",
+                     "[DoWhileStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]");
+
+  STATEMENT_TEST_ALL("do {} while (i < 10 && x > 10);",
+                     "[DoWhileStatementView]\n"
+                     "  [BinaryExprView][TS_LOGICAL_AND]\n"
+                     "    [BinaryExprView][TS_LESS]\n"
+                     "      [NameView][i]\n"
+                     "      [NumberView][10]\n"
+                     "    [BinaryExprView][TS_GREATER]\n"
+                     "      [NameView][x]\n"
+                     "      [NumberView][10]\n"
+                     "  [BlockView]");
+}
+
+
+TEST(StatementParseTest, ParseIfStatement) {
+  breakable = false;
+  STATEMENT_TEST_ALL("if (true) {}",
+                     "[IfStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "  [Empty]");
+
+  STATEMENT_TEST_ALL("if (true) {} else {}",
+                     "[IfStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "  [BlockView]");
+
+  STATEMENT_TEST_ALL("if (true) {} else if (true) {}",
+                     "[IfStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "  [IfStatementView]\n"
+                     "    [TrueView]\n"
+                     "    [BlockView]\n"
+                     "    [Empty]");
+
+  STATEMENT_TEST_ALL("if (true) {} else if (true) {} else {}",
+                     "[IfStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "  [IfStatementView]\n"
+                     "    [TrueView]\n"
+                     "    [BlockView]\n"
+                     "    [BlockView]");
+}
+
+
+TEST(StatementParseTest, ParseSwitchStatement) {
+  breakable = false;
+  STATEMENT_TEST_ALL("switch (a) {case 1:break;case 2:break;default:{}}",
+                     "[SwitchStatementView]\n"
+                     "  [NameView][a]\n"
+                     "  [CaseListView]\n"
+                     "    [CaseView]\n"
+                     "      [NumberView][1]\n"
+                     "      [CaseBody]\n"
+                     "        [BreakStatementView]\n"
+                     "          [Empty]\n"
+                     "    [CaseView]\n"
+                     "      [NumberView][2]\n"
+                     "      [CaseBody]\n"
+                     "        [BreakStatementView]\n"
+                     "          [Empty]\n"
+                     "    [CaseView]\n"
+                     "      [Empty]\n"
+                     "      [CaseBody]\n"
+                     "        [BlockView]");
+
+  STATEMENT_TEST_ALL_THROW("switch (a) {case 1:break;case 2:break;default:{}default:{}}");
+  STATEMENT_TEST_ALL_THROW("switch (a) {case :break;case 2:break;default:{}}");
+}
+
+
+TEST(StatementParseTest, ParseTryCatch) {
+  breakable = false;
+  STATEMENT_TEST_ALL("try {} catch(e) {}",
+                     "[TryStatementView]\n"
+                     "  [BlockView]\n"
+                     "  [CatchStatementView]\n"
+                     "    [NameView][e]\n"
+                     "    [BlockView]\n"
+                     "  [Empty]");
+
+  STATEMENT_TEST_ALL("try {} catch(e) {} finally {}",
+                     "[TryStatementView]\n"
+                     "  [BlockView]\n"
+                     "  [CatchStatementView]\n"
+                     "    [NameView][e]\n"
+                     "    [BlockView]\n"
+                     "  [FinallyStatementView]\n"
+                     "    [BlockView]");
 }

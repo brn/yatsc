@@ -33,8 +33,11 @@ void ErrorReporter::Throw(const SourcePosition& source_position) {
       << "\n" << GetLineSource(source_position)
       << "\n";
 
-  size_t threshold = source_position.start_col() - 1;
-  for (size_t i = 0; i < source_position.end_col(); i++) {
+  size_t start_col = source_position.start_col();
+  size_t end_col = source_position.end_col();
+  size_t threshold = start_col - 1;
+  size_t end = end_col > start_col? end_col - 1: end_col;
+  for (size_t i = 0; i < end; i++) {
     if (i >= threshold) {
       st_ << '^';
     } else {

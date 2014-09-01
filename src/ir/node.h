@@ -835,11 +835,11 @@ class LabelledStatementView: public Node {
 class SwitchStatementView: public Node {
  public:
   SwitchStatementView(Node* expr, Node* case_list)
-      : Node(NodeType::kSwitchStatementView, 3u, {expr, case_list}) {}
+      : Node(NodeType::kSwitchStatementView, 2u, {expr, case_list}) {}
 
 
   SwitchStatementView()
-      : Node(NodeType::kSwitchStatementView, 3u) {}
+      : Node(NodeType::kSwitchStatementView, 2u) {}
 
 
   // Getter and Setter for expr.
@@ -890,7 +890,7 @@ class CaseBody: public Node {
 
 
   CaseBody()
-      : Node(NodeType::kCaseView, 0u) {}
+      : Node(NodeType::kCaseBody, 0u) {}
 };
 
 

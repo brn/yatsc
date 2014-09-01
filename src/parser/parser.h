@@ -101,21 +101,6 @@ class Parser: public ParserBase {
         scanner_(scanner) {Next();}
 
  private:
-
-  class ParserState {
-   public:
-    ParserState()
-        : breakable_(false) {}
-
-    YATSC_INLINE bool IsBreakable() YATSC_NO_SE {
-      return breakable_;
-    }
-
-    YATSC_INLINE void set_breakable(bool breakable) YATSC_NOEXCEPT {breakable_ = breakable;}
-    
-   private:
-    bool breakable_;
-  };
   
   /**
    * Return a next TokenInfo.
@@ -138,13 +123,13 @@ class Parser: public ParserBase {
 
   ir::Node* ParseSourceElement();
 
-  ir::Node* ParseStatementListItem(bool yield, bool has_return);
+  ir::Node* ParseStatementListItem(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseStatementList(bool yield, bool has_return);
 
-  ir::Node* ParseStatement(bool yield, bool has_return);
+  ir::Node* ParseStatement(bool yield, bool has_return, bool breakable);
 
-  ir::Node* ParseBlockStatement(bool yield, bool has_return);
+  ir::Node* ParseBlockStatement(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseModuleStatement();
 
@@ -176,7 +161,7 @@ class Parser: public ParserBase {
   
   ir::Node* ParseVariableDeclaration(bool in, bool yield);
 
-  ir::Node* ParseIfStatement(bool yield, bool has_return);
+  ir::Node* ParseIfStatement(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseWhileStatement(bool yield, bool has_return);
 
@@ -194,21 +179,23 @@ class Parser: public ParserBase {
 
   ir::Node* ParseReturnStatement(bool yield);
 
-  ir::Node* ParseWithStatement(bool yield, bool has_return);
+  ir::Node* ParseWithStatement(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseSwitchStatement(bool yield, bool has_return);
 
   ir::Node* ParseCaseClauses(bool yield, bool has_return);
 
-  ir::Node* ParseLabelledStatement();
+  ir::Node* ParseLabelledStatement(bool yield, bool has_return, bool breakable);
+
+  ir::Node* ParseLabelledItem(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseThrowStatement();
 
-  ir::Node* ParseTryStatement(bool yield, bool has_return);
+  ir::Node* ParseTryStatement(bool yield, bool has_return, bool breakable);
 
-  ir::Node* ParseCatchBlock(bool yield, bool has_return);
+  ir::Node* ParseCatchBlock(bool yield, bool has_return, bool breakable);
 
-  ir::Node* ParseFinallyBlock(bool yield, bool has_return);
+  ir::Node* ParseFinallyBlock(bool yield, bool has_return, bool breakable);
 
   ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 
@@ -279,6 +266,21 @@ class Parser: public ParserBase {
 
   // Parse conditional expression.
   ir::Node* ParseConditionalExpression(bool in, bool yield);
+
+#define DEF_PARSE_BINARY_EXPR(name)                       \
+  ir::Node* Parse##name##Expression(bool in, bool yield);
+
+  DEF_PARSE_BINARY_EXPR(LogicalOR);
+  DEF_PARSE_BINARY_EXPR(LogicalAND);
+  DEF_PARSE_BINARY_EXPR(BitwiseOR);
+  DEF_PARSE_BINARY_EXPR(BitwiseXOR);
+  DEF_PARSE_BINARY_EXPR(BitwiseAND);
+  DEF_PARSE_BINARY_EXPR(Equality);
+  DEF_PARSE_BINARY_EXPR(Relational);
+  DEF_PARSE_BINARY_EXPR(Shift);
+  DEF_PARSE_BINARY_EXPR(Additive);
+  DEF_PARSE_BINARY_EXPR(Multiplicative);
+#undef DEF_PARSE_BINARY_EXPR
 
   // Parse binary expression.
   // To simplify, we parser all binary expression(like MultiplicativeExpression AdditiveExpression, etc...) together.
@@ -379,7 +381,6 @@ class Parser: public ParserBase {
   std::stringstream phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
-  ParserState parser_state_;
 };
 } // yatsc
 

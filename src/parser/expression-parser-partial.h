@@ -470,7 +470,7 @@ ir::Node* Parser<UCharInputIterator>::ParseConciseBody(bool in, ir::Node* call_s
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool yield) {
   LOG_PHASE(ParseConditionalExpression);
-  ir::Node* expr = ParseBinaryExpression(in, yield);
+  ir::Node* expr = ParseLogicalORExpression(in, yield);
   if (Current()->type() == Token::TS_QUESTION_MARK) {
     Next();
     ir::Node* left = ParseAssignmentExpression(in, yield);
@@ -488,143 +488,143 @@ ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool y
 }
 
 
-// ConditionalExpression[In, Yield]
-//   LogicalORExpression[?In, ?Yield]
-//   LogicalORExpression[?In,?Yield] ? AssignmentExpression[In, ?Yield] : AssignmentExpression[?In, ?Yield]
-//   BitwiseORExpression[In, Yield]
+#define PARSE_BINARY_EXPRESSION_INTERNAL(check, name, next)            \
+  template <typename UCharInputIterator>                                \
+  ir::Node* Parser<UCharInputIterator>::name(bool in, bool yield) {     \
+    LOG_PHASE(name);                                                    \
+    ir::Node* ret = next;                                               \
+    while (1) {                                                         \
+      if (check) {                                                      \
+        ir::Node* tmp = ret;                                            \
+        Token type = Current()->type();                                 \
+        Next();                                                         \
+        ret = New<ir::BinaryExprView>(type, ret, next);                 \
+        ret->SetInformationForNode(tmp);                                \
+      } else {                                                          \
+        break;                                                          \
+      }                                                                 \
+    }                                                                   \
+    return ret;                                                         \
+  }
+
+
+#define PARSE_BINARY_EXPRESSION(name, next, token)                      \
+  PARSE_BINARY_EXPRESSION_INTERNAL((Current()->type() == Token::token), name, (next(in, yield)))
+
+#define PARSE_BINARY_EXPRESSION_WITH_COND(cond, name, next)         \
+  PARSE_BINARY_EXPRESSION_INTERNAL((cond), name, (next(in, yield)))
+
+#define PARSE_BINARY_EXPRESSION_WITH_CALL(cond, name, call) \
+  PARSE_BINARY_EXPRESSION_INTERNAL((cond), name, (call))
+
+
+// LogicalORExpression[In, Yield]
+//   LogicalANDExpression[?In, ?Yield]
+//   LogicalORExpression[?In, ?Yield] || LogicalANDExpression[?In, ?Yield]
 //
-// BitwiseXORExpression[?In, ?Yield]
+PARSE_BINARY_EXPRESSION(ParseLogicalORExpression, ParseLogicalANDExpression, TS_LOGICAL_OR)
+
+// LogicalANDExpression[In, Yield]
+// BitwiseORExpression[?In, ?Yield]
+// LogicalANDExpression[?In, ?Yield] && BitwiseORExpression[?In, ?Yield]
+//
+PARSE_BINARY_EXPRESSION(ParseLogicalANDExpression, ParseBitwiseORExpression, TS_LOGICAL_AND)
+
+// BitwiseORExpression[In, Yield]
+//   BitwiseXORExpression[?In, ?Yield]
 //   BitwiseORExpression[?In, ?Yield] | BitwiseXORExpression[?In, ?Yield]
-//   BitwiseXORExpression[In, Yield]
 //
-// BitwiseANDExpression[?In, ?Yield]
+PARSE_BINARY_EXPRESSION(ParseBitwiseORExpression, ParseBitwiseXORExpression, TS_BIT_OR)
+
+// BitwiseXORExpression[In, Yield]
+//   BitwiseANDExpression[?In, ?Yield]
 //   BitwiseXORExpression[?In, ?Yield] ^ BitwiseANDExpression[?In, ?Yield]
-//   BitwiseANDExpression[In, Yield]
 //
-// EqualityExpression[?In, ?Yield]
+PARSE_BINARY_EXPRESSION(ParseBitwiseXORExpression, ParseBitwiseANDExpression, TS_BIT_XOR)
+
+
+// BitwiseANDExpression[In, Yield]
+//   EqualityExpression[?In, ?Yield]
 //   BitwiseANDExpression[?In, ?Yield] & EqualityExpression[?In, ?Yield]
-//   EqualityExpression[In, Yield]
 //
-// RelationalExpression[?In, ?Yield]
+PARSE_BINARY_EXPRESSION(ParseBitwiseANDExpression, ParseEqualityExpression, TS_BIT_AND)
+
+
+// EqualityExpression[In, Yield]
+//   RelationalExpression[?In, ?Yield]
 //   EqualityExpression[?In, ?Yield] == RelationalExpression[?In, ?Yield]
 //   EqualityExpression[?In, ?Yield] != RelationalExpression[?In, ?Yield]
 //   EqualityExpression[?In, ?Yield] ===RelationalExpression[?In, ?Yield]
 //   EqualityExpression[?In, ?Yield] !==RelationalExpression[?In, ?Yield]
-//   RelationalExpression[In, Yield]
 //
-// ShiftExpression[?Yield]
+PARSE_BINARY_EXPRESSION_WITH_COND((Current()->type() == Token::TS_EQ || Current()->type() == Token::TS_NOT_EQ || Current()->type() == Token::TS_EQUAL || Current()->type() == Token::TS_NOT_EQUAL), ParseEqualityExpression, ParseRelationalExpression);
+
+#define RELATIONAL_COND                             \
+  Current()->type() == Token::TS_LESS ||            \
+    Current()->type() == Token::TS_GREATER ||       \
+    Current()->type() == Token::TS_LESS_EQUAL ||    \
+    Current()->type() == Token::TS_GREATER_EQUAL || \
+    Current()->type() == Token::TS_INSTANCEOF ||    \
+    (in && Current()->type() == Token::TS_IN)
+
+// RelationalExpression[In, Yield]
+//   ShiftExpression[?Yield]
 //   RelationalExpression[?In, ?Yield] < ShiftExpression[?Yield]
 //   RelationalExpression[?In, ?Yield] > ShiftExpression[?Yield]
 //   RelationalExpression[?In, ?Yield] <= ShiftExpression[?Yield]
 //   RelationalExpression[?In, ?Yield] >= ShiftExpression[?Yield]
 //   RelationalExpression[?In, ?Yield] instanceof ShiftExpression[?Yield]
 //   [+In] RelationalExpression[In, ?Yield] in ShiftExpression[?Yield]
-//   ShiftExpression[Yield]
 //
-// AdditiveExpression[?Yield]
+PARSE_BINARY_EXPRESSION_WITH_COND((RELATIONAL_COND), ParseRelationalExpression, ParseShiftExpression)
+#undef RELATIONAL_COND
+
+
+#define SHIFT_COND                                \
+  Current()->type() == Token::TS_SHIFT_LEFT ||    \
+    Current()->type() == Token::TS_SHIFT_RIGHT || \
+    Current()->type() == Token::TS_U_SHIFT_RIGHT
+
+// ShiftExpression[Yield]
+//   AdditiveExpression[?Yield]
 //   ShiftExpression[?Yield] << AdditiveExpression[?Yield]
 //   ShiftExpression[?Yield] >> AdditiveExpression[?Yield]
 //   ShiftExpression[?Yield] >>> AdditiveExpression[?Yield]
-//   AdditiveExpression[Yield]
 //
-// MultiplicativeExpression[?Yield]
+PARSE_BINARY_EXPRESSION_WITH_COND((SHIFT_COND), ParseShiftExpression, ParseAdditiveExpression)
+#undef SHIFT_COND
+
+
+#define ADDITIVE_COND                           \
+  Current()->type() == Token::TS_PLUS ||        \
+    Current()->type() == Token::TS_MINUS
+
+// AdditiveExpression[Yield]
+//   MultiplicativeExpression[?Yield]
 //   AdditiveExpression[?Yield] + MultiplicativeExpression[?Yield]
 //   AdditiveExpression[?Yield] - MultiplicativeExpression[?Yield]
-//   MultiplicativeExpression[Yield]
 //
-// UnaryExpression[?Yield]
-//   MultiplicativeExpression[?Yield] * UnaryExpression[?Yield]
-//   MultiplicativeExpression[?Yield] / UnaryExpression[?Yield]
-//   MultiplicativeExpression[?Yield] % UnaryExpression[?Yield]
-//
-template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseBinaryExpression(bool in, bool yield) {
-  LOG_PHASE(ParseBinaryExpression);
-  ir::Node* last = nullptr;
-  ir::Node* first = nullptr;
-  ir::Node* lhs = ParseUnaryExpression(yield);
-  ir::Node* expr = nullptr;
-  while (1) {
-    TokenInfo* token = Current();
-    Token type = token->type();
-    switch (token->type()) {
-      case Token::TS_LOGICAL_AND :
-      case Token::TS_LOGICAL_OR :
-      case Token::TS_EQUAL :
-      case Token::TS_NOT_EQUAL :
-      case Token::TS_EQ :
-      case Token::TS_NOT_EQ :
-      case Token::TS_LESS_EQUAL :
-      case Token::TS_GREATER_EQUAL :
-      case Token::TS_INSTANCEOF :
-      case Token::TS_LESS :
-      case Token::TS_GREATER : {
-        Next();
-        ir::Node* rhs = ParseUnaryExpression(yield);
-        if (last == nullptr) {
-          expr = New<ir::BinaryExprView>(type, lhs, rhs);
-          expr->SetInformationForNode(lhs);
-          first = expr;
-        } else {
-          expr = New<ir::BinaryExprView>(type, last, rhs);
-          expr->SetInformationForNode(last);
-        }
-        expr->MarkAsInValidLhs();
-        last = expr;
-      }
-        break;
+PARSE_BINARY_EXPRESSION_WITH_COND(ADDITIVE_COND, ParseAdditiveExpression, ParseMultiplicativeExpression)
+#undef ADDITIVE_COND
 
-      case Token::TS_IN : {
-        if (in) {
-          Next();
-          ir::Node* rhs = ParseUnaryExpression(yield);
-          if (last == nullptr) {
-            expr = New<ir::BinaryExprView>(type, lhs, rhs);
-            expr->SetInformationForNode(lhs);
-            first = expr;
-          } else {
-            expr = New<ir::BinaryExprView>(type, last, rhs);
-            expr->SetInformationForNode(last);
-          }
-          expr->MarkAsInValidLhs();
-          last = expr;
-        } else {
-          return (first == nullptr)? lhs : expr;
-        }
-      }
-        break;
-        
-      case Token::TS_BIT_OR :
-      case Token::TS_BIT_XOR :
-      case Token::TS_BIT_AND :
-      case Token::TS_PLUS :
-      case Token::TS_MINUS :
-      case Token::TS_MUL :
-      case Token::TS_DIV :
-      case Token::TS_MOD :
-      case Token::TS_SHIFT_LEFT :
-      case Token::TS_SHIFT_RIGHT :
-      case Token::TS_U_SHIFT_RIGHT :{
-        Next();
-        ir::Node* rhs = ParseUnaryExpression(yield);
-        if (last == nullptr) {
-          expr = New<ir::BinaryExprView>(type, lhs, rhs);
-          expr->SetInformationForNode(lhs);
-          first = expr;
-        } else {
-          expr = New<ir::BinaryExprView>(type, last, rhs);
-          expr->SetInformationForNode(last);
-        }
-        expr->MarkAsInValidLhs();
-        last = expr;
-      }
-        break;
-                                                                                                                                
-      default :
-        return (expr == nullptr)? lhs : expr;
-    }
-  }
-}
+
+#define MULTIPLICATIVE_COND                     \
+  Current()->type() == Token::TS_MUL ||         \
+    Current()->type() == Token::TS_MOD ||       \
+    Current()->type() == Token::TS_DIV
+
+// AdditiveExpression[Yield]
+//   MultiplicativeExpression[?Yield]
+//   AdditiveExpression[?Yield] + MultiplicativeExpression[?Yield]
+//   AdditiveExpression[?Yield] - MultiplicativeExpression[?Yield]
+//
+PARSE_BINARY_EXPRESSION_WITH_CALL(MULTIPLICATIVE_COND, ParseMultiplicativeExpression, ParseUnaryExpression(yield))
+#undef MULTIPLICATIVE_COND
+
+#undef PARSE_BINARY_EXPRESSION_INTERNAL
+#undef PARSE_BINARY_EXPRESSION
+#undef PARSE_BINARY_EXPRESSION_WITH_COND
+#undef PARSE_BINARY_EXPRESSION_WITH_CALL
 
 
 // UnaryExpression[Yield]

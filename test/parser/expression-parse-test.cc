@@ -654,6 +654,20 @@ TEST(ExpressionParseTest, ParseExpression_assignment_expr) {
             "[AssignmentView][TS_OR_LET]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
+
+  EXPR_TEST_ALL("(x + 100) / 3",
+                "[BinaryExprView][TS_DIV]\n"
+                "  [BinaryExprView][TS_PLUS]\n"
+                "    [NameView][x]\n"
+                "    [NumberView][100]\n"
+                "  [NumberView][3]");
+
+  EXPR_TEST_ALL("x + 100 / 3",
+                "[BinaryExprView][TS_PLUS]\n"
+                "  [NameView][x]\n"
+                "  [BinaryExprView][TS_DIV]\n"
+                "    [NumberView][100]\n"
+                "    [NumberView][3]");
 }
 
 
@@ -705,13 +719,13 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
             "          [Empty]\n"
             "      [Empty]\n"
             "      [Empty]\n"
-            "    [BinaryExprView][TS_DIV]\n"
-            "      [BinaryExprView][TS_PLUS]\n"
-            "        [BinaryExprView][TS_MINUS]\n"
-            "          [NameView][a]\n"
-            "          [NameView][b]\n"
+            "    [BinaryExprView][TS_PLUS]\n"
+            "      [BinaryExprView][TS_MINUS]\n"
+            "        [NameView][a]\n"
+            "        [NameView][b]\n"
+            "      [BinaryExprView][TS_DIV]\n"
             "        [NameView][x]\n"
-            "      [NumberView][2]");
+            "        [NumberView][2]");
 }
 
 
