@@ -71,6 +71,14 @@
 - [LogicalORExpression\[?In, ?Yield\]](#LogicalORExpression)  
 - [LogicalORExpression\[?In,?Yield\]](#LogicalORExpression) ___?___ [AssignmentExpression\[In, ?Yield\]](#AssignmentExpression) ___:___ [AssignmentExpression\[?In, ?Yield\]](#AssignmentExpression)  
 
+### <a name="LogicalORExpression"> LogicalORExpression[In, Yield]
+- [LogicalANDExpression\[?In, ?Yield\]](#LogicalANDExpression)
+- [LogicalORExpression\[?In, ?Yield\]](#LogicalORExpression) ___||___ [LogicalANDExpression\[?In, ?Yield\]](#LogicalANDExpression)
+
+### <a name="LogicalANDExpression"> LogicalANDExpression[In, Yield]
+- [BitwiseORExpression\[?In, ?Yield\]](#BitwiseORExpression)
+- [LogicalANDExpression\[?In, ?Yield\]](#LogicalANDExpression) ___&&___ [BitwiseORExpression\[?In, ?Yield\]](#BitwiseORExpression)
+
 ### <a name="BitwiseORExpression"> BitwiseORExpression\[In, Yield]  
 - [BitwiseXORExpression\[?In, ?Yield\]](#BitwiseXORExpression)  
 - [BitwiseORExpression\[?In, ?Yield\]](#BitwiseORExpression) ___|___ [BitwiseXORExpression\[?In, ?Yield\]](#BitwiseXORExpression)  

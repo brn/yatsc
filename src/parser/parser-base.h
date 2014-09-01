@@ -44,24 +44,10 @@ class ParserBase: private Uncopyable, private Unmovable {
    * @param error_reporter ErrorReporter instance to use report parse error.
    */
   ParserBase(const CompilerOption& co, ErrorReporter* error_reporter)
-      : print_parser_phase_(false),
-        compiler_option_(co),
+      : compiler_option_(co),
         current_token_info_(nullptr),
         next_token_info_(nullptr),
         error_reporter_(error_reporter) {}
-
-
- VISIBLE_FOR_TESTING:
-  
-  /**
-   * Enable printing current parser phase.
-   */
-  void EnablePrintParsePhase() {print_parser_phase_ = true;};
-
-  /**
-   * Disable printing current parser phase.
-   */
-  void DisablePrintParsePhase() {print_parser_phase_ = false;};
 
 
  protected:
@@ -215,8 +201,6 @@ class ParserBase: private Uncopyable, private Unmovable {
     TokenInfo null_token_info_;
   };
   
-
-  bool print_parser_phase_;
   const CompilerOption& compiler_option_;
   TokenInfo* current_token_info_;
   TokenInfo* next_token_info_;

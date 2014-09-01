@@ -471,12 +471,10 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool yield) {
   LOG_PHASE(ParseConditionalExpression);
   ir::Node* expr = ParseBinaryExpression(in, yield);
-  TokenInfo* ti = Current();
-  if (ti->type() == Token::TS_QUESTION_MARK) {
+  if (Current()->type() == Token::TS_QUESTION_MARK) {
     Next();
     ir::Node* left = ParseAssignmentExpression(in, yield);
-    ti = Current();
-    if (ti->type() == Token::TS_COLON) {
+    if (Current()->type() == Token::TS_COLON) {
       Next();
       ir::Node* right = ParseAssignmentExpression(in, yield);
       ir::TemaryExprView* temary = New<ir::TemaryExprView>(expr, left, right);
@@ -744,8 +742,13 @@ ir::Node* Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   ir::Node* type_arguments = nullptr;
 
   if (Current()->type() == Token::TS_LESS) {
-    type_arguments = ParseTypeArguments();
-    target->MarkAsInValidLhs();
+    TokenCursor cursor = GetBufferCursorPosition();
+    try {
+      type_arguments = ParseTypeArguments();
+      target->MarkAsInValidLhs();
+    } catch (const SyntaxError&) {
+      SetBufferCursorPosition(cursor);
+    }
   }
   
   if (Current()->type() == Token::TS_LEFT_PAREN) {
@@ -1017,7 +1020,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
     case Token::TS_FUNCTION:
       return ParseFunction(yield, false);
     case Token::TS_CLASS:
-      return ParseClassDeclaration();
+      return ParseClassDeclaration(yield, false);
     default:
       // parse a literal.
       return ParseLiteral();

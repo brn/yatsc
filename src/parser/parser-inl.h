@@ -50,5 +50,21 @@ TokenInfo* Parser<UCharInputIterator>::Current() {
   }
   return current_token_info_;
 }
+
+
+template <typename UCharInputIterator>
+bool Parser<UCharInputIterator>::IsLineTermination() {
+  return Current()->type() == Token::LINE_TERMINATOR ||
+    Current()->type() == Token::END_OF_INPUT ||
+    token_buffer_.Rewind(1)->has_line_break_before_next();
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::ConsumeLineTerminator() {
+  if (Current()->type() == Token::LINE_TERMINATOR) {
+    Next();
+  }
+}
 }
 

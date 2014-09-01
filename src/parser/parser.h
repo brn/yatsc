@@ -25,6 +25,7 @@
 #ifndef YATSC_PARSER_PARSER_H
 #define YATSC_PARSER_PARSER_H
 
+#include <sstream>
 #include "./parser-base.h"
 #include "../compiler-option.h"
 
@@ -73,22 +74,18 @@ namespace yatsc {
 #ifdef DEBUG
 // Logging current parse phase.
 #define LOG_PHASE(name)                                          \
-  if (print_parser_phase_) {                                            \
-    if (Current() != nullptr) {                                         \
-      Printf("%sEnter %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
-    } else {                                                            \
-      Printf("%sEnter %s: CurrentToken = null\n", indent_.c_str(), #name); \
-    }                                                                   \
+  if (Current() != nullptr) {                                           \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToString() << "\n"; \
+  } else {                                                              \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null\n"; \
   }                                                                     \
   indent_ += "  ";                                                      \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
-    if (this->print_parser_phase_) {                                    \
-      if (this->Current() != nullptr) {                                 \
-        Printf("%sExit %s: CurrentToken = %s\n", indent_.c_str(), #name, Current()->ToString()); \
-      } else {                                                          \
-        Printf("%sExit %s: CurrentToken = null\n", indent_.c_str(), #name); \
-      }                                                                 \
+    if (this->Current() != nullptr) {                                   \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToString() << "\n"; \
+    } else {                                                            \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null\n"; \
     }                                                                   \
   })
 #else
@@ -104,6 +101,22 @@ class Parser: public ParserBase {
         scanner_(scanner) {Next();}
 
  private:
+
+  class ParserState {
+   public:
+    ParserState()
+        : breakable_(false) {}
+
+    YATSC_INLINE bool IsBreakable() YATSC_NO_SE {
+      return breakable_;
+    }
+
+    YATSC_INLINE void set_breakable(bool breakable) YATSC_NOEXCEPT {breakable_ = breakable;}
+    
+   private:
+    bool breakable_;
+  };
+  
   /**
    * Return a next TokenInfo.
    * @return Next TokenInfo.
@@ -171,11 +184,13 @@ class Parser: public ParserBase {
 
   ir::Node* ParseForStatement(bool yield, bool has_return);
 
-  ir::Node* ParseForIterationStatement(ir::Node* reciever, TokenInfo* info, bool yield, bool has_return);
+  ir::Node* ParseForIteration(ir::Node* reciever, TokenCursor, bool yield, bool has_return);
 
-  ir::Node* ParseContinueStatement();
+  ir::Node* ParseIterationBody(bool yield, bool has_return);
 
-  ir::Node* ParseBreakStatement();
+  ir::Node* ParseContinueStatement(bool yield);
+
+  ir::Node* ParseBreakStatement(bool yield);
 
   ir::Node* ParseReturnStatement(bool yield);
 
@@ -195,7 +210,7 @@ class Parser: public ParserBase {
 
   ir::Node* ParseFinallyBlock(bool yield, bool has_return);
 
-  ir::Node* ParseClassDeclaration();
+  ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 
   ir::Node* ParseFunction(bool yield, bool has_default);
 
@@ -347,8 +362,24 @@ class Parser: public ParserBase {
 
   ir::Node* ParseTemplateLiteral();
 
+  ir::Node* ParseEmptyStatement();
+
+  bool IsLineTermination();
+
+  void ConsumeLineTerminator();
+
+#ifdef DEBUG
+  void PrintStackTrace() {
+    Printf("%s\n", phase_buffer_.str().c_str());
+  }
+#endif
+
  private:
+#ifdef DEBUG
+  std::stringstream phase_buffer_;
+#endif
   Scanner<UCharInputSourceIterator>* scanner_;
+  ParserState parser_state_;
 };
 } // yatsc
 

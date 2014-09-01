@@ -86,7 +86,7 @@ inline std::string Join(int pos, std::vector<std::string> v) {
 }
 
 
-inline ::testing::AssertionResult DoCompareNode(std::string value, std::string expected) {
+inline ::testing::AssertionResult DoCompareNode(int line_number, std::string value, std::string expected) {
   typedef std::vector<std::string> Vector;
   auto v = Split(value, "\n");
   auto e = Split(expected, "\n");
@@ -100,6 +100,7 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
     if ((*v_it) != (*e_it)) {
       return ::testing::AssertionFailure()
         << "\nExpectation is not match to the result.\n"
+        << "at line " << line_number << "\n"
         << "value:  \n" << Join(index, v) << '\n'
         << "expected:  \n" << Join(index, e) << '\n';
     }
@@ -111,6 +112,7 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
       if (e_it != e_end) {
         return ::testing::AssertionFailure()
           << "\nExpectation is longer than result.\n"
+          << "at line " << line_number << "\n"
           << "value:  \n" << Join(index, v) << '\n'
           << "expected:  \n" << Join(index, e) << '\n';
       }
@@ -119,6 +121,7 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
       if (v_it != v_end) {
         return ::testing::AssertionFailure()
           << "\nExpectation is shorter than result.\n"
+          << "at line " << line_number << "\n"
           << "value:  \n" << Join(index, v) << '\n'
           << "expected:  \n" << Join(index, e) << '\n';
       }
@@ -130,8 +133,8 @@ inline ::testing::AssertionResult DoCompareNode(std::string value, std::string e
 }
 
 
-inline void CompareNode(std::string value, std::string expected) {
-  ASSERT_TRUE((DoCompareNode(value, expected)));
+inline void CompareNode(int line_number, std::string value, std::string expected) {
+  ASSERT_TRUE((DoCompareNode(line_number, value, expected)));
 }
 
 }}

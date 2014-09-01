@@ -197,6 +197,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void ScanLogicalOperator(Token type1, Token type2, Token type3) {
     if (lookahead1_ == char_) {
+      Advance();
       return BuildToken(type1);
     }
     if (lookahead1_ == unicode::u8('=')) {

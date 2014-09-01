@@ -130,6 +130,7 @@ namespace yatsc {namespace ir {
   DECLARE(UndefinedView)                                \
   DECLARE(TemplateLiteralView)                          \
   DECLARE(ComprehensionExprView)                        \
+  DECLARE(Empty)                                        \
   DECLARE_LAST(DebuggerView)
 
 
@@ -1946,6 +1947,12 @@ class ComprehensionExprView: public Node {
   NODE_PROPERTY(tail, 1);
 };
 
+
+class Empty: public Node {
+ public:
+  Empty()
+      : Node(NodeType::kEmpty, 0){}
+};
 
 }} //yatsc::ir
 
