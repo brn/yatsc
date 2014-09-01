@@ -1113,7 +1113,7 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default
     }
     ir::Node* name = nullptr;
     if (Current()->type() == Token::TS_IDENTIFIER) {
-      name = ParseLiteral();
+      name = ParseIdentifier();
     }
     ir::Node* call_signature = ParseCallSignature(false);
     ir::Node* body = ParseFunctionBody(yield? yield: generator);
@@ -1132,6 +1132,12 @@ ir::Node* Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allowe
     ir::ParamList* param_list = New<ir::ParamList>();
     param_list->SetInformationForNode(Current());
     Next();
+
+    if (Current()->type() == Token::TS_RIGHT_PAREN) {
+      Next();
+      return param_list;
+    }
+    
     bool has_rest = false;
     while (1) {
       if (has_rest) {
@@ -1217,11 +1223,12 @@ ir::Node* Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
     block->SetInformationForNode(Current());
     Next();
     while (1) {
-      auto node = ParseSourceElement();
-      block->InsertLast(node);
       if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        Next();
         break;
       }
+      auto node = ParseStatementListItem(yield, true, false);
+      block->InsertLast(node);
     }
     return block;
   }

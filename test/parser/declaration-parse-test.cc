@@ -27,23 +27,32 @@
 #include "../parser-util.h"
 
 
-#define LEXICAL_DECL_TEST(type, code, expected_str)                     \
+#define DECLARATION_TEST(type, code, expected_str)                     \
   PARSER_TEST(ParseDeclaration(true, true, false), type, code, expected_str, false, std::exception)
 
-#define LEXICAL_DECL_THROW_TEST(type, code, error_type)                 \
+#define DECLARATION_THROW_TEST(type, code, error_type)                 \
   PARSER_TEST(ParseDeclaration(true, true, false), type, code, "", true, error_type)
 
+#define DECLARATION_TEST_ALL(code, expected_str)                        \
+  [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}(); \
+  [&]{DECLARATION_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
+  [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
+
+#define DECLARATION_TEST_ALL_THROW(code, error_type)                    \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
 
 
 TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let x = 100;",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100;",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [NameView][x]\n"
                     "    [NumberView][100]\n"
                     "    [Empty]");
 
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let x = 100, y = 200, z = 300",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100, y = 200, z = 300",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [NameView][x]\n"
@@ -58,7 +67,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "    [NumberView][300]\n"
                     "    [Empty]");
 
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let x: string = 100;",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x: string = 100;",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [NameView][x]\n"
@@ -66,7 +75,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "    [SimpleTypeExprView]\n"
                     "      [NameView][string]");
   
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let [a, b, c] = [1,2,3];",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c] = [1,2,3];",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingArrayView]\n"
@@ -88,7 +97,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "      [NumberView][3]\n"
                     "    [Empty]");
   
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let {a,b,c} = {a:100,b:200,c:300};",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c} = {a:100,b:200,c:300};",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingPropListView]\n"
@@ -116,7 +125,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "        [NumberView][300]\n"
                     "    [Empty]");
 
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let {foo:a,b:{c:[x,y,z]},c:[{bar}]} = {a:100,b:{c:[1,2,3]},c:[{bar:100}]};",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {foo:a,b:{c:[x,y,z]},c:[{bar}]} = {a:100,b:{c:[1,2,3]},c:[{bar:100}]};",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingPropListView]\n"
@@ -179,7 +188,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "    [Empty]");
 
 
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let [a, b, c]: number[] = [1,2,3];",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c]: number[] = [1,2,3];",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingArrayView]\n"
@@ -203,7 +212,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "      [SimpleTypeExprView]\n"
                     "        [NameView][number]");
 
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "let {a,b,c}: Object = {a:100,b:200,c:300};",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c}: Object = {a:100,b:200,c:300};",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
                     "    [BindingPropListView]\n"
@@ -235,10 +244,22 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
 
 
 TEST(DeclarationParseTest, ParseLexicalDeclaration_const) {
-  LEXICAL_DECL_TEST(yatsc::LanguageMode::ES6, "const x = 100;",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "const x = 100;",
                     "[LexicalDeclView][TS_CONST]\n"
                     "  [VariableView]\n"
                     "    [NameView][x]\n"
                     "    [NumberView][100]\n"
                     "    [Empty]");
+}
+
+
+TEST(DeclarationParseTest, ParseFunctionDeclaration) {
+  DECLARATION_TEST_ALL("function a() {}",
+                       "[FunctionView]\n"
+                       "  [NameView][a]\n"
+                       "  [CallSignatureView]\n"
+                       "    [ParamList]\n"
+                       "    [Empty]\n"
+                       "    [Empty]\n"
+                       "  [BlockView]");
 }

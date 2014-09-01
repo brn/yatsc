@@ -275,6 +275,30 @@ TEST(StatementParseTest, ParseSwitchStatement) {
 }
 
 
+TEST(StatementParseTest, ParseThrowStatement) {
+  breakable = false;
+  STATEMENT_TEST_ALL("throw a;",
+                     "[ThrowStatementView]\n"
+                     "  [NameView][a]");
+}
+
+TEST(StatementParseTest, ParseDebuggerStatement) {
+  breakable = false;
+  STATEMENT_TEST_ALL("debugger;",
+                     "[DebuggerView]");
+}
+
+TEST(StatementParseTest, ParseLabelledStatement) {
+  breakable = false;
+  STATEMENT_TEST_ALL("LABEL:if(1){}",
+                     "[LabelledStatementView]\n"
+                     "  [NameView][LABEL]\n"
+                     "  [IfStatementView]\n"
+                     "    [NumberView][1]\n"
+                     "    [BlockView]\n"
+                     "    [Empty]");
+}
+
 TEST(StatementParseTest, ParseTryCatch) {
   breakable = false;
   STATEMENT_TEST_ALL("try {} catch(e) {}",
