@@ -1018,7 +1018,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
       return ParseTemplateLiteral();
     }
     case Token::TS_FUNCTION:
-      return ParseFunction(yield, false);
+      return ParseFunction(yield, false, false);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, false);
     default:

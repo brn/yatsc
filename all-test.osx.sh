@@ -5,4 +5,6 @@ build/${type}/UnicodeIteratorAdapterTest --gtest_color=yes &&\
 build/${type}/ScannerTest --gtest_color=yes &&\
 build/${type}/RegionsTest --gtest_color=yes &&\
 build/${type}/NodeTest --gtest_color=yes &&\
-build/${type}/ParserTest --gtest_color=yes
+build/${type}/ExpressionParseTest --gtest_color=yes &&\
+build/${type}/DeclarationParseTest --gtest_color=yes &&\
+build/${type}/StatementParseTest --gtest_color=yes

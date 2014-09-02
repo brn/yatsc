@@ -96,6 +96,9 @@ ir::Node* Parser<UCharInputIterator>::ParseTypeParameters() {
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseTypeExpression() {
   LOG_PHASE(ParseTypeExpression);
+  if (Current()->type() == Token::TS_VOID) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
   if (Current()->type() == Token::TS_IDENTIFIER) {
     return ParseArrayType(ParseReferencedType());
   } else if (Current()->type() == Token::TS_LEFT_PAREN) {

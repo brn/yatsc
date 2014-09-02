@@ -27,18 +27,19 @@
 #include "../parser-util.h"
 
 bool breakable = false;
+bool returnable = false;
 #define STATEMENT_TEST(type, code, expected_str)                        \
-  PARSER_TEST(ParseStatement(false, false, breakable), type, code, expected_str, false, std::exception)
+  PARSER_TEST(ParseStatement(false, returnable, breakable), type, code, expected_str, false, std::exception)
 
 #define STATEMENT_TEST_THROW(type, code)                                \
-  PARSER_TEST(ParseStatement(false, false, breakable), type, code, "", true, std::exception)
+  PARSER_TEST(ParseStatement(false, returnable, breakable), type, code, "", true, std::exception)
 
 #define STATEMENT_TEST_ALL(code, expected_str)                          \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();  \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES6, code, expected_str)}()
 
-#define STATEMENT_TEST_ALL_THROW(code)                                \
+#define STATEMENT_THROW_TEST_ALL(code)                                \
   []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES3, code);}();        \
   []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES5_STRICT, code);}(); \
   []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES6, code)}()
@@ -270,8 +271,8 @@ TEST(StatementParseTest, ParseSwitchStatement) {
                      "      [CaseBody]\n"
                      "        [BlockView]");
 
-  STATEMENT_TEST_ALL_THROW("switch (a) {case 1:break;case 2:break;default:{}default:{}}");
-  STATEMENT_TEST_ALL_THROW("switch (a) {case :break;case 2:break;default:{}}");
+  STATEMENT_THROW_TEST_ALL("switch (a) {case 1:break;case 2:break;default:{}default:{}}");
+  STATEMENT_THROW_TEST_ALL("switch (a) {case :break;case 2:break;default:{}}");
 }
 
 
@@ -317,4 +318,40 @@ TEST(StatementParseTest, ParseTryCatch) {
                      "    [BlockView]\n"
                      "  [FinallyStatementView]\n"
                      "    [BlockView]");
+}
+
+
+TEST(StatementParseTest, ParseReturnStatement) {
+  breakable = false;
+  returnable = true;
+  STATEMENT_TEST_ALL("return 0;",
+                     "[ReturnStatementView]\n"
+                     "  [NumberView][0]");
+
+  STATEMENT_TEST_ALL("return;",
+                     "[ReturnStatementView]\n"
+                     "  [Empty]");
+
+  STATEMENT_TEST_ALL("return",
+                     "[ReturnStatementView]\n"
+                     "  [Empty]");
+
+  returnable = false;
+  STATEMENT_THROW_TEST_ALL("return 0");
+}
+
+
+TEST(StatementParseTest, ParseBreakStatement) {
+  breakable = true;
+  returnable = false;
+  STATEMENT_TEST_ALL("break;",
+                     "[BreakStatementView]\n"
+                     "  [Empty]");
+
+  STATEMENT_TEST_ALL("break LABEL;",
+                     "[BreakStatementView]\n"
+                     "  [NameView][LABEL]");
+
+  breakable = false;
+  STATEMENT_THROW_TEST_ALL("break;");
 }

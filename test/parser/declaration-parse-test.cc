@@ -38,7 +38,7 @@
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
-#define DECLARATION_TEST_ALL_THROW(code, error_type)                    \
+#define DECLARATION_THROW_TEST_ALL(code, error_type)                    \
   [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
   [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
   [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
@@ -262,4 +262,91 @@ TEST(DeclarationParseTest, ParseFunctionDeclaration) {
                        "    [Empty]\n"
                        "    [Empty]\n"
                        "  [BlockView]");
+
+  DECLARATION_TEST_ALL("function a(a,b,c) {}",
+                       "[FunctionView]\n"
+                       "  [NameView][a]\n"
+                       "  [CallSignatureView]\n"
+                       "    [ParamList]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][a]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][b]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][c]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "    [Empty]\n"
+                       "    [Empty]\n"
+                       "  [BlockView]");
+
+  DECLARATION_TEST_ALL("function a(a:string,b:number,...c:string[]): void {}",
+                       "[FunctionView]\n"
+                       "  [NameView][a]\n"
+                       "  [CallSignatureView]\n"
+                       "    [ParamList]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][a]\n"
+                       "        [Empty]\n"
+                       "        [SimpleTypeExprView]\n"
+                       "          [NameView][string]\n"
+                       "        [Empty]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][b]\n"
+                       "        [Empty]\n"
+                       "        [SimpleTypeExprView]\n"
+                       "          [NameView][number]\n"
+                       "        [Empty]\n"
+                       "      [RestParamView]\n"
+                       "        [ParameterView]\n"
+                       "          [NameView][c]\n"
+                       "          [Empty]\n"
+                       "          [ArrayTypeExprView]\n"
+                       "            [SimpleTypeExprView]\n"
+                       "              [NameView][string]\n"
+                       "          [Empty]\n"
+                       "    [SimpleTypeExprView]\n"
+                       "      [NameView][void]\n"
+                       "    [Empty]\n"
+                       "  [BlockView]");
+
+  DECLARATION_TEST_ALL("function *a(a:string,b:number,...c:string[]): void {}",
+                       "[FunctionView]\n"
+                       "  [NameView][a]\n"
+                       "  [CallSignatureView]\n"
+                       "    [ParamList]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][a]\n"
+                       "        [Empty]\n"
+                       "        [SimpleTypeExprView]\n"
+                       "          [NameView][string]\n"
+                       "        [Empty]\n"
+                       "      [ParameterView]\n"
+                       "        [NameView][b]\n"
+                       "        [Empty]\n"
+                       "        [SimpleTypeExprView]\n"
+                       "          [NameView][number]\n"
+                       "        [Empty]\n"
+                       "      [RestParamView]\n"
+                       "        [ParameterView]\n"
+                       "          [NameView][c]\n"
+                       "          [Empty]\n"
+                       "          [ArrayTypeExprView]\n"
+                       "            [SimpleTypeExprView]\n"
+                       "              [NameView][string]\n"
+                       "          [Empty]\n"
+                       "    [SimpleTypeExprView]\n"
+                       "      [NameView][void]\n"
+                       "    [Empty]\n"
+                       "  [BlockView]");
+
+
+  DECLARATION_THROW_TEST_ALL("function (a:string,b:number,...c:string[]): void {}", yatsc::SyntaxError);
 }

@@ -148,6 +148,9 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
     }
 
     case Token::TS_RETURN:
+      if (!has_return) {
+        SYNTAX_ERROR("SyntaxError 'return' statement only allowed in function", Current());
+      }
       result = ParseReturnStatement(yield);
       break;
 
@@ -208,7 +211,7 @@ ir::Node* Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, b
       return node;
     }
     case Token::TS_FUNCTION:
-      return ParseFunction(yield, has_default);
+      return ParseFunction(yield, has_default, true);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, has_default);
     case Token::TS_LET:
@@ -826,17 +829,20 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
   LOG_PHASE(ParseReturnStatement);
   if (Current()->type() == Token::TS_RETURN) {
-    TokenCursor cursor = token_buffer_.cursor();
+    TokenCursor cursor = GetBufferCursorPosition();
     ir::Node* result;
     YATSC_SCOPED([&]{
-      result->SetInformationForNode(token_buffer_.Peek(cursor));
+      result->SetInformationForNode(PeekBuffer(cursor));
     });
+    
+    Next();
+    
     if (IsLineTermination()) {
       ConsumeLineTerminator();
       return result = New<ir::ReturnStatementView>();
     }
-    ir::Node* expr = ParseExpression(true, yield);
-    return result = New<ir::ReturnStatementView>(expr);
+    
+    return result = New<ir::ReturnStatementView>(ParseExpression(true, yield));
   }
   SYNTAX_ERROR("SyntaxError 'return' expected", Current());
 }
@@ -983,7 +989,7 @@ ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool ha
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable) {
   if (Current()->type() == Token::TS_FUNCTION) {
-    return ParseFunction(yield, false);
+    return ParseFunction(yield, false, true);
   }
   return ParseStatement(yield, has_return, breakable);
 }
@@ -1101,13 +1107,13 @@ ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default) {
+ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default, bool declaration) {
   LOG_PHASE(ParseFunction);
   if (Current()->type() == Token::TS_FUNCTION) {
     bool generator = false;
-    TokenInfo token = (*Current());
+    TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (Current()->type() == Token::TS_MOD) {
+    if (Current()->type() == Token::TS_MUL) {
       generator = true;
       Next();
     }
@@ -1115,10 +1121,15 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default
     if (Current()->type() == Token::TS_IDENTIFIER) {
       name = ParseIdentifier();
     }
+
+    if (declaration && name == nullptr) {
+      SYNTAX_ERROR("SyntaxError function name required", Current());
+    }
+    
     ir::Node* call_signature = ParseCallSignature(false);
     ir::Node* body = ParseFunctionBody(yield? yield: generator);
     ir::Node* ret = New<ir::FunctionView>(name, call_signature, body);
-    ret->SetInformationForNode(&token);
+    ret->SetInformationForNode(PeekBuffer(cursor));
     return ret;
   }
   SYNTAX_ERROR("SyntaxError 'function' expected", Current());

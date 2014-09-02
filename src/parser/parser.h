@@ -199,7 +199,7 @@ class Parser: public ParserBase {
 
   ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 
-  ir::Node* ParseFunction(bool yield, bool has_default);
+  ir::Node* ParseFunction(bool yield, bool has_default, bool declaration);
 
   ir::Node* ParseParameterList(bool accesslevel_allowed);
   
