@@ -155,6 +155,32 @@ TEST(ExpressionParseTest, ParseExpression_array_comprehension) {
 }
 
 
+TEST(ExpressionParseTest, ParseGeneratorComprehension) {
+  EXPR_TEST(yatsc::LanguageMode::ES6, "(for (x of m) x)",
+            "[ComprehensionExprView]\n"
+            "  [ForOfStatementView]\n"
+            "    [NameView][x]\n"
+            "    [NameView][m]\n"
+            "    [Empty]\n"
+            "  [NameView][x]");
+
+  EXPR_TEST(yatsc::LanguageMode::ES6, "(for (x of m) if (x % 2 === 0) x)",
+            "[ComprehensionExprView]\n"
+            "  [ForOfStatementView]\n"
+            "    [NameView][x]\n"
+            "    [NameView][m]\n"
+            "    [Empty]\n"
+            "  [IfStatementView]\n"
+            "    [BinaryExprView][TS_EQ]\n"
+            "      [BinaryExprView][TS_MOD]\n"
+            "        [NameView][x]\n"
+            "        [NumberView][2]\n"
+            "      [NumberView][0]\n"
+            "    [NameView][x]\n"
+            "    [Empty]");
+}
+
+
 TEST(ExpressionParseTest, ParseExpression_call) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "func()",
             "[CallView]\n"

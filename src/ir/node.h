@@ -94,6 +94,8 @@ namespace yatsc {namespace ir {
   DECLARE(AccessorTypeExprView)                         \
   DECLARE(TypeParametersView)                           \
   DECLARE(CommaExprView)                                \
+  DECLARE(FunctionOverloadsView)                        \
+  DECLARE(FunctionOverloadView)                         \
   DECLARE(FunctionView)                                 \
   DECLARE(ArrowFunctionView)                            \
   DECLARE(ParameterView)                                \
@@ -234,7 +236,7 @@ class SourceInformation: private Unmovable{
 
 
   // Getter and setter for line_number_
-  YATSC_CONST_PROPERTY(const SourcePosition&, source_position, source_position_);
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
   
  private:
   SourcePosition source_position_;
@@ -252,11 +254,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   typedef List::iterator ListIterator;
 
 
-  /**
-   * Create Node.
-   * @param node_type The node type.
-   * @param capacity The size of children tree.
-   */
+  // Create Node.
   YATSC_INLINE Node(NodeType node_type, size_t capacity = 0)
       : node_type_(node_type),
         capacity_(capacity),
@@ -271,11 +269,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
-  /**
-   * Create Node.
-   * @param node_type The node type.
-   * @param capacity The size of children tree.
-   */
+  // Create Node.
   YATSC_INLINE Node(NodeType node_type, size_t capacity, std::initializer_list<Node*> node_list)
       : node_list_(node_list),
         node_type_(node_type),
@@ -344,97 +338,67 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
   
 
-  /**
-   * Mark this node as invalid for the left-hand-side-expression.
-   */
+  // Mark this node as invalid for the left-hand-side-expression.
   void MarkAsInValidLhs() {invalid_lhs_ = true;}
 
 
-  /**
-   * Return wheter this node is valid lef-hand-side-expression or not.
-   */
+  // Return wheter this node is valid lef-hand-side-expression or not.
   bool IsValidLhs() {return !invalid_lhs_;}
   
 
-  /**
-   * Insert a node at the end of the children.
-   * @param node A node that want to insert.
-   */
+  // Insert a node at the end of the children.
   void InsertLast(Node* node);
 
 
-  /**
-   * Insert a node to the front of the children.
-   * @param node A node that want to insert.
-   */
+  // Insert a node to the front of the children.
   void InsertFront(Node* node);
 
 
-  /**
-   * Insert a new node to before specified node.
-   * @param newNode A node that want to isnert.
-   * @param oldNode A node taht has inserted.
-   */
+  // Insert a new node to before specified node.
   void InsertBefore(Node* newNode, Node* oldNode);
 
 
-  /**
-   * Insert a new node after the specified node.
-   * @param newNode A node that want to isnert.
-   * @param oldNode A node taht has inserted.
-   */
+  // Insert a new node after the specified node.
   void InsertAfter(Node* newNode, Node* oldNode);
 
 
-  /**
-   * Set string value.
-   * @param str String value.
-   */
+  // Set string value.
   YATSC_INLINE void set_string_value(UtfString str) YATSC_NOEXCEPT {
     string_value_ = std::move(str);
   }
 
 
-  /**
-   * Return string value.
-   * @returns String value.
-   */
+  // Return string value.
   YATSC_INLINE const UtfString& string_value() YATSC_NO_SE {
     return string_value_;
   }
 
 
-  /**
-   * Return string value.
-   * @returns String value.
-   */
+  YATSC_INLINE bool string_equals(Node* node) YATSC_NO_SE {
+    const UtfString& utf_string = node->string_value();
+    return utf_string == string_value_;
+  }
+
+
+  // Return string value.
   YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
     return string_value_.utf8_value();
   }
 
 
-  /**
-   * Set double value.
-   * @param d Double value.
-   */
+  // Set double value.
   YATSC_INLINE void set_double_value(double d) YATSC_NOEXCEPT {
     double_value_ = d;
   }
 
 
-  /**
-   * Return double value.
-   * @return Double value.
-   */
+  // Return double value.
   YATSC_INLINE double double_value() YATSC_NO_SE {
     return double_value_;
   }
 
 
-  /**
-   * Set an operand.
-   * @param op An operand.
-   */
+  // Set an operand.
   YATSC_INLINE void set_operand(Token op) YATSC_NOEXCEPT {
     operand_ = op;
   }
@@ -455,81 +419,55 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
-  /**
-   * Return an operand.
-   * @returns An operand.
-   */
+  // Return an operand.
   YATSC_INLINE Token operand() YATSC_NO_SE {
     return operand_;
   }
 
 
-  /**
-   * Remove specified node from children.
-   * @param block A node that want to erase from children.
-   */
+  // Remove specified node from children.
   YATSC_INLINE void Remove(Node* block) {
     node_list_.erase(std::remove(node_list_.begin(), node_list_.end(), block), node_list_.end());
     block->set_parent_node(nullptr);
   }
 
 
-  /**
-   * Remove a specified iterator from children.
-   * @param block An iterator that want to erase from children.
-   */
+  // Remove a specified iterator from children.
   YATSC_INLINE void Remove(Node::ListIterator iterator) {
     node_list_.erase(iterator);
     (*iterator)->set_parent_node(nullptr);
   }
 
 
-  /**
-   * Set source information to this node.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node.
+  void SetInformationForNode(const SourcePosition& source_position) YATSC_NOEXCEPT;
+  
+
+  // Set source information to this node.
   void SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT;
   
 
-  /**
-   * Set source information to this node and children.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node and children.
   void SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT;
 
 
-  /**
-   * Set source information to this node.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node.
   void SetInformationForNode(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForNode(*token_info);}
   
 
-  /**
-   * Set source information to this node and children.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node and children.
   void SetInformationForTree(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForTree(*token_info);}
 
   
-  /**
-   * Set source information to this node.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node.
   void SetInformationForNode(const Node* node) YATSC_NOEXCEPT;
 
 
-  /**
-   * Set source information to this node and children.
-   * @param token_info A token inforamtion class.
-   */
+  // Set source information to this node and children.
   void SetInformationForTree(const Node* node) YATSC_NOEXCEPT;
 
 
-  /**
-   * Clone this node and all children.
-   * @returns Cloned node tree.
-   */
+  // Clone this node and all children.
   Node* Clone() YATSC_NOEXCEPT;
 
   
@@ -1464,11 +1402,41 @@ class CommaExprView: public Node {
 };
 
 
+class FunctionOverloadView: public Node {
+ public:
+  FunctionOverloadView(bool generator, Node* name, Node* call_signature)
+      : Node(NodeType::kFunctionOverloadView, 2u, {name, call_signature}) {
+    if (generator) {
+      set_flag(0);
+    }
+  }
+
+  FunctionOverloadView()
+      : Node(NodeType::kFunctionOverloadView, 2u) {}
+
+  NODE_PROPERTY(name, 0);
+
+  NODE_PROPERTY(call_signature, 1);
+
+  NODE_FLAG_PROPERTY(generator, 0);
+};
+
+
+class FunctionOverloadsView: public Node {
+ public:
+  FunctionOverloadsView(std::initializer_list<Node*> overloads)
+      : Node(NodeType::kFunctionOverloadsView, 0u, overloads) {}
+
+  FunctionOverloadsView()
+      : Node(NodeType::kFunctionOverloadsView, 0u) {}
+};
+
+
 // Represent function.
 class FunctionView: public Node {
  public:
-  FunctionView(bool getter, bool setter, bool generator, Node* name, Node* call_signature, Node* body)
-      : Node(NodeType::kFunctionView, 3u, {name, call_signature, body}) {
+  FunctionView(bool getter, bool setter, bool generator, Node* overloads, Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kFunctionView, 4u, {overloads, name, call_signature, body}) {
     if (getter) {
       set_flag(0);
     } else if (setter) {
@@ -1478,21 +1446,23 @@ class FunctionView: public Node {
     }
   }
 
-  FunctionView(Node* name, Node* call_signature, Node* body)
-      : Node(NodeType::kFunctionView, 3u, {name, call_signature, body}) {}
+  FunctionView(Node* overloads, Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kFunctionView, 4u, {overloads, name, call_signature, body}) {}
 
   
   FunctionView()
-      : Node(NodeType::kFunctionView, 3u) {}
+      : Node(NodeType::kFunctionView, 4u) {}
 
+  NODE_PROPERTY(overloads, 0);
+  
   // Getter for name_.
-  NODE_GETTER(name, 0);
+  NODE_GETTER(name, 1);
 
   // Getter for param_list_.
-  NODE_GETTER(call_signature, 1);
+  NODE_GETTER(call_signature, 2);
 
   // Getter for body_.
-  NODE_GETTER(body, 2);
+  NODE_GETTER(body, 3);
 
   NODE_FLAG_PROPERTY(getter, 0);
 
@@ -1935,8 +1905,12 @@ class DebuggerView: public Node {
 
 class ComprehensionExprView: public Node {
  public:
-  ComprehensionExprView(Node* for_expr, Node* tail)
-      : Node(NodeType::kComprehensionExprView, 2, {for_expr, tail}) {}
+  ComprehensionExprView(bool generator, Node* for_expr, Node* tail)
+      : Node(NodeType::kComprehensionExprView, 2, {for_expr, tail}) {
+    if (generator) {
+      set_flag(0);
+    }
+  }
 
   ComprehensionExprView()
       : Node(NodeType::kComprehensionExprView, 2) {}
@@ -1945,6 +1919,8 @@ class ComprehensionExprView: public Node {
   NODE_PROPERTY(for_expr, 0);
 
   NODE_PROPERTY(tail, 1);
+
+  NODE_FLAG_PROPERTY(generator, 0);
 };
 
 

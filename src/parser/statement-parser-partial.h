@@ -215,7 +215,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, bool has_default) {
   switch (Current()->type()) {
     case Token::TS_FUNCTION:
-      return ParseFunction(yield, has_default, true);
+      return ParseFunctionOverloads(yield, has_default, true);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, has_default);
     case Token::TS_LET:
@@ -1005,7 +1005,7 @@ ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool ha
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable) {
   if (Current()->type() == Token::TS_FUNCTION) {
-    return ParseFunction(yield, false, true);
+    return ParseFunctionOverloads(yield, false, true);
   }
   return ParseStatement(yield, has_return, breakable, continuable);
 }
@@ -1123,7 +1123,38 @@ ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default, bool declaration) {
+ir::Node* Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration) {
+  auto overloads = New<ir::FunctionOverloadsView>();
+  while (1) {
+    if (Current()->type() == Token::TS_FUNCTION) {
+      ir::Node* fn = ParseFunctionOverloadOrImplementation(overloads, yield, has_default, declaration);
+      if (fn->HasFunctionOverloadView()) {
+        ir::FunctionOverloadView* overload = fn->ToFunctionOverloadView();
+        if (overloads->size() > 0) {
+          auto last = overloads->last_child()->ToFunctionOverloadView();
+          if (last->name() == nullptr) {
+            SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
+          } else if (!last->name()->string_equals(overload->name())) {
+            SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
+          }
+
+          if (last->generator() != overload->generator()) {
+            SYNTAX_ERROR_POS("SyntaxError generator function can only overloaded by generator function", overload->name()->source_position());
+          }
+        }
+        overloads->InsertLast(fn);
+      } else {
+        return fn;
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError incomplete function definition", Current());
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(ir::Node* overloads, bool yield, bool has_default, bool declaration) {
   LOG_PHASE(ParseFunction);
   if (Current()->type() == Token::TS_FUNCTION) {
     bool generator = false;
@@ -1143,8 +1174,20 @@ ir::Node* Parser<UCharInputIterator>::ParseFunction(bool yield, bool has_default
     }
     
     ir::Node* call_signature = ParseCallSignature(false);
-    ir::Node* body = ParseFunctionBody(yield? yield: generator);
-    ir::Node* ret = New<ir::FunctionView>(name, call_signature, body);
+    ir::Node* ret = nullptr;
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      ir::Node* body = ParseFunctionBody(yield? yield: generator);
+      ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+    } else if (overloads != nullptr) {
+      ret = New<ir::FunctionOverloadView>(generator, name, call_signature);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else {
+        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError invalid function definition", PeekBuffer(cursor));
+    }
     ret->SetInformationForNode(PeekBuffer(cursor));
     return ret;
   }

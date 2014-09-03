@@ -982,32 +982,17 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
       // parse an array literal.
       return ParseArrayInitializer(yield);
     case Token::TS_LEFT_PAREN: {
+      TokenCursor cursor = GetBufferCursorPosition();
       Next();
-      try {
-        // First, try parse as parenthesized expression.
+      if (Current()->type() == Token::TS_FOR) {
+        SetBufferCursorPosition(cursor);
+        return ParseGeneratorComprehension(yield);
+      } else {
         ir::Node* node = ParseExpression(true, false);
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
           return node;
         }
-      } catch (SyntaxError& e) {
-        if (!LanguageModeUtil::IsES6(compiler_option_)) {
-          throw e;
-        }
-        // If SyntaxError thrown, try parse as generator comprehensions.
-        try {
-          return ParseGeneratorComprehension(yield);
-        // } catch (GeneratorSyntaxError& e) {
-        //   // If GeneratorSyntaxError thrown, throw error.
-        //   throw e;
-        } catch (SyntaxError&) {
-          // If Generic SyntaxError thrown, throw previous error.
-          throw e;
-        } catch (std::exception& e) {
-          throw e;
-        }
-      } catch (std::exception& e) {
-        throw e;
       }
       SYNTAX_ERROR("SyntaxError ')' expected", Current());
     }
@@ -1018,7 +1003,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
       return ParseTemplateLiteral();
     }
     case Token::TS_FUNCTION:
-      return ParseFunction(yield, false, false);
+      return ParseFunctionOverloadOrImplementation(nullptr, yield, false, false);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, false);
     default:
@@ -1085,7 +1070,7 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
   if (Current()->type() == Token::TS_LEFT_BRACKET) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    ir::Node* expr = ParseComprehension(yield);
+    ir::Node* expr = ParseComprehension(false, yield);
     if (Current()->type() == Token::TS_RIGHT_BRACKET) {
       Next();
       auto arr = New<ir::ArrayLiteralView>();
@@ -1100,11 +1085,11 @@ ir::Node* Parser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
 
 
 template<typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseComprehension(bool yield) {
+ir::Node* Parser<UCharInputIterator>::ParseComprehension(bool generator, bool yield) {
   LOG_PHASE(ParseComprehension);
   ir::Node* comp_for = ParseComprehensionFor(yield);
   ir::Node* comp_tail = ParseComprehensionTail(yield);
-  auto expr = New<ir::ComprehensionExprView>(comp_for, comp_tail);
+  auto expr = New<ir::ComprehensionExprView>(generator, comp_for, comp_tail);
   expr->SetInformationForNode(comp_for);
   return expr;
 };
@@ -1188,7 +1173,7 @@ ir::Node* Parser<UCharInputIterator>::ParseGeneratorComprehension(bool yield) {
   LOG_PHASE(ParseGeneratorComprehension);
   if (Current()->type() == Token::TS_LEFT_PAREN) {
     Next();
-    ir::Node* comp = ParseComprehension(yield);
+    ir::Node* comp = ParseComprehension(true, yield);
     if (Current()->type() == Token::TS_RIGHT_PAREN) {
       return comp;
     }
@@ -1320,7 +1305,7 @@ ir::Node* Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield) {
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Next();
       ir::Node* body = ParseFunctionBody(yield || generator);
-      value = New<ir::FunctionView>(getter, setter, generator, nullptr, call_sig, body);
+      value = New<ir::FunctionView>(getter, setter, generator, New<ir::FunctionOverloadsView>(), nullptr, call_sig, body);
     }
   } else if (generator) {
     SYNTAX_ERROR("SyntaxError '(' expected", Current());

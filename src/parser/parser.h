@@ -199,8 +199,10 @@ class Parser: public ParserBase {
 
   ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 
-  ir::Node* ParseFunction(bool yield, bool has_default, bool declaration);
+  ir::Node* ParseFunctionOverloads(bool yield, bool has_default, bool declaration);
 
+  ir::Node* ParseFunctionOverloadOrImplementation(ir::Node* overloads, bool yield, bool has_default, bool declaration);
+ 
   ir::Node* ParseParameterList(bool accesslevel_allowed);
   
   ir::Node* ParseParameter(bool rest, bool accesslevel_allowed);
@@ -282,10 +284,6 @@ class Parser: public ParserBase {
   DEF_PARSE_BINARY_EXPR(Multiplicative);
 #undef DEF_PARSE_BINARY_EXPR
 
-  // Parse binary expression.
-  // To simplify, we parser all binary expression(like MultiplicativeExpression AdditiveExpression, etc...) together.
-  ir::Node* ParseBinaryExpression(bool in, bool yield);
-
   // Parse unary expression.
   ir::Node* ParseUnaryExpression(bool yield);
 
@@ -312,7 +310,7 @@ class Parser: public ParserBase {
 
   ir::Node* ParseArrayComprehension(bool yield);
 
-  ir::Node* ParseComprehension(bool yield);
+  ir::Node* ParseComprehension(bool generator, bool yield);
 
   ir::Node* ParseComprehensionTail(bool yield);
 

@@ -162,7 +162,7 @@ class UtfString : public RegionalObject {
   }
 
 
-  inline bool operator == (UtfString&& utf_string) const {
+  inline bool operator == (const UtfString& utf_string) const {
     return utf_value_cache_ == utf_string.utf_value_cache_;
   }
 

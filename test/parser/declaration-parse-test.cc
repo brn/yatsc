@@ -253,9 +253,10 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_const) {
 }
 
 
-TEST(DeclarationParseTest, ParseFunctionDeclaration) {
+TEST(DeclarationParseTest, ParseFunctionOverloads) {
   DECLARATION_TEST_ALL("function a() {}",
                        "[FunctionView]\n"
+                       "  [FunctionOverloadsView]\n"
                        "  [NameView][a]\n"
                        "  [CallSignatureView]\n"
                        "    [ParamList]\n"
@@ -263,8 +264,34 @@ TEST(DeclarationParseTest, ParseFunctionDeclaration) {
                        "    [Empty]\n"
                        "  [BlockView]");
 
+  DECLARATION_TEST_ALL("function a();function a();function a() {}",
+                       "[FunctionView]\n"
+                       "  [FunctionOverloadsView]\n"
+                       "    [FunctionOverloadView]\n"
+                       "      [NameView][a]\n"
+                       "      [CallSignatureView]\n"
+                       "        [ParamList]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "    [FunctionOverloadView]\n"
+                       "      [NameView][a]\n"
+                       "      [CallSignatureView]\n"
+                       "        [ParamList]\n"
+                       "        [Empty]\n"
+                       "        [Empty]\n"
+                       "  [NameView][a]\n"
+                       "  [CallSignatureView]\n"
+                       "    [ParamList]\n"
+                       "    [Empty]\n"
+                       "    [Empty]\n"
+                       "  [BlockView]");
+
+  DECLARATION_THROW_TEST_ALL("function *a();function a();function a() {}", yatsc::SyntaxError);
+  DECLARATION_THROW_TEST_ALL("function a();function b();function b() {}", yatsc::SyntaxError);
+
   DECLARATION_TEST_ALL("function a(a,b,c) {}",
                        "[FunctionView]\n"
+                       "  [FunctionOverloadsView]\n"
                        "  [NameView][a]\n"
                        "  [CallSignatureView]\n"
                        "    [ParamList]\n"
@@ -289,6 +316,7 @@ TEST(DeclarationParseTest, ParseFunctionDeclaration) {
 
   DECLARATION_TEST_ALL("function a(a:string,b:number,...c:string[]): void {}",
                        "[FunctionView]\n"
+                       "  [FunctionOverloadsView]\n"
                        "  [NameView][a]\n"
                        "  [CallSignatureView]\n"
                        "    [ParamList]\n"
@@ -319,6 +347,7 @@ TEST(DeclarationParseTest, ParseFunctionDeclaration) {
 
   DECLARATION_TEST_ALL("function *a(a:string,b:number,...c:string[]): void {}",
                        "[FunctionView]\n"
+                       "  [FunctionOverloadsView]\n"
                        "  [NameView][a]\n"
                        "  [CallSignatureView]\n"
                        "    [ParamList]\n"
