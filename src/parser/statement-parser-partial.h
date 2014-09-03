@@ -101,13 +101,13 @@ ir::Node* Parser<UCharInputIterator>::ParseSourceElement() {
 //   DebuggerStatement
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseStatement);
   ir::Node* result = nullptr;
   
   switch (Current()->type()) {
     case Token::TS_LEFT_BRACE:
-      result = ParseBlockStatement(yield, has_return, breakable);
+      result = ParseBlockStatement(yield, has_return, breakable, continuable);
       break;
 
     case Token::LINE_TERMINATOR:
@@ -115,7 +115,7 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
       break;
 
     case Token::TS_IF:
-      result = ParseIfStatement(yield, has_return, breakable);
+      result = ParseIfStatement(yield, has_return, breakable, continuable);
       break;
 
     case Token::TS_FOR:
@@ -131,6 +131,9 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
       break;
 
     case Token::TS_CONTINUE:
+      if (!continuable) {
+        SYNTAX_ERROR("SyntaxError 'continue' only allowed in loops", Current());
+      }
       result = ParseContinueStatement(yield);
       break;
 
@@ -155,11 +158,11 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
       break;
 
     case Token::TS_WITH:
-      result = ParseWithStatement(yield, has_return, breakable);
+      result = ParseWithStatement(yield, has_return, breakable, continuable);
       break;
 
     case Token::TS_SWITCH:
-      result = ParseSwitchStatement(yield, has_return);
+      result = ParseSwitchStatement(yield, has_return, continuable);
       break;
 
     case Token::TS_THROW:
@@ -167,12 +170,22 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
       break;
 
     case Token::TS_TRY:
-      result = ParseTryStatement(yield, has_return, breakable);
+      result = ParseTryStatement(yield, has_return, breakable, continuable);
       break;
 
     case Token::TS_DEBUGGER:
       result = ParseDebuggerStatement();
       break;
+
+    case Token::TS_VAR: {
+      ir::Node* node = ParseVariableStatement(true, yield);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else {
+        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+      }
+      return node;
+    }
 
     case Token::END_OF_INPUT:
       SYNTAX_ERROR("SyntaxError Unexpected end of input", Current());
@@ -183,7 +196,7 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
         Next();
         if (Current()->type() == Token::TS_COLON) {
           SetBufferCursorPosition(cursor);
-          return ParseLabelledStatement(yield, has_return, breakable);
+          return ParseLabelledStatement(yield, has_return, breakable, continuable);
         }
         SetBufferCursorPosition(cursor);
       }
@@ -201,15 +214,6 @@ ir::Node* Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, bool has_default) {
   switch (Current()->type()) {
-    case Token::TS_VAR: {
-      ir::Node* node = ParseVariableDeclaration(true, yield);
-      if (IsLineTermination()) {
-        ConsumeLineTerminator();
-      } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
-      }
-      return node;
-    }
     case Token::TS_FUNCTION:
       return ParseFunction(yield, has_default, true);
     case Token::TS_CLASS:
@@ -234,8 +238,10 @@ ir::Node* Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, b
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+  LOG_PHASE(ParseBlockStatement);
   auto block_view = New<ir::BlockView>();
+  block_view->SetInformationForNode(Current());
 
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     Next();
@@ -246,7 +252,7 @@ ir::Node* Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_r
       } else if (Current()->type() == Token::END_OF_INPUT) {
         SYNTAX_ERROR("Unexpected end of input.", Current());
       } else {
-        ir::Node* statement = ParseStatementListItem(yield, has_return, breakable);
+        ir::Node* statement = ParseStatementListItem(yield, has_return, breakable, continuable);
         block_view->InsertLast(statement);
       }
     }
@@ -258,10 +264,10 @@ ir::Node* Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_r
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable) {
   ir::Node* node = ParseDeclaration(false, yield, false);
   if (node == nullptr) {
-    return ParseStatement(yield, has_return, breakable);
+    return ParseStatement(yield, has_return, breakable, continuable);
   }
   return node;
 }
@@ -606,7 +612,7 @@ ir::Node* Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool yie
 //   | 'if' '(' expression[in, ?yield] ')' statement[?yield, ?return]
 //   ;
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseIfStatement);
   if (Current()->type() == Token::TS_IF) {
     TokenCursor cursor = GetBufferCursorPosition();
@@ -616,11 +622,11 @@ ir::Node* Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_retu
       ir::Node* expr = ParseExpression(true, yield);
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
-        ir::Node* then_stmt = ParseStatement(yield, has_return, breakable);
+        ir::Node* then_stmt = ParseStatement(yield, has_return, breakable, continuable);
         ir::Node* else_stmt = nullptr;
         if (Current()->type() == Token::TS_ELSE) {
           Next();
-          else_stmt = ParseStatement(yield, has_return, breakable);
+          else_stmt = ParseStatement(yield, has_return, breakable, continuable);
         }
         ir::IfStatementView* if_stmt = New<ir::IfStatementView>(expr, then_stmt, else_stmt);
         if_stmt->SetInformationForNode(PeekBuffer(cursor));
@@ -665,7 +671,7 @@ ir::Node* Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, bool has
   if (Current()->type() == Token::TS_DO) {
     TokenInfo info = *(Current());
     Next();
-    ir::Node* stmt = ParseStatement(yield, has_return, true);
+    ir::Node* stmt = ParseStatement(yield, has_return, true, true);
     if (Current()->type() == Token::TS_WHILE) {
       Next();
       if (Current()->type() == Token::TS_LEFT_PAREN) {
@@ -781,7 +787,7 @@ template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseIterationBody(bool yield, bool has_return) {
   if (Current()->type() == Token::TS_RIGHT_PAREN) {
     Next();
-    return ParseStatement(yield, has_return, true);
+    return ParseStatement(yield, has_return, true, true);
   }
   SYNTAX_ERROR("SyntaxError ')' expected", Current());
 }
@@ -793,9 +799,11 @@ ir::Node* Parser<UCharInputIterator>::ParseContinueStatement(bool yield) {
   if (Current()->type() == Token::TS_CONTINUE) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
-    ir::Node* result;
+    ir::Node* result = nullptr;
     YATSC_SCOPED([&]{
-      result->SetInformationForNode(token_buffer_.Peek(cursor));
+      if (result != nullptr) {
+        result->SetInformationForNode(token_buffer_.Peek(cursor));
+      }
     });
     if (Current()->type() == Token::TS_IDENTIFIER) {
       return result = New<ir::ContinueStatementView>(ParsePrimaryExpression(yield));
@@ -812,9 +820,11 @@ ir::Node* Parser<UCharInputIterator>::ParseBreakStatement(bool yield) {
   if (Current()->type() == Token::TS_BREAK) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
-    ir::Node* result;
+    ir::Node* result = nullptr;
     YATSC_SCOPED([&]{
-      result->SetInformationForNode(token_buffer_.Peek(cursor));
+      if (result != nullptr) {
+        result->SetInformationForNode(token_buffer_.Peek(cursor));
+      }
     });
     if (Current()->type() == Token::TS_IDENTIFIER) {
       return result = New<ir::BreakStatementView>(ParsePrimaryExpression(yield));
@@ -830,9 +840,11 @@ ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
   LOG_PHASE(ParseReturnStatement);
   if (Current()->type() == Token::TS_RETURN) {
     TokenCursor cursor = GetBufferCursorPosition();
-    ir::Node* result;
+    ir::Node* result = nullptr;
     YATSC_SCOPED([&]{
-      result->SetInformationForNode(PeekBuffer(cursor));
+      if (result != nullptr) {
+        result->SetInformationForNode(PeekBuffer(cursor));
+      }
     });
     
     Next();
@@ -849,22 +861,26 @@ ir::Node* Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseWithStatement);
   if (Current()->type() == Token::TS_WITH) {
-    TokenCursor cursor = token_buffer_.cursor();
-    ir::Node* result;
+    TokenCursor cursor = GetBufferCursorPosition();
+    ir::Node* result = nullptr;
     YATSC_SCOPED([&]{
-      result->SetInformationForNode(token_buffer_.Peek(cursor));
+      if (result != nullptr) {
+        result->SetInformationForNode(PeekBuffer(cursor));
+      }
     });
+    
     Next();
+    
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       Next();
       ir::Node* expr = ParseExpression(true, yield);
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
-        ir::Node* stmt = ParseStatement(yield, has_return, breakable);
-        return New<ir::WithStatementView>(expr, stmt);
+        ir::Node* stmt = ParseStatement(yield, has_return, breakable, continuable);
+        return result = New<ir::WithStatementView>(expr, stmt);
       }
       SYNTAX_ERROR("SyntaxError ')' expected", Current());
     }
@@ -875,7 +891,7 @@ ir::Node* Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_re
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool has_return) {
+ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool has_return, bool continuable) {
   LOG_PHASE(ParseSwitchStatement);
   if (Current()->type() == Token::TS_SWITCH) {
     TokenCursor cursor = token_buffer_.cursor();
@@ -887,7 +903,7 @@ ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool has_
         Next();
         if (Current()->type() == Token::TS_LEFT_BRACE) {
           Next();
-          ir::Node* case_clauses = ParseCaseClauses(yield, has_return);
+          ir::Node* case_clauses = ParseCaseClauses(yield, has_return, continuable);
           if (Current()->type() == Token::TS_RIGHT_BRACE) {
             Next();
             ir::Node* switch_stmt = New<ir::SwitchStatementView>(expr, case_clauses);
@@ -907,7 +923,7 @@ ir::Node* Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool has_
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_return) {
+ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_return, bool continuable) {
   LOG_PHASE(ParseCaseClauses);
   ir::CaseListView* case_list = New<ir::CaseListView>();
   case_list->SetInformationForNode(Current());
@@ -936,9 +952,9 @@ ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_retu
         ir::Node* body = New<ir::CaseBody>();
         while (1) {
           if (Current()->type() == Token::TS_LEFT_BRACE) {
-            body->InsertLast(ParseBlockStatement(yield, has_return, true));
+            body->InsertLast(ParseBlockStatement(yield, has_return, true, continuable));
           } else {
-            body->InsertLast(ParseStatementListItem(yield, has_return, true));
+            body->InsertLast(ParseStatementListItem(yield, has_return, true, continuable));
           }
           switch (Current()->type()) {
             case Token::TS_CASE:
@@ -970,12 +986,12 @@ ir::Node* Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_retu
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   if (Current()->type() == Token::TS_IDENTIFIER) {
     ir::Node* identifier = ParseLabelIdentifier(yield);
     if (Current()->type() == Token::TS_COLON) {
       Next();
-      ir::Node* stmt = ParseLabelledItem(yield, has_return, breakable);
+      ir::Node* stmt = ParseLabelledItem(yield, has_return, breakable, continuable);
       auto node = New<ir::LabelledStatementView>(identifier, stmt);
       node->SetInformationForNode(identifier);
       return node;
@@ -987,11 +1003,11 @@ ir::Node* Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool ha
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable) {
   if (Current()->type() == Token::TS_FUNCTION) {
     return ParseFunction(yield, false, true);
   }
-  return ParseStatement(yield, has_return, breakable);
+  return ParseStatement(yield, has_return, breakable, continuable);
 }
 
 
@@ -1014,22 +1030,22 @@ ir::Node* Parser<UCharInputIterator>::ParseThrowStatement() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseTryStatement);
   if (Current()->type() == Token::TS_TRY) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
-    ir::Node* block = ParseBlockStatement(yield, has_return, breakable);
+    ir::Node* block = ParseBlockStatement(yield, has_return, breakable, continuable);
     ir::Node* catch_block = nullptr;
     ir::Node* finally_block = nullptr;
     bool has_catch_or_finally = false;
     if (Current()->type() == Token::TS_CATCH) {
       has_catch_or_finally = true;
-      catch_block = ParseCatchBlock(yield, has_return, breakable);
+      catch_block = ParseCatchBlock(yield, has_return, breakable, continuable);
     }
     if (Current()->type() == Token::TS_FINALLY) {
       has_catch_or_finally = true;
-      finally_block = ParseFinallyBlock(yield, has_return, breakable);
+      finally_block = ParseFinallyBlock(yield, has_return, breakable, continuable);
     }
 
     if (!has_catch_or_finally) {
@@ -1044,7 +1060,7 @@ ir::Node* Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_ret
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseCatchBlock);
   if (Current()->type() == Token::TS_CATCH) {
     TokenCursor cursor = token_buffer_.cursor();
@@ -1060,7 +1076,7 @@ ir::Node* Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_retur
 
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
-        ir::Node* block = ParseBlockStatement(yield, has_return, breakable);
+        ir::Node* block = ParseBlockStatement(yield, has_return, breakable, continuable);
         ir::CatchStatementView* catch_stmt = New<ir::CatchStatementView>(catch_parameter, block);
         catch_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
         return catch_stmt;
@@ -1074,12 +1090,12 @@ ir::Node* Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_retur
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseFinallyBlock(bool yield, bool has_return, bool breakable) {
+ir::Node* Parser<UCharInputIterator>::ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseFinallyBlock);
   if (Current()->type() == Token::TS_FINALLY) {
     TokenCursor cursor = token_buffer_.cursor();
     Next();
-    ir::Node* block = ParseBlockStatement(yield, has_return, breakable);
+    ir::Node* block = ParseBlockStatement(yield, has_return, breakable, continuable);
     ir::FinallyStatementView* finally_stmt = New<ir::FinallyStatementView>(block);
     finally_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
     return finally_stmt;
@@ -1238,7 +1254,7 @@ ir::Node* Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
         Next();
         break;
       }
-      auto node = ParseStatementListItem(yield, true, false);
+      auto node = ParseStatementListItem(yield, true, false, false);
       block->InsertLast(node);
     }
     return block;

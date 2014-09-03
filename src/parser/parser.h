@@ -123,13 +123,13 @@ class Parser: public ParserBase {
 
   ir::Node* ParseSourceElement();
 
-  ir::Node* ParseStatementListItem(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable);
 
   ir::Node* ParseStatementList(bool yield, bool has_return);
 
-  ir::Node* ParseStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  ir::Node* ParseBlockStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
   ir::Node* ParseModuleStatement();
 
@@ -161,7 +161,7 @@ class Parser: public ParserBase {
   
   ir::Node* ParseVariableDeclaration(bool in, bool yield);
 
-  ir::Node* ParseIfStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
   ir::Node* ParseWhileStatement(bool yield, bool has_return);
 
@@ -179,23 +179,23 @@ class Parser: public ParserBase {
 
   ir::Node* ParseReturnStatement(bool yield);
 
-  ir::Node* ParseWithStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  ir::Node* ParseSwitchStatement(bool yield, bool has_return);
+  ir::Node* ParseSwitchStatement(bool yield, bool has_return, bool continuable);
 
-  ir::Node* ParseCaseClauses(bool yield, bool has_return);
+  ir::Node* ParseCaseClauses(bool yield, bool has_return, bool continuable);
 
-  ir::Node* ParseLabelledStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  ir::Node* ParseLabelledItem(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable);
 
   ir::Node* ParseThrowStatement();
 
-  ir::Node* ParseTryStatement(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  ir::Node* ParseCatchBlock(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
-  ir::Node* ParseFinallyBlock(bool yield, bool has_return, bool breakable);
+  ir::Node* ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
   ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 

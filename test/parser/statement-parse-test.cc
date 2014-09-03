@@ -28,11 +28,12 @@
 
 bool breakable = false;
 bool returnable = false;
+bool continuable = false;
 #define STATEMENT_TEST(type, code, expected_str)                        \
-  PARSER_TEST(ParseStatement(false, returnable, breakable), type, code, expected_str, false, std::exception)
+  PARSER_TEST(ParseStatement(false, returnable, breakable, continuable), type, code, expected_str, false, std::exception)
 
 #define STATEMENT_TEST_THROW(type, code)                                \
-  PARSER_TEST(ParseStatement(false, returnable, breakable), type, code, "", true, std::exception)
+  PARSER_TEST(ParseStatement(false, returnable, breakable, continuable), type, code, "", true, std::exception)
 
 #define STATEMENT_TEST_ALL(code, expected_str)                          \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();  \
@@ -354,4 +355,51 @@ TEST(StatementParseTest, ParseBreakStatement) {
 
   breakable = false;
   STATEMENT_THROW_TEST_ALL("break;");
+}
+
+
+TEST(StatementParseTest, ParseContinueStatement) {
+  continuable = true;
+  STATEMENT_TEST_ALL("continue;",
+                     "[ContinueStatementView]\n"
+                     "  [Empty]");
+
+  STATEMENT_TEST_ALL("continue LABEL;",
+                     "[ContinueStatementView]\n"
+                     "  [NameView][LABEL]");
+
+  continuable = false;
+  STATEMENT_THROW_TEST_ALL("continue;");
+}
+
+
+TEST(StatementParseTest, ParseWithStatement) {
+  continuable = false;
+  breakable = false;
+  returnable = false;
+
+  STATEMENT_TEST_ALL("with(x) {}",
+                     "[WithStatementView]\n"
+                     "  [NameView][x]\n"
+                     "  [BlockView]");
+}
+
+
+TEST(StatementParseTest, ParseBlockStatement) {
+  continuable = false;
+  breakable = false;
+  returnable = false;
+
+  STATEMENT_TEST_ALL("{var x = 0;var y = 0;}",
+                     "[BlockView]\n"
+                     "  [VariableDeclView]\n"
+                     "    [VariableView]\n"
+                     "      [NameView][x]\n"
+                     "      [NumberView][0]\n"
+                     "      [Empty]\n"
+                     "  [VariableDeclView]\n"
+                     "    [VariableView]\n"
+                     "      [NameView][y]\n"
+                     "      [NumberView][0]\n"
+                     "      [Empty]");
 }
