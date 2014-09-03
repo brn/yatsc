@@ -71,6 +71,7 @@ namespace yatsc {namespace ir {
   DECLARE(WhileStatementView)                           \
   DECLARE(DoWhileStatementView)                         \
   DECLARE(ClassDeclView)                                \
+  DECLARE(ClassHeritageView)                            \
   DECLARE(ClassFieldListView)                           \
   DECLARE(ClassFieldAccessLevelView)                    \
   DECLARE(InstancePropertyView)                         \
@@ -1013,35 +1014,58 @@ class DoWhileStatementView: public Node {
 };
 
 
-class ClassDeclViewaration: public Node {
- public:
-  ClassDeclViewaration(Node* name, Node* constructor, Node* field_list, Node* inheritance, Node* impl_list)
-      : Node(NodeType::kClassDeclView, 5u, {name, constructor, field_list, inheritance, impl_list}) {}
+class ClassBasesView: public Node {
+  ClassBases(Node* extends, Node* impls)
+      : Node(NodeType::kClassBasesView, 2u, {extends, impls}) {}
+
+  ClassBases()
+      : Node(NodeType::kClassBasesView, 2u) {}
 
   
-  ClassDeclViewaration()
-      : Node(NodeType::kClassDeclView, 5u) {}
+  NODE_PROPERTY(extends, 0);
+
+  NODE_PROPERTY(impls, 1);
+};
+
+
+class ClassImplsView: public Node {
+  ClassImplsView()
+      : Node(NodeType::kClassImplsView, 0u) {}
+};
+
+
+class ClassDeclView: public Node {
+ public:
+  ClassDeclView(Node* name, Node* field_list, Node* bases)
+      : Node(NodeType::kClassDeclView, 3u, {name, bases, field_list}) {}
+  
+  ClassDeclView()
+      : Node(NodeType::kClassDeclView, 3u) {}
   
 
   // Getter and Setter for name.
   NODE_PROPERTY(name, 0);
 
-
-  // Getter and Setter for constructor.
-  NODE_PROPERTY(constructor, 1);
-
+    // Getter and Setter for inheritance.
+  NODE_PROPERTY(bases, 1);
 
   // Getter and Setter for field_list.
   NODE_PROPERTY(field_list, 2);
-
-
-  // Getter and Setter for inheritance.
-  NODE_PROPERTY(inheritance, 3);
-
-
-  // Getter and Setter for impl_list.
-  NODE_PROPERTY(impl_list, 4);
 };
+
+
+class ClassHeritageView: public Node {
+ public:
+  ClassHeritageView(Node* ref)
+      : Node(NodeType::kClassHeritageView, 1u, {ref}) {}
+
+
+  ClassHeritageView()
+      : Node(NodeType::kClassHeritageView, 1u) {}
+
+
+  NODE_PROPERTY(type_reference, 0);
+}
 
 
 class ClassFieldListView: public Node {

@@ -1118,7 +1118,77 @@ ir::Node* Parser<UCharInputIterator>::ParseDebuggerStatement() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has_default) {
-  return nullptr;
+  if (Current()->type() == Token::TS_CLASS) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    ir::Node* name = ParseBindingIdentifier();
+    ir::Node* bases = ParseClassBases();
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      ir::Node* body = ParseClassBody();
+      auto class_decl = New<ir::ClassDeclView>(name, bases, body);
+      class_decl->SetInformationForNode(PeekBuffer(cursor));
+      return class_decl;
+    }
+    SYNTAX_ERROR("SyntaxError '{' expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'class' expected", Current());
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseClassBases() {
+  bool extends = false;
+  bases->SetInformationForNode(Current());
+  auto bases = New<ir::ClassBasesView>();
+  auto impls = New<ir::ClassImplsView>();
+  
+  while (1) {
+    if (Current()->type() == Token::TS_EXTENDS) {
+      if (extends) {
+        SYNTAX_ERROR("SyntaxError class extendable only one class", Current());
+      }
+      TokenCursor heritage_cursor = GetBufferCursorPosition();
+      Next();
+      extends = true;
+      auto heritage = New<ir::ClassHeritageView>(ParseReferencedType());
+      heritage->SetInformationForNode(PeekBuffer(heritage_cursor));
+      bases->extends(heritage);
+    } else if (Current()->type() == Token::TS_IMPLEMENTS) {
+      Next();
+      impls->InsertLast(ParseReferencedType());
+    } else if (Current()->type() == Token::TS_LEFT_BRACE) {
+      bases->impls(impls);
+      return bases;
+    } else {
+      SYNTAX_ERROR("SyntaxError unexpected token", Current());
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseClassBody() {
+  auto fields = New<ir::ClassFieldListView>();
+  while (1) {
+    if (Current()->type() != Token::TS_RIGHT_BRACE) {
+      fields->InsertLast(ParseClassElement());
+    } else {
+      return fields;
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseClassElement() {
+  ir::Node* mod = ParseFieldModifier();
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    if (Current()->value() == "constructor") {
+      return ParseConstructor(mod);
+    } else {
+      return ParseFilelds(mod);
+    }
+  }
 }
 
 
