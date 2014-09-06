@@ -71,6 +71,11 @@ namespace yatsc {namespace ir {
   DECLARE(WhileStatementView)                           \
   DECLARE(DoWhileStatementView)                         \
   DECLARE(ClassDeclView)                                \
+  DECLARE(ClassBasesView)                               \
+  DECLARE(ClassImplsView)                               \
+  DECLARE(ClassFieldListView)                           \
+  DECLARE(ClassFieldModifiersView)                      \
+  DECLARE(ClassFieldAccessLevelView)                    \
   DECLARE(ClassHeritageView)                            \
   DECLARE(MemberVariableView)                           \
   DECLARE(MemberFunctionView)                           \
@@ -1011,20 +1016,22 @@ class DoWhileStatementView: public Node {
 
 
 class ClassBasesView: public Node {
-  ClassBases(Node* extends, Node* impls)
-      : Node(NodeType::kClassBasesView, 2u, {extends, impls}) {}
+ public:
+  ClassBasesView(Node* base, Node* impls)
+      : Node(NodeType::kClassBasesView, 2u, {base, impls}) {}
 
-  ClassBases()
+  ClassBasesView()
       : Node(NodeType::kClassBasesView, 2u) {}
 
   
-  NODE_PROPERTY(extends, 0);
+  NODE_PROPERTY(base, 0);
 
   NODE_PROPERTY(impls, 1);
 };
 
 
 class ClassImplsView: public Node {
+ public:
   ClassImplsView()
       : Node(NodeType::kClassImplsView, 0u) {}
 };
@@ -1061,7 +1068,7 @@ class ClassHeritageView: public Node {
 
 
   NODE_PROPERTY(type_reference, 0);
-}
+};
 
 
 class ClassFieldListView: public Node {
@@ -1078,10 +1085,10 @@ class ClassFieldListView: public Node {
 class ClassFieldModifiersView: public Node {
  public:
   ClassFieldModifiersView(std::initializer_list<Node*> modifiers)
-      : Node(NodeType::kClassFieldModifiers, 0, modifiers) {}
+      : Node(NodeType::kClassFieldModifiersView, 0, modifiers) {}
 
   ClassFieldModifiersView()
-      : Node(NodeType::kClassFieldModifiers, 0) {}
+      : Node(NodeType::kClassFieldModifiersView, 0) {}
 };
 
 

@@ -22,17 +22,12 @@ def BuildConfig() :
       }
       ], 'condition_variable required.')
   builder.CheckHeader(True, ['stdint.h'], '')
-  builder.CheckHeader(True, ["unordered_map", "unordered_map", "boost/unordered_map.hpp"], 'unordered_map required.')
+  builder.CheckHeader(True, ["unordered_map", "unordered_map"], 'unordered_map required.')
   builder.CheckStruct(True, [
       {
         'name' : 'std::bind',
         'header' : ['functional'],
         'function' : 'std::bind(fopen, std::placeholders::_1, "rb")'
-        }, 
-      {
-        'name' : 'boost::bind',
-        'header' : ['boost/bind.hpp'],
-        'function' : 'boost::bind(fopen, _1, "rb")'
         }], 'bind required.')
   builder.CheckHeader(True, ['type_traits'], 'type_traits required.')
   builder.CheckHeader(True, ['tuple', 'std/tuple'], 'tuple required.')
@@ -74,10 +69,6 @@ def BuildConfig() :
       }
     ], 'unique_ptr is required.')
 
-  builder.CheckHeader(True, ["boost/preprocessor/repetition/repeat.hpp"], 'boost/preprocessor/repetition/repeat.hpp required.')
-  builder.CheckHeader(True, ["boost/preprocessor/repetition/enum_params.hpp"], 'boost/preprocessor/repetition/enum_params.hpp required.')
-  builder.CheckHeader(True, ["boost/preprocessor/repetition/enum_binary_params.hpp"], 'boost/preprocessor/repetition/enum_binary_params.hpp required.')
-  builder.CheckHeader(True, ["boost/detail/atomic_count.hpp"], 'boost/preprocessor/repetition/repeat.hpp required.')
   builder.CheckStruct(False, [
     {
       'name': 'inline_attriute',

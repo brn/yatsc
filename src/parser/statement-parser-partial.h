@@ -1121,7 +1121,7 @@ ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has
   if (Current()->type() == Token::TS_CLASS) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    ir::Node* name = ParseBindingIdentifier();
+    ir::Node* name = ParseBindingIdentifier(false, false);
     ir::Node* bases = ParseClassBases();
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       ir::Node* body = ParseClassBody();
@@ -1137,27 +1137,27 @@ ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseClassBases() {
-  bool extends = false;
-  bases->SetInformationForNode(Current());
+  bool extends_keyword = false;
   auto bases = New<ir::ClassBasesView>();
   auto impls = New<ir::ClassImplsView>();
+  bases->SetInformationForNode(Current());
   
   while (1) {
     if (Current()->type() == Token::TS_EXTENDS) {
-      if (extends) {
+      if (extends_keyword) {
         SYNTAX_ERROR("SyntaxError class extendable only one class", Current());
       }
       TokenCursor heritage_cursor = GetBufferCursorPosition();
       Next();
-      extends = true;
+      extends_keyword = true;
       auto heritage = New<ir::ClassHeritageView>(ParseReferencedType());
       heritage->SetInformationForNode(PeekBuffer(heritage_cursor));
-      bases->extends(heritage);
+      bases->set_base(heritage);
     } else if (Current()->type() == Token::TS_IMPLEMENTS) {
       Next();
       impls->InsertLast(ParseReferencedType());
     } else if (Current()->type() == Token::TS_LEFT_BRACE) {
-      bases->impls(impls);
+      bases->set_impls(impls);
       return bases;
     } else {
       SYNTAX_ERROR("SyntaxError unexpected token", Current());
@@ -1231,7 +1231,7 @@ ir::Node* Parser<UCharInputIterator>::ParseFieldModifier() {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(Node* mods) {
+ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(ir::Node* mods) {
   TokenCursor cursor = GetBufferCursorPosition();
   auto overloads = New<ir::FunctionOverloadsView>();
   while (1) {
@@ -1253,10 +1253,11 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(Node* mods) {
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(Node* overloads) {
+ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(ir::Node* overloads) {
   LOG_PHASE(ParseConstructorOverloadOrImplementation);
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "constructor") {
+    TokenCursor cursor = GetBufferCursorPosition();
     ir::Node* name = ParseIdentifier();
     
     ir::Node* call_signature = ParseCallSignature(true);
@@ -1282,12 +1283,12 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(N
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Node* mods) {
+ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(ir::Node* mods) {
   auto overloads = New<ir::FunctionOverloadsView>();
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (Peek(cursor)->type() == Token::TS_IDENTIFIER &&
+    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER &&
         Current()->type() == Token::TS_LEFT_PAREN) {
       SetBufferCursorPosition(cursor);
       ir::Node* fn = ParseMemberFunctionOverloadOrImplementation(overloads);
@@ -1342,12 +1343,12 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementatio
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Node* mods) {
+ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(ir::Node* mods) {
   auto overloads = New<ir::FunctionOverloadsView>();
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (Peek(cursor)->type() == Token::TS_IDENTIFIER &&
+    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER &&
         Current()->type() == Token::TS_LEFT_PAREN) {
       SetBufferCursorPosition(cursor);
       ir::Node* fn = ParseGeneratorMethodOverloadOrImplementation(overloads);
@@ -1413,11 +1414,11 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberVariable(ir::Node* mods) {
     ir::Node* type = nullptr;
     if (Current()->type() == Token::TS_COLON) {
       Next();
-      type = ParseTypeAnnotation();
+      type = ParseTypeExpression();
     }
     if (Current()->type() == Token::TS_ASSIGN) {
       Next();
-      value = ParseExpression();
+      value = ParseExpression(true, false);
     }
     auto member_variable = New<ir::MemberVariableView>(mods, identifier, type, value);
     member_variable->SetInformationForNode(mods);
@@ -1439,8 +1440,7 @@ ir::Node* Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool ha
           if (last->name() == nullptr) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
           } else if (!last->name()->string_equals(overload->name())) {
-            SYNTAX_ERROR_POS("SyntaxError function overl
-oad must have a same name", overload->name()->source_position());
+            SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
           }
 
           if (last->generator() != overload->generator()) {
