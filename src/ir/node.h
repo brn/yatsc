@@ -72,12 +72,8 @@ namespace yatsc {namespace ir {
   DECLARE(DoWhileStatementView)                         \
   DECLARE(ClassDeclView)                                \
   DECLARE(ClassHeritageView)                            \
-  DECLARE(ClassFieldListView)                           \
-  DECLARE(ClassFieldAccessLevelView)                    \
-  DECLARE(InstancePropertyView)                         \
-  DECLARE(InstanceMethodView)                           \
-  DECLARE(ClassPropertyView)                            \
-  DECLARE(ClassMethodView)                              \
+  DECLARE(MemberVariableView)                           \
+  DECLARE(MemberFunctionView)                           \
   DECLARE(InterfaceView)                                \
   DECLARE(InterfaceFieldListView)                       \
   DECLARE(InterfaceFieldView)                           \
@@ -1079,6 +1075,16 @@ class ClassFieldListView: public Node {
 };
 
 
+class ClassFieldModifiersView: public Node {
+ public:
+  ClassFieldModifiersView(std::initializer_list<Node*> modifiers)
+      : Node(NodeType::kClassFieldModifiers, 0, modifiers) {}
+
+  ClassFieldModifiersView()
+      : Node(NodeType::kClassFieldModifiers, 0) {}
+};
+
+
 class ClassFieldAccessLevelView: public Node {
  public:
   ClassFieldAccessLevelView(Token op)
@@ -1092,71 +1098,36 @@ class ClassFieldAccessLevelView: public Node {
 };
 
 
-class FieldBase: public Node {
+class MemberVariableView: public Node {
  public:
-  FieldBase() = delete;
+  MemberVariableView(Node* accessor, Node* name, Node* type, Node* value)
+      : Node(NodeType::kMemberVariableView, 4u, {accessor, name, type, value}) {}
 
-  // Getter and Setter for access_level.
-  NODE_PROPERTY(access_level, 0);
-  
+  MemberVariableView()
+      : Node(NodeType::kMemberVariableView, 4u) {}
 
-  // Getter and Setter for name.
+  NODE_PROPERTY(accessor, 0);
+
   NODE_PROPERTY(name, 1);
 
-  
-  // Getter and Setter for value.
-  NODE_PROPERTY(value, 2);
+  NODE_PROPERTY(type, 2)
 
- protected:
-  FieldBase(NodeType type, Node* access_level, Node* name, Node* value)
-      : Node(type, 3u, {access_level, name, value}) {}
-
-  FieldBase(NodeType type)
-      : Node(type, 3u) {}
+  NODE_PROPERTY(value, 3);
 };
 
 
-// Represent instance property.
-class InstancePropertyView: public FieldBase {
+class MemberFunctionView: public Node {
  public:
-  InstancePropertyView(Node* access_level, Node* name, Node* value)
-      : FieldBase(NodeType::kInstancePropertyView, access_level, name, value) {}
+  MemberFunctionView(Node* accessor, Node* definition)
+      : Node(NodeType::kMemberFunctionView, 2u, {accessor, definition}) {}
 
-  InstancePropertyView()
-      : FieldBase(NodeType::kInstancePropertyView) {}
-};
-
-
-// Represent instance property.
-class InstanceMethodView: public FieldBase {
- public:
-  InstanceMethodView(bool getter, bool setter, Node* access_level, Node* name, Node* value)
-      : FieldBase(NodeType::kInstanceMethodView, access_level, name, value) {}
-
-  InstanceMethodView()
-      : FieldBase(NodeType::kInstanceMethodView) {}
-};
+  MemberFunctionView()
+      : Node(NodeType::kMemberFunctionView, 2u) {}
 
 
-// Represent instance property.
-class ClassPropertyView: public FieldBase {
- public:
-  ClassPropertyView(Node* access_level, Node* name, Node* value)
-      : FieldBase(NodeType::kClassPropertyView, access_level, name, value) {}
+  NODE_PROPERTY(accessor, 0);
 
-  ClassPropertyView()
-      : FieldBase(NodeType::kClassPropertyView) {}
-};
-
-
-// Represent instance property.
-class ClassMethodView: public FieldBase {
- public:
-  ClassMethodView(Node* access_level, Node* name, Node* value)
-      : FieldBase(NodeType::kClassMethodView, access_level, name, value) {}
-
-  ClassMethodView()
-      : FieldBase(NodeType::kClassMethodView) {}
+  NODE_PROPERTY(definition, 1)
 };
 
 

@@ -1181,16 +1181,250 @@ ir::Node* Parser<UCharInputIterator>::ParseClassBody() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseClassElement() {
-  ir::Node* mod = ParseFieldModifier();
+  auto mods = New<ir::ClassFieldModifiersView>();
+  ir::Node* mod1 = ParseFieldModifier();
+  ir::Node* mod2 = nullptr;
+  if (mod1 != nullptr) {
+    mods->InsertLast(mod1);
+    mod2 = ParseFieldModifier();
+    if (mod2 != nullptr) {
+      mods->InsertLast(mod2);
+    }
+  }
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value() == "constructor") {
-      return ParseConstructor(mod);
+      return ParseConstructorOverloads(mods);
     } else {
-      return ParseFilelds(mod);
+      TokenCursor cursor = GetBufferCursorPosition();
+      Next();
+      if (Current()->type() == Token::TS_LEFT_PAREN) {
+        SetBufferCursorPosition(cursor);
+        return ParseMemberFunctionOverloads(mods);
+      } else {
+        SetBufferCursorPosition(cursor);
+        return ParseMemberVariable(mods);
+      }
+    }
+  } else if (Current()->type() == Token::TS_MUL) {
+    return ParseGeneratorMethodOverloads(mods);
+  }
+  SYNTAX_ERROR("SyntaxError unexpected token", Current());
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseFieldModifier() {  
+  switch (Current()->type()) {
+    case Token::TS_STATIC:
+    case Token::TS_PUBLIC:
+    case Token::TS_PROTECTED:
+    case Token::TS_PRIVATE: {
+      auto node = New<ir::ClassFieldAccessLevelView>(Current()->type());
+      node->SetInformationForNode(Current());
+      Next();
+      return node;
+    }
+    default:
+      return nullptr;
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(Node* mods) {
+  TokenCursor cursor = GetBufferCursorPosition();
+  auto overloads = New<ir::FunctionOverloadsView>();
+  while (1) {
+    if (Current()->type() == Token::TS_IDENTIFIER &&
+        Current()->value() == "constructor") {
+      ir::Node* fn = ParseConstructorOverloadOrImplementation(overloads);
+      if (fn->HasFunctionOverloadView()) {
+        overloads->InsertLast(fn);
+      } else {
+        auto constructor = New<ir::MemberFunctionView>(mods, fn);
+        constructor->SetInformationForNode(PeekBuffer(cursor));
+        return constructor;
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError incomplete constructor definition", Current());
     }
   }
 }
 
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(Node* overloads) {
+  LOG_PHASE(ParseConstructorOverloadOrImplementation);
+  if (Current()->type() == Token::TS_IDENTIFIER &&
+      Current()->value() == "constructor") {
+    ir::Node* name = ParseIdentifier();
+    
+    ir::Node* call_signature = ParseCallSignature(true);
+    ir::Node* ret = nullptr;
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      ir::Node* body = ParseFunctionBody(false);
+      ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+    } else if (overloads != nullptr) {
+      ret = New<ir::FunctionOverloadView>(false, name, call_signature);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else {
+        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError invalid constructor definition", PeekBuffer(cursor));
+    }
+    ret->SetInformationForNode(PeekBuffer(cursor));
+    return ret;
+  }
+  SYNTAX_ERROR("SyntaxError 'constructor' expected", Current());
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Node* mods) {
+  auto overloads = New<ir::FunctionOverloadsView>();
+  while (1) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    if (Peek(cursor)->type() == Token::TS_IDENTIFIER &&
+        Current()->type() == Token::TS_LEFT_PAREN) {
+      SetBufferCursorPosition(cursor);
+      ir::Node* fn = ParseMemberFunctionOverloadOrImplementation(overloads);
+      if (fn->HasFunctionOverloadView()) {
+        ir::FunctionOverloadView* overload = fn->ToFunctionOverloadView();
+        if (overloads->size() > 0) {
+          auto last = overloads->last_child()->ToFunctionOverloadView();
+          if (!last->name()->string_equals(overload->name())) {
+            SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
+          }
+        }
+        overloads->InsertLast(fn);
+      } else {
+        auto member_function = New<ir::MemberFunctionView>(mods, fn);
+        member_function->SetInformationForNode(PeekBuffer(cursor));
+        return member_function;
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementation(ir::Node* overloads) {
+  LOG_PHASE(ParseFunction);
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    ir::Node* name = ParseIdentifier();    
+    ir::Node* call_signature = ParseCallSignature(false);
+    ir::Node* ret = nullptr;
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      ir::Node* body = ParseFunctionBody(false);
+      ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+    } else if (overloads != nullptr) {
+      ret = New<ir::FunctionOverloadView>(false, name, call_signature);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else {
+        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError invalid member function definition", PeekBuffer(cursor));
+    }
+    ret->SetInformationForNode(PeekBuffer(cursor));
+    return ret;
+  }
+  SYNTAX_ERROR("SyntaxError identifier expected", Current());
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Node* mods) {
+  auto overloads = New<ir::FunctionOverloadsView>();
+  while (1) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    if (Peek(cursor)->type() == Token::TS_IDENTIFIER &&
+        Current()->type() == Token::TS_LEFT_PAREN) {
+      SetBufferCursorPosition(cursor);
+      ir::Node* fn = ParseGeneratorMethodOverloadOrImplementation(overloads);
+      if (fn->HasFunctionOverloadView()) {
+        ir::FunctionOverloadView* overload = fn->ToFunctionOverloadView();
+        if (overloads->size() > 0) {
+          auto last = overloads->last_child()->ToFunctionOverloadView();
+          if (!last->name()->string_equals(overload->name())) {
+            SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
+          }
+        }
+        overloads->InsertLast(fn);
+      } else {
+        auto member_function = New<ir::MemberFunctionView>(mods, fn);
+        member_function->SetInformationForNode(PeekBuffer(cursor));
+        return member_function;
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementation(ir::Node* overloads) {
+  LOG_PHASE(ParseFunction);
+  if (Current()->type() == Token::TS_MUL) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    if (Current()->type() == Token::TS_IDENTIFIER) {
+      Next();
+      ir::Node* name = ParseIdentifier();    
+      ir::Node* call_signature = ParseCallSignature(false);
+      ir::Node* ret = nullptr;
+      if (Current()->type() == Token::TS_LEFT_BRACE) {
+        ir::Node* body = ParseFunctionBody(false);
+        ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+      } else if (overloads != nullptr) {
+        ret = New<ir::FunctionOverloadView>(true, name, call_signature);
+        if (IsLineTermination()) {
+          ConsumeLineTerminator();
+        } else {
+          SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        }
+      } else {
+        SYNTAX_ERROR("SyntaxError invalid member function definition", PeekBuffer(cursor));
+      }
+      ret->SetInformationForNode(PeekBuffer(cursor));
+      return ret;
+    }
+    SYNTAX_ERROR("SyntaxError identifier expected", Current());
+  }
+  SYNTAX_ERROR("SyntaxError '*' expected", Current());
+}
+
+
+template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseMemberVariable(ir::Node* mods) {
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    ir::Node* identifier = ParseIdentifier();
+    ir::Node* value = nullptr;
+    ir::Node* type = nullptr;
+    if (Current()->type() == Token::TS_COLON) {
+      Next();
+      type = ParseTypeAnnotation();
+    }
+    if (Current()->type() == Token::TS_ASSIGN) {
+      Next();
+      value = ParseExpression();
+    }
+    auto member_variable = New<ir::MemberVariableView>(mods, identifier, type, value);
+    member_variable->SetInformationForNode(mods);
+    return member_variable;
+  }
+  SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+}
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration) {
@@ -1205,7 +1439,8 @@ ir::Node* Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool ha
           if (last->name() == nullptr) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
           } else if (!last->name()->string_equals(overload->name())) {
-            SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
+            SYNTAX_ERROR_POS("SyntaxError function overl
+oad must have a same name", overload->name()->source_position());
           }
 
           if (last->generator() != overload->generator()) {

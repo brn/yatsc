@@ -199,6 +199,28 @@ class Parser: public ParserBase {
 
   ir::Node* ParseClassDeclaration(bool yield, bool has_default);
 
+  ir::Node* ParseClassBases();
+
+  ir::Node* ParseClassBody();
+
+  ir::Node* ParseClassElement();
+
+  ir::Node* ParseFieldModifier();
+
+  ir::Node* ParseConstructorOverloads(ir::Node* mods);
+
+  ir::Node* ParseConstructorOverloadOrImplementation(ir::Node* overloads);
+
+  ir::Node* ParseMemberFunctionOverloads(ir::Node* mods);
+
+  ir::Node* ParseMemberFunctionOverloadOrImplementation(ir::Node* overloads);
+
+  ir::Node* ParseGeneratorMethodOverloads(ir::Node* mods);
+
+  ir::Node* ParseGeneratorMethodOverloadOrImplementation(ir::Node* overloads);
+
+  ir::Node* ParseMemberVariable(ir::Node* mods);
+
   ir::Node* ParseFunctionOverloads(bool yield, bool has_default, bool declaration);
 
   ir::Node* ParseFunctionOverloadOrImplementation(ir::Node* overloads, bool yield, bool has_default, bool declaration);
