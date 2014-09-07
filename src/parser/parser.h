@@ -205,19 +205,21 @@ class Parser: public ParserBase {
 
   ir::Node* ParseClassElement();
 
+  ir::Node* ParseFieldModifiers();
+  
   ir::Node* ParseFieldModifier();
 
   ir::Node* ParseConstructorOverloads(ir::Node* mods);
 
-  ir::Node* ParseConstructorOverloadOrImplementation(ir::Node* overloads);
+  ir::Node* ParseConstructorOverloadOrImplementation(bool first, ir::Node* overloads);
 
   ir::Node* ParseMemberFunctionOverloads(ir::Node* mods);
 
-  ir::Node* ParseMemberFunctionOverloadOrImplementation(ir::Node* overloads);
+  ir::Node* ParseMemberFunctionOverloadOrImplementation(bool first, ir::Node* overloads);
 
   ir::Node* ParseGeneratorMethodOverloads(ir::Node* mods);
 
-  ir::Node* ParseGeneratorMethodOverloadOrImplementation(ir::Node* overloads);
+  ir::Node* ParseGeneratorMethodOverloadOrImplementation(bool first, ir::Node* overloads);
 
   ir::Node* ParseMemberVariable(ir::Node* mods);
 
@@ -389,6 +391,9 @@ class Parser: public ParserBase {
   bool IsLineTermination();
 
   void ConsumeLineTerminator();
+
+  template <typename T>
+  void SetModifiers(bool* first, ir::Node* mods, T fn);
 
 #ifdef DEBUG
   void PrintStackTrace() {

@@ -1118,12 +1118,14 @@ ir::Node* Parser<UCharInputIterator>::ParseDebuggerStatement() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has_default) {
+  LOG_PHASE(ParseClassDeclaration);
   if (Current()->type() == Token::TS_CLASS) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
     ir::Node* name = ParseBindingIdentifier(false, false);
     ir::Node* bases = ParseClassBases();
     if (Current()->type() == Token::TS_LEFT_BRACE) {
+      Next();
       ir::Node* body = ParseClassBody();
       auto class_decl = New<ir::ClassDeclView>(name, bases, body);
       class_decl->SetInformationForNode(PeekBuffer(cursor));
@@ -1157,7 +1159,9 @@ ir::Node* Parser<UCharInputIterator>::ParseClassBases() {
       Next();
       impls->InsertLast(ParseReferencedType());
     } else if (Current()->type() == Token::TS_LEFT_BRACE) {
-      bases->set_impls(impls);
+      if (impls->size() > 0) {
+        bases->set_impls(impls);
+      }
       return bases;
     } else {
       SYNTAX_ERROR("SyntaxError unexpected token", Current());
@@ -1181,16 +1185,7 @@ ir::Node* Parser<UCharInputIterator>::ParseClassBody() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseClassElement() {
-  auto mods = New<ir::ClassFieldModifiersView>();
-  ir::Node* mod1 = ParseFieldModifier();
-  ir::Node* mod2 = nullptr;
-  if (mod1 != nullptr) {
-    mods->InsertLast(mod1);
-    mod2 = ParseFieldModifier();
-    if (mod2 != nullptr) {
-      mods->InsertLast(mod2);
-    }
-  }
+  ir::Node* mods = ParseFieldModifiers();
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value() == "constructor") {
       return ParseConstructorOverloads(mods);
@@ -1213,6 +1208,23 @@ ir::Node* Parser<UCharInputIterator>::ParseClassElement() {
 
 
 template <typename UCharInputIterator>
+ir::Node* Parser<UCharInputIterator>::ParseFieldModifiers() {
+  auto mods = New<ir::ClassFieldModifiersView>();
+  ir::Node* mod1 = ParseFieldModifier();
+  ir::Node* mod2 = nullptr;
+  if (mod1 != nullptr) {
+    mods->SetInformationForNode(mod1);
+    mods->InsertLast(mod1);
+    mod2 = ParseFieldModifier();
+    if (mod2 != nullptr) {
+      mods->InsertLast(mod2);
+    }
+  }
+  return mods;
+}
+
+
+template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFieldModifier() {  
   switch (Current()->type()) {
     case Token::TS_STATIC:
@@ -1231,19 +1243,36 @@ ir::Node* Parser<UCharInputIterator>::ParseFieldModifier() {
 
 
 template <typename UCharInputIterator>
+template <typename T>
+void Parser<UCharInputIterator>::SetModifiers(bool* first, ir::Node* mods, T fn) {
+  if (*first) {
+    fn->set_modifiers(mods);
+    *first = false;
+    if (mods->size() > 0) {
+      fn->SetInformationForNode(mods);
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(ir::Node* mods) {
-  TokenCursor cursor = GetBufferCursorPosition();
-  auto overloads = New<ir::FunctionOverloadsView>();
+  LOG_PHASE(ParseConstructorOverloads);
+  auto overloads = New<ir::MemberFunctionOverloadView>();
+  bool first = true;
   while (1) {
-    if (Current()->type() == Token::TS_IDENTIFIER &&
-        Current()->value() == "constructor") {
-      ir::Node* fn = ParseConstructorOverloadOrImplementation(overloads);
-      if (fn->HasFunctionOverloadView()) {
+    if ((Current()->type() == Token::TS_IDENTIFIER &&
+        Current()->value() == "constructor") ||
+        Current()->type() == Token::TS_PUBLIC ||
+        Current()->type() == Token::TS_PRIVATE ||
+        Current()->type() == Token::TS_PROTECTED) {
+      ir::Node* fn = ParseConstructorOverloadOrImplementation(first, overloads);
+      if (fn->HasMemberFunctionOverloadView()) {
+        SetModifiers(&first, mods, fn->ToMemberFunctionOverloadView());
         overloads->InsertLast(fn);
       } else {
-        auto constructor = New<ir::MemberFunctionView>(mods, fn);
-        constructor->SetInformationForNode(PeekBuffer(cursor));
-        return constructor;
+        SetModifiers(&first, mods, fn->ToMemberFunctionView());
+        return fn;
       }
     } else {
       SYNTAX_ERROR("SyntaxError incomplete constructor definition", Current());
@@ -1253,20 +1282,23 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(ir::Node* mods) 
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(ir::Node* overloads) {
+ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(bool first, ir::Node* overloads) {
   LOG_PHASE(ParseConstructorOverloadOrImplementation);
+  ir::Node* mods = nullptr;
+  if (!first) {
+    mods = ParseFieldModifiers();
+  }
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "constructor") {
     TokenCursor cursor = GetBufferCursorPosition();
     ir::Node* name = ParseIdentifier();
-    
     ir::Node* call_signature = ParseCallSignature(true);
     ir::Node* ret = nullptr;
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       ir::Node* body = ParseFunctionBody(false);
-      ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+      ret = New<ir::MemberFunctionView>(mods, overloads, name, call_signature, body);
     } else if (overloads != nullptr) {
-      ret = New<ir::FunctionOverloadView>(false, name, call_signature);
+      ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
@@ -1284,49 +1316,56 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(i
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(ir::Node* mods) {
-  auto overloads = New<ir::FunctionOverloadsView>();
+  LOG_PHASE(ParseMemberFunctionOverloads);
+  auto overloads = New<ir::MemberFunctionOverloadsView>();
+  bool first = true;
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER &&
-        Current()->type() == Token::TS_LEFT_PAREN) {
+    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER ||
+        PeekBuffer(cursor)->type() == Token::TS_PUBLIC ||
+        PeekBuffer(cursor)->type() == Token::TS_PRIVATE ||
+        PeekBuffer(cursor)->type() == Token::TS_PROTECTED) {
       SetBufferCursorPosition(cursor);
-      ir::Node* fn = ParseMemberFunctionOverloadOrImplementation(overloads);
-      if (fn->HasFunctionOverloadView()) {
-        ir::FunctionOverloadView* overload = fn->ToFunctionOverloadView();
+      ir::Node* fn = ParseMemberFunctionOverloadOrImplementation(first, overloads);
+      if (fn->HasMemberFunctionOverloadView()) {
+        auto overload = fn->ToMemberFunctionOverloadView();
+        SetModifiers(&first, mods, overload);
         if (overloads->size() > 0) {
-          auto last = overloads->last_child()->ToFunctionOverloadView();
+          auto last = overloads->last_child()->ToMemberFunctionOverloadView();
           if (!last->name()->string_equals(overload->name())) {
             SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
           }
         }
         overloads->InsertLast(fn);
       } else {
-        auto member_function = New<ir::MemberFunctionView>(mods, fn);
-        member_function->SetInformationForNode(PeekBuffer(cursor));
-        return member_function;
+        SetModifiers(&first, mods, fn->ToMemberFunctionView());
+        return fn;
       }
     } else {
-      SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
+      SYNTAX_ERROR("SyntaxError incomplete member function definition", PeekBuffer(cursor));
     }
   }
 }
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementation(ir::Node* overloads) {
-  LOG_PHASE(ParseFunction);
+ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementation(bool first, ir::Node* overloads) {
+  LOG_PHASE(ParseMemberFunctionOverloadOrImplementation);
+  ir::Node* mods = nullptr;
+  if (!first) {
+    mods = ParseFieldModifiers();
+  }
   if (Current()->type() == Token::TS_IDENTIFIER) {
     TokenCursor cursor = GetBufferCursorPosition();
-    Next();
     ir::Node* name = ParseIdentifier();    
     ir::Node* call_signature = ParseCallSignature(false);
     ir::Node* ret = nullptr;
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       ir::Node* body = ParseFunctionBody(false);
-      ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+      ret = New<ir::MemberFunctionView>(mods, overloads, name, call_signature, body);
     } else if (overloads != nullptr) {
-      ret = New<ir::FunctionOverloadView>(false, name, call_signature);
+      ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
@@ -1344,27 +1383,32 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementatio
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(ir::Node* mods) {
-  auto overloads = New<ir::FunctionOverloadsView>();
+  LOG_PHASE(ParseGeneratorMethodOverloads);
+  auto overloads = New<ir::MemberFunctionOverloadsView>();
+  bool first = true;
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER &&
+    if ((PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER ||
+         PeekBuffer(cursor)->type() == Token::TS_PUBLIC ||
+         PeekBuffer(cursor)->type() == Token::TS_PRIVATE ||
+         PeekBuffer(cursor)->type() == Token::TS_PROTECTED) &&
         Current()->type() == Token::TS_LEFT_PAREN) {
       SetBufferCursorPosition(cursor);
-      ir::Node* fn = ParseGeneratorMethodOverloadOrImplementation(overloads);
-      if (fn->HasFunctionOverloadView()) {
-        ir::FunctionOverloadView* overload = fn->ToFunctionOverloadView();
+      ir::Node* fn = ParseGeneratorMethodOverloadOrImplementation(first, overloads);
+      if (fn->HasMemberFunctionOverloadView()) {
+        auto overload = fn->ToMemberFunctionOverloadView();
+        SetModifiers(&first, mods, fn->ToMemberFunctionView());
         if (overloads->size() > 0) {
-          auto last = overloads->last_child()->ToFunctionOverloadView();
+          auto last = overloads->last_child()->ToMemberFunctionOverloadView();
           if (!last->name()->string_equals(overload->name())) {
             SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
           }
         }
         overloads->InsertLast(fn);
       } else {
-        auto member_function = New<ir::MemberFunctionView>(mods, fn);
-        member_function->SetInformationForNode(PeekBuffer(cursor));
-        return member_function;
+        SetModifiers(&first, mods, fn->ToMemberFunctionView());
+        return fn;
       }
     } else {
       SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
@@ -1374,8 +1418,12 @@ ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(ir::Node* mo
 
 
 template <typename UCharInputIterator>
-ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementation(ir::Node* overloads) {
-  LOG_PHASE(ParseFunction);
+ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementation(bool first, ir::Node* overloads) {
+  LOG_PHASE(ParseGeneratorMethodOverloadOrImplementation);
+  ir::Node* mods = nullptr;
+  if (!first) {
+    mods = ParseFieldModifiers();
+  }
   if (Current()->type() == Token::TS_MUL) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
@@ -1386,9 +1434,9 @@ ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementati
       ir::Node* ret = nullptr;
       if (Current()->type() == Token::TS_LEFT_BRACE) {
         ir::Node* body = ParseFunctionBody(false);
-        ret = New<ir::FunctionView>(overloads, name, call_signature, body);
+        ret = New<ir::MemberFunctionView>(mods, overloads, name, call_signature, body);
       } else if (overloads != nullptr) {
-        ret = New<ir::FunctionOverloadView>(true, name, call_signature);
+        ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
         if (IsLineTermination()) {
           ConsumeLineTerminator();
         } else {

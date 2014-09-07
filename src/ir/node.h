@@ -78,6 +78,8 @@ namespace yatsc {namespace ir {
   DECLARE(ClassFieldAccessLevelView)                    \
   DECLARE(ClassHeritageView)                            \
   DECLARE(MemberVariableView)                           \
+  DECLARE(MemberFunctionOverloadsView)                  \
+  DECLARE(MemberFunctionOverloadView)                   \
   DECLARE(MemberFunctionView)                           \
   DECLARE(InterfaceView)                                \
   DECLARE(InterfaceFieldListView)                       \
@@ -1123,18 +1125,87 @@ class MemberVariableView: public Node {
 };
 
 
+class MemberFunctionOverloadView: public Node {
+ public:
+  MemberFunctionOverloadView(bool getter, bool setter, bool generator, Node* accessor, Node* name, Node* call_signature)
+      : Node(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {
+    if (getter) {
+      set_flag(0);
+    } else if (setter) {
+      set_flag(1);
+    } else if (generator) {
+      set_flag(2);
+    }
+  }
+
+  MemberFunctionOverloadView(Node* accessor, Node* name, Node* call_signature)
+      : Node(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {}
+
+  MemberFunctionOverloadView()
+      : Node(NodeType::kMemberFunctionOverloadView, 3u) {}
+
+  NODE_PROPERTY(modifiers, 0)
+  
+  NODE_PROPERTY(name, 1);
+
+  NODE_PROPERTY(call_signature, 2);
+
+  NODE_FLAG_PROPERTY(getter, 0);
+
+  NODE_FLAG_PROPERTY(setter, 1);
+
+  NODE_FLAG_PROPERTY(generator, 2);
+};
+
+
+class MemberFunctionOverloadsView: public Node {
+ public:
+  MemberFunctionOverloadsView(std::initializer_list<Node*> overloads)
+      : Node(NodeType::kMemberFunctionOverloadsView, 0u, overloads) {}
+
+  MemberFunctionOverloadsView()
+      : Node(NodeType::kMemberFunctionOverloadsView, 0u) {}
+};
+
+
 class MemberFunctionView: public Node {
  public:
-  MemberFunctionView(Node* accessor, Node* definition)
-      : Node(NodeType::kMemberFunctionView, 2u, {accessor, definition}) {}
+  MemberFunctionView(bool getter, bool setter, bool generator, Node* accessor, Node* overloads, Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kFunctionView, 5u, {accessor, overloads, name, call_signature, body}) {
+    if (getter) {
+      set_flag(0);
+    } else if (setter) {
+      set_flag(1);
+    } else if (generator) {
+      set_flag(2);
+    }
+  }
 
+  MemberFunctionView(Node* accessor, Node* overloads, Node* name, Node* call_signature, Node* body)
+      : Node(NodeType::kMemberFunctionView, 5u, {accessor, overloads, name, call_signature, body}) {}
+
+  
   MemberFunctionView()
-      : Node(NodeType::kMemberFunctionView, 2u) {}
+      : Node(NodeType::kMemberFunctionView, 5u) {}
 
+  NODE_PROPERTY(modifiers, 0);
+  
+  NODE_PROPERTY(overloads, 1);
+  
+  // Getter for name_.
+  NODE_GETTER(name, 2);
 
-  NODE_PROPERTY(accessor, 0);
+  // Getter for param_list_.
+  NODE_GETTER(call_signature, 3);
 
-  NODE_PROPERTY(definition, 1)
+  // Getter for body_.
+  NODE_GETTER(body, 4);
+
+  NODE_FLAG_PROPERTY(getter, 0);
+
+  NODE_FLAG_PROPERTY(setter, 1);
+
+  NODE_FLAG_PROPERTY(generator, 2);
 };
 
 
