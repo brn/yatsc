@@ -1258,7 +1258,7 @@ void Parser<UCharInputIterator>::SetModifiers(bool* first, ir::Node* mods, T fn)
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloads(ir::Node* mods) {
   LOG_PHASE(ParseConstructorOverloads);
-  auto overloads = New<ir::MemberFunctionOverloadView>();
+  auto overloads = New<ir::MemberFunctionOverloadsView>();
   bool first = true;
   while (1) {
     if ((Current()->type() == Token::TS_IDENTIFIER &&
