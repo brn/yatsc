@@ -67,6 +67,60 @@ void Node::InsertBefore(Node* newNode, Node* oldNode) {
 }
 
 
+void Node::InsertAt(size_t index, Node* node) {
+  node_list_[index] = node;
+}
+
+
+bool Node::Equals(Node* node) {
+  if (node == nullptr) {
+    return false;
+  }
+  
+  if (this == node) {
+    return true;
+  }
+
+  if (node_type_ != node->node_type_) {
+    return false;
+  }
+
+  if (((string_value_.utf8_length() > 0 && node->string_value_.utf8_length() > 0))
+      && !string_equals(node)) {
+    return false;
+  }
+
+  if (node->operand() != Token::ILLEGAL &&
+      operand_ != Token::ILLEGAL &&
+      operand_ != node->operand_) {
+    return false;
+  }
+
+  if (node->double_value_ != double_value_) {
+    return false;
+  }
+
+  if (node->size() != size()) {
+    return false;
+  }
+
+  for (size_t i = 0; i < node_list_.size(); i++) {
+    if (node_list_[i] != nullptr &&
+        node->node_list_[i] == nullptr) {
+      return false;
+    }
+    if (node->node_list_[i] == nullptr &&
+        node_list_[i] != nullptr) {
+      return false;
+    }
+    bool eq = node->node_list_[i]->Equals(node_list_[i]);
+    if (!eq) {
+      return false;
+    }
+  }
+}
+
+
 // Clone node and node's children.
 Node* Node::Clone() YATSC_NOEXCEPT {
   YATSC_CHECK(true, environment_ != nullptr);

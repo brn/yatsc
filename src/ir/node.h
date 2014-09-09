@@ -366,6 +366,14 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   void InsertAfter(Node* newNode, Node* oldNode);
 
 
+  void InsertAt(size_t index, Node* node);
+
+
+  Node* at(size_t index) YATSC_NOEXCEPT {
+    return node_list_.size() > index? node_list_[index]: nullptr;
+  }
+
+
   // Set string value.
   YATSC_INLINE void set_string_value(UtfString str) YATSC_NOEXCEPT {
     string_value_ = std::move(str);
@@ -379,6 +387,9 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
 
   YATSC_INLINE bool string_equals(Node* node) YATSC_NO_SE {
+    if (node == nullptr) {
+      return false;
+    }
     const UtfString& utf_string = node->string_value();
     return utf_string == string_value_;
   }
@@ -402,9 +413,19 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
+  YATSC_INLINE bool double_equals(Node* node) YATSC_NO_SE {
+    return double_value_ == node->double_value_;
+  }
+
+
   // Set an operand.
   YATSC_INLINE void set_operand(Token op) YATSC_NOEXCEPT {
     operand_ = op;
+  }
+
+
+  YATSC_INLINE bool operand_equals(Node* node) YATSC_NO_SE {
+    return operand_ == node->operand_;
   }
 
 
@@ -470,6 +491,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   // Set source information to this node and children.
   void SetInformationForTree(const Node* node) YATSC_NOEXCEPT;
 
+  bool Equals(Node* node) YATSC_NO_SE;
 
   // Clone this node and all children.
   Node* Clone() YATSC_NOEXCEPT;

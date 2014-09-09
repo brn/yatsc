@@ -1209,15 +1209,34 @@ ir::Node* Parser<UCharInputIterator>::ParseClassElement() {
 
 template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseFieldModifiers() {
+  LOG_PHASE(ParseFieldModifiers);
   auto mods = New<ir::ClassFieldModifiersView>();
   ir::Node* mod1 = ParseFieldModifier();
   ir::Node* mod2 = nullptr;
+  bool static_used = false;
   if (mod1 != nullptr) {
+    if (mod1->operand() == Token::TS_STATIC) {
+      static_used = true;
+    }
     mods->SetInformationForNode(mod1);
     mods->InsertLast(mod1);
     mod2 = ParseFieldModifier();
     if (mod2 != nullptr) {
+      if (mod2->operand() == Token::TS_STATIC &&
+          static_used) {
+      }
       mods->InsertLast(mod2);
+    }
+  }
+  if (mods->size() == 0) {
+    auto pub = New<ir::ClassFieldAccessLevelView>(Token::TS_PUBLIC);
+    pub->SetInformationForNode(Current());
+    mods->InsertLast(pub);
+  } else if (mods->size() == 2) {
+    if (mods->first_child()->operand() != Token::TS_STATIC) {
+      ir::Node* n = mods->first_child();
+      mods->InsertAt(0, mods->last_child());
+      mods->InsertAt(1, n);
     }
   }
   return mods;
@@ -1315,6 +1334,25 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(b
 
 
 template <typename UCharInputIterator>
+template <typename T>
+void Parser<UCharInputIterator>::ValidateOverload(T node1, ir::Node* overloads) {
+  if (overloads->size() > 0) {
+    auto last = overloads->last_child()->ToMemberFunctionOverloadView();
+    if (node1->HasMemberFunctionOverloadView() ||
+        node1->HasMemberFunctionView()) {
+      IsModifiersEquals(node1, last);
+      if (node1->at(1)->string_equals(last->at(1))) {
+        SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", node1->at(1)->source_position());
+      }
+      if (!node1->first_child()->Equals(last->first_child())) {
+        SYNTAX_ERROR_POS("SyntaxError member function overload must have same modifiers", node1->first_child()->source_position());
+      }
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
 ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(ir::Node* mods) {
   LOG_PHASE(ParseMemberFunctionOverloads);
   auto overloads = New<ir::MemberFunctionOverloadsView>();
@@ -1329,17 +1367,12 @@ ir::Node* Parser<UCharInputIterator>::ParseMemberFunctionOverloads(ir::Node* mod
       SetBufferCursorPosition(cursor);
       ir::Node* fn = ParseMemberFunctionOverloadOrImplementation(first, overloads);
       if (fn->HasMemberFunctionOverloadView()) {
-        auto overload = fn->ToMemberFunctionOverloadView();
-        SetModifiers(&first, mods, overload);
-        if (overloads->size() > 0) {
-          auto last = overloads->last_child()->ToMemberFunctionOverloadView();
-          if (!last->name()->string_equals(overload->name())) {
-            SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
-          }
-        }
+        SetModifiers(&first, mods, fn->ToMemberFunctionOverloadView());
+        ValidateOverload(fn, overloads);
         overloads->InsertLast(fn);
       } else {
         SetModifiers(&first, mods, fn->ToMemberFunctionView());
+        ValidateOverload(fn, overloads);
         return fn;
       }
     } else {
@@ -1397,17 +1430,12 @@ ir::Node* Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(ir::Node* mo
       SetBufferCursorPosition(cursor);
       ir::Node* fn = ParseGeneratorMethodOverloadOrImplementation(first, overloads);
       if (fn->HasMemberFunctionOverloadView()) {
-        auto overload = fn->ToMemberFunctionOverloadView();
         SetModifiers(&first, mods, fn->ToMemberFunctionView());
-        if (overloads->size() > 0) {
-          auto last = overloads->last_child()->ToMemberFunctionOverloadView();
-          if (!last->name()->string_equals(overload->name())) {
-            SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", overload->name()->source_position());
-          }
-        }
+        ValidateOverload(fn, overloads);
         overloads->InsertLast(fn);
       } else {
         SetModifiers(&first, mods, fn->ToMemberFunctionView());
+        ValidateOverload(fn, overloads);
         return fn;
       }
     } else {
