@@ -207,13 +207,16 @@ class ParserBase: private Uncopyable, private Unmovable {
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
   TokenBuffer token_buffer_;
+  std::string error_message_;
+  bool has_pending_error_;
 
 #ifdef DEBUG
   std::string indent_;
 #endif
 };
 
-  // Syntax error exception.
+
+// Syntax error exception.
 class SyntaxError: public std::exception {
  public:
   SyntaxError(const std::string& message)

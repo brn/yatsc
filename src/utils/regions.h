@@ -35,6 +35,7 @@
 #include "utils.h"
 #include "tls.h"
 #include "mmap.h"
+#include "systeminfo.h"
 #include "../config.h"
 
 namespace yatsc {
@@ -100,6 +101,7 @@ class Regions : private Uncopyable {
   static const size_t kSizeBitSize = YATSC_ALIGN_OFFSET(sizeof(SizeBit), kAlignment);
   static const uint8_t kDeallocedBit = 0x2;
   static const uint8_t kArrayBit = 0x1;
+  static const uint8_t kPtrBit = 0x3;
   static const uint32_t kInvalidPointer = 0xDEADC0DE;
   static const int kMaxSmallObjectsCount = 30;
   static const int kValueOffset;
@@ -111,7 +113,7 @@ class Regions : private Uncopyable {
    * Constructor
    * @param size The hint of each chunk size.
    */
-  explicit Regions(size_t size = 512);
+  explicit Regions(size_t size = SystemInfo::GetPageSize());
 
   
   ~Regions() {Destroy();}
@@ -153,6 +155,15 @@ class Regions : private Uncopyable {
    */
   template <typename T, typename ... Args>
   YATSC_INLINE T* New(Args ... args);
+
+
+  /**
+   * Create bulk memory block from Regions heap.
+   * The instance which created by this method
+   * must not use delete or free.
+   */
+  template <typename T>
+  YATSC_INLINE T* NewPtr(size_t num);
 
 
   /**
@@ -231,6 +242,13 @@ class Regions : private Uncopyable {
    * Return enough size memory block for specified size.
    * @return Unused memory block.
    */
+  YATSC_INLINE void* AllocatePtr(size_t size);
+
+
+  /**
+   * Return enough size memory block for specified size.
+   * @return Unused memory block.
+   */
   YATSC_INLINE void* AllocateArray(size_t size);
 
 
@@ -252,7 +270,7 @@ class Regions : private Uncopyable {
   /**
    * Allocate unused memory space from chunk.
    */
-  inline Regions::Header* DistributeBlock(size_t size);
+  inline Regions::Header* DistributeBlock(size_t size, bool ptr = false);
   
   
   /**
@@ -699,8 +717,8 @@ class Regions : private Uncopyable {
   std::atomic_flag deleted_;
   SpinLock tree_lock_;
 };
-} // namesapce yatsc
 
+} // namesapce yatsc
 
 #include "regions-inl.h"
 #endif

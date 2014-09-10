@@ -34,110 +34,106 @@
 
 namespace yatsc {
 
-/**
- * The header of allocated memory block.
- * This area is used until destruct.
- */
+
+// The header of allocated memory block.
+// This area is used until destruct.
 class Regions::Header {
  public:
 
-  /**
-   * Return the size of block except header.
-   * @return block size except header.
-   */
+  
+  // Return the size of block except header.
   YATSC_INLINE size_t size() YATSC_NOEXCEPT {
     return size_ & kTagRemoveBit;
   }
 
 
-  /**
-   * Set the block size which must be the value block size.
-   * @param size Block size which except header.
-   */
+  
+  // Set the block size that is value block size.
   YATSC_INLINE void set_size(size_t size) YATSC_NOEXCEPT {
     bool array = IsMarkedAsArray();
     bool dealloced = IsMarkedAsDealloced();
+    bool ptr = IsMarkedAsPtr();
     size_ = size;
     if (array) MarkAsArray();
     if (dealloced) MarkAsDealloced();
+    if (ptr) MarkAsPtr();
   }
   
 
-  /**
-   * Return the front of memory block.
-   * @return The front of block.
-   */
+  
+  // Return the front of memory block.
   YATSC_INLINE Byte* ToBegin() YATSC_NOEXCEPT {
     return reinterpret_cast<Byte*>(this);
   }
 
 
-  /**
-   * Return Regions::FreeHeader.
-   * @return Regions::FreeHeader
-   */
+
+  // Return Regions::FreeHeader.
   YATSC_INLINE Regions::FreeHeader* ToFreeHeader() YATSC_NOEXCEPT {
     return reinterpret_cast<FreeHeader*>(reinterpret_cast<Byte*>(this) + kHeaderSize);
   }
 
 
-  /**
-   * Return next block.
-   * This method simply advance pointer by the memory block size
-   * so it does not perform any check.
-   * @return Next block.
-   */
+
+  // Return next block.
+  // This method simply advance pointer by the memory block size
+  // so it does not perform any check.
   YATSC_INLINE Header* next_addr() YATSC_NOEXCEPT {
     return reinterpret_cast<Header*>(ToValue<Byte*>() + size());
   }
 
 
-  /**
-   * Return value block.
-   */
+  // Return value block.
   template <typename T = RegionalObject*>
   YATSC_INLINE typename std::remove_pointer<T>::type* ToValue() YATSC_NOEXCEPT {
     return reinterpret_cast<typename std::remove_pointer<T>::type*>(ToBegin() + kSizeTSize);
   }
 
 
-  /**
-   * Mark memory block as not used.
-   */
+
+  // Mark memory block as not used.
   YATSC_INLINE void MarkAsDealloced() YATSC_NOEXCEPT {
     size_ |= kDeallocedBit;
   }
 
 
-  /**
-   * Mark memory block used.
-   */
+
+  // Mark memory block used.
   YATSC_INLINE void UnmarkDealloced() YATSC_NOEXCEPT {
     size_ &= kDeallocedMask;
   }
 
 
-  /**
-   * Return this memory block is marked as not used.
-   */
+
+  // Return this memory block is marked as not used.
   YATSC_INLINE bool IsMarkedAsDealloced() YATSC_NOEXCEPT {
     return (size_ & kDeallocedBit) == kDeallocedBit;
   }
 
 
-  /**
-   * Mark this memory block allocated as array.
-   */
+
+  // Mark this memory block allocated as array.
   YATSC_INLINE void MarkAsArray() YATSC_NOEXCEPT {
     size_ |= kArrayBit;
   }
 
 
-  /**
-   * Return this memory block allocated as array.
-   */
+
+  // Return this memory block allocated as array.
   YATSC_INLINE bool IsMarkedAsArray() YATSC_NOEXCEPT {
     return (size_ & kArrayBit) == kArrayBit;
+  }
+
+
+  // Mark this member block allocated as bulk ptr.
+  YATSC_INLINE void MarkAsPtr() YATSC_NOEXCEPT {
+    size_ |= kPtrBit;
+  }
+
+
+  // Return this member block allocated as bulk ptr.
+  YATSC_INLINE bool IsMarkedAsPtr() YATSC_NO_SE {
+    return (size_ & kPtrBit) == kPtrBit;
   }
 
  private:
@@ -145,11 +141,10 @@ class Regions::Header {
 };
 
 
-/**
- * This header that is only available if memory block is not used is
- * record the next pointer of the free list.
- * In used block this header area is used as a user allocation block.
- */
+
+// This header that is only available if memory block is not used is
+// record the next pointer of the free list.
+// In used block this header area is used as a user allocation block.
 class Regions::FreeHeader {
  public:    
 
@@ -223,6 +218,12 @@ T* Regions::New(Args ... args) {
 }
 
 
+template <typename T>
+T* Regions::NewPtr(size_t num) {
+  return static_cast<T*>(AllocatePtr(num));
+}
+
+
 template <typename T, typename ... Args>
 T* Regions::NewArray(size_t size, Args ... args) {
   static_assert(std::is_base_of<RegionalObject, T>::value == true,
@@ -265,6 +266,19 @@ void* Regions::Allocate(size_t size) {
 
 /**
  * Allocate memory block from pool.
+ * @param size The size which want to allocate.
+ * @return Unused new memory block.
+ */
+void* Regions::AllocatePtr(size_t size) {
+  Header* header = DistributeBlock(size, true);
+  header->MarkAsPtr();
+  ASSERT(true, header->IsMarkedAsPtr());
+  return header->ToValue<void>();
+}
+
+
+/**
+ * Allocate memory block from pool.
  * This method mark header as Array.
  * @param size The size which want to allocate.
  * @return Unused new memory block.
@@ -282,6 +296,9 @@ void* Regions::AllocateArray(size_t size) {
  * @param header The memory block which want to destruct.
  */
 void Regions::DestructRegionalObject(Regions::Header* header) {
+  if (header->IsMarkedAsPtr()) {
+    return;
+  }
   if (!header->IsMarkedAsArray()) {
     header->ToValue()->~RegionalObject();
   } else {
@@ -299,10 +316,10 @@ void Regions::DestructRegionalObject(Regions::Header* header) {
 }
 
 
-Regions::Header* Regions::DistributeBlock(size_t size) {
+Regions::Header* Regions::DistributeBlock(size_t size, bool ptr) {
   const size_t kRegionalObjectSize = sizeof(RegionalObject);
 
-  if (kRegionalObjectSize > size) {
+  if (!ptr && kRegionalObjectSize > size) {
     size = kRegionalObjectSize;
   }
   return central_arena_->Commit(size, size_);

@@ -22,6 +22,8 @@
  * THE SOFTWARE.
  */
 
+#include <math.h>
+#include <float.h>
 #include "./node.h"
 
 namespace yatsc { namespace ir {
@@ -72,50 +74,53 @@ void Node::InsertAt(size_t index, Node* node) {
 }
 
 
-bool Node::Equals(Node* node) {
+bool Node::Equals(Node* node) YATSC_NO_SE {
   if (node == nullptr) {
     return false;
   }
-  
+
   if (this == node) {
     return true;
   }
-
-  if (node_type_ != node->node_type_) {
+  
+  if (node_type_ != node->node_type()) {
     return false;
   }
-
-  if (((string_value_.utf8_length() > 0 && node->string_value_.utf8_length() > 0))
-      && !string_equals(node)) {
-    return false;
-  }
-
-  if (node->operand() != Token::ILLEGAL &&
-      operand_ != Token::ILLEGAL &&
-      operand_ != node->operand_) {
-    return false;
-  }
-
-  if (node->double_value_ != double_value_) {
-    return false;
-  }
-
-  if (node->size() != size()) {
-    return false;
-  }
-
-  for (size_t i = 0; i < node_list_.size(); i++) {
-    if (node_list_[i] != nullptr &&
-        node->node_list_[i] == nullptr) {
-      return false;
+  
+  switch (node->node_type()) {
+    case NodeType::kNameView: {
+      if (((string_value_.utf8_length() > 0 && node->string_value_.utf8_length() > 0))
+          && !string_equals(node)) {
+        return false;
+      }
+      return true;
     }
-    if (node->node_list_[i] == nullptr &&
-        node_list_[i] != nullptr) {
-      return false;
+    case NodeType::kNumberView: {
+      if (fabs(node->double_value_ - double_value_) >= DBL_EPSILON) {
+        return false;
+      }
     }
-    bool eq = node->node_list_[i]->Equals(node_list_[i]);
-    if (!eq) {
-      return false;
+    default: {
+      if (node->operand() != Token::ILLEGAL &&
+          operand_ != Token::ILLEGAL &&
+          operand_ != node->operand_) {
+        return false;
+      }
+
+      if (node->size() != size()) {
+        return false;
+      }
+
+      for (size_t i = 0; i < node_list_.size(); i++) {
+        if (node->node_list_[i] == nullptr &&
+            node_list_[i] != nullptr) {
+          return false;
+        }
+        if (!node_list_[i]->Equals(node->node_list_[i])) {
+          return false;
+        }
+      }
+      return true;
     }
   }
 }
