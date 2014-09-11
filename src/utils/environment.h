@@ -27,7 +27,6 @@
 #define ENVIRONMENT_H
 
 #include "./tls.h"
-#include "./regions.h"
 #include "../parser/literalbuffer.h"
 
 namespace yatsc {
@@ -42,30 +41,9 @@ class Environment : private Uncopyable {
     return environment;
   }
 
-  template <typename T, typename ... Args>
-  YATSC_INLINE T* New(Args ... args) {
-    return regions_.New<T>(std::forward<Args>(args)...);
-  }
-
-
-  template <typename T>
-  YATSC_INLINE T* NewPtr(size_t num) {
-    return regions_.NewPtr<T>(num);
-  }
-
-
-  void Dealloc(void* p) {
-    regions_.Dealloc(p);
-  }
-
 
   YATSC_INLINE LiteralBuffer* literal_buffer() YATSC_NOEXCEPT {
     return &literal_buffer_;
-  }
-
-
-  YATSC_INLINE Regions* regions() YATSC_NOEXCEPT {
-    return &regions_;
   }
 
  private:
@@ -74,91 +52,6 @@ class Environment : private Uncopyable {
   LiteralBuffer literal_buffer_;
   
   static ThreadLocalStorage::Slot tls_;
-  static Regions regions_;
-};
-
-
-template <typename T>
-class RegionsStandardAllocator: public std::allocator<T> {
- public:
-  typedef size_t  size_type;
-  typedef ptrdiff_t difference_type;
-  typedef T* pointer;
-  typedef const T* const_pointer;
-  typedef T& reference;
-  typedef const T& const_reference;
-  typedef T value_type;
-
-  template <class U>
-  struct rebind { 
-    typedef RegionsStandardAllocator<U> other;
-  };
-
-
-  RegionsStandardAllocator()
-      : env_(Environment::Create()){}
-
-  
-  RegionsStandardAllocator(const RegionsStandardAllocator& allocator)
-      : env_(allocator.env_) {}
-
-
-  template <typename U>
-  RegionsStandardAllocator(const RegionsStandardAllocator<U>& allocator)
-      : env_(allocator.env_) {}
-    
-
-  /**
-   * Allocate new memory.
-   */
-  pointer allocate(size_type num, const void* hint = 0) {
-    return env_->NewPtr<value_type>(sizeof(T) * num);
-  }
-
-  /**
-   * Initialize already allocated block.
-   */
-  void construct(pointer p, const T& value) {
-    new (static_cast<void*>(p)) T(value);
-  }
-
-  /**
-   * Return object address.
-   */
-  pointer address(reference value) const { 
-    return &value; 
-  }
-
-  /**
-   * Return const object address.
-   */
-  const_pointer address(const_reference value) const { 
-    return &value;
-  }
-
-  /**
-   * Remove pointer.
-   */
-  void destroy(pointer p) {
-    p->~T();
-  }
-
-  /**
-   * Do nothing.
-   */
-  void deallocate(pointer p, size_type n) {
-    //env_->Dealloc(p);
-  }
-
-  /**
-   * Return the max size of allocatable.
-   */
-  size_type max_size() const throw() {
-    return std::numeric_limits<size_t>::max() / sizeof(T);
-  }
-
- private:
-  Environment* env_;
 };
 }
 

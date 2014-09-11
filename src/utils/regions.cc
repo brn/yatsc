@@ -143,5 +143,7 @@ void Regions::CentralArena::Dealloc(void* object) YATSC_NOEXCEPT {
 const int Regions::kValueOffset = kSizeTSize;
 const size_t Regions::kFreeHeaderSize = sizeof(Regions::FreeHeader);
 const size_t Regions::kHeaderSize = sizeof(Regions::Header);
+
+Regions PermRegions::regions_;
 } //namespace yatsc
 

@@ -26,24 +26,19 @@
 #define IR_IR_FACTORY_H
 
 #include "../utils/utils.h"
+#include "../utils/regions.h"
 
 namespace yatsc {namespace ir {
 
 class IRFactory : private Uncopyable {
  public:
 
-  IRFactory()
-      : environment_(Environment::Create()) {}
+  IRFactory() {}
   
   template <typename NodeName, typename ... Args>
   YATSC_INLINE NodeName* New(Args ... args) {
-    NodeName* n = environment_->New<NodeName>(std::forward<Args>(args)...);
-    n->set_environment(environment_);
-    return n;
+    return PermRegions::New<NodeName>(std::forward<Args>(args)...);
   }
-
- private:
-  Environment* environment_;
 };
 
 }}

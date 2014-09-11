@@ -108,10 +108,7 @@ class ParserBase: private Uncopyable, private Unmovable {
    public:
     
     TokenBuffer()
-        : cursor_(0) {
-      // Initialize std::vector for mmap allocator.
-      buffer_ = buffer_init_once_(Mmap::MmapStandardAllocator<TokenInfo>(&mmap_));
-    }
+        : cursor_(0) {}
 
 
     /**
@@ -193,11 +190,10 @@ class ParserBase: private Uncopyable, private Unmovable {
     YATSC_INLINE bool CursorUpdated();
 
    private:
-    typedef std::vector<TokenInfo, Mmap::MmapStandardAllocator<TokenInfo>> Vector;
+    typedef std::vector<TokenInfo, RegionsStandardAllocator<TokenInfo>> Vector;
     Mmap mmap_;
     TokenCursor cursor_;
-    Vector* buffer_;
-    LazyInitializer<Vector> buffer_init_once_;
+    Vector buffer_;
     TokenInfo null_token_info_;
   };
   

@@ -30,14 +30,15 @@
 #include <array>
 #include <string>
 #include "utils.h"
+#include "regions.h"
 
 namespace yatsc {
 typedef uint32_t UC32;
 typedef uint16_t UC16;
 typedef uint8_t UC8;
 typedef std::array<char, 5> UC8Bytes;
-typedef std::string Utf8String;
-typedef std::basic_string<UC16> Utf16String;
+typedef std::basic_string<char, std::char_traits<char>, RegionsStandardAllocator<char>> Utf8String;
+typedef std::basic_string<UC16, std::char_traits<UC16>, RegionsStandardAllocator<UC16>> Utf16String;
 
 /**
  * Utility class of the unicode string conversion.

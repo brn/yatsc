@@ -31,8 +31,6 @@
 #include <vector>
 #include <stdint.h>
 #include "../utils/utils.h"
-#include "../utils/regions.h"
-#include "../utils/environment.h"
 #include "../parser/token.h"
 
 namespace yatsc {namespace ir {
@@ -266,8 +264,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
-        invalid_lhs_(false),
-        environment_(nullptr){
+        invalid_lhs_(false) {
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
     }
@@ -282,8 +279,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
-        invalid_lhs_(false),
-        environment_(nullptr){
+        invalid_lhs_(false) {
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
     }
@@ -310,11 +306,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   
   // Getter for size.
   YATSC_CONST_GETTER(size_t, size, node_list_.size());
-
-
-  // Getter for environment.
-  YATSC_PROPERTY(Environment*, environment, environment_);
-
+  
 
   YATSC_CONST_GETTER(Node*, first_child, node_list_[0]);
 
@@ -553,7 +545,6 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   double double_value_;
   bool invalid_lhs_;
   UtfString string_value_;
-  Environment* environment_;
 };
 
 

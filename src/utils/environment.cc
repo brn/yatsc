@@ -27,5 +27,4 @@
 
 namespace yatsc {
 ThreadLocalStorage::Slot Environment::tls_;
-Regions Environment::regions_;
 }

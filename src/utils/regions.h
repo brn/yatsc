@@ -721,4 +721,179 @@ class Regions : private Uncopyable {
 } // namesapce yatsc
 
 #include "regions-inl.h"
+
+namespace yatsc {
+
+class PermRegions: private Static {
+ public:
+  /**
+   * Free the specified pointer.
+   * This function in fact not release memory.
+   * This method add memory block to the free list and call destructor.
+   * @param object The object pointer that must be allocated by Regions::Allocate[Array].
+   */
+  YATSC_INLINE static void Dealloc(void* object) YATSC_NOEXCEPT {regions_.Dealloc(object);}
+
+
+  /**
+   * Create new instance from Regions heap.
+   * The instance which created by this method
+   * must not use delete or free.
+   */
+  template <typename T, typename ... Args>
+  YATSC_INLINE static T* New(Args ... args) {return regions_.New<T>(std::forward<Args>(args)...);}
+
+
+  /**
+   * Create bulk memory block from Regions heap.
+   * The instance which created by this method
+   * must not use delete or free.
+   */
+  template <typename T>
+  YATSC_INLINE static T* NewPtr(size_t num) {return regions_.NewPtr<T>(num);}
+
+
+  /**
+   * Create new array of instance from Regions heap.
+   * The instance which created by this method
+   * must not use delete or free.
+   */
+  template <typename T, typename ... Args>
+  inline static T* NewArray(size_t size, Args ... args) {return regions_.NewArray<T>(std::forward<Args>(args)...);}
+  
+
+  /**
+   * Get current allocated size by byte.
+   * @return The byte expression.
+   */
+  YATSC_INLINE static double commited_bytes() YATSC_NOEXCEPT {
+    return regions_.commited_bytes();
+  }
+
+
+  /**
+   * Get current allocated size by kilo byte.
+   * @return The kilo byte expression.
+   */
+  YATSC_INLINE static double commited_kbytes() YATSC_NOEXCEPT {
+    return regions_.commited_kbytes();
+  }
+
+
+  /**
+   * Get current allocated size by mega byte.
+   * @return The mega byte expression.
+   */
+  YATSC_INLINE static double commited_mbytes() YATSC_NOEXCEPT {
+    return regions_.commited_mbytes();
+  }
+
+
+  /**
+   * Get current allocated heap size which include all unused space.
+   * @return The byte expression.
+   */
+  YATSC_INLINE static double real_commited_bytes() YATSC_NOEXCEPT {
+    return regions_.real_commited_bytes();
+  }
+
+
+  /**
+   * Get current allocated heap size which include all unused space.
+   * @return The kilo byte expression.
+   */
+  YATSC_INLINE static double real_commited_kbytes() YATSC_NOEXCEPT {
+    return regions_.real_commited_kbytes();
+  }
+
+
+  /**
+   * Get current allocated heap size which include all unused space.
+   * @return The mega byte expression.
+   */
+  YATSC_INLINE static double real_commited_mbytes() YATSC_NOEXCEPT {
+    return regions_.real_commited_mbytes();
+  }
+ private:
+  static Regions regions_;
+};
+
+
+template <typename T>
+class RegionsStandardAllocator: public std::allocator<T> {
+ public:
+  typedef size_t  size_type;
+  typedef ptrdiff_t difference_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef T value_type;
+
+  template <class U>
+  struct rebind { 
+    typedef RegionsStandardAllocator<U> other;
+  };
+
+
+  RegionsStandardAllocator() = default;
+
+  
+  RegionsStandardAllocator(const RegionsStandardAllocator& allocator) = default;
+
+
+  template <typename U>
+  RegionsStandardAllocator(const RegionsStandardAllocator<U>& allocator) {}
+    
+
+  /**
+   * Allocate new memory.
+   */
+  pointer allocate(size_type num, const void* hint = 0) {
+    return PermRegions::NewPtr<value_type>(sizeof(T) * num);
+  }
+
+  /**
+   * Initialize already allocated block.
+   */
+  void construct(pointer p, const T& value) {
+    new (static_cast<void*>(p)) T(value);
+  }
+
+  /**
+   * Return object address.
+   */
+  pointer address(reference value) const { 
+    return &value;
+  }
+
+  /**
+   * Return const object address.
+   */
+  const_pointer address(const_reference value) const { 
+    return &value;
+  }
+
+  /**
+   * Remove pointer.
+   */
+  void destroy(pointer p) {
+    p->~T();
+  }
+
+  /**
+   * Do nothing.
+   */
+  void deallocate(pointer p, size_type n) {
+    //PermRegions::Dealloc(p);
+  }
+
+  /**
+   * Return the max size of allocatable.
+   */
+  size_type max_size() const throw() {
+    return std::numeric_limits<size_t>::max() / sizeof(T);
+  }
+};
+}
 #endif

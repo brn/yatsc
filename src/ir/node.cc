@@ -128,12 +128,10 @@ bool Node::Equals(Node* node) YATSC_NO_SE {
 
 // Clone node and node's children.
 Node* Node::Clone() YATSC_NOEXCEPT {
-  YATSC_CHECK(true, environment_ != nullptr);
-  Node* cloned = environment_->New<Node>(node_type_, capacity_);
+  Node* cloned = PermRegions::New<Node>(node_type_, capacity_);
   cloned->double_value_ = double_value_;
   cloned->string_value_ = string_value_;
   cloned->operand_ = operand_;
-  cloned->environment_ = environment_;
   cloned->source_information_ = source_information_;
   for (size_t i = 0u; i < node_list_.size(); i++) {
     Node* node = node_list_[i];

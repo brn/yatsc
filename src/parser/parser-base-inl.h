@@ -28,13 +28,13 @@ namespace yatsc {
  * A passed TokenInfo is copied by the copy constructor.
  */
 void ParserBase::TokenBuffer::PushBack(TokenInfo* token_info) {
-  buffer_->emplace_back(*token_info);
+  buffer_.emplace_back(*token_info);
 }
 
 
 
 bool ParserBase::TokenBuffer::IsEmpty() YATSC_NO_SE {
-  return buffer_->empty();
+  return buffer_.empty();
 }
 
 
@@ -43,8 +43,8 @@ bool ParserBase::TokenBuffer::IsEmpty() YATSC_NO_SE {
  * If cursor is end of buffer, return invalid token info.
  */
 TokenInfo* ParserBase::TokenBuffer::Next() {
-  if (cursor_ >= (buffer_->size() - 1)) {return &null_token_info_;}
-  return &((*buffer_)[cursor_++]);
+  if (cursor_ >= (buffer_.size() - 1)) {return &null_token_info_;}
+  return &(buffer_[cursor_++]);
 }
 
 
@@ -53,8 +53,8 @@ TokenInfo* ParserBase::TokenBuffer::Next() {
  * If cursor is end of buffer, return invalid token info.
  */
 TokenInfo* ParserBase::TokenBuffer::Current() {
-  if (cursor_ >= buffer_->size()) {return &null_token_info_;}
-  return &((*buffer_)[cursor_]);
+  if (cursor_ >= buffer_.size()) {return &null_token_info_;}
+  return &(buffer_[cursor_]);
 }
 
 
@@ -63,8 +63,8 @@ TokenInfo* ParserBase::TokenBuffer::Current() {
  * If cursor is end of buffer, return invalid token info.
  */
 TokenInfo* ParserBase::TokenBuffer::Peek(size_t pos) {
-  if (pos < 0 || pos >= buffer_->size()) {return &null_token_info_;}
-  return &((*buffer_)[pos]);
+  if (pos < 0 || pos >= buffer_.size()) {return &null_token_info_;}
+  return &(buffer_[pos]);
 }
 
 
@@ -111,9 +111,9 @@ void ParserBase::SetBufferCursorPosition(size_t num) YATSC_NOEXCEPT {
  * Check whether cursor is end of buffer or not.
  */
 bool ParserBase::TokenBuffer::CursorUpdated() {
-  if (buffer_->empty()) {
+  if (buffer_.empty()) {
     return true;
   }
-  return cursor_ == (buffer_->size() - 1);
+  return cursor_ == (buffer_.size() - 1);
 }
 }

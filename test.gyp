@@ -56,6 +56,7 @@
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
         './src/utils/os.cc',
+        './src/utils/systeminfo.cc',
         './lib/gtest/gtest-all.cc',
         './test/parser/unicode-iterator-adapter-test.cc',
         './test/test-main.cc',
@@ -76,6 +77,7 @@
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
         './src/utils/os.cc',
+        './src/utils/systeminfo.cc',
         './src/parser/sourcestream.cc',
         './lib/gtest/gtest-all.cc',
         './test/parser/sourcestream-test.cc',
