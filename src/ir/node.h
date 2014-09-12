@@ -1062,7 +1062,7 @@ class ClassImplsView: public Node {
 
 class ClassDeclView: public Node {
  public:
-  ClassDeclView(Node* name, Node* field_list, Node* bases)
+  ClassDeclView(Node* name, Node* bases, Node* field_list)
       : Node(NodeType::kClassDeclView, 3u, {name, bases, field_list}) {}
   
   ClassDeclView()

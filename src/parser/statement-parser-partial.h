@@ -1176,6 +1176,11 @@ ir::Node* Parser<UCharInputIterator>::ParseClassBody() {
   while (1) {
     if (Current()->type() != Token::TS_RIGHT_BRACE) {
       fields->InsertLast(ParseClassElement());
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else if (RewindBuffer(1)->type() != Token::TS_RIGHT_BRACE) {
+        SYNTAX_ERROR("SyntaxError ';' expected", RewindBuffer(1));
+      }
     } else {
       return fields;
     }

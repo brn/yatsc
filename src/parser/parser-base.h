@@ -62,7 +62,7 @@ class ParserBase: private Uncopyable, private Unmovable {
    * Rewind TokenBuffer cursor position by the passed position.
    * @param num Rewind position.
    */
-  YATSC_INLINE void RewindBuffer(size_t num);
+  YATSC_INLINE TokenInfo* RewindBuffer(size_t num);
 
 
   /**

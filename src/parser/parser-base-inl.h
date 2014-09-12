@@ -79,8 +79,8 @@ void ParserBase::PushBackBuffer(TokenInfo* token_info) {
 /**
  * Call token_buffer_.Rewind.
  */
-void ParserBase::RewindBuffer(size_t num) {
-  token_buffer_.Rewind(num);
+TokenInfo* ParserBase::RewindBuffer(size_t num) {
+  return token_buffer_.Rewind(num);
 }
 
 

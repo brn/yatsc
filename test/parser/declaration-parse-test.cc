@@ -385,15 +385,18 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {}",
                    "[ClassDeclView]\n"
                    "  [NameView][Foo]\n"
-                   "  [ClassFieldListView]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
-                   "    [Empty]");
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]");
 
   
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {constructor(){}}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [NameView][Foo]\n"                   
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
                    "  [ClassFieldListView]\n"
                    "    [MemberFunctionView]\n"
                    "      [ClassFieldModifiersView]\n"
@@ -404,10 +407,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "        [Empty]\n"
                    "        [Empty]\n"
                    "      [MemberFunctionOverloadsView]\n"
-                   "      [BlockView]\n"
-                   "  [ClassBasesView]\n"
-                   "    [Empty]\n"
-                   "    [Empty]");
+                   "      [BlockView]");
 
   
   DECLARATION_TEST(yatsc::LanguageMode::ES6,
@@ -417,7 +417,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  constructor(b){}"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [NameView][Foo]\n"                   
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
                    "  [ClassFieldListView]\n"
                    "    [MemberFunctionView]\n"
                    "      [ClassFieldModifiersView]\n"
@@ -454,10 +457,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [Empty]\n"
                    "            [Empty]\n"
                    "            [Empty]\n"
-                   "      [BlockView]\n"
-                   "  [ClassBasesView]\n"
-                   "    [Empty]\n"
-                   "    [Empty]");
+                   "      [BlockView]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6,
                    "class Foo {"
@@ -468,6 +468,9 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "}",
                    "[ClassDeclView]\n"
                    "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
                    "  [ClassFieldListView]\n"
                    "    [MemberFunctionView]\n"
                    "      [ClassFieldModifiersView]\n"
@@ -514,10 +517,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "        [Empty]\n"
                    "        [Empty]\n"
                    "      [MemberFunctionOverloadsView]\n"
-                   "      [BlockView]\n"
-                   "  [ClassBasesView]\n"
-                   "    [Empty]\n"
-                   "    [Empty]");
+                   "      [BlockView]");
 
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6,
@@ -531,6 +531,9 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "}",
                    "[ClassDeclView]\n"
                    "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
                    "  [ClassFieldListView]\n"
                    "    [MemberFunctionView]\n"
                    "      [ClassFieldModifiersView]\n"
@@ -606,8 +609,57 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [Empty]\n"
                    "            [Empty]\n"
                    "            [Empty]\n"                   
-                   "      [BlockView]\n"
+                   "      [BlockView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {member = 1;}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
-                   "    [Empty]");
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]\n"
+                   "    [MemberVariableView]\n"
+                   "      [ClassFieldModifiersView]\n"
+                   "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "      [NameView][member]\n"
+                   "      [Empty]\n"
+                   "      [NumberView][1]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {private static member = 1;}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]\n"
+                   "    [MemberVariableView]\n"
+                   "      [ClassFieldModifiersView]\n"
+                   "        [ClassFieldAccessLevelView][TS_STATIC]\n"
+                   "        [ClassFieldAccessLevelView][TS_PRIVATE]\n"
+                   "      [NameView][member]\n"
+                   "      [Empty]\n"
+                   "      [NumberView][1]");
+
+  
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo extends Bar {}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [ClassHeritageView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Bar]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]");
+
+  
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Hoge {}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [ClassImplsView]\n"
+                   "      [SimpleTypeExprView]"
+                   "  [ClassFieldListView]");
 }
