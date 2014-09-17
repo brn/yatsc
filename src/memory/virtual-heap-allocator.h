@@ -49,6 +49,7 @@ class VirtualHeapAllocator: private Static {
     static uint8_t ANONYMOUS;
     static uint8_t SHARED;
     static uint8_t PRIVATE;
+    static uint8_t FIXED;
   };
 
 

@@ -41,7 +41,7 @@ class Test2: public Test1 {
 };
 
 TEST(AlignedHeapAllocator, test) {
-  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(2 MB, 1 MB));
+  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(1 MB));
   Test1* i = new(addr) Test1();
   Test2* i2 = new(addr + sizeof(Test1)) Test2();
   Test2* i3 = new(addr + sizeof(Test1)) Test2();

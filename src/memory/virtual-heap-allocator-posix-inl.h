@@ -29,6 +29,7 @@
 inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, uint8_t flags) {
   int mmap_prot = 0;
   int mmap_flags = 0;
+  bool fixed = false;
 
   if (prot != VirtualHeapAllocator::Prot::NONE) {
     if ((prot & VirtualHeapAllocator::Prot::READ) == VirtualHeapAllocator::Prot::READ) {
@@ -59,16 +60,13 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
     if ((flags & VirtualHeapAllocator::Flags::PRIVATE) == VirtualHeapAllocator::Flags::PRIVATE) {
       mmap_flags |= MAP_PRIVATE;
     }
-    if (addr != nullptr) {
+    
+    if (addr != nullptr && (flags & VirtualHeapAllocator::Flags::FIXED) == VirtualHeapAllocator::Flags::FIXED) {
       mmap_flags |= MAP_FIXED;
     }
   }
 
-  void* ret = mmap(addr, size, mmap_prot, mmap_flags, -1, 0);
-  if (ret == NULL) {
-    return nullptr;
-  }
-  return ret;
+  return mmap(addr, size, mmap_prot, mmap_flags, -1, 0);
 }
 
 

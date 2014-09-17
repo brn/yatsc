@@ -37,5 +37,6 @@ uint8_t VirtualHeapAllocator::Flags::NONE = 0;
 uint8_t VirtualHeapAllocator::Flags::ANONYMOUS = 1;
 uint8_t VirtualHeapAllocator::Flags::SHARED = 2;
 uint8_t VirtualHeapAllocator::Flags::PRIVATE = 4;
+uint8_t VirtualHeapAllocator::Flags::FIXED = 8;
 
 }

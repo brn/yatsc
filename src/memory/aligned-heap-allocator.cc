@@ -41,7 +41,10 @@ namespace yatsc {
 // after we can get target memory block address, roundup this address and recommit this block,
 // but, this memory block is already removed and other process may be already used,
 // so we retry reserve another memory block until kMaxRetry count.
-void* AlignedHeapAllocator::Allocate(size_t size, size_t alignment) {
+void* AlignedHeapAllocator::Allocate(size_t alignment) {
+  // Allocate double alignment size.
+  size_t size = alignment << 1;
+  
   if (alignment <= kAllocateAlignment) {
     // If kAllocatedAlignment is enough.
     return VirtualHeapAllocator::Map(nullptr, size,
@@ -98,8 +101,8 @@ void* AlignedHeapAllocator::Allocate(size_t size, size_t alignment) {
       // because other process may use this block.
       ret = VirtualHeapAllocator::Map(alignedAddress, size - roundup - unused,
                                       VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
-                                      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
-
+                                      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
+      
       // Check commited memory block address is less than the alignedAddress.
       if (ret != nullptr &&
           reinterpret_cast<uintptr_t>(ret) > reinterpret_cast<uintptr_t>(alignedAddress)) {
