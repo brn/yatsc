@@ -21,6 +21,27 @@
   },
   'targets': [
     {
+      'target_name': 'aligned_heap_allocator_test',
+      'type': 'executable',
+      'product_name': 'AlignedHeapAllocatorTest',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './test/memory/aligned-heap-allocator-test.cc',
+        './lib/gtest/gtest-all.cc',
+        './test/test-main.cc',
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
+    {
       'target_name': 'scanner_test',
       'type': 'executable',
       'product_name': 'ScannerTest',
