@@ -29,10 +29,16 @@
 #include "../utils/utils.h"
 
 namespace yatsc {
+// Allocate algined memory block that is not restricted to CPU alignment.
+// This allocator purpose is allocate the memory that has computable address like 0x1C9 00000...
 class AlignedHeapAllocator: private Static {
  public:
+  // Allocate aligned memory block.
   static void* Allocate(size_t alignement);
-  static void Deallocate(void* addr, size_t size);
+
+  
+  // Deallocate allocated memory block.
+  static void Deallocate(void* addr);
 };
 }
 

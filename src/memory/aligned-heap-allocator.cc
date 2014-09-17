@@ -70,7 +70,7 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
         throw new std::bad_alloc();
       }
 
-      // First allocation, we reserve target range memory block.
+      // First allocation, we reserve memory block that contains target range.
       // [--roundup---|----------target-----------|---unused---]
       allocatedAddress = reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
           nullptr, allocatedSize,
@@ -117,8 +117,9 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
 }
 
 
-void AlignedHeapAllocator::Deallocate(void* addr, size_t size) {
-  VirtualHeapAllocator::Unmap(addr, size);
+// Unmap memory block.
+void AlignedHeapAllocator::Deallocate(void* addr) {
+  VirtualHeapAllocator::Unmap(addr, 1u);
 }
 
-}
+} // yatsc
