@@ -27,6 +27,7 @@
 #define MEMORY_HEAP_ALLOCATOR_CHUNK_HEADER_H
 
 #include "../../utils/utils.h"
+#include "../../utils/spinlock.h"
 #include "../virtual-heap-allocator.h"
 #include "../aligned-heap-allocator.h"
 
@@ -53,12 +54,16 @@ class ChunkHeader {
     kBlack
   };
 
-  
-  ~ChunkHeader();
 
+  ~ChunkHeader() = default;
+  
 
   // The factory for to create new ChunkHeader for given size_class.
   static ChunkHeader* New(size_t size_class);
+
+
+  // Delete ChunkHeader.
+  static void Delete(ChunkHeader* chunk_header);
 
 
   // Allocate a new memory block that is sized by size_class_ property.
@@ -89,12 +94,16 @@ class ChunkHeader {
 
     
     // Getter and setter for next pointer.
-    YATSC_PROPERTY(HeapHeader*, next, next_) 
+    YATSC_PROPERTY(HeapHeader*, next, next_);
+
+
+    YATSC_PROPERTY(size_t, used, used_);
     
    private:
     
     ChunkHeader* chunk_header_;
     HeapHeader* next_;
+    size_t used_;
   };
 
 
@@ -125,8 +134,8 @@ class ChunkHeader {
         heap_list_(nullptr){}
   
 
-  // Add new memory block to free list.
-  void AssignFreeList(Byte* block);
+  // Initialize HeapHeader.
+  YATSC_INLINE Byte* InitHeap(Byte* block);
 
 
   // Allocate new memory block.
@@ -139,6 +148,7 @@ class ChunkHeader {
   HeapHeader* heap_list_;
   
   static const size_t kAlignment;
+  static SpinLock lock_;
 };
 
 }}
