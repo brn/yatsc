@@ -51,7 +51,7 @@ ChunkHeader* ChunkHeader::New(size_t size_class) {
 
 
 void ChunkHeader::AssignFreeList(Byte* block) {
-  HeapHeader* heap_header = new (block) HeapHeader(this, kAlignment);
+  HeapHeader* heap_header = new (block) HeapHeader(this);
   Byte* begin = block + sizeof(HeapHeader);
   FreeHeader* free_block = reinterpret_cast<FreeHeader*>(begin);
   FreeHeader* head = free_block;

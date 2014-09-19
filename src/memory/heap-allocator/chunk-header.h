@@ -36,10 +36,12 @@ namespace yatsc { namespace heap {
 // to allocate memory and deallocate memory.
 // The chunk header is used to manage all linked memory block,
 //
-// [[ChunkHeader(size_class,etc...)][small-bin-------]->[small-bin-------]->...]
+// [[ChunkHeader(size_class,etc...)][HeapHeader-------]->[HeapHeader-------]->...]
+//   ^---------<--reference--<-------^
+//   ^-----------------<--reference--<--------------------^
 //
 // All memory block that is allocated is aligned 1 MB,
-// so we decide ChunkHeader address from an each heap by bitwise_and with kAddrMask.
+// so we decide HeapHeader address from an each heap by bitwise_and with kAddrMask.
 // The ChunkHeader class self is managed by Red-Black-Tree,
 // all rbtree property like color, left and right is embeded in this class.
 class ChunkHeader {
@@ -60,51 +62,51 @@ class ChunkHeader {
 
 
   // Allocate a new memory block that is sized by size_class_ property.
+  // The return value of this method must not be given free and delete.
   YATSC_INLINE void* Distribute();
 
 
   // Release allocated memory block.
-  void Dealloc(Byte* area);
+  // The argument must be the return value of the Distribute method.
+  void Dealloc(void* area);
 
 
   // Getter and setter for size_class_.
+  // size_class_ mean is allocation target size.
   YATSC_CONST_PROPERTY(size_t, size_class, size_class_);
 
 
   // The header for the each heap.
-  // Heap header has reference to ChunkHeader.
+  // Heap header has reference to ChunkHeader and embeded linked list ptr.
   class HeapHeader {
    public:
-    HeapHeader(ChunkHeader* chunk_header, size_t left)
+    HeapHeader(ChunkHeader* chunk_header)
         : chunk_header_(chunk_header),
           next_(nullptr) {}
 
+    // Getter for ChunkHeader.
     YATSC_GETTER(ChunkHeader*, chunk_header, chunk_header_);
+
+    
+    // Getter and setter for next pointer.
     YATSC_PROPERTY(HeapHeader*, next, next_) 
     
    private:
+    
     ChunkHeader* chunk_header_;
     HeapHeader* next_;
   };
 
-  
+
+  // The mask that is calculate front of the memory block address.
   static const size_t kAddrMask;
   
  private:
 
-  ChunkHeader(size_t size_class)
-      : size_class_(size_class),
-        color_(ChunkHeader::Color::kBlack),
-        free_list_(nullptr),
-        heap_list_(nullptr){}
-  
 
-  void AssignFreeList(Byte* block);
-
-  
-  static YATSC_INLINE Byte* AllocateBlock();
-
-  
+  // Header that is used on unused memory block.
+  // This header is not use extra memory but
+  // locate in heap block body.
   class FreeHeader {
    public:
     YATSC_PROPERTY(FreeHeader*, next, next_);
@@ -112,7 +114,24 @@ class ChunkHeader {
    private:
     FreeHeader* next_;
   };
+  
 
+  // Simple new instantiation is not allowed.
+  // Instead use ChunkHeader::New
+  ChunkHeader(size_t size_class)
+      : size_class_(size_class),
+        color_(ChunkHeader::Color::kBlack),
+        free_list_(nullptr),
+        heap_list_(nullptr){}
+  
+
+  // Add new memory block to free list.
+  void AssignFreeList(Byte* block);
+
+
+  // Allocate new memory block.
+  static YATSC_INLINE Byte* AllocateBlock();
+  
   
   size_t size_class_;
   Color color_;

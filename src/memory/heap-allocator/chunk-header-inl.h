@@ -36,7 +36,7 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
 }
 
 
-YATSC_INLINE void ChunkHeader::Dealloc(Byte* block) {
+YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);
   if (free_list_ == nullptr) {
     free_list_ = free_header;
