@@ -397,14 +397,14 @@ class Parser: public ParserBase {
 
   void ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads);
 
-#ifdef DEBUG
+#if defined(UNIT_TEST) || defined(DEBUG)
   void PrintStackTrace() {
     Printf("%s\n", phase_buffer_.str().c_str());
   }
 #endif
 
  private:
-#ifdef DEBUG
+#if defined(DEBUG) || defined(UNIT_TEST)
   std::stringstream phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;

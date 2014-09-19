@@ -22,33 +22,46 @@
  * THE SOFTWARE.
  */
 
+#include <gtest/gtest.h>
+#include "../../../src/memory/heap-allocator/chunk-header.h"
 
-namespace yatsc { namespace heap {
+class TestClass {
+ public:
+  size_t a;
+  size_t b;
+  size_t c;
+  size_t d;
+};
 
-YATSC_INLINE void* ChunkHeader::Distribute() {
-  if (free_list_ == nullptr) {
-    AssignFreeList(AllocateBlock());
+yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass));
+
+TEST(ChunkHeaderTest, test) {
+  
+  for (int i = 0; i < 1000000; i++) {
+    ::TestClass* t = new (header->Distribute()) ::TestClass();
+    t->a = 1;
+    t->b = 2;
+    t->c = 3;
+    t->d = 4;
+    ASSERT_EQ(t->a, 1);
+    ASSERT_EQ(t->b, 2);
+    ASSERT_EQ(t->c, 3);
+    ASSERT_EQ(t->d, 4);
   }
-
-  auto tmp = free_list_;
-  free_list_ = tmp->next();
-  return reinterpret_cast<void*>(tmp);
 }
 
 
-YATSC_INLINE void ChunkHeader::Dealloc(Byte* block) {
-  FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);
-  if (free_list_ == nullptr) {
-    free_list_ = free_header;
-  } else {
-    free_header->set_next(free_list_);
-    free_list_ = free_header;
+TEST(ChunkHeaderTest, test2) {
+  //yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass));
+  for (int i = 0; i < 1000000; i++) {
+    ::TestClass* t = new ::TestClass();
+    t->a = 1;
+    t->b = 2;
+    t->c = 3;
+    t->d = 4;
+    ASSERT_EQ(t->a, 1);
+    ASSERT_EQ(t->b, 2);
+    ASSERT_EQ(t->c, 3);
+    ASSERT_EQ(t->d, 4);
   }
 }
-
-
-YATSC_INLINE Byte* ChunkHeader::AllocateBlock() {
-  return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(kAlignment));
-}
-
-}}

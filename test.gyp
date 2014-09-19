@@ -42,6 +42,28 @@
       },
     },
     {
+      'target_name': 'chunk_header_test',
+      'type': 'executable',
+      'product_name': 'ChunkHeaderTest',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './test/memory/heap-allocator/chunk-header-test.cc',
+        './lib/gtest/gtest-all.cc',
+        './test/test-main.cc',
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
+    {
       'target_name': 'scanner_test',
       'type': 'executable',
       'product_name': 'ScannerTest',

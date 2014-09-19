@@ -170,7 +170,7 @@ enum class Token: uint16_t {
 
 
 namespace tokenhelper {
-#ifdef UNIT_TEST
+#if defined(UNIT_TEST) || defined(DEBUG)
 static const char* kTokenStringList[] = {
 #define DECLARE(TokenName) #TokenName,
 #define DECLARE_LAST(TokenName) #TokenName
@@ -286,7 +286,7 @@ class TokenInfo {
 
   YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
 
-#ifdef DEBUG
+#ifdef UNIT_TEST
   const char* ToString() const {
     return tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
   }
