@@ -31,6 +31,7 @@
 #include "../utils/mmap.h"
 #include "../compiler-option.h"
 #include "../utils/utils.h"
+#include "../utils/stl.h"
 
 
 namespace yatsc {
@@ -190,10 +191,9 @@ class ParserBase: private Uncopyable, private Unmovable {
     YATSC_INLINE bool CursorUpdated();
 
    private:
-    typedef std::vector<TokenInfo, RegionsStandardAllocator<TokenInfo>> Vector;
     Mmap mmap_;
     TokenCursor cursor_;
-    Vector buffer_;
+    Vector<TokenInfo> buffer_;
     TokenInfo null_token_info_;
   };
   
@@ -203,11 +203,11 @@ class ParserBase: private Uncopyable, private Unmovable {
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
   TokenBuffer token_buffer_;
-  std::string error_message_;
+  String error_message_;
   bool has_pending_error_;
 
 #ifdef DEBUG
-  std::string indent_;
+  String indent_;
 #endif
 };
 

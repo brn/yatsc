@@ -395,7 +395,7 @@ class Parser: public ParserBase {
   template <typename T>
   void SetModifiers(bool* first, ir::Node* mods, T fn);
 
-  void ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads);
+  ir::Node* ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads);
 
 #ifdef DEBUG
   void PrintStackTrace() {

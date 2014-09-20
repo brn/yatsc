@@ -1341,7 +1341,7 @@ ir::Node* Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(b
 
 
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads) {
+ir::Node* Parser<UCharInputIterator>::ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads) {
   if (overloads->size() > 0) {
     auto last = overloads->last_child()->ToMemberFunctionOverloadView();
     if (!node->name()->string_equals(last->at(1))) {
@@ -1357,6 +1357,7 @@ void Parser<UCharInputIterator>::ValidateOverload(ir::MemberFunctionDefinitionVi
       SYNTAX_ERROR_POS("SyntaxError member function overload must have same modifiers", target->source_position()); 
     }
   }
+  return nullptr;
 }
 
 

@@ -3,6 +3,8 @@ set VisualStudioVersion=12.0
 set config=/p:Configuration=Debug
 set dir=Debug
 set args=""
+set last_test=""
+
 IF "%1" == "Rebuild" set args=/t:Rebuild
 IF "%1" == "Release" (
   set config=/p:Configuration=%1
@@ -14,4 +16,22 @@ IF "%2" == "Release" (
   set dir=Release
 )
 
-MSBuild.exe test.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVersion=v4.5.1 /p:PlatformToolset=v120 /toolsversion:12.0 && "%dir%/SourceStreamTest.exe" && "%dir%/UnicodeIteratorAdapterTest.exe" && "%dir%/ScannerTest.exe" && "%dir%/RegionsTest.exe" && "%dir%/NodeTest.exe" && "%dir%/ExpressionParseTest.exe" && "%dir%/DeclarationParseTest.exe" && "%dir%/StatementParseTest.exe"
+MSBuild.exe test.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVersion=v4.5.1 /p:PlatformToolset=v120 /toolsversion:12.0
+call :RUN RegionsTest.exe
+call :RUN SourceStreamTest.exe
+call :RUN UnicodeIteratorAdapterTest.exe
+call :RUN ScannerTest.exe
+call :RUN NodeTest.exe
+call :RUN ExpressionParseTest.exe
+call :RUN DeclarationParseTest.exe
+call :RUN StatementParseTest.exe
+
+exit
+
+:RUN
+if %ERRORLEVEL% == 0 (set last_test=%1 & "%dir%/%1") else (goto ERROR)
+exit /b
+
+:ERROR
+echo %last_test% failed with return code %ERRORLEVEL%
+exit %ERRORLEVEL%

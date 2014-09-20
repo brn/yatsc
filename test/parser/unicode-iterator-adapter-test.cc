@@ -88,8 +88,8 @@ inline void UnicodeTest(const char* input, const char* expected, size_t expected
     index++;
   }
   ASSERT_EQ(expected_size, size);
-  yatsc::testing::CompareString(buffer, result);
-  yatsc::testing::CompareString(utf8_buffer, source);
+  yatsc::testing::CompareBuffer(buffer, result);
+  yatsc::testing::CompareBuffer(utf8_buffer, source);
 }
 
 

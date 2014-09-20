@@ -416,9 +416,9 @@ TEST(ScannerTest, GetLineSource) {
   const char* source = "for (var i = 0; i < 1000; i++####) {\nvar x = i;\nvar m = i + x;\n}\nconsole.log(x);\nconsole.log(m);";
   INIT(token, source);
   try {
-  for (int i = 0; i < 14; i++) {
-    token = scanner.Scan();
-  }
+    for (int i = 0; i < 14; i++) {
+      token = scanner.Scan();
+    }
   } catch(const yatsc::TokenException& e) {
     std::cout << e.what() << std::endl;
   }

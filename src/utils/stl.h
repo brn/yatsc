@@ -22,41 +22,16 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
-#include "../readfile.h"
-#include "../compare-string.h"
-#include "../../src/parser/sourcestream.h"
+#ifndef UTILS_STL_H
+#define UTILS_STL_H
 
-const char filename[] = "test/parser/sourcestream-test-cases/jquery.js";
+#include <string>
+#include <vector>
 
-
-TEST(SourceStream, read_all_ok) {
-  yatsc::SourceStream st(filename);
-  std::string expected = yatsc::testing::ReadFile(filename);
-  yatsc::testing::CompareBuffer(st.buffer(), expected.c_str());
+namespace yatsc {
+typedef std::basic_string<char, std::char_traits<char>, RegionsStandardAllocator<char>> String;
+template<typename T>
+using Vector = std::vector<T, RegionsStandardAllocator<T>>;
 }
 
-
-TEST(SourceStream, iterator_ok) {
-  yatsc::SourceStream st(filename);
-  std::string expected = yatsc::testing::ReadFile(filename);
-  ASSERT_TRUE(st.success());
-  auto it = st.begin();
-  auto end = st.end();
-  size_t i = 0;
-  while (it != end) {
-    yatsc::UC8 expectation = static_cast<yatsc::UC8>(expected.at(i));
-    yatsc::UC8 actual = *it;
-    ASSERT_EQ(expectation, actual);
-    ++it;
-    i++;
-  }
-}
-
-
-TEST(SourceStream, load_error) {
-  yatsc::SourceStream st("un-exists");
-  ASSERT_FALSE(st.success());
-  ASSERT_EQ(st.size(), 0u);
-  ASSERT_GT(st.failed_message().size(), 0U);
-}
+#endif

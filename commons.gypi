@@ -23,6 +23,9 @@
           },
           'VCLinkerTool': {
             'LinkIncremental': 2, # enable incremental linking
+            'AdditionalDependencies': [
+              "lib/libtcmalloc_minimal-debug.lib"
+            ],
           },
         },
         'conditions' : [
@@ -67,6 +70,9 @@
             'OptimizeReferences': 2, # /OPT:REF
             'EnableCOMDATFolding': 2, # /OPT:ICF
             'LinkIncremental': 1, # disable incremental linking
+            'AdditionalDependencies': [
+              "lib/libtcmalloc_minimal-release.lib"
+            ],
           }
         },
         'conditions' : [
@@ -89,6 +95,7 @@
         'WarnAsError': 'false',
       },
       'VCLibrarianTool': {
+        'AdditionalLibraryDirectories': ['./lib']
       },
       'VCLinkerTool': {
         'GenerateDebugInformation': 'true',
@@ -116,6 +123,10 @@
           '_CRT_NONSTDC_NO_DEPRECATE',
           'PLATFORM_WIN',
           'NOMINMAX'
+        ],
+        'include_dirs': [
+          'gperftools/src/',
+          'gperftools/src/windows'
         ],
       }],
       [ 'OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"', {

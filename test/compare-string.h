@@ -67,7 +67,7 @@ inline ::testing::AssertionResult CompareUchar(const std::string& value, const s
 }
 
 
-inline void CompareString(const std::string& buffer, const std::string& expectation) {
+inline void CompareBuffer(const std::string& buffer, const std::string& expectation) {
   for (int i = 0, len = buffer.size(); i < len; i++) {
     ASSERT_TRUE(CompareUchar(buffer, expectation, i));
     i++;
@@ -75,10 +75,10 @@ inline void CompareString(const std::string& buffer, const std::string& expectat
 }
 
 
-inline void CompareString(const char* buffer, const char* expectation) {
+inline void CompareBuffer(const char* buffer, const char* expectation) {
   std::string b(buffer);
   std::string e(expectation);
-  CompareString(b, e);
+  CompareBuffer(b, e);
 }
 
 }} //namespace yatsc::testing

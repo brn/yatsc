@@ -654,12 +654,41 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  [ClassFieldListView]");
 
   
-  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Hoge {}",
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Bar {}",
                    "[ClassDeclView]\n"
                    "  [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [ClassImplsView]\n"
-                   "      [SimpleTypeExprView]"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Bar]\n"
+                   "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Bar implements Buz {}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [ClassImplsView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Bar]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Buz]\n"
+                   "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo extends Bar implements Buz implements Qux {}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [ClassHeritageView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Bar]\n"
+                   "    [ClassImplsView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Buz]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][Qux]\n"
                    "  [ClassFieldListView]");
 }
