@@ -28,15 +28,15 @@
 namespace yatsc {
 
 uint8_t VirtualHeapAllocator::Prot::NONE = 0;
-uint8_t VirtualHeapAllocator::Prot::READ = 1;
-uint8_t VirtualHeapAllocator::Prot::WRITE = 2;
-uint8_t VirtualHeapAllocator::Prot::EXEC = 4;
+uint8_t VirtualHeapAllocator::Prot::READ = 0x1;
+uint8_t VirtualHeapAllocator::Prot::WRITE = 0x2;
+uint8_t VirtualHeapAllocator::Prot::EXEC = 0x4;
 
 
 uint8_t VirtualHeapAllocator::Flags::NONE = 0;
-uint8_t VirtualHeapAllocator::Flags::ANONYMOUS = 1;
-uint8_t VirtualHeapAllocator::Flags::SHARED = 2;
-uint8_t VirtualHeapAllocator::Flags::PRIVATE = 4;
-uint8_t VirtualHeapAllocator::Flags::FIXED = 8;
+uint8_t VirtualHeapAllocator::Flags::ANONYMOUS = 0x1;
+uint8_t VirtualHeapAllocator::Flags::SHARED = 0x2;
+uint8_t VirtualHeapAllocator::Flags::PRIVATE = 0x4;
+uint8_t VirtualHeapAllocator::Flags::FIXED = 0x8;
 
 }

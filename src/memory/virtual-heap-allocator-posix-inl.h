@@ -25,6 +25,9 @@
 #include <sys/mman.h>
 
 
+namespace yatsc {
+
+
 // Map virtual memory block with the mmap.
 inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, uint8_t flags) {
   int mmap_prot = 0;
@@ -73,4 +76,6 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
 // Unmap virtual memory block with the munmap.
 inline void VirtualHeapAllocator::Unmap(void* addr, size_t size) {
   munmap(addr, size);
+}
+
 }

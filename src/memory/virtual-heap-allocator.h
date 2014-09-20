@@ -59,14 +59,13 @@ class VirtualHeapAllocator: private Static {
   // Unmap reserved memory block.
   inline static void Unmap(void* addr, size_t size);
 };
+}
 
 
 #ifdef HAVE_MMAP
 #include "./virtual-heap-allocator-posix-inl.h"
-#elif HAVE_VIRTUAL_ALLOC
+#elif defined(HAVE_VIRTUALALLOC)
 #include "./virtual-heap-allocator-win32-inl.h"
 #endif
-
-}
 
 #endif // MEMORY_VIRTUAL_HEAP_ALLOCATOR_H

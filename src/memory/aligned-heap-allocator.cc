@@ -67,7 +67,7 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
       retry++;
 
       if (retry > kMaxRetry) {
-        throw new std::bad_alloc();
+        FATAL("Memory allocation faild.");
       }
 
       // First allocation, we reserve memory block that contains target range.

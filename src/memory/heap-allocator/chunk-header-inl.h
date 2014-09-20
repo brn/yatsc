@@ -29,9 +29,7 @@ namespace yatsc { namespace heap {
 // If free list is empty, allocate a new memory that is aligned 1MB from virtual memory.
 // This method is thread safe.
 YATSC_INLINE void* ChunkHeader::Distribute() {
-  // Protect from race condition of the Dealloc.
-  ScopedSpinLock lock(lock_);
-  if (free_list_ == nullptr) {
+  if (free_list_.load() == nullptr) {
     // If heap is not filled.
     if (heap_list_->used() < (kAlignment - size_class_)) {
       // Calc next positon.
@@ -48,9 +46,9 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
     }
   } else {
     // Swap free list.
-    auto tmp = free_list_;
-    free_list_ = tmp->next();
-    return reinterpret_cast<void*>(tmp);
+    auto free_list_head = free_list_.load(std::memory_order_acquire);
+    while (!free_list_.compare_exchange_weak(free_list_head, free_list_head->next())) {}
+    return reinterpret_cast<void*>(free_list_head);
   }
 }
 
@@ -63,25 +61,12 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   // Simply cast block to FreeHeader.
   // Because this memory block is unused until detached from free list.
   FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);
+  free_header->set_next(free_list_.load(std::memory_order_acquire));
 
-  // Protect free list.
-  ScopedSpinLock lock(lock_);
-  if (free_list_ == nullptr) {
-    free_list_ = free_header;
-    free_list_->set_next(nullptr);
-  } else {
-    // Free block is prepended to the free list,
-    // because allocate-deallocate cycle is cause frequently,
-    // so more efficient if last used memory is cached reuse it.
-    free_header->set_next(free_list_);
-    free_list_ = free_header;
+  FreeHeader* free_list_head = free_list_.load(std::memory_order_relaxed);
+  while (!free_list_.compare_exchange_weak(free_list_head, free_header, std::memory_order_acq_rel)) {
+    free_header->set_next(free_list_head);
   }
-
-  // Calculate HeapHeader address from pointer,
-  // and decreese the used size.
-  auto pointer = reinterpret_cast<uintptr_t>(block);
-  HeapHeader* header = reinterpret_cast<HeapHeader*>(pointer & kAddrMask);
-  header->set_used(header->used() - size_class_);
 }
 
 

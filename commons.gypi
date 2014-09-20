@@ -23,9 +23,6 @@
           },
           'VCLinkerTool': {
             'LinkIncremental': 2, # enable incremental linking
-            'AdditionalDependencies': [
-              "lib/libtcmalloc_minimal-debug.lib"
-            ],
           },
         },
         'conditions' : [
@@ -70,9 +67,6 @@
             'OptimizeReferences': 2, # /OPT:REF
             'EnableCOMDATFolding': 2, # /OPT:ICF
             'LinkIncremental': 1, # disable incremental linking
-            'AdditionalDependencies': [
-              "lib/libtcmalloc_minimal-release.lib"
-            ],
           }
         },
         'conditions' : [

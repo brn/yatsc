@@ -87,7 +87,4 @@ const size_t ChunkHeader::kAddrMask = 0xFFFFFF00000;
 
 // Memory alignment.
 const size_t ChunkHeader::kAlignment = 1 MB;
-
-// Lock.
-SpinLock ChunkHeader::lock_;
 }}

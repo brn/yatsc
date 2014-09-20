@@ -26,8 +26,8 @@
 #ifndef MEMORY_HEAP_ALLOCATOR_CHUNK_HEADER_H
 #define MEMORY_HEAP_ALLOCATOR_CHUNK_HEADER_H
 
+#include <atomic>
 #include "../../utils/utils.h"
-#include "../../utils/spinlock.h"
 #include "../virtual-heap-allocator.h"
 #include "../aligned-heap-allocator.h"
 
@@ -46,6 +46,8 @@ namespace yatsc { namespace heap {
 // The ChunkHeader class self is managed by Red-Black-Tree,
 // all rbtree property like color, left and right is embeded in this class.
 class ChunkHeader {
+  class FreeHeader;
+  typedef std::atomic<FreeHeader*> AtomicFreeList;
  public:
 
   // Red-Black-Tree Color property.
@@ -130,8 +132,9 @@ class ChunkHeader {
   ChunkHeader(size_t size_class)
       : size_class_(size_class),
         color_(ChunkHeader::Color::kBlack),
-        free_list_(nullptr),
-        heap_list_(nullptr){}
+        heap_list_(nullptr) {
+    free_list_.store(nullptr, std::memory_order_relaxed);
+  }
   
 
   // Initialize HeapHeader.
@@ -144,11 +147,10 @@ class ChunkHeader {
   
   size_t size_class_;
   Color color_;
-  FreeHeader* free_list_;
+  AtomicFreeList free_list_;
   HeapHeader* heap_list_;
   
   static const size_t kAlignment;
-  static SpinLock lock_;
 };
 
 }}

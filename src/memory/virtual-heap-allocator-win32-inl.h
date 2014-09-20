@@ -24,6 +24,7 @@
 
 #include <windows.h>
 
+namespace yatsc {
 
 // Map virtual memory block with the mmap.
 inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, uint8_t flags) {
@@ -31,19 +32,21 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
   DWORD fl_allocation_type = 0;
 
   if (prot != VirtualHeapAllocator::Prot::NONE) {
-    if ((prop & 0x7) == 0x7 || (prop & 0x6) == 0x6) {
+    if ((prot & 0x7) == 0x7 || (prot & 0x6) == 0x6) {
       fl_protect = PAGE_EXECUTE_READWRITE;
-    } else if ((prop & 0x5)) {
+    } else if ((prot & 0x5) == 0x5) {
       fl_protect = PAGE_EXECUTE_READ;
-    } else if (prot & VirtualHeapAllocator::Prot::READ == VirtualHeapAllocator::Prot::READ) {
-      fl_protect |= PAGE_READONLY;
-    } else if (prot & VirtualHeapAllocator::Prot::WRITE == VirtualHeapAllocator::Prot::WRITE) {
-      fl_protect |= PAGE_READWRITE;
-    } else if (prot & VirtualHeapAllocator::Prot::EXEC == VirtualHeapAllocator::Prot::EXEC) {
-      fl_protect |= PAGE_EXECUTE;
+    } else if ((prot & VirtualHeapAllocator::Prot::WRITE) == VirtualHeapAllocator::Prot::WRITE ||
+               (prot & 0x3) == 0x3) {
+      fl_protect = PAGE_READWRITE;
+    } else if ((prot & VirtualHeapAllocator::Prot::READ) == VirtualHeapAllocator::Prot::READ) {
+      fl_protect = PAGE_READONLY;
+    } else if ((prot & VirtualHeapAllocator::Prot::EXEC) == VirtualHeapAllocator::Prot::EXEC) {
+      fl_protect = PAGE_EXECUTE;
     }
+  } else {
+    fl_protect = PAGE_READONLY;
   }
-
   
   if (flags != VirtualHeapAllocator::Flags::NONE) {
     fl_allocation_type = MEM_COMMIT;
@@ -52,6 +55,7 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
   }
 
   void* ret = ::VirtualAlloc(addr, size, fl_allocation_type, fl_protect);
+  
   if (ret == NULL) {
     return nullptr;
   }
@@ -62,4 +66,6 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
 // Unmap virtual memory block with the munmap.
 inline void VirtualHeapAllocator::Unmap(void* addr, size_t size) {
   ::VirtualFree(addr, size, MEM_RELEASE);
+}
+
 }
