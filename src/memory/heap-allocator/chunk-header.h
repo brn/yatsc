@@ -33,18 +33,18 @@
 
 namespace yatsc { namespace heap {
 
-// This class represent memory block header class
-// to allocate memory and deallocate memory.
+// This class is memory block header that is controll memory usage.
 // The chunk header is used to manage all linked memory block,
 //
 // [[ChunkHeader(size_class,etc...)][HeapHeader-------]->[HeapHeader-------]->...]
 //   ^---------<--reference--<-------^
 //   ^-----------------<--reference--<--------------------^
 //
-// All memory block that is allocated is aligned 1 MB,
-// so we decide HeapHeader address from an each heap by bitwise_and with kAddrMask.
-// The ChunkHeader class self is managed by Red-Black-Tree,
-// all rbtree property like color, left and right is embeded in this class.
+// All allocated memory block is aligned 1 MB,
+// so we decide HeapHeader address from an each heap by perform bitwise AND operation
+// on the heap address and kAddrMask.
+// The ChunkHeader class itself is managed by Red-Black-Tree.
+// All rbtree property like color, left and right is embeded in this class.
 class ChunkHeader {
   class FreeHeader;
   typedef std::atomic<FreeHeader*> AtomicFreeList;
@@ -60,7 +60,7 @@ class ChunkHeader {
   ~ChunkHeader() = default;
   
 
-  // The factory for to create new ChunkHeader for given size_class.
+  // The factory to create new ChunkHeader by given size_class.
   static ChunkHeader* New(size_t size_class);
 
 
@@ -69,22 +69,22 @@ class ChunkHeader {
 
 
   // Allocate a new memory block that is sized by size_class_ property.
-  // The return value of this method must not be given free and delete.
+  // The return value of this method must not be given to the free and delete.
   YATSC_INLINE void* Distribute();
 
 
   // Release allocated memory block.
-  // The argument must be the return value of the Distribute method.
+  // The argument must be the return value of the ChunkHeader::Distribute method.
   void Dealloc(void* area);
 
 
   // Getter and setter for size_class_.
-  // size_class_ mean is allocation target size.
+  // size_class_ mean allocation target size.
   YATSC_CONST_PROPERTY(size_t, size_class, size_class_);
 
 
   // The header for the each heap.
-  // Heap header has reference to ChunkHeader and embeded linked list ptr.
+  // Heap header has reference to the ChunkHeader and has embeded linked list ptr.
   class HeapHeader {
    public:
     HeapHeader(ChunkHeader* chunk_header)
@@ -127,8 +127,8 @@ class ChunkHeader {
   };
   
 
-  // Simple new instantiation is not allowed.
-  // Instead use ChunkHeader::New
+  // New instantiation is not allowed.
+  // Instead use ChunkHeader::New.
   ChunkHeader(size_t size_class)
       : size_class_(size_class),
         color_(ChunkHeader::Color::kBlack),

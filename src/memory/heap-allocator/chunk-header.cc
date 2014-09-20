@@ -57,9 +57,9 @@ void ChunkHeader::Delete(ChunkHeader* chunk_header) {
 }
 
 
-// Create new ChunkeHeader and allocate memory block
+// Create a new ChunkeHeader and allocate memory block
 // that is aligned by 1MB from virtual memmory.
-// ChunkHeader is allocated by stack memory.
+// The ChunkHeader is allocated by the stack memory.
 ChunkHeader* ChunkHeader::New(size_t size_class) {
   Byte* block = AllocateBlock();
 
@@ -72,7 +72,7 @@ ChunkHeader* ChunkHeader::New(size_t size_class) {
   
   // All ChunkHeader is divided by index, so we calculate and get
   // index on the kChunkHeaderSize.
-  // This memory allocation is lock free, because race condition is not occucrred.
+  // This memory allocation is lock free, because ChunkHeader index is unique.
   void* mem = kChunkHeaderStack + (index * kChunkHeaderSize);
   ChunkHeader* header = new (mem) ChunkHeader(size_class);
 
