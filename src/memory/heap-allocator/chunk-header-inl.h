@@ -44,12 +44,12 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
       heap_header->set_used(size_class_);
       return block;
     }
-  } else {
-    // Swap free list.
-    auto free_list_head = free_list_.load(std::memory_order_acquire);
-    while (!free_list_.compare_exchange_weak(free_list_head, free_list_head->next())) {}
-    return reinterpret_cast<void*>(free_list_head);
   }
+  
+  // Swap free list.
+  auto free_list_head = free_list_.load(std::memory_order_acquire);
+  while (!free_list_.compare_exchange_weak(free_list_head, free_list_head->next())) {}
+  return reinterpret_cast<void*>(free_list_head);
 }
 
 
@@ -64,7 +64,7 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   free_header->set_next(free_list_.load(std::memory_order_acquire));
 
   FreeHeader* free_list_head = free_list_.load(std::memory_order_relaxed);
-  while (!free_list_.compare_exchange_weak(free_list_head, free_header, std::memory_order_acq_rel)) {
+  while (!free_list_.compare_exchange_weak(free_list_head, free_header)) {
     free_header->set_next(free_list_head);
   }
 }

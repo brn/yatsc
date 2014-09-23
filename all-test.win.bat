@@ -17,6 +17,7 @@ IF "%2" == "Release" (
 )
 
 MSBuild.exe test.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVersion=v4.5.1 /p:PlatformToolset=v120 /toolsversion:12.0
+call :RUN IntrusiveRBTreeTest.exe
 call :RUN AlignedHeapAllocatorTest.exe
 call :RUN ChunkHeaderTest.exe
 call :RUN SourceStreamTest.exe

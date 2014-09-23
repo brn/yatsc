@@ -21,6 +21,26 @@
   },
   'targets': [
     {
+      'target_name': 'intrusive_rb_tree_test',
+      'type': 'executable',
+      'product_name': 'IntrusiveRBTreeTest',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './test/utils/intrusive-rb-tree-test.cc',
+        './src/utils/os.cc',
+        './lib/gtest/gtest-all.cc',
+        './test/test-main.cc',
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
+    {
       'target_name': 'aligned_heap_allocator_test',
       'type': 'executable',
       'product_name': 'AlignedHeapAllocatorTest',

@@ -40,26 +40,16 @@ inline CentralArena::~CentralArena() {
 }
 
 
-inline Chunk* CentralArena::GetLocalArena(size_t size) {
-  LocalArena* arena = reinterpret_cast<LocalArena*>(tls_->Get());
-  if (arena == nullptr) {
-    if (arena_head_ != nullptr) {
-      arena = FindUnlockedArena();
-    }
-    if (arena == nullptr) {
-      arena = new LocalArena(this);
-      arena->AcquireLock();
-      StoreNewLocalArena(arena);
-    }
-
-    tls_->Set(arena);
+YATSC_INLINE LocalArena* GetLocalArena() {
+  void* ptr = tls_->Get();
+  if (ptr == nullptr) {
+    return FindUnlockedArena();
   }
-  
-  return arena;
+  return reinterpret_cast<LocalArena*>(ptr);
 }
 
 
-inline Chunk* CentralArena::FindUnlockedArena() {
+YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() {
   LocalArena* head = local_arena_;
   LocalArena* current = local_arena_;
   
@@ -68,34 +58,41 @@ inline Chunk* CentralArena::FindUnlockedArena() {
       return current;
     }
     current = current->next();
-    if (current == nullptr) {
-      return nullptr;
-    }
+  }
+
+  if (current == nullptr) {
+    return StoreNewLocalArena();
   }
 }
 
 
-inline Chunk* CentralArena::StoreNewLocalArena(LocalArena* arena) {
-  ScopedSpinLock lock(local_arena_lock_);
-  LocalArena* head = local_arena_;
-  if (local_arena_ != nullptr) {
-    local_arena_ = arena;
-  } else {
-    local_arena_->set_next(arena);
+YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() {
+  Byte* block = reinterpret_cast<Byte*>(VirtualHeapAllocator::Allocate(
+      nullptr,
+      kMaxAllocatableSmallObjectSize + sizeof(LocalArena),
+      VirtualHeapAllocator::Prot::WRITE,
+      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flag::PRIVATE));
+  
+  LocalArena* arena = new (block) LocalArena(this, block + sizeof(LocalArena));
+
+  LocalArena* arena_head = local_arena_.load(std::memory_order_relaxed);
+  arena->set_next(arena);
+  
+  while (local_arena_.compare_exchange_weak(arena_head, arena)) {
+    arena->set_next(arena_head);
   }
-  local_arena->set_next(nullptr);
+
+  tls_->Set(arena);
+  return arena;
 }
 
 
-inline Chunk* LocalArena::AllocateIfNecessary(size_t size) {
-  size_t index = FindJustFitBlockIndex(size);
-  if (index < chunk_array_.size()) {
-    if (chunk_array_[index] == nullptr) {
-      Chunk* chunk = Chunk::New(size);
-      chunk_array_[index] = chunk;
-      return chunk;
-    }
-    return chunk_array_[index];
+YATSC_INLINE Chunk* LocalArena::AllocateIfNecessary(size_t size) {
+  if (size < kMaxAllocatableSmallObjectSize) {
+    size_t index = FindJustFitBlockIndex(size);
+    Chunk* chunk = Chunk::New(size);
+    chunk_array_[index] = chunk;
+    return chunk;
   }
   return AllocateLargeObject(size);
 }

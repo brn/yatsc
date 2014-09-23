@@ -22,6 +22,7 @@
  * THE SOFTWARE.
  */
 
+
 #include <gtest/gtest.h>
 #include "../../../src/memory/heap-allocator/chunk-header.h"
 
@@ -33,10 +34,10 @@ class TestClass {
   size_t d;
 };
 
-yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass));
+yatsc::Byte kChunkHeaderStack[sizeof(yatsc::heap::ChunkHeader)] = {0};
 
-TEST(ChunkHeaderTest, test) {
-  
+TEST(ChunkHeaderTest, normal_allocation) {
+  yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass), kChunkHeaderStack);
   for (int i = 0; i < 1000000; i++) {
     ::TestClass* t = new (header->Distribute()) ::TestClass();
     t->a = 1;
@@ -51,8 +52,7 @@ TEST(ChunkHeaderTest, test) {
 }
 
 
-TEST(ChunkHeaderTest, test2) {
-  //yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass));
+TEST(ChunkHeaderTest, new_allocation) {
   for (int i = 0; i < 1000000; i++) {
     ::TestClass* t = new ::TestClass();
     t->a = 1;
@@ -63,5 +63,38 @@ TEST(ChunkHeaderTest, test2) {
     ASSERT_EQ(t->b, 2);
     ASSERT_EQ(t->c, 3);
     ASSERT_EQ(t->d, 4);
+  }
+}
+
+
+TEST(ChunkHeaderTest, allocation_and_delete) {
+  yatsc::heap::ChunkHeader* header = yatsc::heap::ChunkHeader::New(sizeof(::TestClass), kChunkHeaderStack);
+  for (int i = 0; i < 1000000; i++) {
+    ::TestClass* t = new(header->Distribute()) ::TestClass();
+    t->a = 1;
+    t->b = 2;
+    t->c = 3;
+    t->d = 4;
+    ASSERT_EQ(t->a, 1);
+    ASSERT_EQ(t->b, 2);
+    ASSERT_EQ(t->c, 3);
+    ASSERT_EQ(t->d, 4);
+    header->Dealloc(t);
+  }
+}
+
+
+TEST(ChunkHeaderTest, new_allocation_and_delete) {
+  for (int i = 0; i < 1000000; i++) {
+    ::TestClass* t = new ::TestClass();
+    t->a = 1;
+    t->b = 2;
+    t->c = 3;
+    t->d = 4;
+    ASSERT_EQ(t->a, 1);
+    ASSERT_EQ(t->b, 2);
+    ASSERT_EQ(t->c, 3);
+    ASSERT_EQ(t->d, 4);
+    delete t;
   }
 }

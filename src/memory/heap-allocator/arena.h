@@ -31,34 +31,37 @@
 #include '../../utils/utils.h'
 
 namespace yatsc {namespace heap {
-typedef std::vector<Chunk*> ChunkArray;
 class LocalArena;
 
 class CentralArena {
+  typedef std::atomic<LocalArena*> AtomicLocalArenaList;
  public:
-  CentralArena() = default;
+  CentralArena();
   ~CentralArena();
 
-  inline LocalArena* GetLocalArena();
-
-  inline LocalArena* FindUnlockedArena();
+  YATSC_INLINE LocalArena* GetLocalArena();
+  
  private:
 
-  inline void StoreNewLocalArena(LocalArena* arena);
+  YATSC_INLINE LocalArena* FindUnlockedArena();
+
+  YATSC_INLINE void StoreNewLocalArena();
   
-  LocalArena* local_arena_;
-  std::atomic_flag local_arena_lock_;
+  AtomicLocalArenaList local_arena_;
+  ThreadLocalStorage::Slot* tls_;
+  LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
 };
 
 
 class LocalArena {
  public:
-  LocalArena(CentralArena* central)
-      : central_arena_(central) {}
+  LocalArena(CentralArena* central, Byte* block)
+      : central_arena_(central),
+        memory_block_(block) {}
   
   ~LocalArena();
 
-  Chunk* AllocateIfNecessary(size_t size);
+  YATSC_INLINE Chunk* AllocateIfNecessary(size_t size);
   
   size_t FindJustFitBlockIndex(size_t size);
 
@@ -73,23 +76,14 @@ class LocalArena {
   }
 
 
-  YATSC_INLINE LocalArena* next() YATSC_NOEXCEPT {
-    return next_;
-  }
-
-
-  YATSC_INLINE void set_next(LocalArena* arena) YATSC_NOEXCEPT {
-    next_ = arena;
-  }
+  YATSC_PROPERTY(LocalArena* next, next_);
   
  private:
 
+  CentralArena* central_arena_;
+  Byte* memory_block_;
   std::atomic_flag lock_;
   LocalArena* next_;
-  ThreadLocalStorage::Slot* tls_;
-  LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
-  ChunkArray chunk_array_;
-  Chunk* large_bin_;
 };
 }}
 

@@ -33,6 +33,38 @@
 
 namespace yatsc { namespace heap {
 
+static const size_t kMaxSmallObjectCount = 300;
+
+static const size_t kMaxAllocatableSmallObjectSize = kMaxSmallObjectCount * yatsc::kAlignment;
+
+class ChunkHeader;
+
+
+// The header for the each heap.
+// Heap header has reference to the ChunkHeader and has embeded linked list ptr.
+class HeapHeader {
+ public:
+  HeapHeader(ChunkHeader* chunk_header)
+      : chunk_header_(chunk_header),
+        next_(nullptr) {}
+
+  // Getter for ChunkHeader.
+  YATSC_GETTER(ChunkHeader*, chunk_header, chunk_header_);
+
+    
+  // Getter and setter for next pointer.
+  YATSC_PROPERTY(HeapHeader*, next, next_);
+
+
+  YATSC_PROPERTY(size_t, used, used_);
+ private:
+    
+  ChunkHeader* chunk_header_;
+  HeapHeader* next_;
+  size_t used_;
+};
+
+
 // This class is memory block header that is controll memory usage.
 // The chunk header is used to manage all linked memory block,
 //
@@ -61,7 +93,7 @@ class ChunkHeader {
   
 
   // The factory to create new ChunkHeader by given size_class.
-  static ChunkHeader* New(size_t size_class);
+  static ChunkHeader* New(size_t size_class, void* ptr);
 
 
   // Delete ChunkHeader.
@@ -81,32 +113,6 @@ class ChunkHeader {
   // Getter and setter for size_class_.
   // size_class_ mean allocation target size.
   YATSC_CONST_PROPERTY(size_t, size_class, size_class_);
-
-
-  // The header for the each heap.
-  // Heap header has reference to the ChunkHeader and has embeded linked list ptr.
-  class HeapHeader {
-   public:
-    HeapHeader(ChunkHeader* chunk_header)
-        : chunk_header_(chunk_header),
-          next_(nullptr) {}
-
-    // Getter for ChunkHeader.
-    YATSC_GETTER(ChunkHeader*, chunk_header, chunk_header_);
-
-    
-    // Getter and setter for next pointer.
-    YATSC_PROPERTY(HeapHeader*, next, next_);
-
-
-    YATSC_PROPERTY(size_t, used, used_);
-    
-   private:
-    
-    ChunkHeader* chunk_header_;
-    HeapHeader* next_;
-    size_t used_;
-  };
 
 
   // The mask that is calculate front of the memory block address.
