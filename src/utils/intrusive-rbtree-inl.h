@@ -106,6 +106,7 @@ inline T IntrusiveRBTree<T, Key>::Delete(T node) {
 
 template <typename T, typename Key>
 inline void IntrusiveRBTree<T, Key>::DoDelete(T node) {
+  size_--;
   if (node->HasLeft() && node->HasRight()) {
     ElevateLeftMax(node);
   } else if (node->HasLeft()) {
@@ -196,25 +197,22 @@ template <typename T, typename Key>
 inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
   while (node != nullptr) {
     T parent = node->parent();
-    printf("%d %hhu\n", parent->key(), parent->color());
     if (node->IsLeftChild() && parent->HasRight() &&
         parent->right()->IsRed()) {
-      puts("case 2 L");
       RBTreeColor c = parent->right()->color();
-      parent->right()->set_color(parent->color());
-      parent->set_color(c);
+      RBTreeColor pc = parent->color();
+      T right = parent->right();
       RotateL(parent->right()->right(), parent->right(), parent, true);
-      Printf("DELETING:%d\n\n%s\n", node->key(), ToString().c_str());
-      node = parent;
+      right->set_color(pc);
+      parent->set_color(c);
     } else if (parent->HasLeft() &&
                parent->left()->IsRed()) {
-      puts("case 2 R");
-      RBTreeColor c = parent->right()->color();
-      parent->right()->set_color(parent->color());
-      parent->set_color(c);
+      RBTreeColor c = parent->left()->color();
+      RBTreeColor pc = parent->color();
+      T left = parent->left();
       RotateR(parent->left()->left(), parent->left(), parent, true);
-      Printf("DELETING:%d\n\n%s\n", node->key(), ToString().c_str());
-      node = parent;
+      left->set_color(pc);
+      parent->set_color(c);
     } else {
       if (node->IsLeftChild() && parent->IsBlack()) {
         T child = parent->right();
@@ -222,13 +220,12 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
           T left_grandson = child->left();
           T right_grandson = child->right();
           if ((left_grandson == nullptr || left_grandson->IsBlack()) && (right_grandson == nullptr || right_grandson->IsBlack())) {
-            puts("case 3 L");
             child->set_color(RBTreeColor::kRed);
-            Printf("DELETING:%d\n\n%s\n", node->key(), ToString().c_str());
             node = parent;
             if (node->parent() != nullptr) {
               continue;
             } else {
+              node->set_color(RBTreeColor::kBlack);
               break;
             }
           }
@@ -239,13 +236,12 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
           T left_grandson = child->left();
           T right_grandson = child->right();
           if ((left_grandson == nullptr || right_grandson == nullptr) || (left_grandson->IsBlack() && right_grandson->IsBlack())) {
-            puts("case 3 R");
             child->set_color(RBTreeColor::kRed);
-            Printf("DELETING:%d\n\n%s\n", node->key(), ToString().c_str());
             node = parent;
             if (node->parent() != nullptr) {
               continue;
             } else {
+              node->set_color(RBTreeColor::kBlack);
               break;
             }
           }
@@ -260,7 +256,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         T right_grandson = child->right();
         if ((left_grandson == nullptr || left_grandson->IsBlack()) &&
             (right_grandson == nullptr || right_grandson->IsBlack())) {
-          puts("case 4 L");
           child->set_color(RBTreeColor::kRed);
           parent->set_color(RBTreeColor::kBlack);
         }
@@ -272,10 +267,8 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         T right_grandson = child->right();
         if ((left_grandson == nullptr || left_grandson->IsBlack()) &&
             (right_grandson == nullptr || right_grandson->IsBlack())) {
-          puts("case 4 R");
           child->set_color(RBTreeColor::kRed);
           parent->set_color(RBTreeColor::kBlack);
-          Printf("DELETING:%d\n\n%s\n", node->key(), ToString().c_str());
         }
       }
     }
@@ -288,7 +281,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         if (left_grandson != nullptr &&
             right_grandson != nullptr) {
           if (left_grandson->IsRed() && right_grandson->IsBlack()) {
-            puts("case 5 L");
             RotateR(left_grandson->left(), left_grandson, child, true);
             parent->set_color(RBTreeColor::kRed);
             left_grandson->set_color(RBTreeColor::kBlack);
@@ -303,7 +295,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         if (left_grandson != nullptr &&
             right_grandson != nullptr) {
           if (left_grandson->IsBlack() && right_grandson->IsRed()) {
-            puts("case 5 R");
             RotateL(right_grandson->right(), right_grandson, child, true);
             parent->set_color(RBTreeColor::kRed);
             right_grandson->set_color(RBTreeColor::kBlack);
@@ -318,7 +309,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         T right_grandson = child->right();
         if (right_grandson != nullptr &&
             right_grandson->IsRed()) {
-          puts("case 6 L");
           RotateL(right_grandson, child, parent, true);
           RBTreeColor c = child->color();
           child->set_color(parent->color());
@@ -332,7 +322,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         T left_grandson = child->left();
         if (left_grandson != nullptr &&
             left_grandson->IsRed()) {
-          puts("case 6 R");
           RotateR(left_grandson, child, parent, true);
           RBTreeColor c = child->color();
           child->set_color(parent->color());
@@ -384,10 +373,8 @@ inline T IntrusiveRBTree<T, Key>::BalanceR(T value) {
   }
   
   if (*grand_parent > *parent) {
-    //puts("RotateR");
     return RotateR(value, parent, grand_parent);
   } else {
-    //puts("RotateRL");
     return RotateRL(value, parent, grand_parent);
   }
 }
@@ -403,10 +390,8 @@ inline T IntrusiveRBTree<T, Key>::BalanceL(T value) {
   }
 
   if (*grand_parent > *parent) {
-    //puts("RotateLR");
     return RotateLR(value, parent, grand_parent);
   } else {
-    //puts("RotateL");
     return RotateL(value, parent, grand_parent);
   }
 }

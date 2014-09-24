@@ -42,8 +42,17 @@ class RBValueObject: public yatsc::IntrusiveRBTreeValueBase<RBValueObject*, int>
 
 
 template <typename T, typename Key>
-inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRBTree<T, Key>& tree) {
+inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRBTree<T, Key>& tree, const char* before = nullptr) {
   auto leaf_nodes = tree.GetBlackNodeCountOfLeafs();
+  if (tree.size() == 0) {
+    if (leaf_nodes.size() == 0u) {
+      return ::testing::AssertionSuccess();
+    }
+    return ::testing::AssertionFailure()
+      << "\nLeaf nodes size is not valid.\n"
+      << "leaf size: " << leaf_nodes.size() << "\n"
+      << "node size: " << tree.size() << "\n";
+  }
   if (leaf_nodes.size() == 0u) {
     return ::testing::AssertionFailure()
       << "Leaf nodes is not exists.";
@@ -51,11 +60,15 @@ inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRBTree<T
   int count = leaf_nodes[0].first;
   for (size_t i = 1; i < leaf_nodes.size(); i++) {
     if (count != leaf_nodes[i].first) {
-      return ::testing::AssertionFailure()
+      auto ret = ::testing::AssertionFailure()
         << "\nBad structure detected." << "\n"
         << "expected count: " << count << " key: " << leaf_nodes[0].second->s << "\n"
-        << "actual count  : " << leaf_nodes[i].first << " key " << leaf_nodes[i].second->s << "\n"
-        << "TREE:\n" << tree.ToString();
+        << "actual count  : " << leaf_nodes[i].first << " key " << leaf_nodes[i].second->s << "\n";
+      if (before != nullptr) {
+        ret << "BEFORE TREE:\n" << before << "\n";
+      }
+      ret << "TREE:\n" << tree.ToString();
+      return ret;
     }
   }
   return ::testing::AssertionSuccess();
@@ -135,11 +148,39 @@ TEST(IntrusiveRBTree, Delete) {
   }
 
   for (size_t i = 0; i < x.size(); i++) {
-    int delete_target = i;
-    printf("BEFORE\n%s\n", tree.ToString().c_str());
-    printf("DELETE %s:%d\n", yatsc::IntrusiveRBTreeValueBase<RBValueObject*, int>::GetColor(x[delete_target]) == yatsc::RBTreeColor::kRed? "R": "B", yatsc::IntrusiveRBTreeValueBase<RBValueObject*, int>::GetKey(x[delete_target]));
     tree.Delete(x[i]);
-    printf("AFTER\n%s\n", tree.ToString().c_str());
     ASSERT_TRUE(CompareDistance(tree));
+  }
+}
+
+
+TEST(IntrusiveRBTree, InsertAndDelete) {
+  yatsc::IntrusiveRBTree<RBValueObject*, int> tree;
+  uint64_t ok = 0u;
+  
+  std::random_device rd;
+  std::mt19937 mt(rd());
+  std::uniform_int_distribution<size_t> size(1, 100000);
+  std::vector<int> v;
+  for (int i = 0; i < 100; i++) {
+    int s = size(mt);
+    auto value = new RBValueObject(s);
+    tree.Insert(value);
+    ASSERT_TRUE(CompareDistance(tree));
+    v.push_back(s);
+    
+    if (i % 50 == 0) {
+      for (size_t i = 0; i < v.size(); i++) {
+        std::string&& before = std::move(tree.ToString());
+        printf("DELETE: %d===================\n%s\n", v[i], before.c_str());
+        tree.Delete(v[i]);
+        ASSERT_TRUE(CompareDistance(tree, before.c_str()));
+      }
+      v.clear();
+    }
+  }
+  
+  for (auto s: v) {
+    ASSERT_TRUE(tree.Find(s) != nullptr);
   }
 }
