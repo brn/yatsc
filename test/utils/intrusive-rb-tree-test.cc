@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 #include <random>
+#include <unordered_map>
 #include <array>
 #include "../../src/utils/intrusive-rbtree.h"
 
@@ -148,39 +149,37 @@ TEST(IntrusiveRBTree, Delete) {
   }
 
   for (size_t i = 0; i < x.size(); i++) {
+    std::string str = std::move(tree.ToString());
+    printf("BEFORE:%d\n%s\n", x[i]->s, str.c_str());
     tree.Delete(x[i]);
-    ASSERT_TRUE(CompareDistance(tree));
+    ASSERT_TRUE(CompareDistance(tree, str.c_str()));
   }
 }
 
 
 TEST(IntrusiveRBTree, InsertAndDelete) {
   yatsc::IntrusiveRBTree<RBValueObject*, int> tree;
-  uint64_t ok = 0u;
   
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<size_t> size(1, 100000);
-  std::vector<int> v;
-  for (int i = 0; i < 100; i++) {
+  std::unordered_map<int, int> map;
+  for (int i = 0; i < 100000; i++) {
     int s = size(mt);
+    map[s] = s;
     auto value = new RBValueObject(s);
     tree.Insert(value);
     ASSERT_TRUE(CompareDistance(tree));
-    v.push_back(s);
     
-    if (i % 50 == 0) {
-      for (size_t i = 0; i < v.size(); i++) {
-        std::string&& before = std::move(tree.ToString());
-        printf("DELETE: %d===================\n%s\n", v[i], before.c_str());
-        tree.Delete(v[i]);
-        ASSERT_TRUE(CompareDistance(tree, before.c_str()));
+    if (i % 10000 == 0) {
+      size_t i = 0;
+      for (auto c: map) {
+        //std::string before = std::move(tree.ToString());
+        tree.Delete(c.second);
+        ASSERT_TRUE(CompareDistance(tree));
+        i++;
       }
-      v.clear();
+      map.clear();
     }
-  }
-  
-  for (auto s: v) {
-    ASSERT_TRUE(tree.Find(s) != nullptr);
   }
 }

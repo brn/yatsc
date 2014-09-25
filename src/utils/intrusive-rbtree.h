@@ -205,6 +205,24 @@ class IntrusiveRBTreeValueBase {
     return parent_ != nullptr;
   }
 
+  YATSC_INLINE T sibling() YATSC_NOEXCEPT {
+    if (parent_ == nullptr) {
+      return nullptr;
+    }
+    if (IsLeftChild()) {
+      return parent_->right();
+    }
+    return parent_->left();
+  }
+
+  YATSC_INLINE void ToRed() YATSC_NOEXCEPT {
+    color_ = RBTreeColor::kRed;
+  }
+
+  YATSC_INLINE void ToBlack() YATSC_NOEXCEPT {
+    color_ = RBTreeColor::kBlack;
+  }
+
   YATSC_INLINE T Cast() {return reinterpret_cast<T>(this);}
   
   YATSC_CONST_PROPERTY(RBTreeColor, color, color_);

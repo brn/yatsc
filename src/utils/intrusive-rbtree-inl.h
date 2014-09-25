@@ -86,6 +86,9 @@ inline T IntrusiveRBTree<T, Key>::Delete(Key key) {
     if (node->key() == key) {
       node->set_exists(false);
       DoDelete(node);
+      if (root_ != nullptr) {
+        root_->ToBlack();
+      }
       return node;
     } else if (node->key() > key) {
       node = node->left();
@@ -145,29 +148,26 @@ inline void IntrusiveRBTree<T, Key>::ElevateRightTree(T node) {
 
 
 template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::DoElevateNode(T node, T target) {
-  bool black = target->IsBlack();
-  if ((!black && node->IsBlack()) ||
-      (node->IsRed() && black)) {
+inline void IntrusiveRBTree<T, Key>::DoElevateNode(T node, T target) {    
+  if (node->IsRed()) {
     if (target->IsBlack()) {
       RebalanceWhenDelete(target);
     }
     DetachFromParent(target);
     node->Swap(target);
-    target->set_color(RBTreeColor::kBlack);
-  } else if (node == root_) {
+    target->set_color(node->color());
+    return;
+  } else if (target->IsRed()) {
     DetachFromParent(target);
     node->Swap(target);
-    root_ = target;
-  } else {
-    RebalanceWhenDelete(target);
-    DetachFromParent(target);
-    node->Swap(target);
+    target->ToBlack();
+    return;
   }
-
-  if (!target->HasParent()) {
-    root_ = target;
-  }
+  
+  RebalanceWhenDelete(target);
+  DetachFromParent(target);
+  // printf("KEY:%d REPLACE:%d\n", node->key(), target->key());
+  node->Swap(target);
 }
 
 
@@ -195,140 +195,92 @@ inline void IntrusiveRBTree<T, Key>::Rebalance(T node) {
 
 template <typename T, typename Key>
 inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
-  while (node != nullptr) {
+  while (1) {
+    if (!node->HasParent()) {
+      node->ToBlack();
+      root_ = node;
+      break;
+    }
+    
     T parent = node->parent();
-    if (node->IsLeftChild() && parent->HasRight() &&
-        parent->right()->IsRed()) {
-      RBTreeColor c = parent->right()->color();
-      RBTreeColor pc = parent->color();
-      T right = parent->right();
-      RotateL(parent->right()->right(), parent->right(), parent, true);
-      right->set_color(pc);
-      parent->set_color(c);
-    } else if (parent->HasLeft() &&
-               parent->left()->IsRed()) {
-      RBTreeColor c = parent->left()->color();
-      RBTreeColor pc = parent->color();
-      T left = parent->left();
-      RotateR(parent->left()->left(), parent->left(), parent, true);
-      left->set_color(pc);
-      parent->set_color(c);
-    } else {
-      if (node->IsLeftChild() && parent->IsBlack()) {
-        T child = parent->right();
-        if (child != nullptr && child->IsBlack()) {
-          T left_grandson = child->left();
-          T right_grandson = child->right();
-          if ((left_grandson == nullptr || left_grandson->IsBlack()) && (right_grandson == nullptr || right_grandson->IsBlack())) {
-            child->set_color(RBTreeColor::kRed);
-            node = parent;
-            if (node->parent() != nullptr) {
-              continue;
-            } else {
-              node->set_color(RBTreeColor::kBlack);
-              break;
-            }
-          }
-        }
-      } else if (node->IsRightChild() && parent->IsBlack()) {
-        T child = parent->left();
-        if (child != nullptr && child->IsBlack()) {
-          T left_grandson = child->left();
-          T right_grandson = child->right();
-          if ((left_grandson == nullptr || right_grandson == nullptr) || (left_grandson->IsBlack() && right_grandson->IsBlack())) {
-            child->set_color(RBTreeColor::kRed);
-            node = parent;
-            if (node->parent() != nullptr) {
-              continue;
-            } else {
-              node->set_color(RBTreeColor::kBlack);
-              break;
-            }
-          }
-        }
+    T sibling = node->sibling();
+    
+    if (sibling != nullptr && sibling->IsRed()) {
+      if (node->IsLeftChild()) {
+        RotateL(sibling->right(), sibling, parent, true);
+        parent->ToRed();
+        sibling->ToBlack();
+        sibling = parent->right();
+      } else {
+        RotateR(sibling->left(), sibling, parent, true);
+        parent->ToRed();
+        sibling->ToBlack();
+        sibling = parent->left();
       }
     }
 
-    if (node->IsLeftChild() && parent->IsRed()) {
-      T child = parent->right();
-      if (child != nullptr && child->IsBlack()) {
-        T left_grandson = child->left();
-        T right_grandson = child->right();
-        if ((left_grandson == nullptr || left_grandson->IsBlack()) &&
-            (right_grandson == nullptr || right_grandson->IsBlack())) {
-          child->set_color(RBTreeColor::kRed);
-          parent->set_color(RBTreeColor::kBlack);
-        }
+    T sibling_left = sibling != nullptr? sibling->left(): nullptr;
+    T sibling_right = sibling != nullptr? sibling->right(): nullptr;
+    
+    if (parent->IsBlack() &&
+        (sibling_left == nullptr || sibling_left->IsBlack()) &&
+        (sibling_right == nullptr || sibling_right->IsBlack())) {
+      if (sibling != nullptr) {
+        sibling->ToRed();
       }
-    } else if (node->IsRightChild() && parent->IsRed()) {
-      T child = parent->left();
-      if (child != nullptr && child->IsBlack()) {
-        T left_grandson = child->left();
-        T right_grandson = child->right();
-        if ((left_grandson == nullptr || left_grandson->IsBlack()) &&
-            (right_grandson == nullptr || right_grandson->IsBlack())) {
-          child->set_color(RBTreeColor::kRed);
-          parent->set_color(RBTreeColor::kBlack);
-        }
+      node = parent;
+      // printf("DELETING:LOOP\n%s\n", ToString().c_str());
+      continue;
+    }
+    
+    if ((sibling_left == nullptr || sibling_left->IsBlack()) &&
+        (sibling_right == nullptr || sibling_right->IsBlack())) {
+      parent->ToBlack();
+      if (sibling != nullptr) {
+        sibling->ToRed();
       }
+      // printf("DELETING:END1\n%s\n", ToString().c_str());
+      break;
+    }
+    
+    if (node->IsLeftChild() &&
+        (sibling_left != nullptr && sibling_left->IsRed()) &&
+        (sibling_right == nullptr || sibling_right->IsBlack())) {
+      sibling_left->ToBlack();
+      sibling->ToRed();
+      RotateR(sibling_left->left(), sibling_left, sibling, true);
+      sibling_right = sibling;
+      sibling = sibling_left;
+      sibling_left = nullptr;
+      // printf("DELETING:NEXT2\n%s\n", ToString().c_str());
+    } else if (node->IsRightChild() &&
+               (sibling_left == nullptr || sibling_left->IsBlack()) &&
+               (sibling_right != nullptr && sibling_right->IsRed())) {
+      sibling_right->ToBlack();
+      sibling->ToRed();
+      RotateL(sibling_right->right(), sibling_right, sibling, true);
+      sibling_left = sibling;
+      sibling = sibling_right;
+      sibling_right = nullptr;
+      // printf("DELETING:NEXT3\n%s\n", ToString().c_str());
     }
 
-    if (node->IsLeftChild()) {
-      T child = parent->right();
-      if (child != nullptr) {
-        T left_grandson = child->left();
-        T right_grandson = child->right();
-        if (left_grandson != nullptr &&
-            right_grandson != nullptr) {
-          if (left_grandson->IsRed() && right_grandson->IsBlack()) {
-            RotateR(left_grandson->left(), left_grandson, child, true);
-            parent->set_color(RBTreeColor::kRed);
-            left_grandson->set_color(RBTreeColor::kBlack);
-          }
-        }
-      }
-    } else if (node->IsRightChild()) {
-      T child = parent->left();
-      if (child != nullptr) {
-        T left_grandson = child->left();
-        T right_grandson = child->right();
-        if (left_grandson != nullptr &&
-            right_grandson != nullptr) {
-          if (left_grandson->IsBlack() && right_grandson->IsRed()) {
-            RotateL(right_grandson->right(), right_grandson, child, true);
-            parent->set_color(RBTreeColor::kRed);
-            right_grandson->set_color(RBTreeColor::kBlack);
-          }
-        }
-      }
-    }
-
-    if (node->IsLeftChild()) {
-      T child = parent->right();
-      if (child != nullptr) {
-        T right_grandson = child->right();
-        if (right_grandson != nullptr &&
-            right_grandson->IsRed()) {
-          RotateL(right_grandson, child, parent, true);
-          RBTreeColor c = child->color();
-          child->set_color(parent->color());
-          parent->set_color(c);
-          right_grandson->set_color(RBTreeColor::kBlack);
-        }
-      }
-    } else if (node->IsRightChild()) {
-      T child = parent->left();
-      if (child != nullptr) {
-        T left_grandson = child->left();
-        if (left_grandson != nullptr &&
-            left_grandson->IsRed()) {
-          RotateR(left_grandson, child, parent, true);
-          RBTreeColor c = child->color();
-          child->set_color(parent->color());
-          parent->set_color(c);
-          left_grandson->set_color(RBTreeColor::kBlack);
-        }
-      }
+    if (node->IsLeftChild() && sibling_right != nullptr && sibling_right->IsRed()) {
+      RotateL(sibling_right, sibling, parent, true);
+      RBTreeColor c = parent->color();
+      parent->set_color(sibling->color());
+      sibling->set_color(c);
+      sibling_right->ToBlack();
+      // printf("DELETING:END4\n%s\n", ToString().c_str());
+      break;
+    } else if (node->IsRightChild() && sibling_left != nullptr && sibling_left->IsRed()) {
+      RotateR(sibling_left, sibling, parent, true);
+      RBTreeColor c = parent->color();
+      parent->set_color(sibling->color());
+      sibling->set_color(c);
+      sibling_left->ToBlack();
+      //printf("DELETING:END5\n%s\n", ToString().c_str());
+      break;
     }
     break;
   }
