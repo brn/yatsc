@@ -150,7 +150,6 @@ TEST(IntrusiveRBTree, Delete) {
 
   for (size_t i = 0; i < x.size(); i++) {
     std::string str = std::move(tree.ToString());
-    printf("BEFORE:%d\n%s\n", x[i]->s, str.c_str());
     tree.Delete(x[i]);
     ASSERT_TRUE(CompareDistance(tree, str.c_str()));
   }
@@ -174,7 +173,6 @@ TEST(IntrusiveRBTree, InsertAndDelete) {
     if (i % 10000 == 0) {
       size_t i = 0;
       for (auto c: map) {
-        //std::string before = std::move(tree.ToString());
         tree.Delete(c.second);
         ASSERT_TRUE(CompareDistance(tree));
         i++;

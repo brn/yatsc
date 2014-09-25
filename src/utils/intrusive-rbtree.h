@@ -38,7 +38,7 @@ enum class RBTreeColor: uint8_t {
   kRed
 };
 
-template <typename T, typename Key>
+template <typename Key, typename T>
 class IntrusiveRBTreeValueBase;
 
 
@@ -53,7 +53,7 @@ class IntrusiveRBTreeValueBase;
 // T parent()
 // int compare(Key value)
 //
-template <typename T, typename Key>
+template <typename Key, typename T>
 class IntrusiveRBTree {
  private:
  public:
@@ -130,7 +130,7 @@ class IntrusiveRBTree {
 };
 
 
-template <typename T, typename Key>
+template <typename Key, typename T>
 class IntrusiveRBTreeValueBase {
   template <typename Type, typename KeyType>
   friend class IntrusiveRBTree;

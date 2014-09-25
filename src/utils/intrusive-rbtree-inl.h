@@ -25,14 +25,14 @@
 
 namespace yatsc {
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Insert(Key key, T value) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Insert(Key key, T value) {
   value->set_key(key);
   return Insert(value);
 }
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Insert(T value) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Insert(T value) {
   value->set_exists(true);
   
   size_++;
@@ -79,8 +79,8 @@ inline T IntrusiveRBTree<T, Key>::Insert(T value) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Delete(Key key) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Delete(Key key) {
   auto node = root_;
   while (node != nullptr) {
     if (node->key() == key) {
@@ -100,15 +100,15 @@ inline T IntrusiveRBTree<T, Key>::Delete(Key key) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Delete(T node) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Delete(T node) {
   if (!node->exists()) {return nullptr;}
   return Delete(node->key());
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::DoDelete(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::DoDelete(T node) {
   size_--;
   if (node->HasLeft() && node->HasRight()) {
     ElevateLeftMax(node);
@@ -129,26 +129,26 @@ inline void IntrusiveRBTree<T, Key>::DoDelete(T node) {
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::ElevateLeftMax(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::ElevateLeftMax(T node) {
   DoElevateNode(node, FindLeftMax(node));
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::ElevateLeftTree(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::ElevateLeftTree(T node) {
   DoElevateNode(node, node->left());
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::ElevateRightTree(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::ElevateRightTree(T node) {
   DoElevateNode(node, node->right()); 
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::DoElevateNode(T node, T target) {    
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::DoElevateNode(T node, T target) {    
   if (node->IsRed()) {
     if (target->IsBlack()) {
       RebalanceWhenDelete(target);
@@ -166,13 +166,12 @@ inline void IntrusiveRBTree<T, Key>::DoElevateNode(T node, T target) {
   
   RebalanceWhenDelete(target);
   DetachFromParent(target);
-  // printf("KEY:%d REPLACE:%d\n", node->key(), target->key());
   node->Swap(target);
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::Rebalance(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::Rebalance(T node) {
   T current = node;
   while (1) {
     T parent = current->parent();
@@ -193,8 +192,8 @@ inline void IntrusiveRBTree<T, Key>::Rebalance(T node) {
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::RebalanceWhenDelete(T node) {
   while (1) {
     if (!node->HasParent()) {
       node->ToBlack();
@@ -229,7 +228,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
         sibling->ToRed();
       }
       node = parent;
-      // printf("DELETING:LOOP\n%s\n", ToString().c_str());
       continue;
     }
     
@@ -239,7 +237,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
       if (sibling != nullptr) {
         sibling->ToRed();
       }
-      // printf("DELETING:END1\n%s\n", ToString().c_str());
       break;
     }
     
@@ -252,7 +249,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
       sibling_right = sibling;
       sibling = sibling_left;
       sibling_left = nullptr;
-      // printf("DELETING:NEXT2\n%s\n", ToString().c_str());
     } else if (node->IsRightChild() &&
                (sibling_left == nullptr || sibling_left->IsBlack()) &&
                (sibling_right != nullptr && sibling_right->IsRed())) {
@@ -262,7 +258,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
       sibling_left = sibling;
       sibling = sibling_right;
       sibling_right = nullptr;
-      // printf("DELETING:NEXT3\n%s\n", ToString().c_str());
     }
 
     if (node->IsLeftChild() && sibling_right != nullptr && sibling_right->IsRed()) {
@@ -271,7 +266,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
       parent->set_color(sibling->color());
       sibling->set_color(c);
       sibling_right->ToBlack();
-      // printf("DELETING:END4\n%s\n", ToString().c_str());
       break;
     } else if (node->IsRightChild() && sibling_left != nullptr && sibling_left->IsRed()) {
       RotateR(sibling_left, sibling, parent, true);
@@ -279,7 +273,6 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
       parent->set_color(sibling->color());
       sibling->set_color(c);
       sibling_left->ToBlack();
-      //printf("DELETING:END5\n%s\n", ToString().c_str());
       break;
     }
     break;
@@ -287,8 +280,8 @@ inline void IntrusiveRBTree<T, Key>::RebalanceWhenDelete(T node) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Find(Key key) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Find(Key key) {
   if (root_ == nullptr) {return nullptr;}
 
   if (*root_ == key) {return root_->Cast();}
@@ -308,14 +301,14 @@ inline T IntrusiveRBTree<T, Key>::Find(Key key) {
   return nullptr;
 }
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::Find(T target) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::Find(T target) {
   if (!target->exists()) {return nullptr;}
   return Find(target->key());
 }
 
 
-template <typename T, typename Key>
+template <typename Key, typename T>
 inline T IntrusiveRBTree<T, Key>::BalanceR(T value) {
   T parent = value->parent();
   ASSERT(true, parent != nullptr);
@@ -332,8 +325,8 @@ inline T IntrusiveRBTree<T, Key>::BalanceR(T value) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::BalanceL(T value) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::BalanceL(T value) {
   T parent = value->parent();
   ASSERT(true, parent != nullptr);
   T grand_parent = parent->parent();
@@ -350,8 +343,8 @@ inline T IntrusiveRBTree<T, Key>::BalanceL(T value) {
 
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::RotateR(T value, T parent, T grand_parent, bool when_delete) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T::RotateR(T value, T parent, T grand_parent, bool when_delete) {
   T right = parent->right();
   T grand_grand_parent = grand_parent->parent();
 
@@ -389,8 +382,8 @@ inline T IntrusiveRBTree<T, Key>::RotateR(T value, T parent, T grand_parent, boo
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::RotateRL(T value, T parent, T grand_parent) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::RotateRL(T value, T parent, T grand_parent) {
   T right = value->right();
   T left = value->left();
   T grand_grand_parent = grand_parent->parent();
@@ -433,8 +426,8 @@ inline T IntrusiveRBTree<T, Key>::RotateRL(T value, T parent, T grand_parent) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::RotateLR(T value, T parent, T grand_parent) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::RotateLR(T value, T parent, T grand_parent) {
   T right = value->right();
   T left = value->left();
   T grand_grand_parent = grand_parent->parent();
@@ -475,8 +468,8 @@ inline T IntrusiveRBTree<T, Key>::RotateLR(T value, T parent, T grand_parent) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::RotateL(T value, T parent, T grand_parent, bool when_delete) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::RotateL(T value, T parent, T grand_parent, bool when_delete) {
   T left = parent->left();
   T grand_grand_parent = grand_parent->parent();
 
@@ -513,8 +506,8 @@ inline T IntrusiveRBTree<T, Key>::RotateL(T value, T parent, T grand_parent, boo
 }
 
 
-template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::DetachFromParent(T value) {
+template <typename Key, typename T>
+inline void IntrusiveRBTree<Key, T>::DetachFromParent(T value) {
   T parent = value->parent();
   if (parent != nullptr) {
     if (parent->left() == value) {
@@ -529,8 +522,8 @@ inline void IntrusiveRBTree<T, Key>::DetachFromParent(T value) {
 }
 
 
-template <typename T, typename Key>
-inline T IntrusiveRBTree<T, Key>::FindLeftMax(T node) {
+template <typename Key, typename T>
+inline T IntrusiveRBTree<Key, T>::FindLeftMax(T node) {
   auto current = node->left();
   if (current == nullptr) {
     return nullptr;
@@ -547,14 +540,14 @@ inline T IntrusiveRBTree<T, Key>::FindLeftMax(T node) {
 
 
 template <typename T, typename Key>
-inline std::string IntrusiveRBTree<T, Key>::ToString() YATSC_NO_SE {
+inline std::string IntrusiveRBTree<Key, T>::ToString() YATSC_NO_SE {
   std::string head;
   return ToStringHelper(head, "", root_);
 }
 
 
 template <typename T, typename Key>
-inline std::string IntrusiveRBTree<T, Key>::ToStringHelper(std::string& head, const char* bar, T node) YATSC_NO_SE {
+inline std::string IntrusiveRBTree<Key, T>::ToStringHelper(std::string& head, const char* bar, T node) YATSC_NO_SE {
   std::string str = "";
   if (node != nullptr) {
     auto tmp = std::move(std::string(head + "    "));
@@ -571,7 +564,7 @@ inline std::string IntrusiveRBTree<T, Key>::ToStringHelper(std::string& head, co
 }
 
 template <typename T, typename Key>
-inline std::vector<typename IntrusiveRBTree<T, Key>::CountResult> IntrusiveRBTree<T, Key>::GetBlackNodeCountOfLeafs() YATSC_NO_SE {
+inline std::vector<typename IntrusiveRBTree<Key, T>::CountResult> IntrusiveRBTree<T, Key>::GetBlackNodeCountOfLeafs() YATSC_NO_SE {
   if (root_ != nullptr) {
     std::vector<CountResult> ret;
     DoGetBlackNodeCountOfLeafs(ret, root_);
@@ -582,7 +575,7 @@ inline std::vector<typename IntrusiveRBTree<T, Key>::CountResult> IntrusiveRBTre
 
 
 template <typename T, typename Key>
-inline void IntrusiveRBTree<T, Key>::DoGetBlackNodeCountOfLeafs(std::vector<CountResult>& v, T node) YATSC_NO_SE {
+inline void IntrusiveRBTree<Key, T>::DoGetBlackNodeCountOfLeafs(std::vector<CountResult>& v, T node) YATSC_NO_SE {
   if (node == nullptr) {
     return;
   }
