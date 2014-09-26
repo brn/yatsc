@@ -1,0 +1,302 @@
+/*
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2013 Taketoshi Aono(brn)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+#ifndef UTILS_RBTREE_BASE_H
+#define UTILS_RBTREE_BASE_H
+
+#include <string>
+#include <vector>
+#include <type_traits>
+#include "./utils.h"
+
+namespace yatsc {
+
+// The color of Red-Black-Tree.
+enum class RbTreeNodeColor: uint8_t {
+  kBlack = 0,
+  kRed
+};
+
+
+template <typename Key, typename T>
+class RbTreeNode;
+
+
+// The base class of Red-Black-Tree.
+// Red-Black-Tree guranteed follows
+// worst-case -> insert, delete and find is O(log n)
+template <typename Key, typename T>
+class RbTreeBase {  
+ public:
+
+  // Check concept of Key
+  static_assert(std::is_copy_assignable<Key>::value == true,
+                "The second type argument of RbTreeBase must be copy assignable.");
+  
+  typedef RbTreeNode<Key, T>* NodeType;
+  
+#if defined(DEBUG) || defined(UNIT_TEST)
+  typedef std::pair<int, T> CountResult;
+  inline std::string ToString() YATSC_NO_SE;
+  inline std::vector<CountResult> GetBlackNodeCountOfLeafs() YATSC_NO_SE;
+#endif
+
+  // Getter for node count.
+  YATSC_CONST_GETTER(size_t, size, size_);
+  
+ protected:
+  
+  RbTreeBase()
+      : root_(nullptr),
+        size_(0) {}
+
+
+  // Insert value to tree and assosiated by key.
+  YATSC_INLINE NodeType InsertInternal(Key key, NodeType value);
+
+  
+  // Insert value that assosiated with key to tree.
+  YATSC_INLINE NodeType InsertInternal(NodeType value);
+
+
+  // Delete node that assosiated with key from tree.
+  YATSC_INLINE NodeType DeleteInternal(Key key);
+
+  
+  // Delete node from tree.
+  YATSC_INLINE NodeType DeleteInternal(NodeType node);
+
+  
+  // Find node that assosicated with key.
+  inline NodeType FindInternal(Key key) YATSC_NO_SE;
+  
+ private:
+
+  // Insert value to the tree and assosiated by key.
+  inline NodeType DoInsert(Key key, NodeType value);
+
+  
+  // Rebalancing tree when node is inserted.
+  inline void Rebalance(NodeType node);
+
+  
+  // Rebalancing tree when node is deleted.
+  inline void RebalanceWhenDelete(NodeType node);
+
+
+  // Delete node from tree.
+  inline void DoDelete(NodeType node);
+
+
+  // Find node that has max key from left partial tree of node
+  // and replace node by it.
+  YATSC_INLINE void ElevateLeftMax(NodeType node);
+
+  
+  // Replace node by left tree.
+  YATSC_INLINE void ElevateLeftTree(NodeType node);
+
+  
+  // Replace node by right tree.
+  YATSC_INLINE void ElevateRightTree(NodeType node);
+
+  
+  // Replace node by target and rebalance if neccesary.
+  inline void DoElevateNode(NodeType node, NodeType target);
+
+
+  // Rotate right.
+  inline NodeType RotateR(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false);
+
+
+  // Double rotate, rotate right and rotate left.
+  inline NodeType RotateRL(NodeType value, NodeType parent, NodeType grand_parent);
+
+  // Double rotate, rotate left and rotate right.
+  inline NodeType RotateLR(NodeType value, NodeType parent, NodeType grand_parent);
+
+  // rotate left.
+  inline NodeType RotateL(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false);
+
+  // Detach node from it's parent node.
+  inline void DetachFromParent(NodeType value);
+
+  // Find a node that has max key from the left partial tree.
+  inline NodeType FindLeftMax(NodeType node);
+
+#if defined(DEBUG) || defined(UNIT_TEST)
+  inline std::string ToStringHelper(std::string& head, const char* bar, NodeType node) YATSC_NO_SE;
+  inline void DoGetBlackNodeCountOfLeafs(std::vector<CountResult>& v, NodeType node) YATSC_NO_SE;
+#endif
+
+  NodeType root_;
+  size_t size_;
+};
+
+
+template <typename Key, typename T>
+class RbTreeNode {
+  template <typename KeyType, typename Type>
+  friend class RbTreeBase;
+  typedef RbTreeNode<Key,T>* Pointer;
+ public:
+  RbTreeNode()
+      : color_(RbTreeNodeColor::kRed),
+        left_(nullptr),
+        right_(nullptr),
+        parent_(nullptr),
+        exists_(false) {}
+
+  
+  RbTreeNode(Key key)
+      : color_(RbTreeNodeColor::kRed),
+        key_(key),
+        left_(nullptr),
+        right_(nullptr),
+        parent_(nullptr),
+        exists_(false) {}
+
+#if defined(DEBUG) || defined(UNIT_TEST)
+  static inline RbTreeNodeColor GetColor(RbTreeNode<Key, T>* n) {return n->color();};
+  static inline Key GetKey(RbTreeNode<Key, T>* n) {return n->key();};
+#endif
+
+  YATSC_PROPERTY(T, node_value, value_);
+    
+ private:
+  YATSC_INLINE bool operator == (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
+    return node.key_ == key_;
+  }
+  YATSC_INLINE bool operator > (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
+    return key_ > node.key_;
+  }
+  YATSC_INLINE bool operator < (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
+    return key_ < node.key_;
+  }
+
+  YATSC_INLINE bool operator == (const Key& key) YATSC_NO_SE {
+    return key == key_;
+  }
+  YATSC_INLINE bool operator > (const Key& key) YATSC_NO_SE {
+    return key_ > key;
+  }
+  YATSC_INLINE bool operator < (const Key& key) YATSC_NO_SE {
+    return key_ < key;
+  }
+
+  YATSC_INLINE bool HasLeft() YATSC_NO_SE {
+    return left_ != nullptr;
+  }
+
+  YATSC_INLINE bool HasRight() YATSC_NO_SE {
+    return right_ != nullptr;
+  }
+
+  YATSC_INLINE bool IsBlack() YATSC_NO_SE {
+    return color_ == RbTreeNodeColor::kBlack;
+  }
+
+  YATSC_INLINE bool IsRed() YATSC_NO_SE {
+    return color_ == RbTreeNodeColor::kRed;
+  }
+
+  YATSC_INLINE bool IsLeftChild() YATSC_NO_SE {
+    return parent_->left() == this;
+  }
+
+  YATSC_INLINE bool IsRightChild() YATSC_NO_SE {
+    return !IsLeftChild();
+  }
+
+  YATSC_INLINE bool HasParent() YATSC_NO_SE {
+    return parent_ != nullptr;
+  }
+
+  YATSC_INLINE Pointer sibling() YATSC_NO_SE {
+    if (parent_ == nullptr) {
+      return nullptr;
+    }
+    if (IsLeftChild()) {
+      return parent_->right();
+    }
+    return parent_->left();
+  }
+
+  YATSC_INLINE void ToRed() YATSC_NOEXCEPT {
+    color_ = RbTreeNodeColor::kRed;
+  }
+
+  YATSC_INLINE void ToBlack() YATSC_NOEXCEPT {
+    color_ = RbTreeNodeColor::kBlack;
+  }
+  
+  YATSC_CONST_PROPERTY(RbTreeNodeColor, color, color_);
+  YATSC_CONST_PROPERTY(Key, key, key_);
+  YATSC_PROPERTY(Pointer, left, left_);
+  YATSC_PROPERTY(Pointer, right, right_);
+  YATSC_PROPERTY(Pointer, parent, parent_);
+  YATSC_CONST_PROPERTY(bool, exists, exists_);
+
+  void Swap(Pointer new_value) YATSC_NOEXCEPT {
+    Pointer left = left_;
+    Pointer right = right_;
+    if (left != nullptr && left != new_value) {
+      new_value->set_left(left);
+      left->set_parent(new_value);
+    }
+    if (right != nullptr && right != new_value) {
+      new_value->set_right(right);
+      right->set_parent(new_value);
+    }
+  
+    Pointer parent = parent_;
+    if (parent != nullptr) {
+      new_value->set_parent(parent);
+      if (parent->left() == this) {
+        parent->set_left(new_value);
+      } else if (parent->right() == this) {
+        parent->set_right(new_value);
+      } else {
+        FATAL("Invalid parent.");
+      }
+    }
+    set_left(nullptr);
+    set_right(nullptr);
+    set_parent(nullptr);
+    new_value->set_color(color_);
+  }
+  
+  RbTreeNodeColor color_;
+  Key key_;
+  T value_;
+  Pointer left_;
+  Pointer right_;
+  Pointer parent_;
+  bool exists_;
+};
+}
+
+#include "./rbtree-base-inl.h"
+
+#endif

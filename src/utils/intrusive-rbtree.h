@@ -26,9 +26,8 @@
 #ifndef UTILS_INTRUSIVE_RB_TREE_H
 #define UTILS_INTRUSIVE_RB_TREE_H
 
-#include <string>
-#include <sstream>
 #include <type_traits>
+#include "./rbtree-base.h"
 #include "./utils.h"
 
 namespace yatsc {
@@ -38,238 +37,67 @@ enum class RBTreeColor: uint8_t {
   kRed
 };
 
-template <typename Key, typename T>
-class IntrusiveRBTreeValueBase;
 
-
-// T must be implemented methods follows.
-// void set_color(IntrusiveRBTree::Color)
-// void set_key(Key key)
-// void set_parent(T)
-// IntrusiveRBTree::Color color()
-// Key key()
-// T left()
-// T right()
-// T parent()
-// int compare(Key value)
-//
+// Embeded Red-Black-Tree implementation.
+// This class accept type T that is derived class of RbTreeNode.
 template <typename Key, typename T>
-class IntrusiveRBTree {
+class IntrusiveRbTree : public RbTreeBase<Key, T> {
  private:
  public:
 
-  static_assert(std::is_base_of<IntrusiveRBTreeValueBase<T, Key>, typename std::remove_pointer<T>::type>::value == true,
-                "The first type arguemnt of IntrusiveRBTree must be derived class of IntrusiveRBTreeValueBase<T, Key>.");
+  typedef typename RbTreeBase<Key, T>::NodeType NodeType;
 
-  static_assert(std::is_copy_assignable<Key>::value == true,
-                "The second type argument of IntrusiveRBTree must be copy assignable.");
+  // Check minimum concept of the T.
+  static_assert(std::is_base_of<RbTreeNode<Key, T>, typename std::remove_pointer<T>::type>::value == true,
+                "The second type arguemnt of IntrusiveRbTree must be derived class of RbTreeNode<Key, T>.");
   
-  IntrusiveRBTree()
-      : root_(nullptr),
-        size_(0) {}
-  
-  inline T Insert(Key key, T value);
-
-  inline T Insert(T value);
-
-  inline T Delete(Key key);
-
-  inline T Delete(T node);
-
-  inline T Find(Key key);
-  
-  inline T Find(T node);
-
-  YATSC_CONST_GETTER(size_t, size, size_);
-
-#if defined(DEBUG) || defined(UNIT_TEST)
-  typedef std::pair<int, T> CountResult;
-  inline std::string ToString() YATSC_NO_SE;
-  inline std::vector<CountResult> GetBlackNodeCountOfLeafs() YATSC_NO_SE;
-#endif
-  
- private:
-
-  inline void Rebalance(T node);
-
-  inline void RebalanceWhenDelete(T node);
-
-  inline void DoDelete(T node);
-
-  inline void ElevateLeftMax(T node);
-  
-  inline void ElevateLeftTree(T node);
-
-  inline void ElevateRightTree(T node);
-
-  inline void DoElevateNode(T node, T target);
-
-  inline T BalanceR(T value);
-
-  inline T BalanceL(T value);
-
-  inline T RotateR(T value, T parent, T grand_parent, bool when_delete = false);
-
-  inline T RotateRL(T value, T parent, T grand_parent);
-
-  inline T RotateLR(T value, T parent, T grand_parent);
-
-  inline T RotateL(T value, T parent, T grand_parent, bool when_delete = false);
-
-  inline void DetachFromParent(T value);
-
-  inline T FindLeftMax(T node);
-
-#if defined(DEBUG) || defined(UNIT_TEST)
-  inline std::string ToStringHelper(std::string& head, const char* bar, T node) YATSC_NO_SE;
-  inline void DoGetBlackNodeCountOfLeafs(std::vector<CountResult>& v, T node) YATSC_NO_SE;
-#endif
-
-  T root_;
-  size_t size_;
-};
+  IntrusiveRbTree()
+      : RbTreeBase<Key, T>() {}
 
 
-template <typename Key, typename T>
-class IntrusiveRBTreeValueBase {
-  template <typename Type, typename KeyType>
-  friend class IntrusiveRBTree;
- public:
-  IntrusiveRBTreeValueBase()
-      : color_(RBTreeColor::kRed),
-        left_(nullptr),
-        right_(nullptr),
-        parent_(nullptr),
-        exists_(false) {}
-
-  
-  IntrusiveRBTreeValueBase(Key key)
-      : color_(RBTreeColor::kRed),
-        key_(key),
-        left_(nullptr),
-        right_(nullptr),
-        parent_(nullptr),
-        exists_(false) {}
-
-#if defined(DEBUG) || defined(UNIT_TEST)
-  static inline RBTreeColor GetColor(IntrusiveRBTreeValueBase<T, Key>* n) {return n->color();};
-  static inline Key GetKey(IntrusiveRBTreeValueBase<T, Key>* n) {return n->key();};
-#endif
-    
- private:
-  YATSC_INLINE bool operator == (const IntrusiveRBTreeValueBase<T,Key>& node) {
-    return node.key_ == key_;
-  }
-  YATSC_INLINE bool operator > (const IntrusiveRBTreeValueBase<T,Key>& node) {
-    return key_ > node.key_;
-  }
-  YATSC_INLINE bool operator < (const IntrusiveRBTreeValueBase<T,Key>& node) {
-    return key_ < node.key_;
+  // Insert key and value to the tree.
+  YATSC_INLINE T Insert(Key key, NodeType value) {
+    value->set_node_value(reinterpret_cast<T>(value));
+    return this->InsertInternal(key, value)->node_value();
   }
 
-  YATSC_INLINE bool operator == (const Key& key) {
-    return key == key_;
-  }
-  YATSC_INLINE bool operator > (const Key& key) {
-    return key_ > key;
-  }
-  YATSC_INLINE bool operator < (const Key& key) {
-    return key_ < key;
+
+  // Insert value that has key to the tree.
+  YATSC_INLINE T Insert(NodeType value) {
+    value->set_node_value(reinterpret_cast<T>(value));
+    return this->InsertInternal(value)->node_value();
   }
 
-  YATSC_INLINE bool HasLeft() YATSC_NO_SE {
-    return left_ != nullptr;
-  }
 
-  YATSC_INLINE bool HasRight() YATSC_NO_SE {
-    return right_ != nullptr;
-  }
-
-  YATSC_INLINE bool IsBlack() YATSC_NO_SE {
-    return color_ == RBTreeColor::kBlack;
-  }
-
-  YATSC_INLINE bool IsRed() YATSC_NO_SE {
-    return color_ == RBTreeColor::kRed;
-  }
-
-  YATSC_INLINE bool IsLeftChild() YATSC_NO_SE {
-    return parent_->left() == this;
-  }
-
-  YATSC_INLINE bool IsRightChild() YATSC_NO_SE {
-    return !IsLeftChild();
-  }
-
-  YATSC_INLINE bool HasParent() YATSC_NO_SE {
-    return parent_ != nullptr;
-  }
-
-  YATSC_INLINE T sibling() YATSC_NOEXCEPT {
-    if (parent_ == nullptr) {
-      return nullptr;
+  // Delete value that associate with key from tree.
+  YATSC_INLINE T Delete(Key key) {
+    NodeType ret = this->DeleteInternal(key);
+    if (nullptr != ret) {
+      return ret->node_value();
     }
-    if (IsLeftChild()) {
-      return parent_->right();
-    }
-    return parent_->left();
+    return nullptr;
   }
 
-  YATSC_INLINE void ToRed() YATSC_NOEXCEPT {
-    color_ = RBTreeColor::kRed;
+
+  // Delete value from tree.
+  YATSC_INLINE T Delete(NodeType node) {
+    NodeType ret = this->DeleteInternal(node);
+    if (nullptr != ret) {
+      return ret->node_value();
+    }
+    return nullptr;
   }
 
-  YATSC_INLINE void ToBlack() YATSC_NOEXCEPT {
-    color_ = RBTreeColor::kBlack;
-  }
 
-  YATSC_INLINE T Cast() {return reinterpret_cast<T>(this);}
-  
-  YATSC_CONST_PROPERTY(RBTreeColor, color, color_);
-  YATSC_CONST_PROPERTY(Key, key, key_);
-  YATSC_PROPERTY(T, left, left_);
-  YATSC_PROPERTY(T, right, right_);
-  YATSC_PROPERTY(T, parent, parent_);
-  YATSC_CONST_PROPERTY(bool, exists, exists_);
-
-  void Swap(T new_value) {
-    T left = left_;
-    T right = right_;
-    if (left != nullptr && left != new_value) {
-      new_value->set_left(left);
-      left->set_parent(new_value);
+  // Find value from key.
+  YATSC_INLINE T Find(Key key) YATSC_NO_SE {
+    NodeType ret = this->FindInternal(key);
+    if (nullptr != ret) {
+      return ret->node_value();
     }
-    if (right != nullptr && right != new_value) {
-      new_value->set_right(right);
-      right->set_parent(new_value);
-    }
-  
-    T parent = parent_;
-    if (parent != nullptr) {
-      new_value->set_parent(parent);
-      if (parent->left() == this) {
-        parent->set_left(new_value);
-      } else if (parent->right() == this) {
-        parent->set_right(new_value);
-      } else {
-        FATAL("Invalid parent.");
-      }
-    }
-    set_left(nullptr);
-    set_right(nullptr);
-    set_parent(nullptr);
-    new_value->set_color(color_);
+    return nullptr;
   }
-  
-  RBTreeColor color_;
-  Key key_;
-  T left_;
-  T right_;
-  T parent_;
-  bool exists_;
 };
 }
-
-#include "./intrusive-rbtree-inl.h"
 
 #endif

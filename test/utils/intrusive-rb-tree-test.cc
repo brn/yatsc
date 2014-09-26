@@ -24,18 +24,19 @@
 
 #include <gtest/gtest.h>
 #include <random>
+#include <map>
 #include <unordered_map>
 #include <array>
+#include "../../src/utils/rbtree-base.h"
 #include "../../src/utils/intrusive-rbtree.h"
 
-
-class RBValueObject: public yatsc::IntrusiveRBTreeValueBase<RBValueObject*, int> {
+class RBValueObject: public yatsc::RbTreeNode<int, RBValueObject*> {
  public:
   RBValueObject()
-      : IntrusiveRBTreeValueBase() {}
+      : RbTreeNode() {}
 
   RBValueObject(int i)
-      : IntrusiveRBTreeValueBase(i),
+      : RbTreeNode(i),
         s(i){}
 
   size_t s;
@@ -43,7 +44,7 @@ class RBValueObject: public yatsc::IntrusiveRBTreeValueBase<RBValueObject*, int>
 
 
 template <typename T, typename Key>
-inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRBTree<T, Key>& tree, const char* before = nullptr) {
+inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRbTree<Key, T>& tree, const char* before = nullptr) {
   auto leaf_nodes = tree.GetBlackNodeCountOfLeafs();
   if (tree.size() == 0) {
     if (leaf_nodes.size() == 0u) {
@@ -76,15 +77,15 @@ inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRBTree<T
 }
 
 
-TEST(IntrusiveRBTree, Insert) {
-  yatsc::IntrusiveRBTree<RBValueObject*, int> tree;
+TEST(IntrusiveRbTree, Insert) {
+yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
   uint64_t ok = 0u;
   
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<size_t> size(1, 1000);
   std::vector<int> v;
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 10000; i++) {
     int s = size(mt);
     auto value = new RBValueObject();
     value->s = s;
@@ -106,8 +107,8 @@ TEST(IntrusiveRBTree, Insert) {
 }
 
 
-TEST(IntrusiveRBTree, Delete) {
-  yatsc::IntrusiveRBTree<RBValueObject*, int> tree;
+TEST(IntrusiveRbTree, Delete) {
+  yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
   std::vector<RBValueObject*> v;
   std::array<RBValueObject*, 33> x = {{
       new RBValueObject(3),
@@ -153,31 +154,97 @@ TEST(IntrusiveRBTree, Delete) {
     tree.Delete(x[i]);
     ASSERT_TRUE(CompareDistance(tree, str.c_str()));
   }
+
+  for (auto i: x) {
+    ASSERT_TRUE(tree.Find(i->s) == nullptr);
+  }
 }
 
 
-TEST(IntrusiveRBTree, InsertAndDelete) {
-  yatsc::IntrusiveRBTree<RBValueObject*, int> tree;
-  
+static std::vector<int> kRandom;
+
+
+TEST(IntrusiveRbTree, prepare) {
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<size_t> size(1, 100000);
-  std::unordered_map<int, int> map;
-  for (int i = 0; i < 100000; i++) {
+  int is = 1000000;
+  kRandom.reserve(is);
+  for (int i = 0; i < is; i++) {
     int s = size(mt);
-    map[s] = s;
-    auto value = new RBValueObject(s);
-    tree.Insert(value);
-    ASSERT_TRUE(CompareDistance(tree));
-    
-    if (i % 10000 == 0) {
-      size_t i = 0;
-      for (auto c: map) {
-        tree.Delete(c.second);
-        ASSERT_TRUE(CompareDistance(tree));
-        i++;
-      }
-      map.clear();
-    }
+    kRandom.push_back(s);
   }
 }
+
+
+TEST(IntrusiveRbTree, InsertAndFind) {
+  yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
+  int j = 0;
+  for (auto i: kRandom) {
+    auto value = new RBValueObject(i);
+    tree.Insert(i, value);
+    j++;
+  }
+
+  for (auto i: kRandom) {
+    tree.Find(i);
+  }
+}
+
+
+TEST(IntrusiveRbTree, map_InsertAndFind) {
+  std::map<int, RBValueObject*> tree;
+  int j = 0;
+  for (auto i: kRandom) {
+    auto value = new RBValueObject(i);
+    tree.insert(std::pair<int, RBValueObject*>(i, value));
+    j++;
+  }
+
+  for (auto i: kRandom) {
+    tree.find(i);
+  }
+}
+
+
+TEST(IntrusiveRbTree, umap_InsertAndFind) {
+  std::unordered_map<int, RBValueObject*> tree;
+  int j = 0;
+  
+  for (auto i: kRandom) {
+    auto value = new RBValueObject(i);
+    tree.insert(std::pair<int, RBValueObject*>(i, value));
+    j++;
+  }
+
+  for (auto i: kRandom) {
+    tree.find(i);
+  }
+}
+
+
+// TEST(IntrusiveRbTree, InsertAndDelete) {
+//   yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
+  
+//   std::random_device rd;
+//   std::mt19937 mt(rd());
+//   std::uniform_int_distribution<size_t> size(1, 100000);
+//   std::unordered_map<int, int> map;
+//   for (int i = 0; i < 100000; i++) {
+//     int s = size(mt);
+//     map[s] = s;
+//     auto value = new RBValueObject(s);
+//     tree.Insert(value);
+//     ASSERT_TRUE(CompareDistance(tree));
+    
+//     if (i % 10000 == 0) {
+//       size_t i = 0;
+//       for (auto c: map) {
+//         tree.Delete(c.second);
+//         ASSERT_TRUE(CompareDistance(tree));
+//         i++;
+//       }
+//       map.clear();
+//     }
+//   }
+// }
