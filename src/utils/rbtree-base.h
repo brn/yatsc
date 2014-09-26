@@ -151,6 +151,9 @@ class RbTreeBase {
 };
 
 
+// Node class.
+// This class used as node of each item.
+// Key must be comparable and copieable.
 template <typename Key, typename T>
 class RbTreeNode {
   template <typename KeyType, typename Type>
@@ -174,61 +177,98 @@ class RbTreeNode {
         exists_(false) {}
 
 #if defined(DEBUG) || defined(UNIT_TEST)
+  // Return node color.
   static inline RbTreeNodeColor GetColor(RbTreeNode<Key, T>* n) {return n->color();};
+
+
+  // Return node key.
   static inline Key GetKey(RbTreeNode<Key, T>* n) {return n->key();};
 #endif
 
+
+  // Return value of node.
   YATSC_PROPERTY(T, node_value, value_);
     
  private:
+  // Compare equality of key that contained in node.
   YATSC_INLINE bool operator == (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
     return node.key_ == key_;
   }
+
+
+  // Compare key that contained in node by greater than.
   YATSC_INLINE bool operator > (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
     return key_ > node.key_;
   }
+
+
+  // Compare node that contained in node by less than.
   YATSC_INLINE bool operator < (const RbTreeNode<Key, T>& node) YATSC_NO_SE {
     return key_ < node.key_;
   }
 
+
+  // Compare equality of key.
   YATSC_INLINE bool operator == (const Key& key) YATSC_NO_SE {
     return key == key_;
   }
+
+
+  // Compare key by greater than.
   YATSC_INLINE bool operator > (const Key& key) YATSC_NO_SE {
     return key_ > key;
   }
+
+
+  // Compare key by less than.
   YATSC_INLINE bool operator < (const Key& key) YATSC_NO_SE {
     return key_ < key;
   }
 
+
+  // Return whether this node has left tree or not.
   YATSC_INLINE bool HasLeft() YATSC_NO_SE {
     return left_ != nullptr;
   }
 
+
+  // Return whether this node has right tree or not.
   YATSC_INLINE bool HasRight() YATSC_NO_SE {
     return right_ != nullptr;
   }
 
+
+  // Return wheter this node is black or not.
   YATSC_INLINE bool IsBlack() YATSC_NO_SE {
     return color_ == RbTreeNodeColor::kBlack;
   }
 
+
+  // Return wheter this node is red or not.
   YATSC_INLINE bool IsRed() YATSC_NO_SE {
     return color_ == RbTreeNodeColor::kRed;
   }
 
+
+  // Return wheter this node is left child or not.
   YATSC_INLINE bool IsLeftChild() YATSC_NO_SE {
     return parent_->left() == this;
   }
 
+
+  // Return wheter this node is right child or not.
   YATSC_INLINE bool IsRightChild() YATSC_NO_SE {
     return !IsLeftChild();
   }
 
+
+  // Return wheter this node has parent node or not.
   YATSC_INLINE bool HasParent() YATSC_NO_SE {
     return parent_ != nullptr;
   }
 
+
+  // Return sibling of this node, if sibling not exists, return nullptr.
   YATSC_INLINE Pointer sibling() YATSC_NO_SE {
     if (parent_ == nullptr) {
       return nullptr;
@@ -239,39 +279,72 @@ class RbTreeNode {
     return parent_->left();
   }
 
+
+  // Change this node color to red.
   YATSC_INLINE void ToRed() YATSC_NOEXCEPT {
     color_ = RbTreeNodeColor::kRed;
   }
 
+
+  // Change this node color to black.
   YATSC_INLINE void ToBlack() YATSC_NOEXCEPT {
     color_ = RbTreeNodeColor::kBlack;
   }
-  
+
+
+  // Getter and setter for the color.
   YATSC_CONST_PROPERTY(RbTreeNodeColor, color, color_);
+
+
+  // Getter and setter for the key.
   YATSC_CONST_PROPERTY(Key, key, key_);
+
+
+  // Getter and setter for the left tree.
   YATSC_PROPERTY(Pointer, left, left_);
+
+
+  // Getter and setter for the right tree.
   YATSC_PROPERTY(Pointer, right, right_);
+
+
+  // Getter and setter for the parent node.
   YATSC_PROPERTY(Pointer, parent, parent_);
+
+
+  // Get or set whether this node is exists in tree or not.
   YATSC_CONST_PROPERTY(bool, exists, exists_);
 
+
+  // Swap node.
+  // This method change each node's parent, left, right, color properties.
   void Swap(Pointer new_value) YATSC_NOEXCEPT {
     Pointer left = left_;
     Pointer right = right_;
+
+    // Change left tree.
     if (left != nullptr && left != new_value) {
       new_value->set_left(left);
+      // Change left tree parent.
       left->set_parent(new_value);
     }
+
+    // Change right tree.
     if (right != nullptr && right != new_value) {
       new_value->set_right(right);
+      // Change right tree parent.
       right->set_parent(new_value);
     }
   
     Pointer parent = parent_;
+    // Change parent.
     if (parent != nullptr) {
       new_value->set_parent(parent);
       if (parent->left() == this) {
+        // Change parent left tree.
         parent->set_left(new_value);
       } else if (parent->right() == this) {
+        // Change parent right tree.
         parent->set_right(new_value);
       } else {
         FATAL("Invalid parent.");
@@ -280,8 +353,11 @@ class RbTreeNode {
     set_left(nullptr);
     set_right(nullptr);
     set_parent(nullptr);
+
+    // Change color.
     new_value->set_color(color_);
   }
+
   
   RbTreeNodeColor color_;
   Key key_;

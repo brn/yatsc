@@ -25,23 +25,35 @@
 #define NODE typename RbTreeBase<Key, T>::NodeType
 
 namespace yatsc {
+
+// Insert a node and key to the tree.
+// This method modifiy the tree.
 template <typename Key, typename T>
 inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCEPT {
+  // If node is already exists in the tree,
+  // skip inserting process.
   if (value->exists()) {
     return value;
   }
 
+  // Store key to node.
   value->set_key(key);
   value->set_exists(true);
   
   size_++;
-  
+
+
+  // Case1: If root is not exists, simply,
+  // assign a node to the root.
   if (root_ == nullptr) {
     root_ = value;
     value->ToBlack();
     return value;
   }
 
+
+  // Case2: If a node has same key of the root,
+  // simply swap each other.
   if (*root_ == *value) {
     root_->Swap(value);
     root_ = value;
@@ -50,7 +62,10 @@ inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCE
 
   NODE node = root_;
   NODE last = nullptr;
-  
+
+  // Case3: Find node from the tree,
+  // if node that has same value of new node,
+  // simply swap each other.
   while (node != nullptr) {
     last = node;
     if (*node > *value) {
@@ -63,13 +78,19 @@ inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCE
     }
   }
 
+
+  // Case4: If same key not exists in tree,
+  // append a new node as leaf of the tree.
   value->set_parent(last);
   if (*last > *value) {
     last->set_left(value);
   } else {
     last->set_right(value);
   }
-  
+
+
+  // Case5: If the parent node of a new node has red color,
+  // this is the sign that is Red-Black-Tree conditions is broken, so rebalancing.
   if (last->IsRed()) {
     RebalanceWhenInsert(value);
   }
@@ -78,12 +99,16 @@ inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCE
 }
 
 
+// Insert a node that has key.
 template <typename Key, typename T>
 YATSC_INLINE NODE RbTreeBase<Key, T>::InsertInternal(NODE value) YATSC_NOEXCEPT {
   return InsertInternal(value->key(), value);
 }
 
 
+// Delete a node from the tree by key.
+// If target node that has same key is found, return this one,
+// but not, return nullptr.
 template <typename Key, typename T>
 YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(Key key) YATSC_NOEXCEPT {
   auto node = root_;
@@ -100,33 +125,56 @@ YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(Key key) YATSC_NOEXCEPT {
 }
 
 
+// Delete a node from the tree and rebalance tree,
+// to keep the Red-Black-Tree conditions.
 template <typename Key, typename T>
 YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
+  // If node is not exists in the tree,
+  // simply return nullptr.
   if (!node->exists()) {return nullptr;}
+
+  // Disable exists flag.
   node->set_exists(false);
 
   size_--;
   
   bool has_left = node->HasLeft();
   bool has_right = node->HasRight();
-  
+
+  // All cases rebalance tree structures,
+  // if structure is broken.
   if (has_left && has_right) {
+    // Case1: If node has left and right tree,
+    // seach maximum value of left tree and swap target node and it.
     ElevateNode(node, FindLeftMax(node));
   } else if (has_left) {
+    // Case2: If node has left tree only,
+    // elevate left tree and swap target node and it.
     ElevateNode(node, node->left());
   } else if (has_right) {
+    // Case3: If node not has tree,
+    // Remove node from tree.
     ElevateNode(node, node->right()); 
   } else {
+    // If target node is the root node,
+    // simply remove root node from tree,
+    // because if node that not has tree is root,
+    // this mean, this tree has only root node.
     if (node == root_) {
       root_ = nullptr;
     } else {
+      // If node has black color,
+      // black node count is decreased,
+      // so rebalance this tree before swap.
       if (node->IsBlack()) {
         RebalanceWhenDelete(node);
       }
+      // Delete node.
       DetachFromParent(node);
     }
   }
-  
+
+  // Change root node color to black.
   if (root_ != nullptr) {
     root_->ToBlack();
   }
