@@ -57,8 +57,15 @@ class RbTreeBase {
   typedef RbTreeNode<Key, T>* NodeType;
   
 #if defined(DEBUG) || defined(UNIT_TEST)
+  // Types for number of black node counting result.
   typedef std::pair<int, T> CountResult;
+
+  
+  // Return string expression of the tree.
   inline std::string ToString() YATSC_NO_SE;
+
+
+  // Return the vector that contains all leaf nodes and black nodes count.
   inline std::vector<CountResult> GetBlackNodeCountOfLeafs() YATSC_NO_SE;
 #endif
 
@@ -73,83 +80,72 @@ class RbTreeBase {
 
 
   // Insert value to tree and assosiated by key.
-  YATSC_INLINE NodeType InsertInternal(Key key, NodeType value);
+  inline NodeType InsertInternal(Key key, NodeType value) YATSC_NOEXCEPT;
 
   
   // Insert value that assosiated with key to tree.
-  YATSC_INLINE NodeType InsertInternal(NodeType value);
+  YATSC_INLINE NodeType InsertInternal(NodeType value) YATSC_NOEXCEPT;
 
 
   // Delete node that assosiated with key from tree.
-  YATSC_INLINE NodeType DeleteInternal(Key key);
+  YATSC_INLINE NodeType DeleteInternal(Key key) YATSC_NOEXCEPT;
 
   
   // Delete node from tree.
-  YATSC_INLINE NodeType DeleteInternal(NodeType node);
+  YATSC_INLINE NodeType DeleteInternal(NodeType node) YATSC_NOEXCEPT;
 
   
   // Find node that assosicated with key.
-  inline NodeType FindInternal(Key key) YATSC_NO_SE;
+  YATSC_INLINE NodeType FindInternal(Key key) YATSC_NO_SE;
   
  private:
-
-  // Insert value to the tree and assosiated by key.
-  inline NodeType DoInsert(Key key, NodeType value);
-
   
   // Rebalancing tree when node is inserted.
-  inline void Rebalance(NodeType node);
+  YATSC_INLINE void RebalanceWhenInsert(NodeType node) YATSC_NOEXCEPT;
 
   
   // Rebalancing tree when node is deleted.
-  inline void RebalanceWhenDelete(NodeType node);
-
-
-  // Delete node from tree.
-  inline void DoDelete(NodeType node);
-
-
-  // Find node that has max key from left partial tree of node
-  // and replace node by it.
-  YATSC_INLINE void ElevateLeftMax(NodeType node);
-
-  
-  // Replace node by left tree.
-  YATSC_INLINE void ElevateLeftTree(NodeType node);
-
-  
-  // Replace node by right tree.
-  YATSC_INLINE void ElevateRightTree(NodeType node);
+  inline void RebalanceWhenDelete(NodeType node) YATSC_NOEXCEPT;
 
   
   // Replace node by target and rebalance if neccesary.
-  inline void DoElevateNode(NodeType node, NodeType target);
+  inline void ElevateNode(NodeType node, NodeType target) YATSC_NOEXCEPT;
 
 
   // Rotate right.
-  inline NodeType RotateR(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false);
+  inline NodeType RotateR(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false) YATSC_NOEXCEPT;
 
 
   // Double rotate, rotate right and rotate left.
-  inline NodeType RotateRL(NodeType value, NodeType parent, NodeType grand_parent);
+  inline NodeType RotateRL(NodeType value, NodeType parent, NodeType grand_parent) YATSC_NOEXCEPT;
 
+  
   // Double rotate, rotate left and rotate right.
-  inline NodeType RotateLR(NodeType value, NodeType parent, NodeType grand_parent);
+  inline NodeType RotateLR(NodeType value, NodeType parent, NodeType grand_parent) YATSC_NOEXCEPT;
 
+  
   // rotate left.
-  inline NodeType RotateL(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false);
+  inline NodeType RotateL(NodeType value, NodeType parent, NodeType grand_parent, bool when_delete = false) YATSC_NOEXCEPT;
 
+  
   // Detach node from it's parent node.
-  inline void DetachFromParent(NodeType value);
+  inline void DetachFromParent(NodeType value) YATSC_NOEXCEPT;
 
+  
   // Find a node that has max key from the left partial tree.
-  inline NodeType FindLeftMax(NodeType node);
+  inline NodeType FindLeftMax(NodeType node) YATSC_NOEXCEPT;
 
+  
 #if defined(DEBUG) || defined(UNIT_TEST)
+  // Helper function for converting tree to string(DEBUG ONLY).
   inline std::string ToStringHelper(std::string& head, const char* bar, NodeType node) YATSC_NO_SE;
+
+
+  // Helper function for get all leaf nodes from tree(DEBUG ONLY).
   inline void DoGetBlackNodeCountOfLeafs(std::vector<CountResult>& v, NodeType node) YATSC_NO_SE;
 #endif
 
+  
   NodeType root_;
   size_t size_;
 };

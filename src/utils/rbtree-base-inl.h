@@ -26,47 +26,7 @@
 
 namespace yatsc {
 template <typename Key, typename T>
-YATSC_INLINE NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) {
-  return DoInsert(key, value);
-}
-
-
-template <typename Key, typename T>
-YATSC_INLINE NODE RbTreeBase<Key, T>::InsertInternal(NODE value) {
-  return DoInsert(value->key(), value);
-}
-
-
-template <typename Key, typename T>
-YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(Key key) {
-  auto node = root_;
-  while (node != nullptr) {
-    if (node->key() > key) {
-      node = node->left();
-    } else if (node->key() < key) {
-      node = node->right();
-    } else if (node->key() == key) {
-      return DeleteInternal(node);
-    }
-  }
-  return nullptr;
-}
-
-
-template <typename Key, typename T>
-YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) {
-  if (!node->exists()) {return nullptr;}
-  node->set_exists(false);
-  DoDelete(node);
-  if (root_ != nullptr) {
-    root_->ToBlack();
-  }
-  return node;
-}
-
-
-template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::DoInsert(Key key, NODE value) {
+inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCEPT {
   if (value->exists()) {
     return value;
   }
@@ -111,7 +71,7 @@ inline NODE RbTreeBase<Key, T>::DoInsert(Key key, NODE value) {
   }
   
   if (last->IsRed()) {
-    Rebalance(value);
+    RebalanceWhenInsert(value);
   }
   
   return value;
@@ -119,16 +79,43 @@ inline NODE RbTreeBase<Key, T>::DoInsert(Key key, NODE value) {
 
 
 template <typename Key, typename T>
-inline void RbTreeBase<Key, T>::DoDelete(NODE node) {
+YATSC_INLINE NODE RbTreeBase<Key, T>::InsertInternal(NODE value) YATSC_NOEXCEPT {
+  return InsertInternal(value->key(), value);
+}
+
+
+template <typename Key, typename T>
+YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(Key key) YATSC_NOEXCEPT {
+  auto node = root_;
+  while (node != nullptr) {
+    if (node->key() > key) {
+      node = node->left();
+    } else if (node->key() < key) {
+      node = node->right();
+    } else if (node->key() == key) {
+      return DeleteInternal(node);
+    }
+  }
+  return nullptr;
+}
+
+
+template <typename Key, typename T>
+YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
+  if (!node->exists()) {return nullptr;}
+  node->set_exists(false);
+
   size_--;
+  
   bool has_left = node->HasLeft();
   bool has_right = node->HasRight();
+  
   if (has_left && has_right) {
-    ElevateLeftMax(node);
+    ElevateNode(node, FindLeftMax(node));
   } else if (has_left) {
-    ElevateLeftTree(node);
+    ElevateNode(node, node->left());
   } else if (has_right) {
-    ElevateRightTree(node);
+    ElevateNode(node, node->right()); 
   } else {
     if (node == root_) {
       root_ = nullptr;
@@ -139,29 +126,16 @@ inline void RbTreeBase<Key, T>::DoDelete(NODE node) {
       DetachFromParent(node);
     }
   }
+  
+  if (root_ != nullptr) {
+    root_->ToBlack();
+  }
+  return node;
 }
 
 
 template <typename Key, typename T>
-YATSC_INLINE void RbTreeBase<Key, T>::ElevateLeftMax(NODE node) {
-  DoElevateNode(node, FindLeftMax(node));
-}
-
-
-template <typename Key, typename T>
-YATSC_INLINE void RbTreeBase<Key, T>::ElevateLeftTree(NODE node) {
-  DoElevateNode(node, node->left());
-}
-
-
-template <typename Key, typename T>
-YATSC_INLINE void RbTreeBase<Key, T>::ElevateRightTree(NODE node) {
-  DoElevateNode(node, node->right()); 
-}
-
-
-template <typename Key, typename T>
-inline void RbTreeBase<Key, T>::DoElevateNode(NODE node, NODE target) {    
+inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCEPT {
   if (node->IsRed()) {
     if (target->IsBlack()) {
       RebalanceWhenDelete(target);
@@ -187,7 +161,7 @@ inline void RbTreeBase<Key, T>::DoElevateNode(NODE node, NODE target) {
 
 
 template <typename Key, typename T>
-inline void RbTreeBase<Key, T>::Rebalance(NODE node) {
+YATSC_INLINE void RbTreeBase<Key, T>::RebalanceWhenInsert(NODE node) YATSC_NOEXCEPT {
   NODE current = node;
   while (1) {
     NODE parent = current->parent();
@@ -222,7 +196,7 @@ inline void RbTreeBase<Key, T>::Rebalance(NODE node) {
 
 
 template <typename Key, typename T>
-inline void RbTreeBase<Key, T>::RebalanceWhenDelete(NODE node) {
+inline void RbTreeBase<Key, T>::RebalanceWhenDelete(NODE node) YATSC_NOEXCEPT {
   while (1) {
     if (!node->HasParent()) {
       node->ToBlack();
@@ -310,7 +284,7 @@ inline void RbTreeBase<Key, T>::RebalanceWhenDelete(NODE node) {
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::FindInternal(Key key) YATSC_NO_SE {
+YATSC_INLINE NODE RbTreeBase<Key, T>::FindInternal(Key key) YATSC_NO_SE {
   if (root_ == nullptr) {return nullptr;}
 
   if (*root_ == key) {return root_;}
@@ -333,7 +307,7 @@ inline NODE RbTreeBase<Key, T>::FindInternal(Key key) YATSC_NO_SE {
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::RotateR(NODE value, NODE parent, NODE grand_parent, bool when_delete) {
+inline NODE RbTreeBase<Key, T>::RotateR(NODE value, NODE parent, NODE grand_parent, bool when_delete) YATSC_NOEXCEPT {
   NODE right = parent->right();
   NODE grand_grand_parent = grand_parent->parent();
 
@@ -372,7 +346,7 @@ inline NODE RbTreeBase<Key, T>::RotateR(NODE value, NODE parent, NODE grand_pare
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::RotateRL(NODE value, NODE parent, NODE grand_parent) {
+inline NODE RbTreeBase<Key, T>::RotateRL(NODE value, NODE parent, NODE grand_parent) YATSC_NOEXCEPT {
   NODE right = value->right();
   NODE left = value->left();
   NODE grand_grand_parent = grand_parent->parent();
@@ -416,7 +390,7 @@ inline NODE RbTreeBase<Key, T>::RotateRL(NODE value, NODE parent, NODE grand_par
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::RotateLR(NODE value, NODE parent, NODE grand_parent) {
+inline NODE RbTreeBase<Key, T>::RotateLR(NODE value, NODE parent, NODE grand_parent) YATSC_NOEXCEPT {
   NODE right = value->right();
   NODE left = value->left();
   NODE grand_grand_parent = grand_parent->parent();
@@ -458,7 +432,7 @@ inline NODE RbTreeBase<Key, T>::RotateLR(NODE value, NODE parent, NODE grand_par
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::RotateL(NODE value, NODE parent, NODE grand_parent, bool when_delete) {
+inline NODE RbTreeBase<Key, T>::RotateL(NODE value, NODE parent, NODE grand_parent, bool when_delete) YATSC_NOEXCEPT {
   NODE left = parent->left();
   NODE grand_grand_parent = grand_parent->parent();
 
@@ -496,7 +470,7 @@ inline NODE RbTreeBase<Key, T>::RotateL(NODE value, NODE parent, NODE grand_pare
 
 
 template <typename Key, typename T>
-inline void RbTreeBase<Key, T>::DetachFromParent(NODE value) {
+inline void RbTreeBase<Key, T>::DetachFromParent(NODE value) YATSC_NOEXCEPT {
   NODE parent = value->parent();
   if (parent != nullptr) {
     if (parent->left() == value) {
@@ -512,7 +486,7 @@ inline void RbTreeBase<Key, T>::DetachFromParent(NODE value) {
 
 
 template <typename Key, typename T>
-inline NODE RbTreeBase<Key, T>::FindLeftMax(NODE node) {
+inline NODE RbTreeBase<Key, T>::FindLeftMax(NODE node) YATSC_NOEXCEPT {
   auto current = node->left();
   if (current == nullptr) {
     return nullptr;
