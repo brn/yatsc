@@ -28,6 +28,7 @@
 
 #include <atomic>
 #include "../../utils/utils.h"
+#include "../../utils/rbtree-base.h"
 #include "../virtual-heap-allocator.h"
 #include "../aligned-heap-allocator.h"
 
@@ -65,6 +66,7 @@ class HeapHeader {
 };
 
 
+
 // This class is memory block header that is controll memory usage.
 // The chunk header is used to manage all linked memory block,
 //
@@ -77,23 +79,20 @@ class HeapHeader {
 // on the heap address and kAddrMask.
 // The ChunkHeader class itself is managed by Red-Black-Tree.
 // All rbtree property like color, left and right is embeded in this class.
-class ChunkHeader {
+class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
   class FreeHeader;
   typedef std::atomic<FreeHeader*> AtomicFreeList;
  public:
-
-  // Red-Black-Tree Color property.
-  enum class Color: uint8_t {
-    kRed = 0,
-    kBlack
-  };
-
 
   ~ChunkHeader() = default;
   
 
   // The factory to create new ChunkHeader by given size_class.
   static ChunkHeader* New(size_t size_class, void* ptr);
+
+
+  // The factory to create new ChunkHeader by given size_class.
+  static ChunkHeader* NewLarge(size_t size, void* ptr);
 
 
   // Delete ChunkHeader.
@@ -103,6 +102,7 @@ class ChunkHeader {
   // Allocate a new memory block that is sized by size_class_ property.
   // The return value of this method must not be given to the free and delete.
   YATSC_INLINE void* Distribute();
+
 
 
   // Release allocated memory block.
@@ -117,6 +117,8 @@ class ChunkHeader {
 
   // The mask that is calculate front of the memory block address.
   static const size_t kAddrMask;
+
+  static const size_t kAlignment;
   
  private:
 
@@ -137,7 +139,7 @@ class ChunkHeader {
   // Instead use ChunkHeader::New.
   ChunkHeader(size_t size_class)
       : size_class_(size_class),
-        color_(ChunkHeader::Color::kBlack),
+        max_allocatable_size_(size_class_ * kMaxSmallObjectCount),
         heap_list_(nullptr) {
     free_list_.store(nullptr, std::memory_order_relaxed);
   }
@@ -148,15 +150,13 @@ class ChunkHeader {
 
 
   // Allocate new memory block.
-  static YATSC_INLINE Byte* AllocateBlock();
+  static YATSC_INLINE Byte* AllocateBlock(size_t size);
   
   
   size_t size_class_;
-  Color color_;
+  size_t max_allocatable_size_;
   AtomicFreeList free_list_;
   HeapHeader* heap_list_;
-  
-  static const size_t kAlignment;
 };
 
 }}

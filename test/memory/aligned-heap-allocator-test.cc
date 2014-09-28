@@ -41,7 +41,7 @@ class Test2: public Test1 {
 };
 
 TEST(AlignedHeapAllocator, test) {
-  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(1 MB));
+  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(32 KB, 4 KB));
   Test1* i = new(addr) Test1();
   Test2* i2 = new(addr + sizeof(Test1)) Test2();
   Test2* i3 = new(addr + sizeof(Test1) + sizeof(Test1)) Test2();
@@ -50,6 +50,7 @@ TEST(AlignedHeapAllocator, test) {
   
   ASSERT_EQ(i->c, 10);
   ASSERT_EQ(i2->f, 10);
-  printf("%p %p\n", addr, addr + 1 MB);
-  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i3) & 0xFFFFFF00000), i3);
+  printf("%p %p\n", addr, addr + 32 KB);
+  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i2) & 0xFFFFFF00), i2);
+  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i3) & 0xFFFFFF00), i3);
 }

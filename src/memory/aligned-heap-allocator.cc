@@ -41,13 +41,10 @@ namespace yatsc {
 // after we can get target memory block address, roundup this address and recommit this block,
 // but, this memory block is already removed and other process may be already used,
 // so we retry reserve another memory block until kMaxRetry count.
-void* AlignedHeapAllocator::Allocate(size_t alignment) {
-  // Allocate double alignment size.
-  size_t size = alignment << 1;
-  
+void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {  
   if (alignment <= kAllocateAlignment) {
     // If kAllocatedAlignment is enough.
-    return VirtualHeapAllocator::Map(nullptr, size,
+    return VirtualHeapAllocator::Map(nullptr, block_size,
                                      VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
                                      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
   } else {
@@ -57,11 +54,10 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
     size_t allocatedSize;
     void* ret = nullptr;
     size_t roundup = 0;
-    size_t unused = 0;
     int retry = 0;
 
     // Reserve extra memory to roundup the head address.
-    allocatedSize = size + (alignment - kAllocateAlignment);
+    allocatedSize = block_size + (alignment - kAllocateAlignment);
     
     while (ret == nullptr) {
       retry++;
@@ -71,7 +67,7 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
       }
 
       // First allocation, we reserve memory block that contains target range.
-      // [--roundup---|----------target-----------|---unused---]
+      // [--roundup---|----------target-----------]
       allocatedAddress = reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
           nullptr, allocatedSize,
           VirtualHeapAllocator::Prot::NONE,
@@ -93,20 +89,18 @@ void* AlignedHeapAllocator::Allocate(size_t alignment) {
 
       // Restore alignment.
       alignment++;
-      // The 'unused' is tail unused memory block.
-      unused = alignment - kAllocateAlignment - roundup;
 
       // Commit found memory block again.
       // But,this commit may be failed,
       // because other process may use this block.
-      ret = VirtualHeapAllocator::Map(alignedAddress, size - roundup - unused,
+      ret = VirtualHeapAllocator::Map(alignedAddress, block_size,
                                       VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
                                       VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
       
       // Check commited memory block address is less than the alignedAddress.
       if (ret != nullptr &&
           reinterpret_cast<uintptr_t>(ret) > reinterpret_cast<uintptr_t>(alignedAddress)) {
-        VirtualHeapAllocator::Unmap(ret, size - roundup - unused);
+        VirtualHeapAllocator::Unmap(ret, block_size);
         // TODO Really continue?
         continue;
       }

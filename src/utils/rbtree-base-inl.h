@@ -182,10 +182,14 @@ YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
 }
 
 
+// Elevate left or right or left maximum node when an old node is deleted from tree.
 template <typename Key, typename T>
 inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCEPT {
   if (node->IsRed()) {
+    // If old node color is red.
     if (target->IsBlack()) {
+      // If new node color is black,
+      // rebalance new node parent.
       RebalanceWhenDelete(target);
     }
     DetachFromParent(target);
@@ -193,6 +197,7 @@ inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCE
     target->set_color(node->color());
     return;
   } else if (target->IsRed()) {
+    // If old node is red and new node is red.
     DetachFromParent(target);
     node->Swap(target);
     target->ToBlack();
@@ -201,27 +206,37 @@ inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCE
     }
     return;
   }
-  
+
+  // If old node and new node is black.
   RebalanceWhenDelete(target);
   DetachFromParent(target);
   node->Swap(target);
 }
 
 
+// Rebalance tree if a new red node inserted as the red node child.
 template <typename Key, typename T>
 YATSC_INLINE void RbTreeBase<Key, T>::RebalanceWhenInsert(NODE node) YATSC_NOEXCEPT {
   NODE current = node;
   while (1) {
     NODE parent = current->parent();
     NODE grand_parent = parent->parent();
-    
+
     if (*parent > *node) {
+      // If node is left tree.
+      // check node parent is left or right.
+      // if node parent is left tree,
+      // rotate right, if not, rotate right and rotate left.
       if (*grand_parent > *parent) {
         current = RotateR(current, parent, grand_parent);
       } else {
         current = RotateRL(current, parent, grand_parent);
       }
     } else {
+      // If node is right tree.
+      // check node parent is left or right.
+      // if node parent is left tree,
+      // rotate left and rotate right, if not, rotate left.
       if (*grand_parent > *parent) {
         current = RotateLR(current, parent, grand_parent);
       } else {
@@ -229,12 +244,17 @@ YATSC_INLINE void RbTreeBase<Key, T>::RebalanceWhenInsert(NODE node) YATSC_NOEXC
       }
     }
 
+    // If node parent is null,
+    // this node is root node, so replace the root_ property with a current node.
     if (!current->HasParent()) {
       root_ = current;
       root_->ToBlack();
       return;
     }
-    
+
+
+    // If parent node is black, black node has any child, so end rebalance,
+    // if current node color is black, black node has any parent, so end rebalance.
     if (current->parent()->color() == RbTreeNodeColor::kBlack ||
         current->color() == RbTreeNodeColor::kBlack) {
       return;

@@ -22,18 +22,19 @@
  * THE SOFTWARE.
  */
 
+#include "./arena.h"
 
-namespace yatsc { namespace heap {
 
-YATSC_INLINE static void TlsFree(void* arena) YATSC_NOEXCEPT {
+namespace yatsc {namespace heap {
+
+inline void TlsFree(void* arena) {
   reinterpret_cast<LocalArena*>(arena)->ReleaseLock();
 }
 
 
 CentralArena::CentralArena() {
-  tls_ = tls_once_init_(&UnlockTls);
+  tls_ = tls_once_init_(&TlsFree);
 }
-
 
 
 }}

@@ -31,7 +31,7 @@ namespace yatsc { namespace heap {
 YATSC_INLINE void* ChunkHeader::Distribute() {
   if (free_list_.load() == nullptr) {
     // If heap is not filled.
-    if (heap_list_->used() < (kAlignment - size_class_)) {
+    if (heap_list_->used() < (max_allocatable_size_ - size_class_)) {
       // Calc next positon.
       Byte* block = reinterpret_cast<Byte*>(heap_list_) + (sizeof(HeapHeader) + heap_list_->used());
       // Update heap used value.
@@ -39,7 +39,7 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
       return block;
     } else {
       // If heap is exhausted allocate new memory.
-      Byte* block = InitHeap(AllocateBlock());
+      Byte* block = InitHeap(AllocateBlock(size_class_));
       auto heap_header = reinterpret_cast<HeapHeader*>(block - sizeof(HeapHeader));
       heap_header->set_used(size_class_);
       return block;
@@ -93,8 +93,17 @@ YATSC_INLINE Byte* ChunkHeader::InitHeap(Byte* block) {
 
 
 // Allocate new 1MB aligned memory block by AlignedHeapAllocator.
-YATSC_INLINE Byte* ChunkHeader::AllocateBlock() {
-  return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(kAlignment));
+YATSC_INLINE Byte* ChunkHeader::AllocateBlock(size_t size) {
+  if (size < kMaxAllocatableSmallObjectSize) {
+    return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(sizeof(HeapHeader) + size * kMaxSmallObjectCount,
+                                                                  kAlignment));
+  } else {
+    return reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
+        nullptr,
+        size,
+        VirtualHeapAllocator::Prot::WRITE,
+        VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE));
+  }
 }
 
 }} // yatsc::heap

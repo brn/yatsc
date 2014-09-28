@@ -86,6 +86,31 @@
       },
     },
     {
+      'target_name': 'arena_test',
+      'type': 'executable',
+      'product_name': 'ArenaTest',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/utils/tls.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './test/memory/heap-allocator/arena-test.cc',
+        './src/utils/os.cc',
+        './lib/gtest/gtest-all.cc',
+        './test/test-main.cc',
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
+    {
       'target_name': 'scanner_test',
       'type': 'executable',
       'product_name': 'ScannerTest',

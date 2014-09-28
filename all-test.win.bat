@@ -20,6 +20,7 @@ MSBuild.exe test.sln %args% /m /p:Platform=Win32 %config% /p:TargetFrameworkVers
 call :RUN IntrusiveRBTreeTest.exe
 call :RUN AlignedHeapAllocatorTest.exe
 call :RUN ChunkHeaderTest.exe
+call :RUN ArenaTest.exe
 call :RUN SourceStreamTest.exe
 call :RUN UnicodeIteratorAdapterTest.exe
 call :RUN ScannerTest.exe

@@ -35,7 +35,7 @@ Byte kChunkHeaderStack[sizeof(ChunkHeader) * kMaxSmallObjectCount] = {0};
 // Delete ChunkHeader.
 // Deallocate all heaps.
 void ChunkHeader::Delete(ChunkHeader* chunk_header) {
-  HeapHeader* heap_header = chunk_header->heap_list_;;
+  HeapHeader* heap_header = chunk_header->heap_list_;
   HeapHeader* head = heap_header->next();
   
   if (head != nullptr) {
@@ -55,12 +55,8 @@ void ChunkHeader::Delete(ChunkHeader* chunk_header) {
 
 // Create a new ChunkeHeader and allocate memory block
 // that is aligned by 1MB from virtual memmory.
-// The ChunkHeader is allocated by the stack memory.
 ChunkHeader* ChunkHeader::New(size_t size_class, void* ptr) {
-  Byte* block = AllocateBlock();
-
-  // Calc index from size_class.
-  size_t index = size_class / yatsc::kAlignment;
+  Byte* block = AllocateBlock(size_class);
 
   ChunkHeader* header = new (ptr) ChunkHeader(size_class);
 
@@ -70,9 +66,21 @@ ChunkHeader* ChunkHeader::New(size_t size_class, void* ptr) {
 }
 
 
+// Create a new ChunkeHeader and allocate memory block
+// that allocated from mmap.
+ChunkHeader* ChunkHeader::NewLarge(size_t size, void* ptr) {
+  Byte* block = reinterpret_cast<Byte*>(ptr);
+  ChunkHeader* header = new (block) ChunkHeader(size);
+
+  // Add memory block to free list.
+  header->InitHeap(block + sizeof(ChunkHeader));
+  return header;
+}
+
+
 // Bit mask to calcurate HeapHeader address from each small heap.
-const size_t ChunkHeader::kAddrMask = 0xFFFFFF00000;
+const size_t ChunkHeader::kAddrMask = 0xFFFFFF00;
 
 // Memory alignment.
-const size_t ChunkHeader::kAlignment = 1 MB;
+const size_t ChunkHeader::kAlignment = 4 KB;
 }}

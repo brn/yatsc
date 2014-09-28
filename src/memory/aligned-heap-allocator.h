@@ -34,7 +34,7 @@ namespace yatsc {
 class AlignedHeapAllocator: private Static {
  public:
   // Allocate aligned memory block.
-  static void* Allocate(size_t alignement);
+  static void* Allocate(size_t size, size_t alignement);
 
   
   // Deallocate allocated memory block.
