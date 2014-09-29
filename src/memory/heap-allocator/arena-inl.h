@@ -39,20 +39,25 @@ inline CentralArena::~CentralArena() {
 }
 
 
-YATSC_INLINE void* CentralArena::Allocate(size_t size) {
+YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
   LocalArena* arena = GetLocalArena();
   return arena->Allocate(YATSC_ALIGN_OFFSET(size, yatsc::kAlignment));
 }
 
 
-YATSC_INLINE void CentralArena::Dealloc(void* ptr) {
+YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
   auto h = reinterpret_cast<HeapHeader*>(reinterpret_cast<uintptr_t>(ptr) & ChunkHeader::kAddrMask);
   ChunkHeader* chunk_header = h->chunk_header();
   chunk_header->Dealloc(ptr);
 }
 
 
-YATSC_INLINE LocalArena* CentralArena::GetLocalArena() {
+YATSC_INLINE void CentralArena::Dealloc(volatile void* ptr) YATSC_NOEXCEPT {
+  Dealloc(const_cast<void*>(ptr));
+}
+
+
+YATSC_INLINE LocalArena* CentralArena::GetLocalArena() YATSC_NOEXCEPT {
   void* ptr = tls_->Get();
   if (ptr == nullptr) {
     return FindUnlockedArena();
@@ -61,7 +66,7 @@ YATSC_INLINE LocalArena* CentralArena::GetLocalArena() {
 }
 
 
-YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() {
+YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
   if (local_arena_.load(std::memory_order_acquire) == nullptr) {
     return StoreNewLocalArena();
   }
@@ -84,7 +89,7 @@ YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() {
 }
 
 
-YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() {
+YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
   Byte* block = reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
       nullptr,
       sizeof(ChunkHeader) * kMaxSmallObjectCount + sizeof(LocalArena),
@@ -105,16 +110,16 @@ YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() {
 }
 
 
-YATSC_INLINE void* LocalArena::Allocate(size_t size) {
+YATSC_INLINE void* LocalArena::Allocate(size_t size) YATSC_NOEXCEPT {
   return AllocateIfNecessary(size)->Distribute();
 }
 
 
-YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) {
-  if (size < ChunkHeader::kAlignment) {
+YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOEXCEPT {
+  const int index = (size / yatsc::kAlignment) - 1;
+  if (index < kMaxSmallObjectCount) {
     ChunkHeader* chunk_header = small_bin_.Find(size);
     if (chunk_header == nullptr) {
-      int index = (size / yatsc::kAlignment) - 1;
       chunk_header = ChunkHeader::New(size, reinterpret_cast<ChunkHeader*>(memory_block_) + index);
       small_bin_.Insert(size, chunk_header);
     }
@@ -124,7 +129,7 @@ YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) {
 }
 
 
-YATSC_INLINE ChunkHeader* LocalArena::AllocateLargeObject(size_t size) {
+YATSC_INLINE ChunkHeader* LocalArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
   ChunkHeader* chunk_header = large_bin_.Find(size);
   if (chunk_header == nullptr) {
     void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(ChunkHeader),

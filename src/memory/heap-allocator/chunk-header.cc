@@ -79,7 +79,7 @@ ChunkHeader* ChunkHeader::NewLarge(size_t size, void* ptr) {
 
 
 // Bit mask to calcurate HeapHeader address from each small heap.
-const size_t ChunkHeader::kAddrMask = 0xFFFFFF00;
+const size_t ChunkHeader::kAddrMask = 0x00FFFFFFFF00;
 
 // Memory alignment.
 const size_t ChunkHeader::kAlignment = 4 KB;

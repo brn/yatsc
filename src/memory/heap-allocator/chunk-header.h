@@ -32,9 +32,11 @@
 #include "../virtual-heap-allocator.h"
 #include "../aligned-heap-allocator.h"
 
+#define PER_THREAD_HEAP_ALLOCATION_COUNT 300;
+
 namespace yatsc { namespace heap {
 
-static const size_t kMaxSmallObjectCount = 300;
+static const size_t kMaxSmallObjectCount = PER_THREAD_HEAP_ALLOCATION_COUNT;
 
 static const size_t kMaxAllocatableSmallObjectSize = kMaxSmallObjectCount * yatsc::kAlignment;
 

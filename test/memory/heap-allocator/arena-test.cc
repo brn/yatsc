@@ -48,36 +48,42 @@ TEST(CentralArena, Allocate) {
 
 TEST(CentralArena, Allocate_loop) {
   yatsc::heap::CentralArena arena;
+  volatile TestClass* v;
   for (int i = 0; i < 1000000;i++) {
-    auto x = new (arena.Allocate(sizeof(TestClass))) TestClass();
+    volatile TestClass* x = new (arena.Allocate(sizeof(TestClass))) TestClass();
     x->a = 1;
     x->b = 2;
     x->c = 3;
     x->d = 4;
+    v = x;
   }
 }
 
 
 TEST(CentralArena, Allocate_loop_new) {
   //yatsc::heap::CentralArena arena;
+  volatile TestClass* v;
   for (int i = 0; i < 1000000;i++) {
-    auto x = new TestClass();
+    volatile TestClass* x = new TestClass();
     x->a = 1;
     x->b = 2;
     x->c = 3;
     x->d = 4;
+    v = x;
   }
 }
 
 
 TEST(CentralArena, Allocate_loop_delete) {
   yatsc::heap::CentralArena arena;
+  volatile TestClass* v;
   for (int i = 0; i < 1000000;i++) {
-    auto x = new (arena.Allocate(sizeof(TestClass))) TestClass();
+    volatile TestClass* x = new (arena.Allocate(sizeof(TestClass))) TestClass();
     x->a = 1;
     x->b = 2;
     x->c = 3;
     x->d = 4;
+    v = x;
     arena.Dealloc(x);
   }
 }
@@ -85,12 +91,14 @@ TEST(CentralArena, Allocate_loop_delete) {
 
 TEST(CentralArena, Allocate_loop_new_delete) {
   //yatsc::heap::CentralArena arena;
+  volatile TestClass* v;
   for (int i = 0; i < 1000000;i++) {
-    auto x = new TestClass();
+    volatile TestClass* x = new TestClass();
     x->a = 1;
     x->b = 2;
     x->c = 3;
     x->d = 4;
+    v = x;
     delete x;
   }
 }

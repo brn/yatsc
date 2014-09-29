@@ -42,18 +42,21 @@ class CentralArena {
   CentralArena();
   ~CentralArena();
 
-  YATSC_INLINE void* Allocate(size_t size);
+  YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
   
-  YATSC_INLINE void Dealloc(void* ptr);
+  YATSC_INLINE void Dealloc(void* ptr) YATSC_NOEXCEPT;
+
+  
+  YATSC_INLINE void Dealloc(volatile void* ptr) YATSC_NOEXCEPT;
   
  private:
 
-  YATSC_INLINE LocalArena* GetLocalArena();
+  YATSC_INLINE LocalArena* GetLocalArena() YATSC_NOEXCEPT;
 
-  YATSC_INLINE LocalArena* FindUnlockedArena();
+  YATSC_INLINE LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
 
-  YATSC_INLINE LocalArena* StoreNewLocalArena();
+  YATSC_INLINE LocalArena* StoreNewLocalArena() YATSC_NOEXCEPT;
   
   AtomicLocalArenaList local_arena_;
   ThreadLocalStorage::Slot* tls_;
@@ -67,7 +70,7 @@ class LocalArena {
       : central_arena_(central),
         memory_block_(block) {}
 
-  YATSC_INLINE void* Allocate(size_t size);
+  YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
   
   YATSC_INLINE bool AcquireLock() YATSC_NOEXCEPT {
@@ -84,9 +87,9 @@ class LocalArena {
   
  private:
 
-  YATSC_INLINE ChunkHeader* AllocateIfNecessary(size_t size);
+  YATSC_INLINE ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
 
-  YATSC_INLINE ChunkHeader* AllocateLargeObject(size_t size);
+  YATSC_INLINE ChunkHeader* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
 
   CentralArena* central_arena_;
   Byte* memory_block_;

@@ -98,8 +98,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
                                       VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
       
       // Check commited memory block address is less than the alignedAddress.
-      if (ret != nullptr &&
-          reinterpret_cast<uintptr_t>(ret) > reinterpret_cast<uintptr_t>(alignedAddress)) {
+      if (ret != nullptr && ret != alignedAddress) {
         VirtualHeapAllocator::Unmap(ret, block_size);
         // TODO Really continue?
         continue;
