@@ -176,4 +176,7 @@ class StandardAllocator: public std::allocator<T> {
 
 }}
 
+
+#include "./heap-allocator-inl.h"
+
 #endif
