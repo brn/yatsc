@@ -66,9 +66,8 @@ class CentralArena {
 
 class LocalArena {
  public:
-  LocalArena(CentralArena* central, Byte* block)
-      : central_arena_(central),
-        memory_block_(block) {}
+  LocalArena(Byte* block)
+      : memory_block_(block) {}
 
   YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
@@ -90,8 +89,7 @@ class LocalArena {
   YATSC_INLINE ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
 
   YATSC_INLINE ChunkHeader* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
-
-  CentralArena* central_arena_;
+  
   Byte* memory_block_;
   std::atomic_flag lock_;
   LocalArena* next_;

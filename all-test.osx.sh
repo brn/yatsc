@@ -4,6 +4,7 @@ build/${type}/IntrusiveRBTreeTest --gtest_color=yes &&\
 build/${type}/AlignedHeapAllocatorTest --gtest_color=yes &&\
 build/${type}/ChunkHeaderTest --gtest_color=yes&&\
 build/${type}/ArenaTest --gtest_color=yes&&\
+build/${type}/HeapAllocatorTest --gtest_color=yes&&\
 build/${type}/SourceStreamTest --gtest_color=yes&&\
 build/${type}/UnicodeIteratorAdapterTest --gtest_color=yes &&\
 build/${type}/ScannerTest --gtest_color=yes &&\

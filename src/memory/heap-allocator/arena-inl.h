@@ -25,7 +25,6 @@
 
 namespace yatsc {namespace heap {
 inline CentralArena::~CentralArena() {
-  LocalArena* head = local_arena_;
   LocalArena* current = local_arena_;
   
   while (1) {
@@ -71,7 +70,6 @@ YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
     return StoreNewLocalArena();
   }
 
-  LocalArena* head = local_arena_;
   LocalArena* current = local_arena_;
   
   while (1) {
@@ -96,7 +94,7 @@ YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
       VirtualHeapAllocator::Prot::WRITE,
       VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE));
   
-  LocalArena* arena = new (block) LocalArena(this, block + sizeof(LocalArena));
+  LocalArena* arena = new (block) LocalArena(block + sizeof(LocalArena));
 
   LocalArena* arena_head = local_arena_.load(std::memory_order_relaxed);
   arena->set_next(arena_head);
@@ -116,7 +114,7 @@ YATSC_INLINE void* LocalArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 
 YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOEXCEPT {
-  const int index = (size / yatsc::kAlignment) - 1;
+  const size_t index = (size / yatsc::kAlignment) - 1;
   if (index < kMaxSmallObjectCount) {
     ChunkHeader* chunk_header = small_bin_.Find(size);
     if (chunk_header == nullptr) {

@@ -26,61 +26,181 @@
 #ifndef MEMORY_HEAP_ALLOCATOR_HEAP_ALLOCATOR_H
 #define MEMORY_HEAP_ALLOCATOR_HEAP_ALLOCATOR_H
 
+#include <atomic>
+#include "./arena.h"
 #include "../../utils/utils.h"
 
-namespace yatsc {namespace heap {
+namespace yatsc {
+
+namespace heap {
+
+class HeapReferenceCounter {
+ public:
+  HeapReferenceCounter(void* ptr)
+      : ptr_(ptr) {
+    ref_.store(1, std::memory_order_relaxed);
+  }
+
+  
+  virtual ~HeapReferenceCounter() {};
+
+  
+  YATSC_INLINE void AddReference();
+
+
+  template <typename T>
+  YATSC_INLINE void ReleaseReference();
+
+
+  template <typename T>
+  YATSC_INLINE T* Get() {return reinterpret_cast<T*>(ptr_);}
+
+ private:
+  void* ptr_;
+  std::atomic<uint32_t> ref_;
+};
+
+
+class HeapReference: public HeapReferenceCounter {
+ public:
+  HeapReference()
+      : HeapReferenceCounter(this) {}
+
+  
+  virtual ~HeapReference(){}
+};
+}
 
 
 template <typename T>
-class HeapHandle {
+class Handle {
+  template <typename Type>
+  friend class Handle;
  public:
 
+  Handle(heap::HeapReferenceCounter* ref_count)
+      : ref_count_(ref_count) {}
+
+
+  Handle()
+      : ref_count_(nullptr) {}
+
+
+  ~Handle();
+
+
+  Handle(const Handle<T>& heap_handle);
+  
+
   template <typename U>
-  HeapHandle(U* ptr, void* ptr)
-      : ptr_(ptr),
-        ref_(new (ptr) std::atomic_int()) {
-    ref_->load(0, std::memory_order_relaxed);
+  Handle(const Handle<U>& heap_handle);
+
+
+  Handle(Handle<T>&& hh);
+  
+
+  template <typename U>
+  Handle(Handle<U>&& hh);
+
+
+  Handle<T>& operator = (const Handle<T>& heap_handle);
+  
+
+  template <typename U>
+  Handle<T>& operator = (const Handle<U>& heap_handle);
+
+
+  Handle<T>& operator = (Handle<T>&& heap_handle);
+  
+
+  template <typename U>
+  Handle<T>& operator = (Handle<U>&& heap_handle);
+
+
+  YATSC_INLINE T* operator ->() {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>();
   }
 
 
-  ~HeapHandle() {}
-
-
-  HeapHandle(const HeapHandle& heap_handle);
-
-
-  HeapHandle(HeapHandle&& hh) = delete;
-
-
-  T* operator ->() {
-    return ptr_;
+  YATSC_INLINE T& operator *() {
+    ASSERT(true, ref_count_ != nullptr);
+    return *(ref_count_->Get<T>());
   }
 
 
-  const T& operator *() {
-    return *ptr_;
+  template <typename U>
+  YATSC_INLINE T* operator[] (U index) {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>()[index];
   }
 
 
- private:  
-  T* ptr_;
-  std::atomic_int* ref_;
+  YATSC_INLINE T* operator ++ () {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>()++;
+  }
+
+
+  YATSC_INLINE T* operator -- () {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>()--;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE T* operator + (U x) {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>() + x;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE T* operator - (U x) {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>() - x;
+  }
+
+
+ private:
+  heap::HeapReferenceCounter* ref_count_;
 };
 
 
 class Heap: private Static {
  public:
-  static void* New(size_t size) {
+  static void* NewPtr(size_t size) {
     return central_arena_.Allocate(size);
   }
 
 
   template <typename T, typename ... Args>
-  static HeapHandle<T> NewHandle(Args ... args) {
-    void* ptr = New(sizeof(T) + sizeof(std::atomic_int));
-    return HeapHandle(new (ptr) T(args...), reinterpret_cast<Byte*>(ptr) + sizeof(T));
+  static Handle<T> NewHandle(Args ... args) {
+    void* ptr = NewPtr(sizeof(T) + sizeof(heap::HeapReferenceCounter));
+    auto ref_count = new (reinterpret_cast<Byte*>(ptr) + sizeof(T)) heap::HeapReferenceCounter(
+        new (ptr) T(args...));
+    return Handle<T>(ref_count);
   }
 
+
+  template <typename T, typename ... Args>
+  static Handle<T> NewIntrusive(Args ... args) {
+    return Handle<T>(New<T>(std::forward<Args>(args)...));
+  }
+
+
+  template <typename T, typename ... Args>
+  static T* New(Args ... args) {
+    return new (central_arena_.Allocate(sizeof(T))) T(args...);
+  }
+
+
+  template <typename T>
+  static void Destruct(T* ptr) {
+    ptr->~T();
+    Delete(ptr);
+  }
+  
 
   static void Delete(void* ptr) {
     central_arena_.Dealloc(ptr);
@@ -93,7 +213,7 @@ class Heap: private Static {
   
 
  private:
-  CentralArena central_arena_;
+  static heap::CentralArena central_arena_;
 };
 
 
@@ -128,7 +248,7 @@ class StandardAllocator: public std::allocator<T> {
    * Allocate new memory.
    */
   pointer allocate(size_type num, const void* hint = 0) {
-    return Heap::New(sizeof(T) * num);
+    return Heap::NewPtr(sizeof(T) * num);
   }
 
   /**
@@ -174,7 +294,7 @@ class StandardAllocator: public std::allocator<T> {
   }
 };
 
-}}
+}
 
 
 #include "./heap-allocator-inl.h"
