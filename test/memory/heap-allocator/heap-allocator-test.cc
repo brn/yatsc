@@ -60,6 +60,14 @@ class TestClass {
 };
 
 
+class Base {
+ public:
+  Base():x(1){}
+  virtual ~Base(){}
+  int x;
+};
+
+
 class Test0 {
  public:
   Test0(uint64_t* ok):ok(ok){}
@@ -68,9 +76,9 @@ class Test0 {
 };
 
 template <typename T = uint64_t>
-class Test1 {
+class Test1 : public Base{
  public:
-  Test1(T* ok):ok(ok){}
+  Test1(T* ok):Base(),ok(ok){}
   virtual ~Test1() {(*ok)++;}
   T* ok;
 };
@@ -83,9 +91,9 @@ class Test1D: public Test1<T> {
 };
 
 template <typename T = uint64_t>
-class Test2 {
+class Test2 : public Base {
  public:
-  Test2(T* ok):ok(ok){}
+  Test2(T* ok):Base(),ok(ok){}
   ~Test2() {(*ok)++;}
   T* ok;
   uint64_t padding1 YATSC_UNUSED;
@@ -93,9 +101,9 @@ class Test2 {
 };
 
 template <typename T = uint64_t>
-class Test3 {
+class Test3 : public Base {
  public:
-  Test3(T* ok):ok(ok){}
+  Test3(T* ok):Base(),ok(ok){}
   ~Test3() {(*ok)++;}
   T* ok;
   uint64_t padding1 YATSC_UNUSED;
@@ -105,9 +113,9 @@ class Test3 {
 };
 
 
-class LargeObject {
+class LargeObject : public Base {
  public:
-  LargeObject(uint64_t* ok):ok(ok){}
+  LargeObject(uint64_t* ok):Base(),ok(ok){}
   ~LargeObject() {(*ok)++;}
  private:
   uint64_t* ok;
@@ -115,9 +123,9 @@ class LargeObject {
 };
 
 
-class Deletable {
+class Deletable : public Base {
  public:
-  Deletable(uint64_t* ok):ok(ok){}
+  Deletable(uint64_t* ok):Base(),ok(ok){}
   ~Deletable() = default;
   void Destruct() {(*ok)++;}
  private:
@@ -125,95 +133,120 @@ class Deletable {
 };
 
 
-TEST_F(Heap, New) {
-  uint64_t ok = 0u;
-  volatile Test1<uint64_t>* a;
-  for (size_t i = 0u; i < kSize; i++) {
-    volatile Test1<uint64_t>* v = yatsc::Heap::New<Test1<uint64_t>>(&ok);
-    a = v;
-    yatsc::Heap::Destruct(v);
-  }
-  ASSERT_EQ(ok, kSize);
-}
-
-
-TEST_F(Heap, NewPtr) {
-  uint64_t ok = 0u;
-  for (size_t i = 0u; i < kSize; i++) {
-    auto a = new (yatsc::Heap::NewPtr(sizeof(Test1<uint64_t>))) Test1<uint64_t>(&ok);
-    yatsc::Heap::Destruct(a);
-  }
-  ASSERT_EQ(ok, kSize);
-}
-
-
-TEST_F(Heap, NewHandle) {
-  uint64_t ok = 0u;
-  for (size_t i = 0u; i < kSize; i++) {
-    yatsc::Handle<Test1<uint64_t>> a = yatsc::Heap::NewHandle<Test1D<uint64_t>>(&ok);
-  }
-  ASSERT_EQ(ok, kSize);
-}
-
-
-TEST_F(Heap, Allocate_loop) {
-  volatile TestClass* v;
-  for (int i = 0; i < kSize;i++) {
-    volatile TestClass* x = yatsc::Heap::New<TestClass>();
-    x->a = 1;
-    x->b = 2;
-    x->c = 3;
-    x->d = 4;
-    v = x;
-  }
-}
-
-
-TEST_F(Heap, Allocate_loop_new) {
-  volatile TestClass* v;
-  for (int i = 0; i < kSize;i++) {
-    volatile TestClass* x = new TestClass();
-    x->a = 1;
-    x->b = 2;
-    x->c = 3;
-    x->d = 4;
-    v = x;
-  }
-}
-
-
-// TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk) {
-//   yatsc::Regions p(1024);
+// TEST_F(Heap, New) {
 //   uint64_t ok = 0u;
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     p.New<Test1<>>(&ok);
+//   volatile Test1<uint64_t>* a;
+//   for (size_t i = 0u; i < kSize; i++) {
+//     volatile Test1<uint64_t>* v = yatsc::Heap::New<Test1<uint64_t>>(&ok);
+//     a = v;
+//     yatsc::Heap::Destruct(v);
 //   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
+//   ASSERT_EQ(ok, kSize);
 // }
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random) {
+// TEST_F(Heap, NewPtr) {
+//   uint64_t ok = 0u;
+//   for (size_t i = 0u; i < kSize; i++) {
+//     auto a = new (yatsc::Heap::NewPtr(sizeof(Test1<uint64_t>))) Test1<uint64_t>(&ok);
+//     yatsc::Heap::Destruct(a);
+//   }
+//   ASSERT_EQ(ok, kSize);
+// }
+
+
+// TEST_F(Heap, NewHandle) {
+//   uint64_t ok = 0u;
+//   for (size_t i = 0u; i < kSize; i++) {
+//     yatsc::Handle<Test1<uint64_t>> a = yatsc::Heap::NewHandle<Test1D<uint64_t>>(&ok);
+//   }
+//   ASSERT_EQ(ok, kSize);
+// }
+
+
+// TEST_F(Heap, Allocate_loop) {
+//   volatile TestClass* v;
+//   for (int i = 0; i < kSize;i++) {
+//     volatile TestClass* x = yatsc::Heap::New<TestClass>();
+//     x->a = 1;
+//     x->b = 2;
+//     x->c = 3;
+//     x->d = 4;
+//     v = x;
+//   }
+// }
+
+
+// TEST_F(Heap, Allocate_loop_new) {
+//   volatile TestClass* v;
+//   for (int i = 0; i < kSize;i++) {
+//     volatile TestClass* x = new TestClass();
+//     x->a = 1;
+//     x->b = 2;
+//     x->c = 3;
+//     x->d = 4;
+//     v = x;
+//   }
+// }
+
+
+// TEST_F(Heap, random_New) {
 //   uint64_t ok = 0u;
 //   std::random_device rd;
 // 	std::mt19937 mt(rd());
 // 	std::uniform_int_distribution<size_t> size(1, 100);
-//   yatsc::Regions p(1024);
+//   std::vector<Base*> v;
+//   v.reserve(kSize);
+//   Base* ptr;
 //   for (uint64_t i = 0u; i < kSize; i++) {
 //     int s = size(mt);
 //     int t = s % 3 == 0;
 //     int f = s % 5 == 0;
 //     if (t) {
-//       p.New<Test1<>>(&ok);
+//       ptr = yatsc::Heap::New<Test1<>>(&ok);
 //     } else if (f) {
-//       p.New<Test2<>>(&ok);
+//       ptr = yatsc::Heap::New<Test2<>>(&ok);
 //     } else {
-//       p.New<Test3<>>(&ok);
+//       ptr = yatsc::Heap::New<Test3<>>(&ok);
 //     }
+//     v.push_back(ptr);
+//     break;
 //   }
-//   p.Destroy();
+  
+//   for (auto x: v) {
+//     yatsc::Heap::Destruct(x);
+//   }
 //   ASSERT_EQ(kSize, ok);
 // }
+
+
+TEST_F(Heap, random_new_) {
+  uint64_t ok = 0u;
+  std::random_device rd;
+	std::mt19937 mt(rd());
+	std::uniform_int_distribution<size_t> size(1, 100);
+  std::vector<Base*, yatsc::StandardAllocator<Base*>> v;
+  v.reserve(kSize);
+  Base* ptr;
+  for (uint64_t i = 0u; i < kSize; i++) {
+    int s = size(mt);
+    int t = s % 3 == 0;
+    int f = s % 5 == 0;
+    if (t) {
+      ptr = new Test1<>(&ok);
+    } else if (f) {
+      ptr = new Test2<>(&ok);
+    } else {
+      ptr = new Test3<>(&ok);
+    }
+    v.push_back(ptr);
+  }
+  for (auto x: v) {
+    delete x;
+  }
+  
+  ASSERT_EQ(kSize, ok);
+}
 
 
 // TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_and_dealloc) {

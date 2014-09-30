@@ -31,7 +31,7 @@ namespace yatsc { namespace heap {
 YATSC_INLINE void* ChunkHeader::Distribute() {
   if (free_list_.load() == nullptr) {
     // If heap is not filled.
-    if (heap_list_->used() < (max_allocatable_size_ - size_class_)) {
+    if (heap_list_->used() < max_allocatable_size_) {
       // Calc next positon.
       Byte* block = reinterpret_cast<Byte*>(heap_list_) + (sizeof(HeapHeader) + heap_list_->used());
       // Update heap used value.
@@ -94,9 +94,8 @@ YATSC_INLINE Byte* ChunkHeader::InitHeap(Byte* block) {
 
 // Allocate new 1MB aligned memory block by AlignedHeapAllocator.
 YATSC_INLINE Byte* ChunkHeader::AllocateBlock(size_t size) {
-  if (size < kMaxAllocatableSmallObjectSize) {
-    return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(sizeof(HeapHeader) + size * kMaxSmallObjectCount,
-                                                                  kAlignment));
+  if (size < ChunkHeader::kAlignment) {
+    return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(kAlignment, kAlignment));
   } else {
     return reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
         nullptr,

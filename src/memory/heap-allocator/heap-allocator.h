@@ -248,7 +248,7 @@ class StandardAllocator: public std::allocator<T> {
    * Allocate new memory.
    */
   pointer allocate(size_type num, const void* hint = 0) {
-    return Heap::NewPtr(sizeof(T) * num);
+    return reinterpret_cast<pointer>(Heap::NewPtr(sizeof(T) * num));
   }
 
   /**

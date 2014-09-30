@@ -62,6 +62,7 @@ ChunkHeader* ChunkHeader::New(size_t size_class, void* ptr) {
 
   // Add memory block to free list.
   header->InitHeap(block);
+  header->max_allocatable_size_ = kAlignment - size_class - yatsc::kAlignment;
   return header;
 }
 
@@ -71,15 +72,16 @@ ChunkHeader* ChunkHeader::New(size_t size_class, void* ptr) {
 ChunkHeader* ChunkHeader::NewLarge(size_t size, void* ptr) {
   Byte* block = reinterpret_cast<Byte*>(ptr);
   ChunkHeader* header = new (block) ChunkHeader(size);
-
+  
   // Add memory block to free list.
   header->InitHeap(block + sizeof(ChunkHeader));
+  header->max_allocatable_size_ = size;
   return header;
 }
 
 
 // Bit mask to calcurate HeapHeader address from each small heap.
-const size_t ChunkHeader::kAddrMask = 0x00FFFFFFFF00;
+const size_t ChunkHeader::kAddrMask = 0xFFFFFFFFF000;
 
 // Memory alignment.
 const size_t ChunkHeader::kAlignment = 4 KB;

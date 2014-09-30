@@ -130,7 +130,7 @@ YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOE
 YATSC_INLINE ChunkHeader* LocalArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
   ChunkHeader* chunk_header = large_bin_.Find(size);
   if (chunk_header == nullptr) {
-    void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(ChunkHeader),
+    void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(ChunkHeader) + sizeof(HeapHeader),
                                            VirtualHeapAllocator::Prot::WRITE | VirtualHeapAllocator::Prot::READ,
                                            VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
     chunk_header = ChunkHeader::NewLarge(size, heap);

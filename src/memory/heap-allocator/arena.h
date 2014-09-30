@@ -94,7 +94,7 @@ class LocalArena {
   std::atomic_flag lock_;
   LocalArena* next_;
   IntrusiveRbTree<size_t, ChunkHeader*> small_bin_;
-  IntrusiveRbTree<size_t, ChunkHeader*> large_bin_;
+  IntrusiveRbTree<uintptr_t, ChunkHeader*> large_bin_;
 };
 }}
 

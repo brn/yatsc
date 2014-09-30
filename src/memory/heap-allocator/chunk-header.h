@@ -36,7 +36,7 @@
 
 namespace yatsc { namespace heap {
 
-static const size_t kMaxSmallObjectCount = PER_THREAD_HEAP_ALLOCATION_COUNT;
+static const size_t kMaxSmallObjectCount = (4 KB) >> 4;
 
 static const size_t kMaxAllocatableSmallObjectSize = kMaxSmallObjectCount * yatsc::kAlignment;
 
@@ -141,7 +141,6 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
   // Instead use ChunkHeader::New.
   ChunkHeader(size_t size_class)
       : size_class_(size_class),
-        max_allocatable_size_(size_class_ * kMaxSmallObjectCount),
         heap_list_(nullptr) {
     free_list_.store(nullptr, std::memory_order_relaxed);
   }
