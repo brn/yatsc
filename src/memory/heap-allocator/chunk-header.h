@@ -32,13 +32,7 @@
 #include "../virtual-heap-allocator.h"
 #include "../aligned-heap-allocator.h"
 
-#define PER_THREAD_HEAP_ALLOCATION_COUNT 300;
-
 namespace yatsc { namespace heap {
-
-static const size_t kMaxSmallObjectCount = (4 KB) >> 4;
-
-static const size_t kMaxAllocatableSmallObjectSize = kMaxSmallObjectCount * yatsc::kAlignment;
 
 class ChunkHeader;
 
@@ -93,10 +87,6 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
   static ChunkHeader* New(size_t size_class, void* ptr);
 
 
-  // The factory to create new ChunkHeader by given size_class.
-  static ChunkHeader* NewLarge(size_t size, void* ptr);
-
-
   // Delete ChunkHeader.
   static void Delete(ChunkHeader* chunk_header);
 
@@ -121,6 +111,8 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
   static const size_t kAddrMask;
 
   static const size_t kAlignment;
+
+  static const size_t kChunkMaxAllocatableSmallObjectSize;
   
  private:
 
@@ -151,7 +143,7 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
 
 
   // Allocate new memory block.
-  static YATSC_INLINE Byte* AllocateBlock(size_t size);
+  static YATSC_INLINE Byte* AllocateBlock();
   
   
   size_t size_class_;

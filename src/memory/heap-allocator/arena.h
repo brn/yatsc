@@ -29,12 +29,25 @@
 #include <vector>
 #include "../aligned-heap-allocator.h"
 #include "./chunk-header.h"
+#include "../../utils/spinlock.h"
 #include "../../utils/utils.h"
 #include "../../utils/tls.h"
 #include "../../utils/intrusive-rbtree.h"
 
 namespace yatsc {namespace heap {
 class LocalArena;
+
+static size_t kChunkHeaderAllocatableCount = 70;
+
+class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
+ public:
+  LargeHeader(size_t size)
+      : size_(size) {}
+  
+  YATSC_CONST_PROPERTY(size_t, size, size_);
+ private:
+  size_t size_;
+};
 
 class CentralArena {
   typedef std::atomic<LocalArena*> AtomicLocalArenaList;
@@ -49,6 +62,9 @@ class CentralArena {
 
   
   YATSC_INLINE void Dealloc(volatile void* ptr) YATSC_NOEXCEPT;
+
+
+  static void* GetInternalHeap(size_t additional = 0);
   
  private:
 
@@ -57,17 +73,22 @@ class CentralArena {
   YATSC_INLINE LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
 
   YATSC_INLINE LocalArena* StoreNewLocalArena() YATSC_NOEXCEPT;
+
+  YATSC_INLINE void* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
   
   AtomicLocalArenaList local_arena_;
   ThreadLocalStorage::Slot* tls_;
   LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
+  IntrusiveRbTree<size_t, LargeHeader*> large_bin_;
+  SpinLock lock_;
 };
 
 
 class LocalArena {
  public:
   LocalArena(Byte* block)
-      : memory_block_(block) {}
+      : memory_block_(block),
+        used_internal_heap_(0) {}
 
   YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
@@ -88,13 +109,14 @@ class LocalArena {
 
   YATSC_INLINE ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
 
-  YATSC_INLINE ChunkHeader* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
   
+  YATSC_INLINE void ResetPool();
+
+  size_t used_internal_heap_;
   Byte* memory_block_;
   std::atomic_flag lock_;
   LocalArena* next_;
   IntrusiveRbTree<size_t, ChunkHeader*> small_bin_;
-  IntrusiveRbTree<uintptr_t, ChunkHeader*> large_bin_;
 };
 }}
 

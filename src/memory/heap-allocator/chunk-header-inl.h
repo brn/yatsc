@@ -33,13 +33,13 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
     // If heap is not filled.
     if (heap_list_->used() < max_allocatable_size_) {
       // Calc next positon.
-      Byte* block = reinterpret_cast<Byte*>(heap_list_) + (sizeof(HeapHeader) + heap_list_->used());
+      Byte* block = reinterpret_cast<Byte*>(heap_list_) + heap_list_->used();
       // Update heap used value.
       heap_list_->set_used(heap_list_->used() + size_class_);
       return block;
     } else {
       // If heap is exhausted allocate new memory.
-      Byte* block = InitHeap(AllocateBlock(size_class_));
+      Byte* block = InitHeap(AllocateBlock());
       auto heap_header = reinterpret_cast<HeapHeader*>(block - sizeof(HeapHeader));
       heap_header->set_used(size_class_);
       return block;
@@ -62,7 +62,7 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   // because this memory block is unused until detached from free list.
   FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);
   free_header->set_next(free_list_.load(std::memory_order_acquire));
-
+  
   FreeHeader* free_list_head = free_list_.load(std::memory_order_relaxed);
   while (!free_list_.compare_exchange_weak(free_list_head, free_header)) {
     free_header->set_next(free_list_head);
@@ -75,16 +75,17 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
 YATSC_INLINE Byte* ChunkHeader::InitHeap(Byte* block) {
   // Create HeapHeader from block.
   HeapHeader* heap_header = new (block) HeapHeader(this);
-
+  heap_header->set_used(sizeof(HeapHeader));
+  ASSERT(true, heap_header->chunk_header() == this);
+  
   // First memory block is located after HeapHeader.
   Byte* begin = block + sizeof(HeapHeader);
-
+  
   // Append heap to heap_list_ to deallocate after all.
   if (heap_list_ == nullptr) {
     heap_list_ = heap_header;
   } else {
-    heap_list_->set_next(heap_header);
-    heap_header->set_next(heap_header);
+    heap_header->set_next(heap_list_);
     heap_list_ = heap_header;
   }
   
@@ -93,16 +94,8 @@ YATSC_INLINE Byte* ChunkHeader::InitHeap(Byte* block) {
 
 
 // Allocate new 1MB aligned memory block by AlignedHeapAllocator.
-YATSC_INLINE Byte* ChunkHeader::AllocateBlock(size_t size) {
-  if (size < ChunkHeader::kAlignment) {
-    return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(kAlignment, kAlignment));
-  } else {
-    return reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
-        nullptr,
-        size,
-        VirtualHeapAllocator::Prot::WRITE,
-        VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE));
-  }
+YATSC_INLINE Byte* ChunkHeader::AllocateBlock() {
+  return reinterpret_cast<Byte*>(AlignedHeapAllocator::Allocate(64 KB, kAlignment));
 }
 
 }} // yatsc::heap

@@ -57,15 +57,13 @@ class IntrusiveRbTree : public RbTreeBase<Key, T> {
 
   // Insert key and value to the tree.
   YATSC_INLINE T Insert(Key key, NodeType value) {
-    value->set_node_value(reinterpret_cast<T>(value));
-    return this->InsertInternal(key, value)->node_value();
+    return reinterpret_cast<T>(this->InsertInternal(key, value));
   }
 
 
   // Insert value that has key to the tree.
   YATSC_INLINE T Insert(NodeType value) {
-    value->set_node_value(reinterpret_cast<T>(value));
-    return this->InsertInternal(value)->node_value();
+    return reinterpret_cast<T>(this->InsertInternal(value));
   }
 
 
@@ -73,7 +71,7 @@ class IntrusiveRbTree : public RbTreeBase<Key, T> {
   YATSC_INLINE T Delete(Key key) {
     NodeType ret = this->DeleteInternal(key);
     if (nullptr != ret) {
-      return ret->node_value();
+      return reinterpret_cast<T>(ret);
     }
     return nullptr;
   }
@@ -83,7 +81,7 @@ class IntrusiveRbTree : public RbTreeBase<Key, T> {
   YATSC_INLINE T Delete(NodeType node) {
     NodeType ret = this->DeleteInternal(node);
     if (nullptr != ret) {
-      return ret->node_value();
+      return reinterpret_cast<T>(ret);
     }
     return nullptr;
   }
@@ -93,7 +91,7 @@ class IntrusiveRbTree : public RbTreeBase<Key, T> {
   YATSC_INLINE T Find(Key key) YATSC_NO_SE {
     NodeType ret = this->FindInternal(key);
     if (nullptr != ret) {
-      return ret->node_value();
+      return reinterpret_cast<T>(ret);
     }
     return nullptr;
   }

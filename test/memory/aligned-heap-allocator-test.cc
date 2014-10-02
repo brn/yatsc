@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 #include <stdint.h>
+#include <vector>
 #include "../../src/memory/aligned-heap-allocator.h"
 
 class Test1 {
@@ -41,7 +42,7 @@ class Test2: public Test1 {
 };
 
 TEST(AlignedHeapAllocator, test) {
-  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(32 KB, 4 KB));
+  yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(32 KB, 1 MB));
   Test1* i = new(addr) Test1();
   Test2* i2 = new(addr + sizeof(Test1)) Test2();
   Test2* i3 = new(addr + sizeof(Test1) + sizeof(Test1)) Test2();
@@ -50,7 +51,19 @@ TEST(AlignedHeapAllocator, test) {
   
   ASSERT_EQ(i->c, 10);
   ASSERT_EQ(i2->f, 10);
-  printf("%p %p\n", addr, addr + 32 KB);
-  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i2) & 0xFFFFFF00), i2);
-  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i3) & 0xFFFFFF00), i3);
+  printf("%p %p\n", addr, addr + 999 KB);
+  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i2) & ~(128 KB)), i2);
+  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(addr + 999 KB) & ~0xFFFFF), addr + 999 KB);
+}
+
+
+
+TEST(AlignedHeapAllocator, test_loop) {
+  static const int kSize = 1000000;
+  std::vector<Test1*> v;
+  v.reserve(kSize);
+  for (int i = 0; i < kSize; i++) {
+    yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(32 KB, 1 MB));
+    v.push_back(new (addr) Test2());
+  }
 }

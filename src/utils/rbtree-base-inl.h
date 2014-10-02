@@ -32,13 +32,13 @@ template <typename Key, typename T>
 inline NODE RbTreeBase<Key, T>::InsertInternal(Key key, NODE value) YATSC_NOEXCEPT {
   // If node is already exists in the tree,
   // skip inserting process.
-  if (value->exists()) {
+  if (value == root_ ||
+      value->parent() != nullptr) {
     return value;
   }
 
   // Store key to node.
   value->set_key(key);
-  value->set_exists(true);
   
   size_++;
 
@@ -129,12 +129,6 @@ YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(Key key) YATSC_NOEXCEPT {
 // to keep the Red-Black-Tree conditions.
 template <typename Key, typename T>
 YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
-  // If node is not exists in the tree,
-  // simply return nullptr.
-  if (!node->exists()) {return nullptr;}
-
-  // Disable exists flag.
-  node->set_exists(false);
 
   size_--;
   
@@ -162,6 +156,7 @@ YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
     // this mean, this tree has only root node.
     if (node == root_) {
       root_ = nullptr;
+      node->set_parent(nullptr);
     } else {
       // If node has black color,
       // black node count is decreased,
@@ -221,7 +216,7 @@ YATSC_INLINE void RbTreeBase<Key, T>::RebalanceWhenInsert(NODE node) YATSC_NOEXC
   while (1) {
     NODE parent = current->parent();
     NODE grand_parent = parent->parent();
-
+    
     if (*parent > *node) {
       // If node is left tree.
       // check node parent is left or right.
@@ -622,7 +617,7 @@ inline void RbTreeBase<Key, T>::DoGetBlackNodeCountOfLeafs(std::vector<CountResu
       }
       tmp = tmp->parent();
     }
-    v.push_back(std::pair<int, T>(count, node->node_value()));
+    v.push_back(std::pair<int, T>(count, reinterpret_cast<T>(node)));
   }
   DoGetBlackNodeCountOfLeafs(v, node->right());
 }

@@ -40,14 +40,31 @@ inline CentralArena::~CentralArena() {
 
 YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
   LocalArena* arena = GetLocalArena();
-  return arena->Allocate(YATSC_ALIGN_OFFSET(size, yatsc::kAlignment));
+  const size_t actual_size = YATSC_ALIGN_OFFSET(size, yatsc::kAlignment);
+  void* ret = arena->Allocate(actual_size);
+  if (ret != nullptr) {
+    return ret;
+  }
+  return AllocateLargeObject(actual_size);
 }
 
 
 YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
-  auto h = reinterpret_cast<HeapHeader*>(reinterpret_cast<uintptr_t>(ptr) & ChunkHeader::kAddrMask);
-  ChunkHeader* chunk_header = h->chunk_header();
-  chunk_header->Dealloc(ptr);
+  HeapHeader* h;
+  printf("%p\n", ptr);
+  if ((reinterpret_cast<uintptr_t>(ptr) & 1) == 1) {
+    auto area = reinterpret_cast<Byte*>(reinterpret_cast<uintptr_t>(ptr) & ~1);
+    auto large_header = reinterpret_cast<LargeHeader*>(reinterpret_cast<Byte*>(area) - sizeof(LargeHeader));
+    lock_.lock();
+    large_bin_.Delete(large_header->size());
+    lock_.unlock();
+    VirtualHeapAllocator::Unmap(large_header, large_header->size());
+  } else {
+    auto h = reinterpret_cast<HeapHeader*>(reinterpret_cast<uintptr_t>(ptr) & ChunkHeader::kAddrMask);
+    ChunkHeader* chunk_header = h->chunk_header();
+    ASSERT(true, chunk_header != nullptr);
+    chunk_header->Dealloc(ptr);
+  }
 }
 
 
@@ -88,11 +105,7 @@ YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
 
 
 YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
-  Byte* block = reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
-      nullptr,
-      sizeof(ChunkHeader) * kMaxSmallObjectCount + sizeof(LocalArena),
-      VirtualHeapAllocator::Prot::WRITE,
-      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE));
+  Byte* block = reinterpret_cast<Byte*>(GetInternalHeap(sizeof(LocalArena)));
   
   LocalArena* arena = new (block) LocalArena(block + sizeof(LocalArena));
 
@@ -108,34 +121,58 @@ YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
 }
 
 
+YATSC_INLINE void* CentralArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
+  lock_.lock();
+  LargeHeader* large_header = large_bin_.Find(size);
+  if (large_header == nullptr) {
+    void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(LargeHeader),
+                                           VirtualHeapAllocator::Prot::WRITE | VirtualHeapAllocator::Prot::READ,
+                                           VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
+    large_header = new(heap) LargeHeader(size);
+    large_bin_.Insert(size, large_header);
+  }
+  lock_.unlock();
+  return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(reinterpret_cast<Byte*>(large_header) + sizeof(LargeHeader)) | 1);
+}
+
+
+YATSC_INLINE void* CentralArena::GetInternalHeap(size_t additional) {
+  return VirtualHeapAllocator::Map(nullptr, sizeof(ChunkHeader) * kChunkHeaderAllocatableCount + additional,
+                                   VirtualHeapAllocator::Prot::WRITE | VirtualHeapAllocator::Prot::READ,
+                                   VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
+}
+
+
 YATSC_INLINE void* LocalArena::Allocate(size_t size) YATSC_NOEXCEPT {
-  return AllocateIfNecessary(size)->Distribute();
+  ChunkHeader* header = AllocateIfNecessary(size);
+  if (header != nullptr) {
+    return header->Distribute();
+  }
+  return nullptr;
 }
 
 
 YATSC_INLINE ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOEXCEPT {
-  const size_t index = (size / yatsc::kAlignment) - 1;
-  if (index < kMaxSmallObjectCount) {
+  if (size <= ChunkHeader::kChunkMaxAllocatableSmallObjectSize) {
     ChunkHeader* chunk_header = small_bin_.Find(size);
     if (chunk_header == nullptr) {
-      chunk_header = ChunkHeader::New(size, reinterpret_cast<ChunkHeader*>(memory_block_) + index);
+      if (used_internal_heap_ == kChunkHeaderAllocatableCount) {
+        ResetPool();
+      }
+
+      chunk_header = ChunkHeader::New(size, reinterpret_cast<ChunkHeader*>(memory_block_) + used_internal_heap_);
+      used_internal_heap_++;
+      
       small_bin_.Insert(size, chunk_header);
     }
     return chunk_header;
   }
-  return AllocateLargeObject(size);
+  return nullptr;
 }
 
 
-YATSC_INLINE ChunkHeader* LocalArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
-  ChunkHeader* chunk_header = large_bin_.Find(size);
-  if (chunk_header == nullptr) {
-    void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(ChunkHeader) + sizeof(HeapHeader),
-                                           VirtualHeapAllocator::Prot::WRITE | VirtualHeapAllocator::Prot::READ,
-                                           VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
-    chunk_header = ChunkHeader::NewLarge(size, heap);
-    large_bin_.Insert(size, chunk_header);
-  }
-  return chunk_header;
+YATSC_INLINE void LocalArena::ResetPool() {
+  memory_block_ = reinterpret_cast<Byte*>(CentralArena::GetInternalHeap());
+  used_internal_heap_ = 0;
 }
 }}
