@@ -50,7 +50,6 @@ YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 
 YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
-  HeapHeader* h;
   if ((reinterpret_cast<uintptr_t>(ptr) & 1) == 1) {
     auto area = reinterpret_cast<Byte*>(reinterpret_cast<uintptr_t>(ptr) & ~1);
     auto large_header = reinterpret_cast<LargeHeader*>(reinterpret_cast<Byte*>(area) - sizeof(LargeHeader));
@@ -75,7 +74,7 @@ YATSC_INLINE void CentralArena::Dealloc(volatile void* ptr) YATSC_NOEXCEPT {
 YATSC_INLINE LocalArena* CentralArena::GetLocalArena() YATSC_NOEXCEPT {
   void* ptr = tls_->Get();
   if (ptr == nullptr) {
-    return FindUnlockedArena();
+    ptr = FindUnlockedArena();
   }
   return reinterpret_cast<LocalArena*>(ptr);
 }
@@ -88,8 +87,9 @@ YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
 
   LocalArena* current = local_arena_;
   
-  while (1) {
+  while (current != nullptr) {
     if (current->AcquireLock()) {
+      tls_->Set(current);
       return current;
     }
     current = current->next();
@@ -98,7 +98,7 @@ YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
   if (current == nullptr) {
     current = StoreNewLocalArena();
   }
-
+  
   return current;
 }
 
@@ -107,10 +107,10 @@ YATSC_INLINE LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
   Byte* block = reinterpret_cast<Byte*>(GetInternalHeap(sizeof(LocalArena)));
   
   LocalArena* arena = new (block) LocalArena(block + sizeof(LocalArena));
+  arena->AcquireLock();
 
   LocalArena* arena_head = local_arena_.load(std::memory_order_relaxed);
   arena->set_next(arena_head);
-  
   while (local_arena_.compare_exchange_weak(arena_head, arena)) {
     arena->set_next(arena_head);
   }

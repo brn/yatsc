@@ -33,6 +33,7 @@
 namespace {
 size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();
 static const uint64_t kSize = 1000000u;
+static const uint64_t kSmallSize = 10000u;
 static const size_t kThreadSize = thread_size - 1 == 0? 1 : thread_size - 1;
 static const int kThreadObjectSize = 100000;
 static const int kStackSize = kThreadObjectSize * kThreadSize;
@@ -133,158 +134,102 @@ class Deletable : public Base {
 };
 
 
-// TEST_F(Heap, New) {
-//   uint64_t ok = 0u;
-//   volatile Test1<uint64_t>* a;
-//   for (size_t i = 0u; i < kSize; i++) {
-//     volatile Test1<uint64_t>* v = yatsc::Heap::New<Test1<uint64_t>>(&ok);
-//     a = v;
-//     yatsc::Heap::Destruct(v);
-//   }
-//   ASSERT_EQ(ok, kSize);
-// }
-
-
-// TEST_F(Heap, NewPtr) {
-//   uint64_t ok = 0u;
-//   for (size_t i = 0u; i < kSize; i++) {
-//     auto a = new (yatsc::Heap::NewPtr(sizeof(Test1<uint64_t>))) Test1<uint64_t>(&ok);
-//     yatsc::Heap::Destruct(a);
-//   }
-//   ASSERT_EQ(ok, kSize);
-// }
-
-
-// TEST_F(Heap, NewHandle) {
-//   uint64_t ok = 0u;
-//   for (size_t i = 0u; i < kSize; i++) {
-//     yatsc::Handle<Test1<uint64_t>> a = yatsc::Heap::NewHandle<Test1D<uint64_t>>(&ok);
-//   }
-//   ASSERT_EQ(ok, kSize);
-// }
-
-
-// TEST_F(Heap, Allocate_loop) {
-//   volatile TestClass* v;
-//   for (int i = 0; i < kSize;i++) {
-//     volatile TestClass* x = yatsc::Heap::New<TestClass>();
-//     x->a = 1;
-//     x->b = 2;
-//     x->c = 3;
-//     x->d = 4;
-//     v = x;
-//   }
-// }
-
-
-// TEST_F(Heap, Allocate_loop_new) {
-//   volatile TestClass* v;
-//   for (int i = 0; i < kSize;i++) {
-//     volatile TestClass* x = new TestClass();
-//     x->a = 1;
-//     x->b = 2;
-//     x->c = 3;
-//     x->d = 4;
-//     v = x;
-//   }
-// }
-
-
-// TEST_F(Heap, random_New) {
-//   uint64_t ok = 0u;
-//   std::random_device rd;
-// 	std::mt19937 mt(rd());
-// 	std::uniform_int_distribution<size_t> size(1, 100);
-//   std::vector<Base*> v;
-//   v.reserve(kSize);
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     int s = size(mt);
-//     int t = s % 3 == 0;
-//     int f = s % 5 == 0;
-//     Base* ptr;
-//     if (t) {
-//       ptr = yatsc::Heap::New<Test1<>>(&ok);
-//     } else if (f) {
-//       ptr = yatsc::Heap::New<Test2<>>(&ok);
-//     } else {
-//       ptr = yatsc::Heap::New<Test3<>>(&ok);
-//     }
-//     ptr->x = 100;
-//     v.push_back(ptr);
-//   }
-//   size_t s = 0;
-//   for (auto x: v) {
-//     yatsc::Heap::Destruct(x);
-//   }
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-// TEST_F(Heap, random_new_) {
-//   uint64_t ok = 0u;
-//   std::random_device rd;
-// 	std::mt19937 mt(rd());
-// 	std::uniform_int_distribution<size_t> size(1, 100);
-//   std::vector<Base*> v;
-//   v.reserve(kSize);
-//   Base* ptr;
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     int s = size(mt);
-//     int t = s % 3 == 0;
-//     int f = s % 5 == 0;
-//     if (t) {
-//       ptr = new Test1<>(&ok);
-//     } else if (f) {
-//       ptr = new Test2<>(&ok);
-//     } else {
-//       ptr = new Test3<>(&ok);
-//     }
-//     v.push_back(ptr);
-//   }
-//   for (auto x: v) {
-//     delete x;
-//   }
-  
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-TEST_F(Heap, Random_Big) {
+TEST_F(Heap, New) {
   uint64_t ok = 0u;
-  std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_int_distribution<size_t> size(1, 100);
-  std::vector<Base*, yatsc::StandardAllocator<Base*>> v;
-  Base* ptr;
-  for (uint64_t i = 0u; i < kSize / 10; i++) {
-    int s = size(mt);
-    int t = s % 3 == 0;
-    int f = s % 5 == 0;
-    if (t) {
-      ptr = new Test1<>(&ok);
-    } else if (f) {
-      ptr = new Test2<>(&ok);
-    } else {
-      ptr = new Test3<>(&ok);
-    }
-    v.push_back(ptr);
+  volatile Test1<uint64_t>* a;
+  for (size_t i = 0u; i < kSize; i++) {
+    volatile Test1<uint64_t>* v = yatsc::Heap::New<Test1<uint64_t>>(&ok);
+    a = v;
+    yatsc::Heap::Destruct(v);
   }
-  for (auto x: v) {
-    delete x;
-  }
-  
-  ASSERT_EQ(kSize / 10, ok);
+  ASSERT_EQ(ok, kSize);
 }
 
 
-TEST_F(Heap, Random_Big_normal) {
+TEST_F(Heap, NewPtr) {
+  uint64_t ok = 0u;
+  for (size_t i = 0u; i < kSize; i++) {
+    auto a = new (yatsc::Heap::NewPtr(sizeof(Test1<uint64_t>))) Test1<uint64_t>(&ok);
+    yatsc::Heap::Destruct(a);
+  }
+  ASSERT_EQ(ok, kSize);
+}
+
+
+TEST_F(Heap, NewHandle) {
+  uint64_t ok = 0u;
+  for (size_t i = 0u; i < kSize; i++) {
+    yatsc::Handle<Test1<uint64_t>> a = yatsc::Heap::NewHandle<Test1D<uint64_t>>(&ok);
+  }
+  ASSERT_EQ(ok, kSize);
+}
+
+
+TEST_F(Heap, Allocate_loop) {
+  volatile TestClass* v;
+  for (int i = 0; i < kSize;i++) {
+    volatile TestClass* x = yatsc::Heap::New<TestClass>();
+    x->a = 1;
+    x->b = 2;
+    x->c = 3;
+    x->d = 4;
+    v = x;
+  }
+}
+
+
+TEST_F(Heap, Allocate_loop_new) {
+  volatile TestClass* v;
+  for (int i = 0; i < kSize;i++) {
+    volatile TestClass* x = new TestClass();
+    x->a = 1;
+    x->b = 2;
+    x->c = 3;
+    x->d = 4;
+    v = x;
+  }
+}
+
+
+TEST_F(Heap, random_New) {
   uint64_t ok = 0u;
   std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_int_distribution<size_t> size(1, 100);
   std::vector<Base*> v;
+  v.reserve(kSize);
+  for (uint64_t i = 0u; i < kSize; i++) {
+    int s = size(mt);
+    int t = s % 3 == 0;
+    int f = s % 5 == 0;
+    Base* ptr;
+    if (t) {
+      ptr = yatsc::Heap::New<Test1<>>(&ok);
+    } else if (f) {
+      ptr = yatsc::Heap::New<Test2<>>(&ok);
+    } else {
+      ptr = yatsc::Heap::New<Test3<>>(&ok);
+    }
+    ptr->x = 100;
+    v.push_back(ptr);
+  }
+  size_t s = 0;
+  for (auto x: v) {
+    yatsc::Heap::Destruct(x);
+  }
+  ASSERT_EQ(kSize, ok);
+}
+
+
+TEST_F(Heap, random_new_) {
+  uint64_t ok = 0u;
+  std::random_device rd;
+	std::mt19937 mt(rd());
+	std::uniform_int_distribution<size_t> size(1, 100);
+  std::vector<Base*> v;
+  v.reserve(kSize);
   Base* ptr;
-  for (uint64_t i = 0u; i < kSize / 10; i++) {
+  for (uint64_t i = 0u; i < kSize; i++) {
     int s = size(mt);
     int t = s % 3 == 0;
     int f = s % 5 == 0;
@@ -301,52 +246,68 @@ TEST_F(Heap, Random_Big_normal) {
     delete x;
   }
   
-  ASSERT_EQ(kSize / 10, ok);
+  ASSERT_EQ(kSize, ok);
 }
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_and_dealloc) {
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(1024);
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     Test1<>* t = p.New<Test1<>>(&ok);
-//     p.Dealloc(t);
-//   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
-// }
+TEST_F(Heap, Random_Big) {
+  uint64_t ok = 0u;
+  std::vector<Base*, yatsc::StandardAllocator<Base*>> v;
+  for (uint64_t i = 0u; i < kSmallSize; i++) {
+    v.push_back(new LargeObject(&ok));
+  }
+  for (auto x: v) {
+    delete x;
+  }
+  
+  ASSERT_EQ(kSmallSize, ok);
+}
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_many_from_chunk_random_and_dealloc) {
-//   uint64_t ok = 0u;
-//   std::random_device rd;
-// 	std::mt19937 mt(rd());
-// 	std::uniform_int_distribution<size_t> size(1, 100);
-//   yatsc::Regions p(1024);
-//   void* last = nullptr;
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     int s = size(mt);
-//     int ss = s % 6 == 0;
-//     int t = s % 3 == 0;
-//     int f = s % 5 == 0;
+TEST_F(Heap, Random_Big_normal) {
+  uint64_t ok = 0u;
+  std::vector<Base*> v;
+  for (uint64_t i = 0u; i < kSmallSize; i++) {
+    v.push_back(new LargeObject(&ok));
+  }
+  for (auto x: v) {
+    delete x;
+  }
+  
+  ASSERT_EQ(kSmallSize, ok);
+}
 
-//     if (ss) {
-//       if (last != nullptr) {
-//         p.Dealloc(last);
-//       }
-//     }
+
+TEST_F(Heap, New_many_from_chunk_random_and_dealloc) {
+  uint64_t ok = 0u;
+  std::random_device rd;
+	std::mt19937 mt(rd());
+	std::uniform_int_distribution<size_t> size(1, 100);
+  Base* last = nullptr;
+  int count = 0;
+  for (uint64_t i = 0u; i < kSize; i++) {
+    int s = size(mt);
+    int ss = s % 6 == 0;
+    int t = s % 3 == 0;
+    int f = s % 5 == 0;
+
+    if (ss) {
+      if (last != nullptr) {
+        count++;
+        yatsc::Heap::Destruct(last);
+      }
+    }
     
-//     if (t) {
-//       last = p.New<Test1<>>(&ok);
-//     } else if (f) {
-//       last = p.New<Test2<>>(&ok);
-//     } else {
-//       last = p.New<Test3<>>(&ok);
-//     }
-//   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
-// }
+    if (t) {
+      last = yatsc::Heap::New<Test1<>>(&ok);
+    } else if (f) {
+      last = yatsc::Heap::New<Test2<>>(&ok);
+    } else {
+      last = yatsc::Heap::New<Test3<>>(&ok);
+    }
+  }
+  ASSERT_EQ(count, ok);
+}
 
 
 // TEST_F(RegionsTest, RegionsTest_allocate_big_object) {
@@ -420,33 +381,32 @@ TEST_F(Heap, Random_Big_normal) {
 // }
 
 
-// TEST_F(RegionsTest, RegionsTest_thread) {
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(1024);
-//   std::atomic<unsigned> index(0);
+TEST_F(Heap, New_thread) {
+  uint64_t ok = 0u;
+  std::atomic<unsigned> index(0);
   
-//   auto fn = [&]() {
-//     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-//       p.New<Test1<>>(&ok);
-//     }
-//     index++;
-//   };
+  auto fn = [&]() {
+    for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
+      auto x = yatsc::Heap::New<Test1<>>(&ok);
+      yatsc::Heap::Destruct(x);
+    }
+    index++;
+  };
   
-//   std::vector<std::thread*> threads;
-//   LOOP_FOR_THREAD_SIZE {
-//     auto th = new std::thread(fn);
-//     threads.push_back(th);
-//   }
-//   LOOP_FOR_THREAD_SIZE {
-//     threads[i]->detach();
-//     delete threads[i];
-//   }
+  std::vector<std::thread*> threads;
+  LOOP_FOR_THREAD_SIZE {
+    auto th = new std::thread(fn);
+    threads.push_back(th);
+  }
+  LOOP_FOR_THREAD_SIZE {
+    threads[i]->detach();
+    delete threads[i];
+  }
 
-//   BUSY_WAIT(index) {}
+  BUSY_WAIT(index) {}
   
-//   p.Destroy();
-//   ASSERT_EQ(kThreadObjectSize * kThreadSize, ok);
-// }
+  ASSERT_EQ(kThreadObjectSize * kThreadSize, ok);
+}
 
 
 // TEST_F(RegionsTest, RegionsTest_thread_new) {

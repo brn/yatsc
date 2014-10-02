@@ -64,6 +64,7 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   free_header->set_next(free_list_.load(std::memory_order_acquire));
   
   FreeHeader* free_list_head = free_list_.load(std::memory_order_relaxed);
+  
   while (!free_list_.compare_exchange_weak(free_list_head, free_header)) {
     free_header->set_next(free_list_head);
   }

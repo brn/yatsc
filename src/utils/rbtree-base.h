@@ -298,7 +298,7 @@ class RbTreeNode {
   YATSC_INLINE void set_color(RbTreeNodeColor c) YATSC_NOEXCEPT {
     uintptr_t parent = reinterpret_cast<uintptr_t>(parent_);
     parent = (parent >> 1) << 1;
-    parent_ = reinterpret_cast<Pointer>(reinterpret_cast<uintptr_t>(parent) | static_cast<uint8_t>(c));
+    parent_ = reinterpret_cast<Pointer>(parent | static_cast<uint8_t>(c));
   }
 
 
