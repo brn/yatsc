@@ -248,7 +248,9 @@ class StandardAllocator: public std::allocator<T> {
    * Allocate new memory.
    */
   pointer allocate(size_type num, const void* hint = 0) {
-    return reinterpret_cast<pointer>(Heap::NewPtr(sizeof(T) * num));
+    pointer ret = reinterpret_cast<pointer>(Heap::NewPtr(sizeof(T) * num));
+    printf("al %p\n", ret);
+    return ret;
   }
 
   /**
@@ -283,6 +285,7 @@ class StandardAllocator: public std::allocator<T> {
    * Do nothing.
    */
   void deallocate(pointer p, size_type n) {
+    printf("dl %p\n", p);
     Heap::Delete(p);
   }
 

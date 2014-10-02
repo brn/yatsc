@@ -41,7 +41,7 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
       // If heap is exhausted allocate new memory.
       Byte* block = InitHeap(AllocateBlock());
       auto heap_header = reinterpret_cast<HeapHeader*>(block - sizeof(HeapHeader));
-      heap_header->set_used(size_class_);
+      heap_header->set_used(heap_header->used() + size_class_);
       return block;
     }
   }

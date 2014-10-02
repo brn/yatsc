@@ -51,7 +51,6 @@ YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
   HeapHeader* h;
-  printf("%p\n", ptr);
   if ((reinterpret_cast<uintptr_t>(ptr) & 1) == 1) {
     auto area = reinterpret_cast<Byte*>(reinterpret_cast<uintptr_t>(ptr) & ~1);
     auto large_header = reinterpret_cast<LargeHeader*>(reinterpret_cast<Byte*>(area) - sizeof(LargeHeader));

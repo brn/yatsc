@@ -63,11 +63,11 @@ ChunkHeader* ChunkHeader::New(size_t size_class, void* ptr) {
 
 
 // Bit mask to calcurate HeapHeader address from each small heap.
-const size_t ChunkHeader::kAddrMask = ~0xFFFFF;
+const size_t ChunkHeader::kAddrMask = ~0xFFFF;
 
 // Memory alignment.
-const size_t ChunkHeader::kAlignment = 1 MB;
+const size_t ChunkHeader::kAlignment = 64 KB;
 
 
-const size_t ChunkHeader::kChunkMaxAllocatableSmallObjectSize = 100;
+const size_t ChunkHeader::kChunkMaxAllocatableSmallObjectSize = 64 KB;
 }}

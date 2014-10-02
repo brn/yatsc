@@ -190,47 +190,73 @@ class Deletable : public Base {
 // }
 
 
-TEST_F(Heap, random_New) {
+// TEST_F(Heap, random_New) {
+//   uint64_t ok = 0u;
+//   std::random_device rd;
+// 	std::mt19937 mt(rd());
+// 	std::uniform_int_distribution<size_t> size(1, 100);
+//   std::vector<Base*> v;
+//   v.reserve(kSize);
+//   for (uint64_t i = 0u; i < kSize; i++) {
+//     int s = size(mt);
+//     int t = s % 3 == 0;
+//     int f = s % 5 == 0;
+//     Base* ptr;
+//     if (t) {
+//       ptr = yatsc::Heap::New<Test1<>>(&ok);
+//     } else if (f) {
+//       ptr = yatsc::Heap::New<Test2<>>(&ok);
+//     } else {
+//       ptr = yatsc::Heap::New<Test3<>>(&ok);
+//     }
+//     ptr->x = 100;
+//     v.push_back(ptr);
+//   }
+//   size_t s = 0;
+//   for (auto x: v) {
+//     yatsc::Heap::Destruct(x);
+//   }
+//   ASSERT_EQ(kSize, ok);
+// }
+
+
+// TEST_F(Heap, random_new_) {
+//   uint64_t ok = 0u;
+//   std::random_device rd;
+// 	std::mt19937 mt(rd());
+// 	std::uniform_int_distribution<size_t> size(1, 100);
+//   std::vector<Base*> v;
+//   v.reserve(kSize);
+//   Base* ptr;
+//   for (uint64_t i = 0u; i < kSize; i++) {
+//     int s = size(mt);
+//     int t = s % 3 == 0;
+//     int f = s % 5 == 0;
+//     if (t) {
+//       ptr = new Test1<>(&ok);
+//     } else if (f) {
+//       ptr = new Test2<>(&ok);
+//     } else {
+//       ptr = new Test3<>(&ok);
+//     }
+//     v.push_back(ptr);
+//   }
+//   for (auto x: v) {
+//     delete x;
+//   }
+  
+//   ASSERT_EQ(kSize, ok);
+// }
+
+
+TEST_F(Heap, Random_Big) {
   uint64_t ok = 0u;
   std::random_device rd;
 	std::mt19937 mt(rd());
 	std::uniform_int_distribution<size_t> size(1, 100);
-  std::vector<Base*> v;
-  v.reserve(kSize);
-  for (uint64_t i = 0u; i < 10; i++) {
-    int s = size(mt);
-    int t = s % 3 == 0;
-    int f = s % 5 == 0;
-    Base* ptr;
-    // if (t) {
-    //   ptr = yatsc::Heap::New<Test1<>>(&ok);
-    // } else if (f) {
-      ptr = yatsc::Heap::New<Test2<>>(&ok);
-    // } else {
-    //   ptr = yatsc::Heap::New<Test3<>>(&ok);
-    // }
-    ptr->x = 100;
-    printf("al %p\n", ptr);
-    v.push_back(ptr);
-  }
-  size_t s = 0;
-  for (auto x: v) {
-    printf("de %p\n", x);
-    yatsc::Heap::Destruct(x);
-  }
-  ASSERT_EQ(kSize, ok);
-}
-
-
-TEST_F(Heap, random_new_) {
-  uint64_t ok = 0u;
-  std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_int_distribution<size_t> size(1, 100);
-  std::vector<Base*> v;
-  v.reserve(kSize);
+  std::vector<Base*, yatsc::StandardAllocator<Base*>> v;
   Base* ptr;
-  for (uint64_t i = 0u; i < kSize; i++) {
+  for (uint64_t i = 0u; i < kSize / 10; i++) {
     int s = size(mt);
     int t = s % 3 == 0;
     int f = s % 5 == 0;
@@ -247,7 +273,35 @@ TEST_F(Heap, random_new_) {
     delete x;
   }
   
-  ASSERT_EQ(kSize, ok);
+  ASSERT_EQ(kSize / 10, ok);
+}
+
+
+TEST_F(Heap, Random_Big_normal) {
+  uint64_t ok = 0u;
+  std::random_device rd;
+	std::mt19937 mt(rd());
+	std::uniform_int_distribution<size_t> size(1, 100);
+  std::vector<Base*> v;
+  Base* ptr;
+  for (uint64_t i = 0u; i < kSize / 10; i++) {
+    int s = size(mt);
+    int t = s % 3 == 0;
+    int f = s % 5 == 0;
+    if (t) {
+      ptr = new Test1<>(&ok);
+    } else if (f) {
+      ptr = new Test2<>(&ok);
+    } else {
+      ptr = new Test3<>(&ok);
+    }
+    v.push_back(ptr);
+  }
+  for (auto x: v) {
+    delete x;
+  }
+  
+  ASSERT_EQ(kSize / 10, ok);
 }
 
 
