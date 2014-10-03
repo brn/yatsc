@@ -25,7 +25,6 @@
 
 #include <windows.h>
 #include <imagehlp.h>
-#include "./utils.h"
 
 #pragma comment(lib, "imagehlp.lib")
 
@@ -49,7 +48,7 @@ void PrintStackTrace() {
  
   for(i = 0; i < frames; i++) {
     SymFromAddr(process, (DWORD64)(stack[i]), 0, symbol);
-    Printf("%i: %s - 0x%0X\n", frames - i - 1, symbol->Name, symbol->Address);
+    printf("%i: %s - 0x%0X\n", frames - i - 1, symbol->Name, symbol->Address);
   }
  
   free(symbol);

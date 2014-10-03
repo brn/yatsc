@@ -78,9 +78,7 @@ inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRbTree<K
 
 
 TEST(IntrusiveRbTree, Insert) {
-yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
-  uint64_t ok = 0u;
-  
+yatsc::IntrusiveRbTree<int, RBValueObject*> tree;  
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<size_t> size(1, 1000);

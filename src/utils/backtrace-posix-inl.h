@@ -28,7 +28,7 @@
 
 
 namespace yatsc {
-void PrintBackTrace() {
+void PrintStackTrace() {
   void *array[10];
   size_t size;
 

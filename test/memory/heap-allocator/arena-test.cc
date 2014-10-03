@@ -24,6 +24,7 @@
 
 
 #include <gtest/gtest.h>
+#include <thread>
 #include "../../../src/memory/heap-allocator/arena.h"
 
 
@@ -101,5 +102,32 @@ TEST(CentralArena, Allocate_loop_new_delete) {
     v = x;
     delete x;
   }
+}
+
+
+TEST(CentralArena, Dealloc_thread) {
+  yatsc::heap::CentralArena arena;
+  auto a = new(arena.Allocate(sizeof(TestClass))) TestClass();
+  auto b = new(arena.Allocate(sizeof(TestClass))) TestClass();
+  auto c = new(arena.Allocate(sizeof(TestClass))) TestClass();
+  auto d = new(arena.Allocate(sizeof(TestClass))) TestClass();
+  std::atomic_int x;
+  x.store(0);
+  
+  std::thread th1([&] {
+    arena.Dealloc(a);
+    arena.Dealloc(c);
+    x++;
+  });
+  std::thread th2([&] {
+    arena.Dealloc(b);
+    arena.Dealloc(d);
+    x++;
+  });
+
+  th1.detach();
+  th2.detach();
+
+  while (x.load() != 2) {}
 }
 

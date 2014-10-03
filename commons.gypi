@@ -168,14 +168,23 @@
           'PREBINDING': 'NO',                       # No -Wl,-prebind
           'USE_HEADERMAP': 'NO',
           'OTHER_CFLAGS': [
-            '-fno-strict-aliasing',
-            '-fno-operator-names'
+            '-fno-operator-names',
+            '-std=c++11',
+            '-stdlib=libc++'
           ],
+          'MACOSX_DEPLOYMENT_TARGET': '10.7',
           'WARNING_CFLAGS': [
+            '-Weverything',
             '-Wall',
             '-Wendif-labels',
             '-W',
             '-Wno-unused-parameter',
+            '-Wno-padded',
+            '-Wno-switch-enum',
+            '-Wno-undef',
+            '-Wno-c++98-compat',
+            '-Wno-format-nonliteral',
+            '-Wno-weak-vtables'
           ]
         },
         'link_settings': {

@@ -76,14 +76,7 @@
         './src/utils/os.cc',
         './lib/gtest/gtest-all.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'arena_test',
@@ -101,14 +94,7 @@
         './src/utils/os.cc',
         './lib/gtest/gtest-all.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'heap_allocator_test',
@@ -128,14 +114,7 @@
         './src/utils/os.cc',
         './lib/gtest/gtest-all.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'scanner_test',
@@ -156,14 +135,7 @@
         './test/parser/scanner-operator-scan-test.cc',
         './test/parser/scanner-test.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'unicode_iterator_adapter_test',
@@ -177,14 +149,7 @@
         './lib/gtest/gtest-all.cc',
         './test/parser/unicode-iterator-adapter-test.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'sourcestream_test',
@@ -199,14 +164,7 @@
         './lib/gtest/gtest-all.cc',
         './test/parser/sourcestream-test.cc',
         './test/test-main.cc',
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'regions_test',
@@ -222,14 +180,7 @@
         './lib/gtest/gtest-all.cc',
         './test/utils/regions-test.cc',
         './test/test-main.cc'
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'node_test',
@@ -247,14 +198,7 @@
         './src/ir/node.cc',
         './test/ir/node-test.cc',
         './test/test-main.cc'
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'expression_parse_test',
@@ -274,14 +218,7 @@
         './src/ir/node.cc',
         './test/parser/expression-parse-test.cc',
         './test/test-main.cc'
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'declaration_parse_test',
@@ -301,14 +238,7 @@
         './src/ir/node.cc',
         './test/parser/declaration-parse-test.cc',
         './test/test-main.cc'
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
     {
       'target_name': 'statement_parse_test',
@@ -328,14 +258,7 @@
         './src/ir/node.cc',
         './test/parser/statement-parse-test.cc',
         './test/test-main.cc'
-      ],
-      'xcode_settings': {
-        'MACOSX_DEPLOYMENT_TARGET': '10.7',
-        'OTHER_CFLAGS': [
-          "-std=c++11",
-          "-stdlib=libc++"
-        ],
-      },
+      ]
     },
   ] # targets
 }

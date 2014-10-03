@@ -23,9 +23,10 @@
  */
 
 #ifndef UTILS_BACKTRACE_H
+#define UTILS_BACKTRACE_H
 
 namespace yatsc {
-inline std::string GetBacktrace();
+inline void PrintStackTrace();
 }
 
 

@@ -49,8 +49,9 @@ class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
   size_t size_;
 };
 
+typedef std::atomic<LocalArena*> AtomicLocalArena;
+
 class CentralArena {
-  typedef std::atomic<LocalArena*> AtomicLocalArenaList;
  public:
   CentralArena();
   ~CentralArena();
@@ -76,7 +77,7 @@ class CentralArena {
 
   YATSC_INLINE void* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
   
-  AtomicLocalArenaList local_arena_;
+  AtomicLocalArena local_arena_;
   ThreadLocalStorage::Slot* tls_;
   LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
   IntrusiveRbTree<size_t, LargeHeader*> large_bin_;
@@ -87,8 +88,10 @@ class CentralArena {
 class LocalArena {
  public:
   LocalArena(Byte* block)
-      : memory_block_(block),
-        used_internal_heap_(0) {}
+      : used_internal_heap_(0),
+        memory_block_(block) {}
+
+  ~LocalArena();
 
   YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
@@ -103,7 +106,15 @@ class LocalArena {
   }
 
 
-  YATSC_PROPERTY(LocalArena*, next, next_);
+  LocalArena* next() YATSC_NOEXCEPT {
+    return next_.load(std::memory_order_acquire);
+  }
+
+
+  void set_next(LocalArena* arena) YATSC_NOEXCEPT {
+    next_.store(arena, std::memory_order_release);
+  }
+  
   
  private:
 
@@ -115,7 +126,7 @@ class LocalArena {
   size_t used_internal_heap_;
   Byte* memory_block_;
   std::atomic_flag lock_;
-  LocalArena* next_;
+  AtomicLocalArena next_;
   IntrusiveRbTree<size_t, ChunkHeader*> small_bin_;
 };
 }}

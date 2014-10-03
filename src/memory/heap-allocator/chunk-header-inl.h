@@ -29,7 +29,9 @@ namespace yatsc { namespace heap {
 // If the free list is empty, allocate a new memory that is aligned 1MB from virtual memory.
 // This method is thread safe.
 YATSC_INLINE void* ChunkHeader::Distribute() {
-  if (free_list_.load() == nullptr) {
+  auto free_list_head = free_list_.load(std::memory_order_acquire);
+  
+  if (free_list_head == nullptr) {
     // If heap is not filled.
     if (heap_list_->used() < max_allocatable_size_) {
       // Calc next positon.
@@ -46,8 +48,7 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
     }
   }
   
-  // Swap free list.
-  auto free_list_head = free_list_.load(std::memory_order_acquire);
+  // Swap free list.  
   while (!free_list_.compare_exchange_weak(free_list_head, free_list_head->next())) {}
   return reinterpret_cast<void*>(free_list_head);
 }
@@ -61,21 +62,24 @@ YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
   // Simply cast block to FreeHeader,
   // because this memory block is unused until detached from free list.
   FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);
-  free_header->set_next(free_list_.load(std::memory_order_acquire));
-  
+  ASSERT(true, free_header != nullptr);
+
   FreeHeader* free_list_head = free_list_.load(std::memory_order_relaxed);
   
-  while (!free_list_.compare_exchange_weak(free_list_head, free_header)) {
+  do {
     free_header->set_next(free_list_head);
-  }
+  } while (!free_list_.compare_exchange_weak(free_list_head, free_header));
 }
 
 
 // Append an allocated memory block to the heap_list_ property
 // to be able to deallocate all block when ChunkHeader::Delete called.
 YATSC_INLINE Byte* ChunkHeader::InitHeap(Byte* block) {
+  ASSERT(true, block != nullptr);
+  
   // Create HeapHeader from block.
   HeapHeader* heap_header = new (block) HeapHeader(this);
+  ASSERT(true, heap_header != nullptr);
   heap_header->set_used(sizeof(HeapHeader));
   ASSERT(true, heap_header->chunk_header() == this);
   

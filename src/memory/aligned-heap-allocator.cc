@@ -44,9 +44,13 @@ namespace yatsc {
 void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {  
   if (alignment <= kAllocateAlignment) {
     // If kAllocatedAlignment is enough.
-    return VirtualHeapAllocator::Map(nullptr, block_size,
-                                     VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
-                                     VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
+    void* ret = VirtualHeapAllocator::Map(nullptr, block_size,
+                                          VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
+                                          VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
+    if (ret == nullptr) {
+      FATAL("Memory allocation faild.");
+    }
+    return ret;
   } else {
     // If kAllocateAlignment is not enough alignment.
     Byte* allocatedAddress = nullptr;
@@ -77,9 +81,6 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
         continue;
       }
 
-      // Remove reserved block.
-      VirtualHeapAllocator::Unmap(allocatedAddress, allocatedSize);
-
       // Roundup allocatedAddress with the multiples of alignment.
       alignment--;
       alignedAddress = reinterpret_cast<Byte*>((reinterpret_cast<uintptr_t>(allocatedAddress + alignment)) & ~alignment);
@@ -90,6 +91,13 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       // Restore alignment.
       alignment++;
 
+      // Remove reserved block.
+#ifdef PLATFORM_POSIX
+      VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
+#elif defined(PLATFORM_WIN)
+      VirtualHeapAllocator::Unmap(allocatedAddress, allocatedSize);
+#endif
+      
       // Commit found memory block again.
       // But,this commit may be failed,
       // because other process may use this block.

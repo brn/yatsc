@@ -83,6 +83,22 @@ def BuildConfig() :
       '''
     }
   ], 'inline attribute is required.')
+
+  builder.CheckStruct(False, [
+    {
+      'name': 'noreturn_attriute',
+      'code' : '''
+        __attribute__((noreturn)) void Test() {}
+      '''
+    },
+    {
+      'name': 'noreturn_spec',
+      'code' : '''
+        __declspec(noreturn) void Test() {}
+      '''
+    }
+  ], 'noreturn attribute is required.')
+
   builder.CheckStruct(False, [
     {
       'name': 'unused_attribute',

@@ -33,7 +33,8 @@
 #include <sstream>
 #include <string>
 #include <new>
-#include "os.h"
+#include "./os.h"
+#include "./backtrace.h"
 #include "../config.h"
 
 namespace yatsc {
@@ -64,6 +65,14 @@ namespace yatsc {
 #define YATSC_UNUSED
 #endif
 
+#if defined(HAVE_NORETURN_ATTRIUTE)
+#define YATSC_NORETURN __attribute__((noreturn))
+#elif defined(HAVE_NORETURN_SPEC)
+#define YATSC_NORETURN __declspec(noreturn)
+#else
+#define YATSC_NORETURN
+#endif
+
 #ifdef __func__
 #define FUNCTION_NAME __func__
 #elif defined(__FUNCTION__)
@@ -83,14 +92,16 @@ YATSC_INLINE void Assert__(bool ok, const char* result, const char* expect, cons
   if (!ok) {
     FPrintf(stderr, "assertion failed -> %s == %s\n in file %s at line %d\nIn function %s\n",
             result, expect, file, line, function);
+    PrintStackTrace();
     std::terminate();
   }
 }
 
 
-YATSC_INLINE void Fatal__(const char* file, int line, const char* function, const std::string& message) {
+YATSC_INLINE YATSC_NORETURN void Fatal__(const char* file, int line, const char* function, const std::string& message) {
   FPrintf(stderr, "Fatal error occured, so process no longer exist.\nin file %s at line %d\n%s\n%s\n",
           file, line, function, message.c_str());
+  PrintStackTrace();
   std::terminate();
 }
 

@@ -27,6 +27,7 @@
 #define MEMORY_ALIGNED_HEAP_ALLOCATOR_H
 
 #include "../utils/utils.h"
+#include "../utils/spinlock.h"
 
 namespace yatsc {
 // Allocate algined memory block that is not restricted to CPU alignment.

@@ -26,6 +26,7 @@
 #include <random>
 #include <thread>
 #include <memory>
+#include "../../signal-wait.h"
 #include "../../../src/memory/heap-allocator/heap-allocator.h"
 #include "../../../src/utils/systeminfo.h"
 #include "../../../src/utils/utils.h"
@@ -167,7 +168,7 @@ TEST_F(Heap, NewHandle) {
 
 TEST_F(Heap, Allocate_loop) {
   volatile TestClass* v;
-  for (int i = 0; i < kSize;i++) {
+  for (uint64_t i = 0; i < kSize;i++) {
     volatile TestClass* x = yatsc::Heap::New<TestClass>();
     x->a = 1;
     x->b = 2;
@@ -180,7 +181,7 @@ TEST_F(Heap, Allocate_loop) {
 
 TEST_F(Heap, Allocate_loop_new) {
   volatile TestClass* v;
-  for (int i = 0; i < kSize;i++) {
+  for (uint64_t i = 0; i < kSize;i++) {
     volatile TestClass* x = new TestClass();
     x->a = 1;
     x->b = 2;
@@ -381,32 +382,36 @@ TEST_F(Heap, New_many_from_chunk_random_and_dealloc) {
 // }
 
 
-TEST_F(Heap, New_thread) {
-  uint64_t ok = 0u;
-  std::atomic<unsigned> index(0);
+// TEST_F(Heap, New_thread) {
+//   std::atomic_int ok;
+//   ok.store(0, std::memory_order_relaxed);
+//   std::atomic<unsigned> index(0);
+//   auto fn = [&]() {
+//     Test1<std::atomic_int>* last = nullptr;
+//     for (uint64_t i = 0u; i < kThreadObjectSize * 5; i++) {
+//       auto x = yatsc::Heap::New<Test1<std::atomic_int>>(&ok);
+//       if (last != nullptr) {
+//         ASSERT_EQ(last, x);
+//         last = x;
+//       }
+//       yatsc::Heap::Destruct(x);
+//     }
+//     index++;
+//   };
   
-  auto fn = [&]() {
-    for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-      auto x = yatsc::Heap::New<Test1<>>(&ok);
-      yatsc::Heap::Destruct(x);
-    }
-    index++;
-  };
-  
-  std::vector<std::thread*> threads;
-  LOOP_FOR_THREAD_SIZE {
-    auto th = new std::thread(fn);
-    threads.push_back(th);
-  }
-  LOOP_FOR_THREAD_SIZE {
-    threads[i]->detach();
-    delete threads[i];
-  }
+//   std::vector<std::thread*> threads;
+//   LOOP_FOR_THREAD_SIZE {
+//     auto th = new std::thread(fn);
+//     threads.push_back(th);
+//   }
+//   LOOP_FOR_THREAD_SIZE {
+//     threads[i]->detach();
+//     delete threads[i];
+//   }
 
-  BUSY_WAIT(index) {}
-  
-  ASSERT_EQ(kThreadObjectSize * kThreadSize, ok);
-}
+//   BUSY_WAIT(index) {}  
+//   ASSERT_EQ(kThreadObjectSize * 5 * kThreadSize, ok.load());
+// }
 
 
 // TEST_F(RegionsTest, RegionsTest_thread_new) {
@@ -481,54 +486,54 @@ TEST_F(Heap, New_thread) {
 // }
 
 
-// TEST_F(RegionsTest, RegionsTest_thread_random_dealloc) {
-//   std::atomic<uint64_t> ok(0u);
-//   yatsc::Regions p(1024);
-//   std::atomic<unsigned> index(0);
-//   std::atomic<bool> wait(true);
-//   auto fn = [&]() {
-//     while (wait.load()) {}
-//     std::random_device rd;
-//     std::mt19937 mt(rd());
-//     std::uniform_int_distribution<size_t> size(1, 100);
-//     void* last = nullptr;
-//     int dc =0;
-//     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-//       int s = size(mt);
-//       int ss = s % 6 == 0;
-//       int t = s % 3 == 0;
-//       int f = s % 5 == 0;
+TEST_F(Heap, New_thread_random_dealloc) {
+  std::atomic<uint64_t> ok(0u);
+  std::atomic<unsigned> index(0);
+  std::atomic<bool> wait(true);
+  std::atomic_int dc;
+  dc.store(0);
+  auto fn = [&]() {
+    while (wait.load()) {}
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<size_t> size(1, 100);
+    Base* last = nullptr;
+    for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
+      int s = size(mt);
+      int ss = s % 6 == 0;
+      int t = s % 3 == 0;
+      int f = s % 5 == 0;
 
-//       if (ss) {
-//         if (last != nullptr) {
-//           dc++;
-//           p.Dealloc(last);
-//         }
-//       }
+      if (ss) {
+        if (last != nullptr) {
+          dc++;
+          yatsc::Heap::Destruct(last);
+        }
+      }
     
-//       if (t) {
-//         last = p.New<Test1<std::atomic<uint64_t>>>(&ok);
-//       } else if (f) {
-//         last = p.New<Test2<std::atomic<uint64_t>>>(&ok);
-//       } else {
-//         last = p.New<Test3<std::atomic<uint64_t>>>(&ok);
-//       }
-//     }
-//     index++;
-//   };
+      if (t) {
+        last = yatsc::Heap::New<Test1<std::atomic<uint64_t>>>(&ok);
+      } else if (f) {
+        last = yatsc::Heap::New<Test2<std::atomic<uint64_t>>>(&ok);
+      } else {
+        last = yatsc::Heap::New<Test3<std::atomic<uint64_t>>>(&ok);
+      }
+    }
+    index++;
+  };
   
-//   std::vector<std::thread*> threads;
-//   LOOP_FOR_THREAD_SIZE {
-//     auto th = new std::thread(fn);
-//     threads.push_back(th);
-//   }
-//   LOOP_FOR_THREAD_SIZE {
-//     threads[i]->detach();
-//     delete threads[i];
-//   }
-//   wait.store(false);
+  std::vector<std::thread*> threads;
+  LOOP_FOR_THREAD_SIZE {
+    auto th = new std::thread(fn);
+    threads.push_back(th);
+  }
+  LOOP_FOR_THREAD_SIZE {
+    threads[i]->detach();
+    delete threads[i];
+  }
+  wait.store(false);
 
-//   BUSY_WAIT(index) {}
-//   p.Destroy();
-//   ASSERT_EQ(kStackSize, ok);
-// }
+  BUSY_WAIT(index) {}
+  
+  ASSERT_EQ(dc.load(), ok);
+}

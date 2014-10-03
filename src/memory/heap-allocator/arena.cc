@@ -38,4 +38,24 @@ CentralArena::CentralArena() {
 }
 
 
+CentralArena::~CentralArena() {
+  return;
+  LocalArena* current = local_arena_;
+  
+  while (1) {
+    LocalArena* tmp = current->next();
+    tmp->~LocalArena();
+    VirtualHeapAllocator::Unmap(current, 1);
+    if (tmp == nullptr) {
+      break;
+    }
+    current = tmp;
+  }
+}
+
+
+LocalArena::~LocalArena() {
+  
+}
+
 }}
