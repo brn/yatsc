@@ -30,7 +30,6 @@ YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
   const size_t actual_size = YATSC_ALIGN_OFFSET(size, yatsc::kAlignment);
   void* ret = arena->Allocate(actual_size);
   if (ret != nullptr) {
-    //printf("%p %zu\n", ret, std::hash<std::thread::id>()(std::this_thread::get_id()));
     return ret;
   }
   return AllocateLargeObject(actual_size);
@@ -39,7 +38,6 @@ YATSC_INLINE void* CentralArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
   ASSERT(true, ptr != nullptr);
-  //printf("dealloc %p %zu\n", ptr, std::hash<std::thread::id>()(std::this_thread::get_id()));
   if ((reinterpret_cast<uintptr_t>(ptr) & 1) == 1) {
     auto area = reinterpret_cast<Byte*>(reinterpret_cast<uintptr_t>(ptr) & ~1);
     auto large_header = reinterpret_cast<LargeHeader*>(reinterpret_cast<Byte*>(area) - sizeof(LargeHeader));
@@ -73,7 +71,7 @@ YATSC_INLINE LocalArena* CentralArena::GetLocalArena() YATSC_NOEXCEPT {
 
 
 YATSC_INLINE LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
-  LocalArena* current = local_arena_.load(std::memory_order_acquire);
+  LocalArena* current = local_arena_.load(std::memory_order_relaxed);
   
   while (current != nullptr) {
     if (current->AcquireLock()) {

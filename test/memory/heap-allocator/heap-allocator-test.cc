@@ -311,179 +311,34 @@ TEST_F(Heap, New_many_from_chunk_random_and_dealloc) {
 }
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_big_object) {
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(8);
-//   p.New<LargeObject>(&ok);
-//   p.Destroy();
-//   ASSERT_EQ(ok, 1u);
-// }
+TEST_F(Heap, New_allocate_big_object) {
+  uint64_t ok = 0u;
+  auto l = yatsc::Heap::New<LargeObject>(&ok);
+  yatsc::Heap::Destruct(l);
+  ASSERT_EQ(ok, 1u);
+}
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_many_big_object) {
-//   static const uint64_t kSize = 10000;
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(8);
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     p.New<LargeObject>(&ok);
-//   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
-// }
+TEST_F(Heap, New_allocate_many_big_object) {
+  static const uint64_t kSize = 10000;
+  uint64_t ok = 0u;
+  for (uint64_t i = 0u; i < kSize; i++) {
+    yatsc::Heap::New<LargeObject>(&ok);
+  }
+}
 
 
-// TEST_F(RegionsTest, RegionsTest_allocate_many_big_object_and_dealloc) {
-//   static const uint64_t kSize = 10000;
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(8);
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     auto t = p.New<LargeObject>(&ok);
-//     p.Dealloc(t);
-//   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-
-// TEST_F(RegionsTest, RegionsTest_performance1) {
-//   yatsc::Regions p(1024);
-//   uint64_t ok = 0u;
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     p.New<Test1<>>(&ok);
-//   }
-//   p.Destroy();
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-// TEST_F(RegionsTest, RegionsTest_performance2) {
-//   uint64_t ok = 0u;
-//   {
-//     std::vector<std::shared_ptr<Test0>> list(kSize);
-//     for (uint64_t i = 0u; i < kSize; i++) {
-//       list[i] = std::make_shared<Test0>(&ok);
-//     }
-//   }
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-// TEST_F(RegionsTest, RegionsTest_performance3) {
-//   uint64_t ok = 0u;
-//   std::vector<Test0*> stack(kSize);
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     stack[i] = new Test0(&ok);
-//   }
-//   for (uint64_t i = 0u; i < kSize; i++) {
-//     delete stack[i];
-//   }
-//   ASSERT_EQ(kSize, ok);
-// }
-
-
-// TEST_F(Heap, New_thread) {
-//   std::atomic_int ok;
-//   ok.store(0, std::memory_order_relaxed);
-//   std::atomic<unsigned> index(0);
-//   auto fn = [&]() {
-//     Test1<std::atomic_int>* last = nullptr;
-//     for (uint64_t i = 0u; i < kThreadObjectSize * 5; i++) {
-//       auto x = yatsc::Heap::New<Test1<std::atomic_int>>(&ok);
-//       if (last != nullptr) {
-//         ASSERT_EQ(last, x);
-//         last = x;
-//       }
-//       yatsc::Heap::Destruct(x);
-//     }
-//     index++;
-//   };
+TEST_F(Heap, New_allocate_many_big_object_and_dealloc) {
+  static const uint64_t kSize = 10000;
+  uint64_t ok = 0u;
+  for (uint64_t i = 0u; i < kSize; i++) {
+    auto t = yatsc::Heap::New<LargeObject>(&ok);
+    yatsc::Heap::Destruct(t);
+  }
   
-//   std::vector<std::thread*> threads;
-//   LOOP_FOR_THREAD_SIZE {
-//     auto th = new std::thread(fn);
-//     threads.push_back(th);
-//   }
-//   LOOP_FOR_THREAD_SIZE {
-//     threads[i]->detach();
-//     delete threads[i];
-//   }
+  ASSERT_EQ(kSize, ok);
+}
 
-//   BUSY_WAIT(index) {}  
-//   ASSERT_EQ(kThreadObjectSize * 5 * kThreadSize, ok.load());
-// }
-
-
-// TEST_F(RegionsTest, RegionsTest_thread_new) {
-//   uint64_t ok = 0u;
-//   std::vector<Test0*> stack(kStackSize);
-//   std::atomic<unsigned> index(0);
-//   auto fn = [&](int id) {
-//     int current = kThreadObjectSize * id;
-//     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-//       stack[current + i] = new Test0(&ok);
-//     }
-//     index++;
-//   };
-  
-//   std::vector<std::thread*> threads;
-//   LOOP_FOR_THREAD_SIZE {
-//     auto th = new std::thread(fn, i);
-//     threads.push_back(th);
-//   }
-//   LOOP_FOR_THREAD_SIZE {
-//     threads[i]->detach();
-//     delete threads[i];
-//   }
-
-//   BUSY_WAIT(index) {}
-
-//   for (int i = 0; i < kStackSize; i++) {
-//     delete stack[i];
-//   }
-  
-//   ASSERT_EQ(kStackSize, ok);
-// }
-
-
-// TEST_F(RegionsTest, RegionsTest_thread_random) {
-//   uint64_t ok = 0u;
-//   yatsc::Regions p(1024);
-//   std::atomic<unsigned> index(0);
-//   auto fn = [&]() {
-//     std::random_device rd;
-//     std::mt19937 mt(rd());
-//     std::uniform_int_distribution<size_t> size(1, 100);
-//     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-//       int s = size(mt);
-//       int t = s % 3 == 0;
-//       int f = s % 5 == 0;
-//       if (t) {
-//         p.New<Test1<>>(&ok);
-//       } else if (f) {
-//         p.New<Test2<>>(&ok);
-//       } else {
-//         p.New<Test3<>>(&ok);
-//       }
-//     }
-//     index++;
-//   };
-  
-//   std::vector<std::thread*> threads;
-//   LOOP_FOR_THREAD_SIZE {
-//     auto th = new std::thread(fn);
-//     threads.push_back(th);
-//   }
-//   LOOP_FOR_THREAD_SIZE {
-//     threads[i]->detach();
-//     delete threads[i];
-//   }
-
-//   BUSY_WAIT(index) {}
-  
-//   p.Destroy();
-//   ASSERT_EQ(kThreadObjectSize * kThreadSize, ok);
-// }
 
 
 TEST_F(Heap, New_thread_random_dealloc) {
@@ -497,7 +352,7 @@ TEST_F(Heap, New_thread_random_dealloc) {
     std::random_device rd;
     std::mt19937 mt(rd());
     std::uniform_int_distribution<size_t> size(1, 100);
-    Base* last = nullptr;
+    volatile Base* last = nullptr;
     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
       int s = size(mt);
       int ss = s % 6 == 0;
@@ -537,3 +392,4 @@ TEST_F(Heap, New_thread_random_dealloc) {
   
   ASSERT_EQ(dc.load(), ok);
 }
+
