@@ -1,3 +1,7 @@
 [submodule "gyp"]
 	path = gyp
 	url = https://chromium.googlesource.com/external/gyp.git
+
+[submodule "Celero"]
+	path = Celero
+	url = https://github.com/DigitalInBlue/Celero.git
