@@ -40,6 +40,11 @@ class AlignedHeapAllocator: private Static {
   
   // Deallocate allocated memory block.
   static void Deallocate(void* addr);
+
+ private:
+#ifdef PLATFORM_WIN
+  static SpinLock lock_;
+#endif
 };
 }
 

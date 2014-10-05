@@ -10,6 +10,7 @@
 
   'target_defaults': {
     'default_configuration': 'Debug',
+    'msbuild_toolset': 'v120',  # Visual Studio 2013 (v120)
     'configurations': {
       'Debug': {
         'defines': [ 'DEBUG', '_DEBUG' ],
@@ -82,11 +83,12 @@
       'VCCLCompilerTool': {
         'StringPooling': 'true', # pool string literals
         'DebugInformationFormat': 3, # Generate a PDB
-        'WarningLevel': 3,
+        'WarningLevel': 4,
         'BufferSecurityCheck': 'true',
         'ExceptionHandling': 1, # /EHsc
         'SuppressStartupBanner': 'true',
         'WarnAsError': 'false',
+        'DisableSpecificWarnings': ['4127'], # /wd"4127"
       },
       'VCLibrarianTool': {
         'AdditionalLibraryDirectories': ['./lib']
@@ -100,11 +102,17 @@
         'target_conditions': [
           ['_type=="executable"', {
             'SubSystem': 1, # console executable
-          }],
+          }]
         ],
       },
     },
     'conditions': [
+      ['"<(target_arch)"=="x64"', {
+        'msvs_configuration_platform': 'x64'
+      }],
+      ['"<(target_arch)"=="x82"', {
+        'msvs_configuration_platform': 'x82'
+      }],
       ['OS == "win"', {
         'msvs_cygwin_shell': 0, # prevent actions from trying to use cygwin
         'defines': [
@@ -117,11 +125,7 @@
           '_CRT_NONSTDC_NO_DEPRECATE',
           'PLATFORM_WIN',
           'NOMINMAX'
-        ],
-        'include_dirs': [
-          'gperftools/src/',
-          'gperftools/src/windows'
-        ],
+        ]
       }],
       [ 'OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"', {
         'defines': [

@@ -53,11 +53,23 @@ class VirtualHeapAllocator: private Static {
   };
 
 
+  class Type: private Static {
+   public:
+    static uint8_t COMMIT;
+    static uint8_t DECOMMIT;
+    static uint8_t RESERVE;
+    static uint8_t RELEASE;
+  };
+
+
   // Reserve or commit new virtual memory block.
-  inline static void* Map(void* addr, size_t size, uint8_t prot, uint8_t flags);
+  inline static void* Map(void* addr, size_t size, uint8_t prot, uint8_t flags, uint8_t type = Type::RESERVE);
 
   // Unmap reserved memory block.
-  inline static void Unmap(void* addr, size_t size);
+  inline static void Unmap(void* addr, size_t size, uint8_t type = Type::RELEASE);
+
+ private:
+  static std::atomic<uint64_t> used_;
 };
 }
 

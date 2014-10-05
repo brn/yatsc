@@ -28,10 +28,16 @@ if __name__ == '__main__':
   # On msvs it will crash if it gets an absolute path.
   # On Mac/make it will crash if it doesn't get an absolute path.
   if sys.platform == 'win32':
-    args.append(os.path.join(root, 'test.gyp'))
+    if len(sys.argv) is 1:
+      args.append(os.path.join(root, 'test.gyp'))
+    else:
+      args.append(os.path.join(root, sys.argv[1]))
     common_fn  = os.path.join(root, 'commons.gypi')
   else:
-    args.append(os.path.join(os.path.abspath(root), 'test.gyp'))
+    if len(sys.argv) is 1:
+      args.append(os.path.join(os.path.abspath(root), 'test.gyp'))
+    else:
+      args.append(os.path.join(root, sys.argv[1]))
     common_fn  = os.path.join(os.path.abspath(root), 'commons.gypi')
   print common_fn
   if os.path.exists(common_fn):
@@ -63,7 +69,10 @@ if __name__ == '__main__':
   elif sys.platform == 'darwin':
     args.extend('-f xcode'.split())
 
-  args.append('-Dtarget_arch=ia32')
+  if len(sys.argv) is 3:
+    args.append('-Dtarget_arch=' + sys.argv[2])
+    del args[1]
+  
   args.append('-Dcomponent=static_library')
   args.append('-Dlibrary=static_library')  
   args.append('-Dcurrent_dir=' + os.getcwd().replace('\\', '/'))

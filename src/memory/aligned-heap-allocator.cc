@@ -54,8 +54,8 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
   } else {
     // If kAllocateAlignment is not enough alignment.
     Byte* allocatedAddress = nullptr;
-    Byte* alignedAddress;
-    size_t allocatedSize;
+    Byte* alignedAddress = nullptr;
+    size_t allocatedSize = 0;
     void* ret = nullptr;
     size_t roundup = 0;
     int retry = 0;
@@ -67,7 +67,9 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       retry++;
 
       if (retry > kMaxRetry) {
-        FATAL("Memory allocation faild.");
+        std::string buf;
+        GetLastError(&buf);
+        FATAL("Memory allocation faild.\n" << buf);
       }
 
       // First allocation, we reserve memory block that contains target range.
@@ -95,6 +97,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
 #ifdef PLATFORM_POSIX
       VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
 #elif defined(PLATFORM_WIN)
+      lock_.lock();
       VirtualHeapAllocator::Unmap(allocatedAddress, allocatedSize);
 #endif
       
@@ -104,6 +107,9 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       ret = VirtualHeapAllocator::Map(alignedAddress, block_size,
                                       VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
                                       VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
+#ifdef PLATFORM_WIN
+      lock_.unlock();
+#endif
       
       // Check commited memory block address is less than the alignedAddress.
       if (ret != nullptr && ret != alignedAddress) {
@@ -122,5 +128,9 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
 void AlignedHeapAllocator::Deallocate(void* addr) {
   VirtualHeapAllocator::Unmap(addr, 1u);
 }
+
+#ifdef PLATFORM_WIN
+SpinLock AlignedHeapAllocator::lock_;
+#endif
 
 } // yatsc

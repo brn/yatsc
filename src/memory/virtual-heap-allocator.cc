@@ -39,4 +39,10 @@ uint8_t VirtualHeapAllocator::Flags::SHARED = 0x2;
 uint8_t VirtualHeapAllocator::Flags::PRIVATE = 0x4;
 uint8_t VirtualHeapAllocator::Flags::FIXED = 0x8;
 
+uint8_t VirtualHeapAllocator::Type::COMMIT = 0x1;
+uint8_t VirtualHeapAllocator::Type::DECOMMIT = 0x2;
+uint8_t VirtualHeapAllocator::Type::RESERVE = 0x4;
+uint8_t VirtualHeapAllocator::Type::RELEASE = 0x8;
+
+std::atomic<uint64_t> VirtualHeapAllocator::used_;
 }

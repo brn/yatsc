@@ -39,7 +39,6 @@ CentralArena::CentralArena() {
 
 
 CentralArena::~CentralArena() {
-  return;
   LocalArena* current = local_arena_;
   
   while (1) {
