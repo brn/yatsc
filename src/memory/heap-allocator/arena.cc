@@ -28,13 +28,15 @@
 namespace yatsc {namespace heap {
 
 inline void TlsFree(void* arena) {
-  reinterpret_cast<LocalArena*>(arena)->ReleaseLock();
+  auto local_arena = reinterpret_cast<LocalArena*>(arena);
+  local_arena->ReleaseLock();
 }
 
 
 CentralArena::CentralArena() {
   local_arena_.store(nullptr, std::memory_order_relaxed);
   tls_ = tls_once_init_(&TlsFree);
+  released_arena_count_.store(0, std::memory_order_relaxed);
 }
 
 

@@ -27,8 +27,6 @@
 #include <random>
 #include <thread>
 #include <memory>
-#include <windows.h>
-#include <Psapi.h>
 #include "../../../src/memory/heap-allocator/heap-allocator.h"
 #include "../../../src/utils/systeminfo.h"
 #include "../../../src/utils/utils.h"

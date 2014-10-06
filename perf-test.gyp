@@ -2,15 +2,18 @@
   'includes': ['commons.gypi'],
   'target_defaults': {
     'defines': ['CELERO_STATIC'],
+    'ldflags': [ '-L./build/Debug' ],
     'configurations': {
       'Debug': {
         'msvs_settings': {
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Debug/lib/celero.lib',
-              'Psapi.Lib'
             ]
           }
+        },
+        'xcode_settings': {
+          'OTHER_LDFLAGS': ['./build/Debug/libcelero.a']
         }
       },
       'Release': {
@@ -18,9 +21,11 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Release/lib/celero.lib',
-              'Psapi.Lib'
             ]
           }
+        },
+        'xcode_settings': {
+          'OTHER_LDFLAGS': ['./build/Release/libcelero.a']
         }
       }
     }
@@ -31,7 +36,7 @@
       'product_name': 'HeapAllocatorPerfTest',
       'type': 'executable',
       'defines' : ['UNIT_TEST=1'],
-      'include_dirs': ['./lib', './Celero/include'],
+      'include_dirs': ['/usr/local/include', './lib', './Celero/include'],
       'sources': [
         './src/utils/tls.cc',
         './src/utils/systeminfo.cc',
@@ -42,7 +47,6 @@
         './src/memory/heap-allocator/heap-allocator.cc',
         './perfs/memory/heap-allocator/heap-allocator-perf-test.cc',
         './src/utils/os.cc',
-        './lib/gtest/gtest-all.cc',
       ],
     }
   ]

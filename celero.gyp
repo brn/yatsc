@@ -36,8 +36,8 @@
       ['"<(target_arch)"=="x64"', {
         'msvs_configuration_platform': 'x64'
       }],
-      ['"<(target_arch)"=="x82"', {
-        'msvs_configuration_platform': 'x82'
+      ['"<(target_arch)"=="x86"', {
+        'msvs_configuration_platform': 'x86'
       }],
       ['OS == "win"', {
         'defines': ['_CRT_SECURE_NO_WARNINGS', '_VARIADIC_MAX=10']
@@ -47,11 +47,42 @@
       }],
     ],
     'xcode_settings': {
-    'MACOSX_DEPLOYMENT_TARGET': '10.7',
-      'OTHER_CFLAGS': [
-        "-std=c++11",
-        "-stdlib=libc++"
+      'ARCHS': ['x86_64', 'i386'],
+      'MACOSX_DEPLOYMENT_TARGET': '10.7',
+      'OTHER_CPLUSPLUSFLAGS': [
+        '-fno-operator-names',
+        '-std=c++11',
+        '-stdlib=libc++'
       ],
+      'ALWAYS_SEARCH_USER_PATHS': 'YES',
+      'GCC_CW_ASM_SYNTAX': 'NO',                # No -fasm-blocks
+      'GCC_DYNAMIC_NO_PIC': 'NO',               # No -mdynamic-no-pic
+                                                # (Equivalent to -fPIC)
+      'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',        # -fno-exceptions
+      'GCC_ENABLE_CPP_RTTI': 'YES',              # -fno-rtti
+      'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
+      'GCC_INLINES_ARE_PRIVATE_EXTERN': 'YES',
+      'GCC_SYMBOLS_PRIVATE_EXTERN': 'YES',      # -fvisibility=hidden
+      'GCC_THREADSAFE_STATICS': 'NO',           # -fno-threadsafe-statics
+      'GCC_WARN_ABOUT_MISSING_NEWLINE': 'NO',  # -Wnewline-eof
+      'PREBINDING': 'NO',                       # No -Wl,-prebind
+      'USE_HEADERMAP': 'NO',
+      'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',
+      'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
+      'CLANG_CXX_LIBRARY': 'libc++', # libc++ requires OS X 10.7 or later
+      'WARNING_CFLAGS': [
+        '-Weverything',
+        '-Wall',
+        '-Wendif-labels',
+        '-W',
+        '-Wno-unused-parameter',
+        '-Wno-padded',
+        '-Wno-switch-enum',
+        '-Wno-undef',
+        '-Wno-c++98-compat',
+        '-Wno-format-nonliteral',
+        '-Wno-weak-vtables'
+      ]
     },
     'msvs_settings': {
       'VCCLCompilerTool': {

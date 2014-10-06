@@ -66,6 +66,12 @@ class CentralArena {
 
 
   static void* GetInternalHeap(size_t additional = 0);
+
+  
+  YATSC_INLINE void NotifyLockAcquired() YATSC_NOEXCEPT;
+
+  
+  YATSC_INLINE void NotifyLockReleased() YATSC_NOEXCEPT;
   
  private:
 
@@ -82,13 +88,15 @@ class CentralArena {
   LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
   IntrusiveRbTree<size_t, LargeHeader*> large_bin_;
   SpinLock lock_;
+  std::atomic_int released_arena_count_;
 };
 
 
 class LocalArena {
  public:
-  LocalArena(Byte* block)
-      : used_internal_heap_(0),
+  LocalArena(CentralArena* arena, Byte* block)
+      : central_arena_(arena),
+        used_internal_heap_(0),
         memory_block_(block) {}
 
   ~LocalArena();
@@ -97,12 +105,17 @@ class LocalArena {
 
   
   YATSC_INLINE bool AcquireLock() YATSC_NOEXCEPT {
-    return !lock_.test_and_set();
+    bool ret = !lock_.test_and_set();
+    if (ret) {
+      central_arena_->NotifyLockAcquired();
+    }
+    return ret;
   }
 
   
   YATSC_INLINE void ReleaseLock() YATSC_NOEXCEPT {
     lock_.clear();
+    central_arena_->NotifyLockReleased();
   }
 
 
@@ -123,6 +136,7 @@ class LocalArena {
   
   YATSC_INLINE void ResetPool();
 
+  CentralArena* central_arena_;
   size_t used_internal_heap_;
   Byte* memory_block_;
   std::atomic_flag lock_;
