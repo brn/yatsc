@@ -58,6 +58,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
     size_t allocatedSize = 0;
     void* ret = nullptr;
     size_t roundup = 0;
+    size_t unused = 0;
     int retry = 0;
 
     // Reserve extra memory to roundup the head address.
@@ -89,6 +90,8 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
 
       // The roundup value of head addr.
       roundup = static_cast<uintptr_t>(alignedAddress - allocatedAddress);
+      // The 'unused' is tail unused memory block.
+      unused = alignment - kAllocateAlignment - roundup;
 
       // Restore alignment.
       alignment++;
@@ -96,6 +99,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       // Remove reserved block.
 #ifdef PLATFORM_POSIX
       VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
+      VirtualHeapAllocator::Unmap(allocatedAddress + (allocatedSize - unused), unused);
 #elif defined(PLATFORM_WIN)
       lock_.lock();
       VirtualHeapAllocator::Unmap(allocatedAddress, allocatedSize);

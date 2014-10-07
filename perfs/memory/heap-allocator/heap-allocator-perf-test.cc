@@ -35,7 +35,7 @@ namespace {
 size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();
 static const uint64_t kSize = 10000u;
 static const size_t kThreadSize = thread_size - 1 == 0? 1 : thread_size - 1;
-static const int kThreadObjectSize = 2000;
+static const int kThreadObjectSize = 5000;
 static const int kSamples = 10;
 }
 
@@ -100,7 +100,7 @@ class Test3 : public Base {
 CELERO_MAIN;
 
 
-BASELINE(HeapAllocation, Baseline, kSamples, 100) {
+BASELINE(ThreadedHeapAllocator, Baseline, kSamples, 100) {
   yatsc::SpinLock lock;
   std::vector<Base*> vec;
   vec.reserve(kThreadObjectSize * kThreadSize);
@@ -153,7 +153,7 @@ BASELINE(HeapAllocation, Baseline, kSamples, 100) {
 }
 
 
-BENCHMARK(HeapAllocation, Heap_New, kSamples, 100) {
+BENCHMARK(ThreadedHeapAllocator, New, kSamples, 100) {
   yatsc::SpinLock lock;
   std::vector<Base*> vec;
   vec.reserve(kThreadObjectSize * kThreadSize);
@@ -206,7 +206,7 @@ BENCHMARK(HeapAllocation, Heap_New, kSamples, 100) {
 }
 
 
-BASELINE(HeapAllocationSingle, Baseline, kSamples, 100) {
+BASELINE(HeapAllocator, Baseline, kSamples, 100) {
   std::vector<Base*> vec;
   vec.reserve(kSize);
   uint64_t ok = 0u;
@@ -222,7 +222,7 @@ BASELINE(HeapAllocationSingle, Baseline, kSamples, 100) {
 }
 
 static int x = 0;
-BENCHMARK(HeapAllocationSingle, New, kSamples, 100) {
+BENCHMARK(HeapAllocator, New, kSamples, 100) {
   std::vector<Base*> vec;
   vec.reserve(kSize);
 

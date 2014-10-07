@@ -65,7 +65,7 @@ class CentralArena {
   YATSC_INLINE void Dealloc(volatile void* ptr) YATSC_NOEXCEPT;
 
 
-  static void* GetInternalHeap(size_t additional = 0);
+  YATSC_INLINE static void* GetInternalHeap(size_t additional = 0);
 
   
   YATSC_INLINE void NotifyLockAcquired() YATSC_NOEXCEPT;
@@ -77,11 +77,11 @@ class CentralArena {
 
   YATSC_INLINE LocalArena* GetLocalArena() YATSC_NOEXCEPT;
 
-  YATSC_INLINE LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
+  LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
 
-  YATSC_INLINE LocalArena* StoreNewLocalArena() YATSC_NOEXCEPT;
+  LocalArena* StoreNewLocalArena() YATSC_NOEXCEPT;
 
-  YATSC_INLINE void* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
+  void* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
   
   AtomicLocalArena local_arena_;
   ThreadLocalStorage::Slot* tls_;
@@ -119,19 +119,19 @@ class LocalArena {
   }
 
 
-  LocalArena* next() YATSC_NOEXCEPT {
-    return next_.load(std::memory_order_acquire);
+  YATSC_INLINE LocalArena* next() YATSC_NOEXCEPT {
+    return next_.load();
   }
 
 
-  void set_next(LocalArena* arena) YATSC_NOEXCEPT {
-    next_.store(arena, std::memory_order_release);
+  YATSC_INLINE void set_next(LocalArena* arena) YATSC_NOEXCEPT {
+    next_.store(arena);
   }
   
   
  private:
 
-  YATSC_INLINE ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
+  ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
 
   
   YATSC_INLINE void ResetPool();
