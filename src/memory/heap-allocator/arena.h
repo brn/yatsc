@@ -37,8 +37,11 @@
 namespace yatsc {namespace heap {
 class LocalArena;
 
+// The minimum number of the allowed ChunkHeader allocated size.
 static size_t kChunkHeaderAllocatableCount = 70;
 
+
+// Large heap header that manage each large heap block.
 class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
  public:
   LargeHeader(size_t size)
@@ -49,39 +52,65 @@ class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
   size_t size_;
 };
 
+
+// Local arena linked list type.
 typedef std::atomic<LocalArena*> AtomicLocalArena;
 
+
+// The central arena. This arena controll all LocalArena.
+// [MainThread][CentralArena]
+//   [Thread1]->[LocalArena]
+//   [Thread2]->[LocalArena]
+//   [Thread3]->[LocalArena]
+// ...
+// All LocalArena that held by each thread is allocated from CentralArena
+// and managed by CentralArena.
 class CentralArena {
  public:
   CentralArena();
   ~CentralArena();
 
+
+  // Allocate new heap space that has the specified size.
   YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
-  
+
+  // Deallocate heap that allocated by Allocate(size_t).
   YATSC_INLINE void Dealloc(void* ptr) YATSC_NOEXCEPT;
 
-  
+
+  // Specialized method for volatile pointer.
   YATSC_INLINE void Dealloc(volatile void* ptr) YATSC_NOEXCEPT;
 
 
+  // Allocate ChunkHeader heap that has the specified size.
   YATSC_INLINE static void* GetInternalHeap(size_t additional = 0);
 
-  
+
+  // If LocalArena lock is acquired, change released_arena_count_ state.
   YATSC_INLINE void NotifyLockAcquired() YATSC_NOEXCEPT;
 
-  
+
+  // If LocalArena lock is released, change released_arena_count_ state.
   YATSC_INLINE void NotifyLockReleased() YATSC_NOEXCEPT;
   
  private:
 
+  // Return thread specific LocalArena.
   YATSC_INLINE LocalArena* GetLocalArena() YATSC_NOEXCEPT;
+  
 
+  // Search and return unlocked arena.
   LocalArena* FindUnlockedArena() YATSC_NOEXCEPT;
+  
 
+  // Create new LocalArena.
   LocalArena* StoreNewLocalArena() YATSC_NOEXCEPT;
+  
 
+  // Allocate Large size heap that has specified size.
   void* AllocateLargeObject(size_t size) YATSC_NOEXCEPT;
+  
   
   AtomicLocalArena local_arena_;
   ThreadLocalStorage::Slot* tls_;
@@ -92,6 +121,7 @@ class CentralArena {
 };
 
 
+// The thread specific arena.
 class LocalArena {
  public:
   LocalArena(CentralArena* arena, Byte* block)
@@ -101,9 +131,13 @@ class LocalArena {
 
   ~LocalArena();
 
+
+  // Allocate new heap that has specified size.
   YATSC_INLINE void* Allocate(size_t size) YATSC_NOEXCEPT;
 
-  
+
+  // Lock this arena if not locked and
+  // notify central arena that locked.
   YATSC_INLINE bool AcquireLock() YATSC_NOEXCEPT {
     bool ret = !lock_.test_and_set();
     if (ret) {
@@ -112,18 +146,22 @@ class LocalArena {
     return ret;
   }
 
-  
+
+  // Unlock this arena and
+  // notify central arena that unlocked.
   YATSC_INLINE void ReleaseLock() YATSC_NOEXCEPT {
     lock_.clear();
     central_arena_->NotifyLockReleased();
   }
 
 
+  // Get next LocalArena pointer.
   YATSC_INLINE LocalArena* next() YATSC_NOEXCEPT {
     return next_.load();
   }
 
 
+  // Set next LocalArena pointer.
   YATSC_INLINE void set_next(LocalArena* arena) YATSC_NOEXCEPT {
     next_.store(arena);
   }
@@ -131,9 +169,11 @@ class LocalArena {
   
  private:
 
+  // Return ChunkHeader that is already allocated or new allocated.
   ChunkHeader* AllocateIfNecessary(size_t size) YATSC_NOEXCEPT;
 
-  
+
+  // Reallocate ChunkHeader heap space.
   YATSC_INLINE void ResetPool();
 
   CentralArena* central_arena_;

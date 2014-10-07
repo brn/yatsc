@@ -97,112 +97,139 @@ class Test3 : public Base {
 };
 
 
+class ThreadRunner {
+ public:
+  ThreadRunner(bool heap) {
+    LOOP_FOR_THREAD_SIZE {
+      if (heap) {
+        InitNormalNew();
+      } else {
+        InitHeapAllocator();
+      }
+    }
+    end_.clear();
+  }
+
+  void Start() {
+    index_.store(0);
+    vec_.clear();
+    vec_.reserve(kThreadObjectSize * kThreadSize);
+    cv_.notify_all();
+  }
+
+
+  void DeleteNormal() {
+    BUSY_WAIT(index_) {}
+    for (auto x: vec_) {
+      delete x;
+    }
+  }
+
+
+  void DeleteHeap() {
+    BUSY_WAIT(index_) {}
+    for (auto x: vec_) {
+      yatsc::Heap::Destruct(x);
+    }
+  }
+  
+
+ private:
+  void InitNormalNew() {
+    std::thread th([&]{
+      std::atomic<uint64_t> ok;
+      ok.store(0);
+ 
+      std::unique_lock<std::mutex> lock(mutex_);
+      while (1) {
+        cv_.wait(lock);
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<size_t> size(1, 100);
+        Base* last = nullptr;
+        for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
+          int s = size(mt);
+          int ss = s % 6 == 0;
+          int t = s % 3 == 0;
+          int f = s % 5 == 0;
+    
+          if (t) {
+            last = new Test1<std::atomic<uint64_t>>(&ok);
+          } else if (f) {
+            last = new Test2<std::atomic<uint64_t>>(&ok);
+          } else {
+            last = new Test3<std::atomic<uint64_t>>(&ok);
+          }
+          lock_.lock();
+          vec_.push_back(last);
+          lock_.unlock();
+        }
+        index_++;
+      }
+    });
+    th.detach();
+  }
+
+
+  void InitHeapAllocator() {
+    std::thread th([&]{
+      std::atomic<uint64_t> ok;
+      ok.store(0);
+      std::unique_lock<std::mutex> lock(mutex_);
+      while (1) {
+        cv_.wait(lock);
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_int_distribution<size_t> size(1, 100);
+        Base* last = nullptr;
+        for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
+          int s = size(mt);
+          int ss = s % 6 == 0;
+          int t = s % 3 == 0;
+          int f = s % 5 == 0;
+    
+          if (t) {
+            last = yatsc::Heap::New<Test1<std::atomic<uint64_t>>>(&ok);
+          } else if (f) {
+            last = yatsc::Heap::New<Test2<std::atomic<uint64_t>>>(&ok);
+          } else {
+            last = yatsc::Heap::New<Test3<std::atomic<uint64_t>>>(&ok);
+          }
+          lock_.lock();
+          vec_.push_back(last);
+          lock_.unlock();
+        }
+        index_++;
+      }
+    });
+    th.detach();
+  }
+
+  std::atomic_flag end_;
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  std::atomic<size_t> index_;
+  std::vector<Base*> vec_;
+  yatsc::SpinLock lock_;
+};
+
+
+static ThreadRunner baseline_thread_runner(true);
+static ThreadRunner thread_runner(false);
+
+
 CELERO_MAIN;
 
 
 BASELINE(ThreadedHeapAllocator, Baseline, kSamples, 100) {
-  yatsc::SpinLock lock;
-  std::vector<Base*> vec;
-  vec.reserve(kThreadObjectSize * kThreadSize);
-  std::atomic<uint64_t> ok(0u);
-  std::atomic<unsigned> index(0);
-  std::atomic<bool> wait(true);
-  std::atomic_int dc;
-  dc.store(0);
-  auto fn = [&]() {
-    while (wait.load()) {}
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_int_distribution<size_t> size(1, 100);
-    Base* last = nullptr;
-    for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-      int s = size(mt);
-      int ss = s % 6 == 0;
-      int t = s % 3 == 0;
-      int f = s % 5 == 0;
-    
-      if (t) {
-        last = new Test1<std::atomic<uint64_t>>(&ok);
-      } else if (f) {
-        last = new Test2<std::atomic<uint64_t>>(&ok);
-      } else {
-        last = new Test3<std::atomic<uint64_t>>(&ok);
-      }
-      lock.lock();
-      vec.push_back(last);
-      lock.unlock();
-    }
-    index++;
-  };
-  
-  std::vector<std::thread*> threads;
-  LOOP_FOR_THREAD_SIZE {
-    auto th = new std::thread(fn);
-    threads.push_back(th);
-  }
-  LOOP_FOR_THREAD_SIZE {
-    threads[i]->detach();
-    delete threads[i];
-  }
-  wait.store(false);
-
-  BUSY_WAIT(index) {}
-  for (auto x: vec) {
-    delete x;
-  }
+  baseline_thread_runner.Start();
+  baseline_thread_runner.DeleteNormal();
 }
 
 
 BENCHMARK(ThreadedHeapAllocator, New, kSamples, 100) {
-  yatsc::SpinLock lock;
-  std::vector<Base*> vec;
-  vec.reserve(kThreadObjectSize * kThreadSize);
-  std::atomic<uint64_t> ok(0u);
-  std::atomic<unsigned> index(0);
-  std::atomic<bool> wait(true);
-  std::atomic_int dc;
-  dc.store(0);
-  auto fn = [&]() {
-    while (wait.load()) {}
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::uniform_int_distribution<size_t> size(1, 100);
-    Base* last = nullptr;
-    for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-      int s = size(mt);
-      int ss = s % 6 == 0;
-      int t = s % 3 == 0;
-      int f = s % 5 == 0;
-    
-      if (t) {
-        last = yatsc::Heap::New<Test1<std::atomic<uint64_t>>>(&ok);
-      } else if (f) {
-        last = yatsc::Heap::New<Test2<std::atomic<uint64_t>>>(&ok);
-      } else {
-        last = yatsc::Heap::New<Test3<std::atomic<uint64_t>>>(&ok);
-      }
-      lock.lock();
-      vec.push_back(last);
-      lock.unlock();
-    }
-    index++;
-  };
-  
-  std::vector<std::thread*> threads;
-  LOOP_FOR_THREAD_SIZE {
-    auto th = new std::thread(fn);
-    threads.push_back(th);
-  }
-  LOOP_FOR_THREAD_SIZE {
-    threads[i]->detach();
-    delete threads[i];
-  }
-  wait.store(false);
-
-  BUSY_WAIT(index) {}
-  for (auto x: vec) {
-    yatsc::Heap::Destruct(x);
-  }
+  thread_runner.Start();
+  thread_runner.DeleteHeap();
 }
 
 
