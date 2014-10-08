@@ -31,13 +31,18 @@ namespace yatsc { namespace heap {
 // Deallocate all heaps.
 void ChunkHeader::Delete(ChunkHeader* chunk_header) {
   HeapHeader* heap_header = chunk_header->heap_list_;
+
+  if (heap_header == nullptr) {
+    return;
+  }
+  
   HeapHeader* head = heap_header->next();
   
   if (head != nullptr) {
     heap_header = head;
   }
   
-  while (heap_header != head) {
+  while (heap_header != nullptr) {
     HeapHeader* next = heap_header->next();
     AlignedHeapAllocator::Deallocate(heap_header);
     heap_header = next;

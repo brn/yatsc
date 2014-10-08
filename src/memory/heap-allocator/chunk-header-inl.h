@@ -27,7 +27,7 @@ namespace yatsc { namespace heap {
 
 // Allocate a new memory from the free list and remove front of the free list.
 // If the free list is empty, allocate a new memory that is aligned 1MB from virtual memory.
-// This method is thread safe.
+// This method is not thread safe.
 YATSC_INLINE void* ChunkHeader::Distribute() {
   auto free_list_head = free_list_.load(std::memory_order_acquire);
   

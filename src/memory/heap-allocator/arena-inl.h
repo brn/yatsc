@@ -103,8 +103,9 @@ YATSC_INLINE void* LocalArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 
 YATSC_INLINE void LocalArena::ResetPool() {
-  memory_block_ = reinterpret_cast<Byte*>(CentralArena::GetInternalHeap());
-  used_internal_heap_ = 0;
+  auto internal_heap = reinterpret_cast<InternalHeap*>(CentralArena::GetInternalHeap(sizeof(InternalHeap)));
+  internal_heap->set_next(internal_heap_);
+  internal_heap_ = internal_heap;
 }
 }}
 

@@ -45,7 +45,7 @@ CentralArena::~CentralArena() {
   
   while (1) {
     LocalArena* tmp = current->next();
-    tmp->~LocalArena();
+    current->~LocalArena();
     VirtualHeapAllocator::Unmap(current, 1);
     if (tmp == nullptr) {
       break;
@@ -73,9 +73,9 @@ LocalArena* CentralArena::FindUnlockedArena() YATSC_NOEXCEPT {
 
 
 LocalArena* CentralArena::StoreNewLocalArena() YATSC_NOEXCEPT {
-  Byte* block = reinterpret_cast<Byte*>(GetInternalHeap(sizeof(LocalArena)));
+  Byte* block = reinterpret_cast<Byte*>(GetInternalHeap(sizeof(LocalArena) + sizeof(InternalHeap)));
   
-  LocalArena* arena = new (block) LocalArena(this, block + sizeof(LocalArena));
+  LocalArena* arena = new (block) LocalArena(this, new(block + sizeof(LocalArena)) InternalHeap(block + sizeof(LocalArena) + sizeof(InternalHeap)));
   arena->AcquireLock();
 
   LocalArena* arena_head = local_arena_.load(std::memory_order_acquire);
@@ -103,7 +103,17 @@ void* CentralArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
 
 
 LocalArena::~LocalArena() {
-  
+  auto current = internal_heap_;
+  while (current != nullptr) {
+    auto header = reinterpret_cast<ChunkHeader*>(current->block());
+    for (size_t i = 0; i < current->used(); i++) {
+      ChunkHeader::Delete(header);
+      header = (header + i);
+    }
+    auto tmp = current->next();
+    VirtualHeapAllocator::Unmap(current, sizeof(ChunkHeader) * kChunkHeaderAllocatableCount + sizeof(InternalHeap));
+    current = tmp;
+  }
 }
 
 
@@ -111,12 +121,12 @@ ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOEXCEPT {
   if (size < ChunkHeader::kChunkMaxAllocatableSmallObjectSize) {
     ChunkHeader* chunk_header = small_bin_.Find(size);
     if (chunk_header == nullptr) {
-      if ((used_internal_heap_ + 1) == kChunkHeaderAllocatableCount) {
+      if ((internal_heap_->used() + 1) == kChunkHeaderAllocatableCount) {
         ResetPool();
       }
       
-      chunk_header = ChunkHeader::New(size, reinterpret_cast<ChunkHeader*>(memory_block_) + used_internal_heap_);
-      used_internal_heap_++;
+      chunk_header = ChunkHeader::New(size, reinterpret_cast<ChunkHeader*>(internal_heap_->block()) + internal_heap_->used());
+      internal_heap_->use();
       
       small_bin_.Insert(size, chunk_header);
     }

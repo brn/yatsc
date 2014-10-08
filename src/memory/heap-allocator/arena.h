@@ -121,13 +121,41 @@ class CentralArena {
 };
 
 
+class InternalHeap {
+ public:
+  InternalHeap(Byte* memory_block)
+      : memory_block_(memory_block),
+        next_(nullptr),
+        used_(0) {}
+
+
+  YATSC_PROPERTY(Byte*, block, memory_block_);
+  
+
+  YATSC_PROPERTY(InternalHeap*, next, next_);
+
+  
+  YATSC_INLINE void use() {
+    used_++;
+  }
+
+  YATSC_INLINE size_t used() {
+    return used_;
+  }
+  
+ private:
+  Byte* memory_block_;
+  InternalHeap* next_;
+  size_t used_;
+};
+
+
 // The thread specific arena.
 class LocalArena {
  public:
-  LocalArena(CentralArena* arena, Byte* block)
+  LocalArena(CentralArena* arena, InternalHeap* internal_heap)
       : central_arena_(arena),
-        used_internal_heap_(0),
-        memory_block_(block) {}
+        internal_heap_(internal_heap) {}
 
   ~LocalArena();
 
@@ -177,8 +205,7 @@ class LocalArena {
   YATSC_INLINE void ResetPool();
 
   CentralArena* central_arena_;
-  size_t used_internal_heap_;
-  Byte* memory_block_;
+  InternalHeap* internal_heap_;
   std::atomic_flag lock_;
   AtomicLocalArena next_;
   IntrusiveRbTree<size_t, ChunkHeader*> small_bin_;
