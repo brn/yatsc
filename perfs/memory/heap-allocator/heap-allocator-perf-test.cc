@@ -267,3 +267,25 @@ BENCHMARK(HeapAllocator, New, kSamples, 100) {
   // ::GetProcessMemoryInfo(::GetCurrentProcess(),&info,sizeof info);
   // printf("Used: %d MB PageFault: %d\n", info.WorkingSetSize / 1024 / 1024,  info.PageFaultCount);
 }
+
+
+BASELINE(HeapAllocatorShared, Baseline, kSamples, 100) {
+  std::vector<std::shared_ptr<Test1<uint64_t>>> vec;
+  vec.reserve(kSize);
+  uint64_t ok = 0u;
+  for (size_t i = 0u; i < kSize; i++) {
+    auto v = std::make_shared<Test1<uint64_t>>(&ok);
+    vec.push_back(v);
+  }
+}
+
+
+BENCHMARK(HeapAllocatorShared, NewHandle, kSamples, 100) {
+  std::vector<yatsc::Handle<Test1<uint64_t>>> vec;
+  vec.reserve(kSize);
+  uint64_t ok = 0u;
+  for (size_t i = 0u; i < kSize; i++) {
+    auto v = yatsc::Heap::NewHandle<Test1<uint64_t>>(&ok);
+    vec.push_back(v);
+  }
+}
