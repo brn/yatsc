@@ -45,11 +45,16 @@ static size_t kChunkHeaderAllocatableCount = 70;
 class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
  public:
   LargeHeader(size_t size)
-      : size_(size) {}
+      : size_(size),
+        next_(nullptr) {}
   
   YATSC_CONST_PROPERTY(size_t, size, size_);
+
+
+  YATSC_PROPERTY(LargeHeader*, next, next_);
  private:
   size_t size_;
+  LargeHeader* next_;
 };
 
 
@@ -121,6 +126,7 @@ class CentralArena {
 };
 
 
+// The ChunkHeader heap zone information.
 class InternalHeap {
  public:
   InternalHeap(Byte* memory_block)
@@ -129,16 +135,21 @@ class InternalHeap {
         used_(0) {}
 
 
+  // Getter and setter for memory_block_.
   YATSC_PROPERTY(Byte*, block, memory_block_);
   
 
+  // Getter and setter for next_.
   YATSC_PROPERTY(InternalHeap*, next, next_);
 
-  
+
+  // Increment used block count.
   YATSC_INLINE void use() {
     used_++;
   }
 
+
+  // Return current allocated ChunkHeader count.
   YATSC_INLINE size_t used() {
     return used_;
   }
