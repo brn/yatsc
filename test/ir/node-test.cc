@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include "../../src/utils/regions.h"
 #include "../../src/ir/node.h"
 #include "../../src/ir/irfactory.h"

@@ -23,7 +23,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include "../parser-util.h"
 
 bool breakable = false;

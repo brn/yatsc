@@ -23,7 +23,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include "../../gtest-header.h"
 #include "../../../src/memory/heap-allocator/chunk-header.h"
 
 class TestClass {

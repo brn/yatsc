@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include "../readfile.h"
 #include "../compare-string.h"
 #include "../../src/parser/sourcestream.h"

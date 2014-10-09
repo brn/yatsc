@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include <random>
 #include <thread>
 #include <memory>

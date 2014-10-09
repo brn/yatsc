@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include <stdint.h>
 #include <vector>
 #include "../../src/memory/aligned-heap-allocator.h"

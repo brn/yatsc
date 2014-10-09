@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
+#include "../gtest-header.h"
 #include <string>
 #include "../readfile.h"
 #include "../../src/parser/unicode-iterator-adapter.h"

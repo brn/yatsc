@@ -22,10 +22,10 @@
  * THE SOFTWARE.
  */
 
-#include <gtest/gtest.h>
 #include <random>
 #include <thread>
 #include <memory>
+#include "../../gtest-header.h"
 #include "../../signal-wait.h"
 #include "../../../src/memory/heap-allocator/heap-allocator.h"
 #include "../../../src/utils/systeminfo.h"

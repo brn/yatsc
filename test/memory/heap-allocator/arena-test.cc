@@ -23,7 +23,7 @@
  */
 
 
-#include <gtest/gtest.h>
+#include "../../gtest-header.h"
 #include <thread>
 #include "../../../src/memory/heap-allocator/arena.h"
 

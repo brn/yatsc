@@ -193,7 +193,8 @@
             '-Wno-undef',
             '-Wno-c++98-compat',
             '-Wno-format-nonliteral',
-            '-Wno-weak-vtables'
+            '-Wno-weak-vtables',
+            '-Wno-extra-semi'
           ]
         },
       }],
