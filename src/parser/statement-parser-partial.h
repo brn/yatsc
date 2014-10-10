@@ -320,7 +320,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl
     lhs = ParseBindingPattern(yield, false);
   }
 
-  if (lhs) {
+  if (!lhs->IsValidLhs()) {
     SYNTAX_ERROR("SyntaxError left hand side of lexical binding is invalid", Current());
   }
 
@@ -584,7 +584,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, b
     lhs = ParseBindingPattern(yield, false);
   }
 
-  if (lhs) {
+  if (!lhs->IsValidLhs()) {
     SYNTAX_ERROR("SyntaxError left hand side of variable declaration is invalid", Current());
   }
 
@@ -1522,7 +1522,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
         Handle<ir::FunctionOverloadView> overload(fn);
         if (overloads->size() > 0) {
           Handle<ir::FunctionOverloadView> last(overloads->last_child());
-          if (last->name()) {
+          if (!last->name()) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
           } else if (!last->name()->string_equals(overload->name())) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
@@ -1559,7 +1559,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementati
       name = ParseIdentifier();
     }
 
-    if (declaration && name) {
+    if (declaration && !name) {
       SYNTAX_ERROR("SyntaxError function name required", Current());
     }
     

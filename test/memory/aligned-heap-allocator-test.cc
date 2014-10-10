@@ -51,19 +51,5 @@ TEST(AlignedHeapAllocator, test) {
   
   ASSERT_EQ(i->c, 10);
   ASSERT_EQ(i2->f, 10);
-  printf("%p %p\n", addr, addr + 64 KB);
-  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(i2) & ~(128 KB)), i2);
-  printf("%p %p\n", reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(addr + 63 KB) & ~0xFFFF), addr + 63 KB);
-}
-
-
-
-TEST(AlignedHeapAllocator, test_loop) {
-  static const int kSize = 1000000;
-  std::vector<Test1*> v;
-  v.reserve(kSize);
-  // for (int i = 0; i < kSize; i++) {
-  //   yatsc::Byte* addr = reinterpret_cast<yatsc::Byte*>(yatsc::AlignedHeapAllocator::Allocate(32 KB, 1 MB));
-  //   v.push_back(new (addr) Test2());
-  // }
+  ASSERT_EQ(addr, reinterpret_cast<yatsc::Byte*>(reinterpret_cast<uintptr_t>(addr + 63 KB) & ~0xFFFF));
 }

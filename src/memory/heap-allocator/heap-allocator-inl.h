@@ -113,6 +113,7 @@ template <typename T>
 template <typename U>
 Handle<T>& Handle<T>::operator = (Handle<U>&& hh) {
   ref_count_ = hh.ref_count_;
+  hh.ref_count_ = nullptr;
   return *this;
 }
 }

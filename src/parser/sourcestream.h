@@ -30,6 +30,7 @@
 #include "../utils/error-reporter.h"
 #include "../utils/os.h"
 #include "../utils/stat.h"
+#include "../utils/stl.h"
 #include "../utils/utils.h"
 #include "../utils/unicode.h"
 
@@ -38,7 +39,7 @@ namespace yatsc {
 
 class SourceStream : public MaybeFail, private Uncopyable {
  public:
-  typedef std::string::iterator iterator;
+  typedef String::iterator iterator;
   SourceStream(const char* filepath);
 
   YATSC_INLINE ~SourceStream() = default;
@@ -50,7 +51,7 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE iterator end() {return buffer_.end();}
 
 
-  YATSC_INLINE const std::string& buffer() {return buffer_;}
+  YATSC_INLINE const String& buffer() {return buffer_;}
 
 
   YATSC_INLINE size_t size() const {return size_;}
@@ -64,8 +65,8 @@ class SourceStream : public MaybeFail, private Uncopyable {
   static const char* kCantOpenInput;
   
   size_t size_;
-  std::string filepath_;
-  std::string buffer_;
+  String filepath_;
+  String buffer_;
 };
 }
 

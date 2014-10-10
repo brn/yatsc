@@ -179,19 +179,6 @@ TEST_F(Heap, Allocate_loop) {
 }
 
 
-TEST_F(Heap, Allocate_loop_new) {
-  volatile TestClass* v;
-  for (uint64_t i = 0; i < kSize;i++) {
-    volatile TestClass* x = new TestClass();
-    x->a = 1;
-    x->b = 2;
-    x->c = 3;
-    x->d = 4;
-    v = x;
-  }
-}
-
-
 TEST_F(Heap, random_New) {
   uint64_t ok = 0u;
   std::random_device rd;
@@ -222,52 +209,9 @@ TEST_F(Heap, random_New) {
 }
 
 
-TEST_F(Heap, random_new_) {
-  uint64_t ok = 0u;
-  std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_int_distribution<size_t> size(1, 100);
-  std::vector<Base*> v;
-  v.reserve(kSize);
-  Base* ptr;
-  for (uint64_t i = 0u; i < kSize; i++) {
-    int s = size(mt);
-    int t = s % 3 == 0;
-    int f = s % 5 == 0;
-    if (t) {
-      ptr = new Test1<>(&ok);
-    } else if (f) {
-      ptr = new Test2<>(&ok);
-    } else {
-      ptr = new Test3<>(&ok);
-    }
-    v.push_back(ptr);
-  }
-  for (auto x: v) {
-    delete x;
-  }
-  
-  ASSERT_EQ(kSize, ok);
-}
-
-
 TEST_F(Heap, Random_Big) {
   uint64_t ok = 0u;
   std::vector<Base*, yatsc::StandardAllocator<Base*>> v;
-  for (uint64_t i = 0u; i < kSmallSize; i++) {
-    v.push_back(new LargeObject(&ok));
-  }
-  for (auto x: v) {
-    delete x;
-  }
-  
-  ASSERT_EQ(kSmallSize, ok);
-}
-
-
-TEST_F(Heap, Random_Big_normal) {
-  uint64_t ok = 0u;
-  std::vector<Base*> v;
   for (uint64_t i = 0u; i < kSmallSize; i++) {
     v.push_back(new LargeObject(&ok));
   }

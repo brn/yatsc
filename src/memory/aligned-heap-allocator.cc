@@ -24,6 +24,8 @@
 
 #include <exception>
 #include "../utils/utils.h"
+#include "../utils/os.h"
+#include "../utils/stl.h"
 #include "./aligned-heap-allocator.h"
 #include "./virtual-heap-allocator.h"
 
@@ -67,7 +69,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       retry++;
 
       if (retry > kMaxRetry) {
-        std::string buf;
+        String buf;
         GetLastError(&buf);
         FATAL("Memory allocation faild.\n" << buf);
       }

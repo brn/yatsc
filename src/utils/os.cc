@@ -43,7 +43,7 @@ int VAArgs(const char* format, va_list args) {
   return _vscprintf(format, args) + 1;
 }
 
-void Strerror(std::string* buf, int err) {
+void Strerror(String* buf, int err) {
   char buffer[95];
   if (strerror_s(buffer, err) == 0) {
     buf->assign(buffer);
@@ -60,7 +60,7 @@ void Printf(const char* format, ...) {
 }
 
 
-void SPrintf(std::string& buf, bool append, const char* format, ...) {
+void SPrintf(String& buf, bool append, const char* format, ...) {
   va_list args;
   va_start(args, format);
   int len = VAArgs(format, args);
@@ -76,7 +76,7 @@ void SPrintf(std::string& buf, bool append, const char* format, ...) {
   va_end(args);
 }
 
-void VSPrintf(std::string& buf, bool append, const char* format, va_list args) {
+void VSPrintf(String& buf, bool append, const char* format, va_list args) {
   int len = VAArgs(format, args);
   char* buffer = static_cast<char*>(malloc((len + 10) * sizeof(char)));
   assert(buffer != NULL);
@@ -106,7 +106,7 @@ void FPrintf(FILE* fp, const char* format, ...) {
 FILE* FOpen(const char* filename, const char* mode) {
   FILE *fp = _fsopen(filename, mode, _SH_DENYNO);
   if (fp == NULL) {
-    std::string buf;
+    String buf;
     Strerror(&buf, _doserrno);
     throw std::move(FileIOException(buf.c_str()));
   }
@@ -121,7 +121,7 @@ void FClose(FILE* fp) {
   fclose(fp);
 }
 
-void GetEnv(std::string* buf, const char* env) {
+void GetEnv(String* buf, const char* env) {
   size_t size = 0;
   char buffer[1];
   getenv_s(&size, buffer, 1, env);
@@ -145,7 +145,7 @@ time_t Time(time_t* time) {
   return ::time(time);
 }
 
-int Asctime(std::string* buf, tm* tm) {
+int Asctime(String* buf, tm* tm) {
   char buffer[27];
   int ret = asctime_s(buffer, tm);
   buf->assign(buffer);
@@ -160,7 +160,7 @@ void AtExit(void(*callback)()) {
   atexit(callback);
 }
 
-void GetLastError(std::string* buf) {
+void GetLastError(String* buf) {
   LPVOID msg_buffer;
   FormatMessage(
       FORMAT_MESSAGE_ALLOCATE_BUFFER | 
@@ -190,7 +190,7 @@ void Strcpy(char* dest, const char* src, size_t length) {
 }
 #else
 
-void Strerror(std::string* buf, int err) {
+void Strerror(String* buf, int err) {
   char buffer[95];
   strerror_r(err, buffer, 95);
   buf->assign(buffer);
@@ -203,7 +203,7 @@ void Printf(const char* format, ...) {
   va_end(args);
 }
 
-void SPrintf(std::string& buffer, bool append, const char* format, ...) {
+void SPrintf(String& buffer, bool append, const char* format, ...) {
   va_list args;
   va_start(args, format);
   char* buf = NULL;
@@ -216,7 +216,7 @@ void SPrintf(std::string& buffer, bool append, const char* format, ...) {
   free(buf);
 }
 
-void VSPrintf(std::string& buffer, bool append, const char* format, va_list args) {
+void VSPrintf(String& buffer, bool append, const char* format, va_list args) {
   char* buf = NULL;
   vasprintf(&buf, format, args);
   if (!append) {
@@ -241,7 +241,7 @@ void FPrintf(FILE* fp, const char* format, ...) {
 FILE* FOpen(const char* filename, const char* mode) {
   FILE* fp = fopen(filename, mode);
   if (fp == NULL) {
-    std::string buf;
+    String buf;
     Strerror(&buf, errno);
     throw std::move(FileIOException(buf.c_str()));
   }
@@ -256,7 +256,7 @@ void FClose(FILE* fp) {
   fclose(fp);
 }
 
-void GetEnv(std::string* buf, const char* env) {
+void GetEnv(String* buf, const char* env) {
   char* ret = getenv(env);
   if (ret != NULL) {
     buf->assign(ret);
@@ -287,7 +287,7 @@ time_t Time(time_t* time) {
   return ::time(time);
 }
 
-int Asctime(std::string* buf, tm* tm) {
+int Asctime(String* buf, tm* tm) {
   char buffer[27];
   asctime_r(tm, buffer);
   buf->assign(buffer);
@@ -303,7 +303,7 @@ void AtExit(void(*callback)()) {
   atexit(callback);
 }
 
-void GetLastError(std::string* buf) {
+void GetLastError(String* buf) {
   Strerror(buf, K_ERRNO);
 }
 

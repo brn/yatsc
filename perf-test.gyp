@@ -38,6 +38,7 @@
       'defines' : ['UNIT_TEST=1'],
       'include_dirs': ['/usr/local/include', './lib', './Celero/include'],
       'sources': [
+        './src/utils/utils.cc',
         './src/utils/tls.cc',
         './src/utils/systeminfo.cc',
         './src/memory/virtual-heap-allocator.cc',

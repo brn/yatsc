@@ -30,13 +30,13 @@
 #include "../compare-string.h"
 
 
-::testing::AssertionResult Failed(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult Failed(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<yatsc::String::iterator>& un) {
   return ::testing::AssertionFailure() << "Invalid unicode charactor. at: " << un.current_position()
                                        << " value: " << uchar.uchar();
 }
 
 
-::testing::AssertionResult IsValid(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsValid(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<yatsc::String::iterator>& un) {
   if (!uchar.IsInvalid() && static_cast<bool>(uchar)) {
     return ::testing::AssertionSuccess();
   }
@@ -44,7 +44,7 @@
 }
 
 
-::testing::AssertionResult IsSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<yatsc::String::iterator>& un) {
   if (uchar.IsSurrogatePair()) {
     return ::testing::AssertionSuccess();
   }
@@ -52,7 +52,7 @@
 }
 
 
-::testing::AssertionResult IsNotSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<std::string::iterator>& un) {
+::testing::AssertionResult IsNotSurrogatePair(const yatsc::UChar& uchar, const yatsc::UnicodeIteratorAdapter<yatsc::String::iterator>& un) {
   if (uchar.IsSurrogatePair()) {
     return Failed(uchar, un);
   }
@@ -63,11 +63,11 @@
 inline void UnicodeTest(const char* input, const char* expected, size_t expected_size) {
   auto source = yatsc::testing::ReadFile(input);
   auto result = yatsc::testing::ReadFile(expected);
-  std::string buffer;
-  std::string utf8_buffer;
+  yatsc::String buffer;
+  yatsc::String utf8_buffer;
   static const char* kFormat = "%#019x";
   auto end = source.end();
-  yatsc::UnicodeIteratorAdapter<std::string::iterator> un(source.begin());
+  yatsc::UnicodeIteratorAdapter<yatsc::String::iterator> un(source.begin());
   int index = 0;
   size_t size = 0;
   for (;un != end; std::advance(un, 1)) {

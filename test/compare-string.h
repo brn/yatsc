@@ -27,14 +27,15 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include "../src/utils/stl.h"
 
 namespace yatsc { namespace testing {
 static const int kMaxWidth = 100;
 
-std::string Replace(std::string str1, std::string str2, std::string str3) {
-  std::string::size_type  pos(str1.find(str2));
+yatsc::String Replace(yatsc::String str1, yatsc::String str2, yatsc::String str3) {
+  yatsc::String::size_type  pos(str1.find(str2));
 
-  while (pos != std::string::npos) {
+  while (pos != yatsc::String::npos) {
     str1.replace(pos, str2.length(), str3);
     pos = str1.find(str2, pos + str3.length());
   }
@@ -43,31 +44,31 @@ std::string Replace(std::string str1, std::string str2, std::string str3) {
 }
 
 
-inline ::testing::AssertionResult CompareUchar(const std::string& value, const std::string expected, int i) {
+inline ::testing::AssertionResult CompareUchar(const yatsc::String& value, const yatsc::String expected, int i) {
   char a = value.at(i);
   char b = expected.at(i);
   if (a == b) {
     return ::testing::AssertionSuccess();
   }
 
-  std::string cloned_value = value;
-  std::string cloned_expectation = expected;
+  yatsc::String cloned_value = value;
+  yatsc::String cloned_expectation = expected;
 
-  cloned_value = Replace(cloned_value, std::string("\n"), std::string(" "));
-  cloned_expectation = Replace(cloned_expectation, std::string("\n"), std::string(" "));
+  cloned_value = Replace(cloned_value, yatsc::String("\n"), yatsc::String(" "));
+  cloned_expectation = Replace(cloned_expectation, yatsc::String("\n"), yatsc::String(" "));
 
   size_t begin = i + 10 > kMaxWidth? (i + 10) - kMaxWidth: 0;
   return ::testing::AssertionFailure()
       << "The value of index " << i << " expected " << b << " but got " << a
       << "\nvalue:    " << cloned_value.substr(begin, kMaxWidth + 10) << '\n'
-      << "           " << std::string(kMaxWidth - 11, '-') << "^"
+      << "           " << yatsc::String(kMaxWidth - 11, '-') << "^"
       << "\nexpected: " << cloned_expectation.substr(begin, kMaxWidth) << '\n'
-      << "           " << std::string(kMaxWidth - 11, '-') << "^"
+      << "           " << yatsc::String(kMaxWidth - 11, '-') << "^"
       << '\n';
 }
 
 
-inline void CompareBuffer(const std::string& buffer, const std::string& expectation) {
+inline void CompareBuffer(const yatsc::String& buffer, const yatsc::String& expectation) {
   for (int i = 0, len = buffer.size(); i < len; i++) {
     ASSERT_TRUE(CompareUchar(buffer, expectation, i));
     i++;
@@ -76,8 +77,8 @@ inline void CompareBuffer(const std::string& buffer, const std::string& expectat
 
 
 inline void CompareBuffer(const char* buffer, const char* expectation) {
-  std::string b(buffer);
-  std::string e(expectation);
+  yatsc::String b(buffer);
+  yatsc::String e(expectation);
   CompareBuffer(b, e);
 }
 

@@ -76,7 +76,7 @@ void Node::InsertAt(size_t index, Handle<Node> node) {
 
 
 bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
-  if (node) {
+  if (!node) {
     return false;
   }
 
@@ -113,7 +113,7 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
       }
 
       for (size_t i = 0; i < node_list_.size(); i++) {
-        if (node->node_list_[i] && node_list_[i]) {
+        if (!node->node_list_[i] && node_list_[i]) {
           return false;
         }
         if (!node_list_[i]->Equals(node->node_list_[i])) {

@@ -29,6 +29,7 @@
 #include <string>
 #include <stdexcept>
 #include <stdlib.h>
+#include "./stl.h"
 
 #ifdef _WIN32
 #define K_ERRNO _doserrno
@@ -37,24 +38,23 @@
 #endif
 
 namespace yatsc {
-
-void Strerror(std::string* buf, int err);
+void Strerror(String* buf, int err);
 void Printf(const char* format, ...);
-void SPrintf(std::string& buf, bool append, const char* format, ...);
-void VSPrintf(std::string& buf, bool append, const char* format, va_list args);
+void SPrintf(String& buf, bool append, const char* format, ...);
+void VSPrintf(String& buf, bool append, const char* format, va_list args);
 void VFPrintf(FILE* fp, const char* format, ...);
 void FPrintf(FILE* fp, const char* format, ...);
 FILE* FOpen(const char* filename, const char* mode);
 size_t FRead(void* buffer, size_t buffer_size, size_t element_size, size_t count, FILE* fp);
 void FClose(FILE* fp);
-void GetEnv(std::string *buf, const char* env);
+void GetEnv(String *buf, const char* env);
 bool Sleep(int nano_time);
 int Utime(const char* path);
 time_t Time(time_t* time);
-int Asctime(std::string* buf, tm* tm);
+int Asctime(String* buf, tm* tm);
 int LocalTime(tm* t, time_t* time);
 void OnExit(void(*callback)());
-void GetLastError(std::string* buf);
+void GetLastError(String* buf);
 FILE* POpen(const char* name, const char* mode);
 void PClose(FILE* fp);
 char* Strdup(const char* path);

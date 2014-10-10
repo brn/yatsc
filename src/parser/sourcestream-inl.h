@@ -29,7 +29,7 @@ void SourceStream::Initialize() {
   bool exists = stat.IsExist();
   if (exists && stat.IsReg()) {
     size_ = stat.Size();
-    if (buffer_.capacity() < size_) {
+    if (buffer_.capacity() < (size_ + 1)) {
       buffer_.reserve(size_ + 1);
     }
     try {
