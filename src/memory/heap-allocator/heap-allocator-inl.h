@@ -25,7 +25,7 @@
 namespace yatsc {namespace heap {
 
 template <typename T>
-void HeapReferenceCounter::ReleaseReference() {
+YATSC_INLINE void HeapReferenceCounter::ReleaseReference() YATSC_NO_SE {
   if (std::atomic_fetch_sub_explicit(&ref_, 1u, std::memory_order_release) == 1) {
     std::atomic_thread_fence(std::memory_order_acquire);
     Heap::Destruct(reinterpret_cast<T*>(ptr_));
@@ -33,7 +33,7 @@ void HeapReferenceCounter::ReleaseReference() {
 }
 
 
-void HeapReferenceCounter::AddReference() {
+YATSC_INLINE void HeapReferenceCounter::AddReference() YATSC_NO_SE {
   std::atomic_fetch_add_explicit(&ref_, 1u, std::memory_order_relaxed);
 }
 } // end heap

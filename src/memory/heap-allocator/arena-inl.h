@@ -85,10 +85,10 @@ YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
     // Get head of the heap by masking memory address.
     // All the small heap has address like follows
     // .e.g
-    // [0x103e60000] head
-    // ... [0x10e6a6320] ptr
-    // 0x10e6a6320
-    // ------^^^^^ Masking heare.
+    // [0x103e600000] head
+    // ... [0x10e6a63230] ptr
+    // [0x103e6a632F0]
+    // --------^^^^^^ Masking heare.
     auto h = reinterpret_cast<HeapHeader*>(reinterpret_cast<uintptr_t>(ptr) & ChunkHeader::kAddrMask);
     ASSERT(true, h != nullptr);
     ChunkHeader* chunk_header = h->chunk_header();
@@ -155,7 +155,8 @@ YATSC_INLINE void* LocalArena::Allocate(size_t size) YATSC_NOEXCEPT {
 
 // Update internal heap.
 YATSC_INLINE void LocalArena::ResetPool() {
-  auto internal_heap = reinterpret_cast<InternalHeap*>(CentralArena::GetInternalHeap(sizeof(InternalHeap)));
+  Byte* block = reinterpret_cast<Byte*>(CentralArena::GetInternalHeap(sizeof(InternalHeap)));
+  auto internal_heap = new (block) InternalHeap(block + sizeof(InternalHeap));
   internal_heap->set_next(internal_heap_);
   internal_heap_ = internal_heap;
 }

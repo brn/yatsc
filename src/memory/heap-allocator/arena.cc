@@ -126,8 +126,10 @@ void* CentralArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
   if (large_header != nullptr) {
     new_large_header->set_next(large_header);
   }
+  large_header = new_large_header;
 
   large_bin_.Insert(size, new_large_header);
+  
   return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(reinterpret_cast<Byte*>(new_large_header) + sizeof(LargeHeader)) | 1);
 }
 
@@ -137,12 +139,13 @@ LocalArena::~LocalArena() {
   auto current = internal_heap_;
   while (current != nullptr) {
     auto header = reinterpret_cast<ChunkHeader*>(current->block());
-    for (size_t i = 0; i < current->used(); i++) {
+    size_t used = current->used();
+    for (size_t i = 0; i < used; i++) {
       ChunkHeader::Delete(header);
-      header = (header + i);
+      header++;
     }
     auto tmp = current->next();
-    VirtualHeapAllocator::Unmap(current, sizeof(ChunkHeader) * kChunkHeaderAllocatableCount + sizeof(InternalHeap));
+    VirtualHeapAllocator::Unmap(current, 1);
     current = tmp;
   }
 }
@@ -156,7 +159,7 @@ ChunkHeader* LocalArena::AllocateIfNecessary(size_t size) YATSC_NOEXCEPT {
     if (chunk_header == nullptr) {
       // If allocated size is overed internal heap max size,
       // allocate new internal heap.
-      if ((internal_heap_->used() + 1) == kChunkHeaderAllocatableCount) {
+      if (internal_heap_->used() == kChunkHeaderAllocatableCount) {
         ResetPool();
       }
       

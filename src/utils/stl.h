@@ -26,12 +26,15 @@
 #define UTILS_STL_H
 
 #include <string>
+#include <sstream>
 #include <vector>
+#include "../memory/heap.h"
 
 namespace yatsc {
-typedef std::basic_string<char, std::char_traits<char>, RegionsStandardAllocator<char>> String;
+typedef std::basic_string<char, std::char_traits<char>, StandardAllocator<char>> String;
+typedef std::basic_stringstream<char, std::char_traits<char>, StandardAllocator<char>> StringStream;
 template<typename T>
-using Vector = std::vector<T, RegionsStandardAllocator<T>>;
+using Vector = std::vector<T, StandardAllocator<T>>;
 }
 
 #endif

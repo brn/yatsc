@@ -30,7 +30,10 @@
 
 namespace yatsc {
 class LiteralBuffer: private Unmovable, private Uncopyable {
-  typedef std::unordered_map<std::string, UtfString> UtfStringBuffer;
+  typedef std::unordered_map<std::string, UtfString,
+                             std::hash<std::string>,
+                             std::equal_to<std::string>,
+                             StandardAllocator<std::pair<const std::string, UtfString>>> UtfStringBuffer;
  public:
   LiteralBuffer() {}
 

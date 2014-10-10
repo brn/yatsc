@@ -29,13 +29,14 @@
 #include <utility>
 #include <vector>
 #include <string.h>
+#include "../src/utils/stl.h"
 #include "../src/parser/uchar.h"
 
 namespace yatsc {
 namespace testing {
-inline std::vector<UChar> AsciiToUCharVector(const char* str) {
+inline yatsc::Vector<UChar> AsciiToUCharVector(const char* str) {
   size_t len = strlen(str);
-  std::vector<UChar> v;
+  yatsc::Vector<UChar> v;
   yatsc::UC8Bytes b;
   for (size_t i = 0u; i < len; i++) {
     b[0] = str[i];

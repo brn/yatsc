@@ -28,7 +28,6 @@
 #include "../ir/node.h"
 #include "../ir/irfactory.h"
 #include "../parser/scanner.h"
-#include "../utils/mmap.h"
 #include "../compiler-option.h"
 #include "../utils/utils.h"
 #include "../utils/stl.h"
@@ -88,13 +87,13 @@ class ParserBase: private Uncopyable, private Unmovable {
 
   
   template <typename T, typename ... Args>
-  T* New(Args ... args) {
+  Handle<T> New(Args ... args) {
     return irfactory_.New<T>(std::forward<Args>(args)...);
   }
 
 
   template <typename T>
-  T* New(std::initializer_list<ir::Node*> list) {
+  Handle<T> New(std::initializer_list<Handle<ir::Node>> list) {
     return irfactory_.New<T>(list);
   }
 
@@ -191,7 +190,6 @@ class ParserBase: private Uncopyable, private Unmovable {
     YATSC_INLINE bool CursorUpdated();
 
    private:
-    Mmap mmap_;
     TokenCursor cursor_;
     Vector<TokenInfo> buffer_;
     TokenInfo null_token_info_;

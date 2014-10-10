@@ -30,6 +30,7 @@
 #include "../../src/compiler-option.h"
 #include "../../src/parser/scanner.h"
 #include "../../src/parser/uchar.h"
+#include "../../src/utils/stl.h"
 #include "../unicode-util.h"
 
 
@@ -44,11 +45,11 @@
 
 
 #define INIT__(SCAN, var, str, type, ex_type)                           \
-  typedef std::vector<yatsc::UChar>::iterator Iterator;                 \
-  std::string s = str;                                                  \
-  std::string n = "anonymous";                                          \
+  typedef yatsc::Vector<yatsc::UChar>::iterator Iterator;                 \
+  yatsc::String s = str;                                                  \
+  yatsc::String n = "anonymous";                                          \
   yatsc::ErrorReporter error_reporter(s, n);                            \
-  std::vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
+  yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
   yatsc::CompilerOption compiler_option;                                \
   compiler_option.set_language_mode(type);                              \
   SCAN(var, error_reporter, ex_type)

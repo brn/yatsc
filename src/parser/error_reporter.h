@@ -26,15 +26,12 @@
 #ifndef PARSER_ERROR_REPORTER_H
 #define PARSER_ERROR_REPORTER_H
 
-#include <string>
-#include <sstream>
+#include "../utils/stl.h"
 #include "../utils/utils.h"
 #include "./sourceposition.h"
 
 namespace yatsc {
-class ErrorReporter: private Unmovable, private Uncopyable {
-  typedef std::string String;
-  
+class ErrorReporter: private Unmovable, private Uncopyable {  
  public:
   ErrorReporter(const String& source, const String& filename)
       : source_(source),
@@ -53,9 +50,9 @@ class ErrorReporter: private Unmovable, private Uncopyable {
 
 
  private:
-  inline ErrorReporter::String GetLineSource(const SourcePosition& source_position);
+  inline String GetLineSource(const SourcePosition& source_position);
   
-  std::stringstream st_;
+  StringStream st_;
   const String& source_;
   const String& filename_;
 };

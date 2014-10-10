@@ -39,13 +39,7 @@
         'cflags': [ '-O3', '-fomit-frame-pointer', '-fdata-sections', '-ffunction-sections' ],
         'msvs_settings': {
           'VCCLCompilerTool': {
-            'target_conditions': [
-              ['library=="static_library"', {
-                'RuntimeLibrary': 0, # static release
-              }, {
-                'RuntimeLibrary': 2, # debug release
-              }],
-            ],
+            'RuntimeLibrary': 0, # static release
             'EnableFiberSafeOptimizations': 'true',
             'Optimization': 3, # /Ox, full optimization
             'FavorSizeOrSpeed': 1, # /Ot, favour speed over size
@@ -157,7 +151,14 @@
           'PLATFORM_MACH'
         ],
         'xcode_settings': {
-          'ARCHS': ['x86_64', 'i386'],
+          'target_conditions': [
+            ['"<(target_arch)"=="x64"', {
+              'ARCHS': ['x86_64'],
+            }],
+            ['"<(target_arch)"=="x82"', {
+              'ARCHS': ['i386'],
+            }],
+          ],
           'ALWAYS_SEARCH_USER_PATHS': 'YES',
           'GCC_CW_ASM_SYNTAX': 'NO',                # No -fasm-blocks
           'GCC_DYNAMIC_NO_PIC': 'NO',               # No -mdynamic-no-pic

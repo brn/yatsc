@@ -26,7 +26,7 @@
 #define IR_IR_FACTORY_H
 
 #include "../utils/utils.h"
-#include "../utils/regions.h"
+#include "../memory/heap.h"
 
 namespace yatsc {namespace ir {
 
@@ -36,8 +36,8 @@ class IRFactory : private Uncopyable {
   IRFactory() {}
   
   template <typename NodeName, typename ... Args>
-  YATSC_INLINE NodeName* New(Args ... args) {
-    return PermRegions::New<NodeName>(std::forward<Args>(args)...);
+  YATSC_INLINE Handle<NodeName> New(Args ... args) {
+    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
   }
 };
 

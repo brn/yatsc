@@ -217,7 +217,7 @@ YATSC_INLINE void RbTreeBase<Key, T>::RebalanceWhenInsert(NODE node) YATSC_NOEXC
     NODE parent = current->parent();
     NODE grand_parent = parent->parent();
     
-    if (*parent > *node) {
+    if (*parent > *current) {
       // If node is left tree.
       // check node parent is left or right.
       // if node parent is left tree,

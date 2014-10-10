@@ -54,7 +54,7 @@ void ErrorReporter::Throw(const SourcePosition& source_position) {
 }
 
 
-ErrorReporter::String ErrorReporter::GetLineSource(const SourcePosition& source_position) {
+String ErrorReporter::GetLineSource(const SourcePosition& source_position) {
   size_t count = 0;
   String::size_type start = 0;
   

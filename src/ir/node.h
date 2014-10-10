@@ -31,6 +31,8 @@
 #include <vector>
 #include <stdint.h>
 #include "../utils/utils.h"
+#include "../utils/stl.h"
+#include "../memory/heap.h"
 #include "../parser/token.h"
 
 namespace yatsc {namespace ir {
@@ -171,14 +173,14 @@ static const char* kNodeTypeStringList[] = {
 
 // Define getter accessor.
 #define NODE_GETTER(name, pos)                                        \
-  YATSC_INLINE Node* name() YATSC_NOEXCEPT {return node_list_[pos];}
+  YATSC_INLINE Handle<Node> name() YATSC_NOEXCEPT {return node_list_[pos];}
 
 
 // Define setter accessor.
-#define NODE_SETTER(name, pos)                        \
-  YATSC_INLINE void set_##name(Node* name) {          \
-    node_list_[pos] = name;                           \
-    if (name != nullptr) name->set_parent_node(this); \
+#define NODE_SETTER(name, pos)                            \
+  YATSC_INLINE void set_##name(Handle<Node> name) {       \
+    node_list_[pos] = name;                               \
+    if (name) name->set_parent_node(Handle<Node>(this));  \
   }
 
 
@@ -249,11 +251,10 @@ class SourceInformation: private Unmovable{
 // The IR Tree representation class.
 // This class has all tree properties and accessible from Node type.
 // All other **View classes are only view of this Node class.
-class Node : public RegionalObject, private Uncopyable, private Unmovable {
+class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
  public:
 
-  typedef std::string String;
-  typedef std::vector<Node*, RegionsStandardAllocator<Node*>> List;
+  typedef Vector<Handle<Node>> List;
   typedef List::iterator ListIterator;
 
 
@@ -272,7 +273,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
 
   // Create Node.
-  YATSC_INLINE Node(NodeType node_type, size_t capacity, std::initializer_list<Node*> node_list)
+  YATSC_INLINE Node(NodeType node_type, size_t capacity, std::initializer_list<Handle<Node>> node_list)
       : node_list_(node_list),
         node_type_(node_type),
         capacity_(capacity),
@@ -289,15 +290,18 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   virtual ~Node() {}
 
 
+  static Handle<Node> Null() {return Handle<Node>();}
+
+
   // Getter for node_type.
-  YATSC_GETTER(NodeType, node_type, node_type_);
+  YATSC_CONST_GETTER(NodeType, node_type, node_type_);
 
 
   YATSC_CONST_GETTER(const SourcePosition&, source_position, source_information_.source_position());
 
 
   // Getter and setter for parent_node_.
-  YATSC_PROPERTY(Node*, parent_node, parent_node_);
+  YATSC_PROPERTY(Handle<Node>, parent_node, parent_node_);
 
 
   // Getter for children list.
@@ -308,10 +312,10 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   YATSC_CONST_GETTER(size_t, size, node_list_.size());
   
 
-  YATSC_CONST_GETTER(Node*, first_child, node_list_[0]);
+  YATSC_CONST_GETTER(Handle<Node>, first_child, node_list_[0]);
 
 
-  YATSC_CONST_GETTER(Node*, last_child, node_list_.back());
+  YATSC_CONST_GETTER(Handle<Node>, last_child, node_list_.back());
 
 
   YATSC_INLINE bool HasLiteralView() YATSC_NO_SE {
@@ -344,25 +348,25 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   
 
   // Insert a node at the end of the children.
-  void InsertLast(Node* node);
+  void InsertLast(Handle<Node> node);
 
 
   // Insert a node to the front of the children.
-  void InsertFront(Node* node);
+  void InsertFront(Handle<Node> node);
 
 
   // Insert a new node to before specified node.
-  void InsertBefore(Node* newNode, Node* oldNode);
+  void InsertBefore(Handle<Node> newNode, Handle<Node> oldNode);
 
 
   // Insert a new node after the specified node.
-  void InsertAfter(Node* newNode, Node* oldNode);
+  void InsertAfter(Handle<Node> newNode, Handle<Node> oldNode);
 
 
-  void InsertAt(size_t index, Node* node);
+  void InsertAt(size_t index, Handle<Node> node);
 
 
-  Node* at(size_t index) YATSC_NOEXCEPT {
+  Handle<Node> at(size_t index) YATSC_NOEXCEPT {
     return node_list_.size() > index? node_list_[index]: nullptr;
   }
 
@@ -379,7 +383,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
-  YATSC_INLINE bool string_equals(Node* node) YATSC_NO_SE {
+  YATSC_INLINE bool string_equals(const Handle<Node>& node) YATSC_NO_SE {
     if (node == nullptr) {
       return false;
     }
@@ -406,7 +410,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
-  YATSC_INLINE bool double_equals(Node* node) YATSC_NO_SE {
+  YATSC_INLINE bool double_equals(Handle<Node> node) YATSC_NO_SE {
     return double_value_ == node->double_value_;
   }
 
@@ -417,7 +421,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   }
 
 
-  YATSC_INLINE bool operand_equals(Node* node) YATSC_NO_SE {
+  YATSC_INLINE bool operand_equals(const Handle<Node>& node) YATSC_NO_SE {
     return operand_ == node->operand_;
   }
 
@@ -451,7 +455,7 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
 
   // Remove specified node from children.
-  YATSC_INLINE void Remove(Node* block) {
+  YATSC_INLINE void Remove(Handle<Node> block) {
     node_list_.erase(std::remove(node_list_.begin(), node_list_.end(), block), node_list_.end());
     block->set_parent_node(nullptr);
   }
@@ -485,16 +489,16 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
 
   
   // Set source information to this node.
-  void SetInformationForNode(const Node* node) YATSC_NOEXCEPT;
+  void SetInformationForNode(const Handle<Node>& node) YATSC_NOEXCEPT;
 
 
   // Set source information to this node and children.
-  void SetInformationForTree(const Node* node) YATSC_NOEXCEPT;
+  void SetInformationForTree(const Handle<Node>& node) YATSC_NOEXCEPT;
 
-  bool Equals(Node* node) YATSC_NO_SE;
+  bool Equals(const Handle<Node>& node) YATSC_NO_SE;
 
   // Clone this node and all children.
-  Node* Clone() YATSC_NOEXCEPT;
+  Handle<Node> Clone() YATSC_NOEXCEPT;
 
   
 #define DEF_CAST(type)                                                  \
@@ -517,13 +521,13 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
    * Return formated string expression of this node.
    * @returns The string expression of this node.
    */
-  Node::String ToString();
+  String ToString() const;
 
   /**
    * Return formated string expression of this node and children.
    * @returns The string expression of this node and children.
    */
-  Node::String ToStringTree();
+  String ToStringTree() const;
 
  protected:
   
@@ -531,16 +535,16 @@ class Node : public RegionalObject, private Uncopyable, private Unmovable {
   
  private:
 
-  void DoToStringTree(std::string& indent, std::stringstream& ss);
+  void DoToStringTree(String& indent, StringStream& ss) const;
 
 
-  void ToStringSelf(Node* target, std::string& indent, std::stringstream& ss);
+  void ToStringSelf(const Node* target, String& indent, StringStream& ss) const;
   
   std::bitset<8> flags_;
   SourceInformation source_information_;
   NodeType node_type_;
   size_t capacity_;
-  Node* parent_node_;
+  Handle<Node> parent_node_;
   Token operand_;
   double double_value_;
   bool invalid_lhs_;
@@ -561,7 +565,7 @@ class FileScopeView: public Node {
   FileScopeView(): Node(NodeType::kFileScopeView, 1u){};
 
   
-  FileScopeView(Node* body):
+  FileScopeView(Handle<Node> body):
       Node(NodeType::kFileScopeView, 1u, {body}){};
 };
 
@@ -572,7 +576,7 @@ class StatementView : public Node {
   StatementView():
       Node(NodeType::kStatementView, 1u){}
 
-  StatementView(Node* expr):
+  StatementView(Handle<Node> expr):
       Node(NodeType::kStatementView, 1u, {expr}) {}
 
   // Getter and Setter for exp.
@@ -587,7 +591,7 @@ class VariableDeclView: public Node {
       Node(NodeType::kVariableDeclView, 0) {}
 
   
-  VariableDeclView(std::initializer_list<Node*> vars):
+  VariableDeclView(std::initializer_list<Handle<Node>> vars):
       Node(NodeType::kVariableDeclView, 0, vars) {}
 };
 
@@ -601,7 +605,7 @@ class LexicalDeclView: public Node {
   }
 
   
-  LexicalDeclView(Token op, std::initializer_list<Node*> vars):
+  LexicalDeclView(Token op, std::initializer_list<Handle<Node>> vars):
       Node(NodeType::kLexicalDeclView, 0, vars) {
     set_operand(op);
   }
@@ -629,7 +633,7 @@ class ModuleDeclView: public Node {
       Node(NodeType::kModuleDeclView, 2u) {}
 
 
-  ModuleDeclView(Node* name, Node* body):
+  ModuleDeclView(Handle<Node> name, Handle<Node> body):
       Node(NodeType::kModuleDeclView, 2u, {name, body}) {}
 
   
@@ -642,7 +646,7 @@ class ModuleDeclView: public Node {
 // Represent export.
 class ExportView: public Node {
  public:
-  ExportView(Node* target)
+  ExportView(Handle<Node> target)
       : Node(NodeType::kExportView, 1u, {target}) {}
 
 
@@ -657,7 +661,7 @@ class ExportView: public Node {
 // Represent import.
 class ImportView: public Node {
  public:
-  ImportView(Node* alias, Node* from_expr)
+  ImportView(Handle<Node> alias, Handle<Node> from_expr)
       : Node(NodeType::kImportView, 2u, {alias, from_expr}) {}
 
 
@@ -675,7 +679,7 @@ class ImportView: public Node {
 // Represent variable.
 class VariableView : public Node {
  public:
-  VariableView(Node* binding_identifier, Node* value, Node* type):
+  VariableView(Handle<Node> binding_identifier, Handle<Node> value, Handle<Node> type):
       Node(NodeType::kVariableView, 3u, {binding_identifier, value, type}) {}
 
 
@@ -692,7 +696,7 @@ class VariableView : public Node {
 // Represent if statement.
 class IfStatementView : public Node {
  public:
-  IfStatementView(Node* expr, Node* if_block_Node, Node* else_block_node)
+  IfStatementView(Handle<Node> expr, Handle<Node> if_block_Node, Handle<Node> else_block_node)
       : Node(NodeType::kIfStatementView, 3u, {expr, if_block_Node, else_block_node}) {}
 
 
@@ -717,7 +721,7 @@ class ContinueStatementView: public Node {
       : Node(NodeType::kContinueStatementView, 1u){}
 
 
-  ContinueStatementView(Node* labelled_identifier)
+  ContinueStatementView(Handle<Node> labelled_identifier)
       : Node(NodeType::kContinueStatementView, 1u, {labelled_identifier}) {}
 
 
@@ -728,7 +732,7 @@ class ContinueStatementView: public Node {
 // Represent return statement.
 class ReturnStatementView: public Node {
  public:
-  ReturnStatementView(Node* expr)
+  ReturnStatementView(Handle<Node> expr)
       : Node(NodeType::kReturnStatementView, 1u, {expr}) {}
 
 
@@ -744,7 +748,7 @@ class ReturnStatementView: public Node {
 // Represent break statement.
 class BreakStatementView: public Node {
  public:
-  BreakStatementView(Node* label)
+  BreakStatementView(Handle<Node> label)
       : Node(NodeType::kBreakStatementView, 1u, {label}) {}
 
   BreakStatementView()
@@ -759,7 +763,7 @@ class BreakStatementView: public Node {
 // Represent with statement.
 class WithStatementView: public Node {
  public:
-  WithStatementView(Node* expr, Node* statement)
+  WithStatementView(Handle<Node> expr, Handle<Node> statement)
       : Node(NodeType::kWithStatementView, 2u, {expr, statement}) {}
 
 
@@ -778,7 +782,7 @@ class WithStatementView: public Node {
 // Represent labell.
 class LabelledStatementView: public Node {
  public:
-  LabelledStatementView(Node* name, Node* statement)
+  LabelledStatementView(Handle<Node> name, Handle<Node> statement)
       : Node(NodeType::kLabelledStatementView, 2u, {name, statement}) {}
 
 
@@ -797,7 +801,7 @@ class LabelledStatementView: public Node {
 // Represent switch statement.
 class SwitchStatementView: public Node {
  public:
-  SwitchStatementView(Node* expr, Node* case_list)
+  SwitchStatementView(Handle<Node> expr, Handle<Node> case_list)
       : Node(NodeType::kSwitchStatementView, 2u, {expr, case_list}) {}
 
 
@@ -816,7 +820,7 @@ class SwitchStatementView: public Node {
 
 class CaseListView: public Node {
  public:
-  CaseListView(std::initializer_list<Node*> case_list)
+  CaseListView(std::initializer_list<Handle<Node>> case_list)
       : Node(NodeType::kCaseListView, 0, case_list) {}
 
 
@@ -828,7 +832,7 @@ class CaseListView: public Node {
 // Represent case.
 class CaseView: public Node {
  public:
-  CaseView(Node* condition, Node* body)
+  CaseView(Handle<Node> condition, Handle<Node> body)
       : Node(NodeType::kCaseView, 2u, {condition, body}) {}
 
 
@@ -848,7 +852,7 @@ class CaseView: public Node {
 // Represent case.
 class CaseBody: public Node {
  public:
-  CaseBody(std::initializer_list<Node*> case_body)
+  CaseBody(std::initializer_list<Handle<Node>> case_body)
       : Node(NodeType::kCaseBody, 0u, case_body) {}
 
 
@@ -860,7 +864,7 @@ class CaseBody: public Node {
 // Represent try catch finally statement.
 class TryStatementView: public Node {
  public:
-  TryStatementView(Node* statement, Node* catch_statement, Node* finally_statement)
+  TryStatementView(Handle<Node> statement, Handle<Node> catch_statement, Handle<Node> finally_statement)
       : Node(NodeType::kTryStatementView, 3u, {statement, catch_statement, finally_statement}) {}
 
   
@@ -883,7 +887,7 @@ class TryStatementView: public Node {
 
 class CatchStatementView: public Node {
  public:
-  CatchStatementView(Node* error_name, Node* body)
+  CatchStatementView(Handle<Node> error_name, Handle<Node> body)
       : Node(NodeType::kCatchStatementView, 2u, {error_name, body}) {}
 
 
@@ -903,7 +907,7 @@ class CatchStatementView: public Node {
 // Represent finally statement.
 class FinallyStatementView: public Node {
  public:
-  FinallyStatementView(Node* body)
+  FinallyStatementView(Handle<Node> body)
       : Node(NodeType::kFinallyStatementView, 1u, {body}) {}
 
 
@@ -918,7 +922,7 @@ class FinallyStatementView: public Node {
 // Represent throw statement.
 class ThrowStatementView: public Node {
  public:
-  ThrowStatementView(Node* expr)
+  ThrowStatementView(Handle<Node> expr)
       : Node(NodeType::kThrowStatementView, 1u, {expr}) {}
 
   
@@ -929,7 +933,7 @@ class ThrowStatementView: public Node {
 
 class ForStatementView: public Node {
  public:
-  ForStatementView(Node* cond_init, Node* cond_cmp, Node* cond_upd, Node* body)
+  ForStatementView(Handle<Node> cond_init, Handle<Node> cond_cmp, Handle<Node> cond_upd, Handle<Node> body)
       : Node(NodeType::kForStatementView, 4u, {cond_init, cond_cmp, cond_upd, body}) {}
 
   ForStatementView()
@@ -956,7 +960,7 @@ class ForStatementView: public Node {
 // Represent for in statement.
 class ForInStatementView: public Node {
  public:
-  ForInStatementView(Node* property_name, Node* expr, Node* body)
+  ForInStatementView(Handle<Node> property_name, Handle<Node> expr, Handle<Node> body)
       : Node(NodeType::kForInStatementView, 3u, {property_name, expr, body}) {}
 
   ForInStatementView()
@@ -979,7 +983,7 @@ class ForInStatementView: public Node {
 // Represent for in statement.
 class ForOfStatementView: public Node {
  public:
-  ForOfStatementView(Node* property_name, Node* expr, Node* body)
+  ForOfStatementView(Handle<Node> property_name, Handle<Node> expr, Handle<Node> body)
       : Node(NodeType::kForOfStatementView, 3u, {property_name, expr, body}) {}
 
   ForOfStatementView()
@@ -1002,7 +1006,7 @@ class ForOfStatementView: public Node {
 // Represent while statement
 class WhileStatementView: public Node {
  public:
-  WhileStatementView(Node* expr, Node* body)
+  WhileStatementView(Handle<Node> expr, Handle<Node> body)
       : Node(NodeType::kWhileStatementView, 2u, {expr, body}) {}
 
   WhileStatementView()
@@ -1021,7 +1025,7 @@ class WhileStatementView: public Node {
 // Represent do while statement.
 class DoWhileStatementView: public Node {
  public:
-  DoWhileStatementView(Node* expr, Node* body)
+  DoWhileStatementView(Handle<Node> expr, Handle<Node> body)
       : Node(NodeType::kDoWhileStatementView, 2u, {expr, body}) {}
 
 
@@ -1040,7 +1044,7 @@ class DoWhileStatementView: public Node {
 
 class ClassBasesView: public Node {
  public:
-  ClassBasesView(Node* base, Node* impls)
+  ClassBasesView(Handle<Node> base, Handle<Node> impls)
       : Node(NodeType::kClassBasesView, 2u, {base, impls}) {}
 
   ClassBasesView()
@@ -1062,7 +1066,7 @@ class ClassImplsView: public Node {
 
 class ClassDeclView: public Node {
  public:
-  ClassDeclView(Node* name, Node* bases, Node* field_list)
+  ClassDeclView(Handle<Node> name, Handle<Node> bases, Handle<Node> field_list)
       : Node(NodeType::kClassDeclView, 3u, {name, bases, field_list}) {}
   
   ClassDeclView()
@@ -1082,7 +1086,7 @@ class ClassDeclView: public Node {
 
 class ClassHeritageView: public Node {
  public:
-  ClassHeritageView(Node* ref)
+  ClassHeritageView(Handle<Node> ref)
       : Node(NodeType::kClassHeritageView, 1u, {ref}) {}
 
 
@@ -1096,7 +1100,7 @@ class ClassHeritageView: public Node {
 
 class ClassFieldListView: public Node {
  public:
-  ClassFieldListView(std::initializer_list<Node*> fields)
+  ClassFieldListView(std::initializer_list<Handle<Node>> fields)
       : Node(NodeType::kClassFieldListView, 0, fields) {}
 
 
@@ -1107,7 +1111,7 @@ class ClassFieldListView: public Node {
 
 class ClassFieldModifiersView: public Node {
  public:
-  ClassFieldModifiersView(std::initializer_list<Node*> modifiers)
+  ClassFieldModifiersView(std::initializer_list<Handle<Node>> modifiers)
       : Node(NodeType::kClassFieldModifiersView, 0, modifiers) {}
 
   ClassFieldModifiersView()
@@ -1130,7 +1134,7 @@ class ClassFieldAccessLevelView: public Node {
 
 class MemberVariableView: public Node {
  public:
-  MemberVariableView(Node* accessor, Node* name, Node* type, Node* value)
+  MemberVariableView(Handle<Node> accessor, Handle<Node> name, Handle<Node> type, Handle<Node> value)
       : Node(NodeType::kMemberVariableView, 4u, {accessor, name, type, value}) {}
 
   MemberVariableView()
@@ -1148,14 +1152,14 @@ class MemberVariableView: public Node {
 
 class MemberFunctionDefinitionView: public Node {
  protected:
-  MemberFunctionDefinitionView(NodeType node_type, bool getter, bool setter, bool generator, size_t size, std::initializer_list<Node*> list)
+  MemberFunctionDefinitionView(NodeType node_type, bool getter, bool setter, bool generator, size_t size, std::initializer_list<Handle<Node>> list)
       : Node(node_type, size, list) {
     set_flag(0, getter);
     set_flag(1, setter);
     set_flag(2, generator);
   }
 
-  MemberFunctionDefinitionView(NodeType node_type, size_t size, std::initializer_list<Node*> list)
+  MemberFunctionDefinitionView(NodeType node_type, size_t size, std::initializer_list<Handle<Node>> list)
       : Node(node_type, size, list) {}
 
   
@@ -1181,7 +1185,7 @@ class MemberFunctionDefinitionView: public Node {
 
 class MemberFunctionOverloadsView: public Node {
  public:
-  MemberFunctionOverloadsView(std::initializer_list<Node*> overloads)
+  MemberFunctionOverloadsView(std::initializer_list<Handle<Node>> overloads)
       : Node(NodeType::kMemberFunctionOverloadsView, 0u, overloads) {}
 
   MemberFunctionOverloadsView()
@@ -1191,10 +1195,10 @@ class MemberFunctionOverloadsView: public Node {
 
 class MemberFunctionOverloadView: public MemberFunctionDefinitionView {
  public:
-  MemberFunctionOverloadView(bool getter, bool setter, bool generator, Node* accessor, Node* name, Node* call_signature)
+  MemberFunctionOverloadView(bool getter, bool setter, bool generator, Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {}
 
-  MemberFunctionOverloadView(Node* accessor, Node* name, Node* call_signature)
+  MemberFunctionOverloadView(Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {}
 
   MemberFunctionOverloadView()
@@ -1204,10 +1208,10 @@ class MemberFunctionOverloadView: public MemberFunctionDefinitionView {
 
 class MemberFunctionView: public MemberFunctionDefinitionView {
  public:
-  MemberFunctionView(bool getter, bool setter, bool generator, Node* accessor, Node* name, Node* call_signature, Node* overloads, Node* body)
+  MemberFunctionView(bool getter, bool setter, bool generator, Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
       : MemberFunctionDefinitionView(NodeType::kFunctionView, 5u, {accessor, name, call_signature, overloads, body}) {}
 
-  MemberFunctionView(Node* accessor, Node* name, Node* call_signature, Node* overloads, Node* body)
+  MemberFunctionView(Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionView, 5u, {accessor, name, call_signature, overloads, body}) {}
 
   
@@ -1225,7 +1229,7 @@ class MemberFunctionView: public MemberFunctionDefinitionView {
 // Represent interface.
 class InterfaceView: public Node {
  public:
-  InterfaceView(Node* name, Node* interface_field_list)
+  InterfaceView(Handle<Node> name, Handle<Node> interface_field_list)
       : Node(NodeType::kInterfaceView, 2u, {name, interface_field_list}) {}
 
   InterfaceView()
@@ -1242,7 +1246,7 @@ class InterfaceView: public Node {
 
 
 class InterfaceFieldListView: public Node {
-  InterfaceFieldListView(std::initializer_list<Node*> fields)
+  InterfaceFieldListView(std::initializer_list<Handle<Node>> fields)
       : Node(NodeType::kInterfaceFieldListView, 0, fields) {}
 
 
@@ -1254,7 +1258,7 @@ class InterfaceFieldListView: public Node {
 // Represent interface field.
 class InterfaceFieldView: public Node {
  public:
-  InterfaceFieldView(Node* name, Node* value):
+  InterfaceFieldView(Handle<Node> name, Handle<Node> value):
       Node(NodeType::kInterfaceFieldView, 2u, {name, value}) {}
 
 
@@ -1275,7 +1279,7 @@ class InterfaceFieldView: public Node {
 class SimpleTypeExprView: public Node {
  public:
   
-  SimpleTypeExprView(Node* type_name)
+  SimpleTypeExprView(Handle<Node> type_name)
       : Node(NodeType::kSimpleTypeExprView, 1u, {type_name}) {}
   
 
@@ -1288,7 +1292,7 @@ class SimpleTypeExprView: public Node {
 class GenericTypeExprView: public Node {
  public:
   
-  GenericTypeExprView(Node* type_name, Node* type_arguments)
+  GenericTypeExprView(Handle<Node> type_name, Handle<Node> type_arguments)
       : Node(NodeType::kGenericTypeExprView, 2u, {type_name, type_arguments}) {}
   
 
@@ -1305,7 +1309,7 @@ class GenericTypeExprView: public Node {
 class TypeConstraintsView: public Node {
  public:
   
-  TypeConstraintsView(Node* derived, Node* base)
+  TypeConstraintsView(Handle<Node> derived, Handle<Node> base)
       : Node(NodeType::kTypeConstraintsView, 2u, {derived, base}) {}
   
 
@@ -1328,7 +1332,7 @@ class TypeArgumentsView: public Node {
 class TypeQueryView: public Node {
  public:
   
-  TypeQueryView(Node* var_name)
+  TypeQueryView(Handle<Node> var_name)
       : Node(NodeType::kTypeArgumentsView, 1u, {var_name}) {}
 
 
@@ -1341,7 +1345,7 @@ class TypeQueryView: public Node {
 class ArrayTypeExprView: public Node {
  public:
   
-  ArrayTypeExprView(Node* type_name)
+  ArrayTypeExprView(Handle<Node> type_name)
       : Node(NodeType::kArrayTypeExprView, 1u, {type_name}) {}
   
 
@@ -1354,7 +1358,7 @@ class ArrayTypeExprView: public Node {
 class ObjectTypeExprView: public Node {
  public:
   
-  ObjectTypeExprView(std::initializer_list<Node*> type_member_list)
+  ObjectTypeExprView(std::initializer_list<Handle<Node>> type_member_list)
       : Node(NodeType::kArrayTypeExprView, 0u, type_member_list) {}
   
 
@@ -1365,7 +1369,7 @@ class ObjectTypeExprView: public Node {
 
 class PropertySignatureView: public Node {
  public:
-  PropertySignatureView(bool opt, Node* property_name, Node* type_expr)
+  PropertySignatureView(bool opt, Handle<Node> property_name, Handle<Node> type_expr)
       : Node(NodeType::kPropertySignatureView, 2u, {property_name, type_expr}) {
     if (opt) {
       set_flag(0);
@@ -1389,7 +1393,7 @@ class PropertySignatureView: public Node {
 
 class MethodSignatureView: public Node {
  public:
-  MethodSignatureView(bool opt, Node* property_name, Node* type_expr)
+  MethodSignatureView(bool opt, Handle<Node> property_name, Handle<Node> type_expr)
       : Node(NodeType::kMethodSignatureView, 2u, {property_name, type_expr}) {
     if (opt) {
       set_flag(0);
@@ -1414,7 +1418,7 @@ class MethodSignatureView: public Node {
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
 class FunctionTypeExprView: public Node {
  public:
-  FunctionTypeExprView(Node* param_list, Node* return_type)
+  FunctionTypeExprView(Handle<Node> param_list, Handle<Node> return_type)
       : Node(NodeType::kFunctionTypeExprView, 2u, {param_list, return_type}) {}
 
 
@@ -1434,7 +1438,7 @@ class FunctionTypeExprView: public Node {
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
 class ConstructSignatureView: public Node {
  public:
-  ConstructSignatureView(Node* call_signature)
+  ConstructSignatureView(Handle<Node> call_signature)
       : Node(NodeType::kConstructSignatureView, 1u, {call_signature}) {}
 
 
@@ -1450,7 +1454,7 @@ class ConstructSignatureView: public Node {
 // Represent accessor type expression like, `interface x {[index:int]}`
 class AccessorTypeExprView: public Node {
  public:
-  AccessorTypeExprView(Node* name, Node* type_expression):
+  AccessorTypeExprView(Handle<Node> name, Handle<Node> type_expression):
       Node(NodeType::kAccessorTypeExprView, 2u, {name, type_expression}) {}
 
 
@@ -1469,7 +1473,7 @@ class AccessorTypeExprView: public Node {
 
 class TypeParametersView: public Node {
  public:
-  TypeParametersView(std::initializer_list<Node*> type_arguments)
+  TypeParametersView(std::initializer_list<Handle<Node>> type_arguments)
       : Node(NodeType::kTypeParametersView, 0u, type_arguments) {}
 
 
@@ -1480,7 +1484,7 @@ class TypeParametersView: public Node {
 
 class CommaExprView: public Node {
  public:
-  CommaExprView(std::initializer_list<Node*> exprs)
+  CommaExprView(std::initializer_list<Handle<Node>> exprs)
       : Node(NodeType::kCommaExprView, 0u, exprs) {}
 
   CommaExprView()
@@ -1490,7 +1494,7 @@ class CommaExprView: public Node {
 
 class FunctionOverloadView: public Node {
  public:
-  FunctionOverloadView(bool generator, Node* name, Node* call_signature)
+  FunctionOverloadView(bool generator, Handle<Node> name, Handle<Node> call_signature)
       : Node(NodeType::kFunctionOverloadView, 2u, {name, call_signature}) {
     if (generator) {
       set_flag(0);
@@ -1510,7 +1514,7 @@ class FunctionOverloadView: public Node {
 
 class FunctionOverloadsView: public Node {
  public:
-  FunctionOverloadsView(std::initializer_list<Node*> overloads)
+  FunctionOverloadsView(std::initializer_list<Handle<Node>> overloads)
       : Node(NodeType::kFunctionOverloadsView, 0u, overloads) {}
 
   FunctionOverloadsView()
@@ -1521,7 +1525,7 @@ class FunctionOverloadsView: public Node {
 // Represent function.
 class FunctionView: public Node {
  public:
-  FunctionView(bool getter, bool setter, bool generator, Node* overloads, Node* name, Node* call_signature, Node* body)
+  FunctionView(bool getter, bool setter, bool generator, Handle<Node> overloads, Handle<Node> name, Handle<Node> call_signature, Handle<Node> body)
       : Node(NodeType::kFunctionView, 4u, {overloads, name, call_signature, body}) {
     if (getter) {
       set_flag(0);
@@ -1532,7 +1536,7 @@ class FunctionView: public Node {
     }
   }
 
-  FunctionView(Node* overloads, Node* name, Node* call_signature, Node* body)
+  FunctionView(Handle<Node> overloads, Handle<Node> name, Handle<Node> call_signature, Handle<Node> body)
       : Node(NodeType::kFunctionView, 4u, {overloads, name, call_signature, body}) {}
 
   
@@ -1561,7 +1565,7 @@ class FunctionView: public Node {
 // Represent function.
 class ArrowFunctionView: public Node {
  public:
-  ArrowFunctionView(Node* call_signature, Node* body)
+  ArrowFunctionView(Handle<Node> call_signature, Handle<Node> body)
       : Node(NodeType::kArrowFunctionView, 2u, {call_signature, body}) {}
 
   // Getter for param_list_.
@@ -1574,7 +1578,7 @@ class ArrowFunctionView: public Node {
 
 class ParameterView: public Node {
  public:
-  ParameterView(bool optional, Node* name, Node* value, Node* type_expr, Node* access_level)
+  ParameterView(bool optional, Handle<Node> name, Handle<Node> value, Handle<Node> type_expr, Handle<Node> access_level)
       : Node(NodeType::kParameterView, 4u, {name, value, type_expr, access_level}){
     if (optional) {
       set_flag(0);
@@ -1600,7 +1604,7 @@ class ParameterView: public Node {
 
 class RestParamView: public Node {
  public:
-  RestParamView(Node* parameter)
+  RestParamView(Handle<Node> parameter)
       : Node(NodeType::kRestParamView, 1u, {parameter}){}
 
   
@@ -1614,7 +1618,7 @@ class RestParamView: public Node {
 
 class ParamList: public Node {
  public:
-  ParamList(std::initializer_list<Node*> args)
+  ParamList(std::initializer_list<Handle<Node>> args)
       : Node(NodeType::kParamList, 0u, args) {}
 
 
@@ -1625,7 +1629,7 @@ class ParamList: public Node {
 
 class CallView: public Node {
  public:
-  CallView(Node* target, Node* args, Node* type_expr)
+  CallView(Handle<Node> target, Handle<Node> args, Handle<Node> type_expr)
       : Node(NodeType::kCallView, 3u, {target, args, type_expr}) {}
 
   
@@ -1641,7 +1645,7 @@ class CallView: public Node {
 
 class CallSignatureView: public Node {
  public:
-  CallSignatureView(Node* param_list, Node* return_type, Node* type_parameters)
+  CallSignatureView(Handle<Node> param_list, Handle<Node> return_type, Handle<Node> type_parameters)
       : Node(NodeType::kCallSignatureView, 3u, {param_list, return_type, type_parameters}) {}
 
   
@@ -1657,7 +1661,7 @@ class CallSignatureView: public Node {
 
 class CallArgsView: public Node {
  public:
-  CallArgsView(std::initializer_list<Node*> args)
+  CallArgsView(std::initializer_list<Handle<Node>> args)
       : Node(NodeType::kCallArgsView, 0, args) {}
 
 
@@ -1668,7 +1672,7 @@ class CallArgsView: public Node {
 
 class NewCallView: public Node {
  public:
-  NewCallView(Node* target, Node* args, Node* type_expr)
+  NewCallView(Handle<Node> target, Handle<Node> args, Handle<Node> type_expr)
       : Node(NodeType::kNewCallView, 3u, {target, args, type_expr}) {}
 
 
@@ -1711,7 +1715,7 @@ class BindingArrayView: public Node {
 
 class BindingElementView: public Node {
  public:
-  BindingElementView(Node* prop, Node* elem, Node* init)
+  BindingElementView(Handle<Node> prop, Handle<Node> elem, Handle<Node> init)
       : Node(NodeType::kBindingElementView, 3u, {prop, elem, init}) {}
 
   BindingElementView()
@@ -1733,7 +1737,7 @@ class DefaultView: public Node {
 
 class YieldView: public Node {
  public:
-  YieldView(bool continuation, Node* expr)
+  YieldView(bool continuation, Handle<Node> expr)
       : Node(NodeType::kYieldView, 1u, {expr}) {
     if (continuation) {
       set_flag(0);
@@ -1758,7 +1762,7 @@ class SuperView: public Node {
 
 class PostfixView: public Node {
  public:
-  PostfixView(Node* target, Token op)
+  PostfixView(Handle<Node> target, Token op)
       : Node(NodeType::kPostfixView, 1u, {target}) {
     set_operand(op);
   }
@@ -1770,7 +1774,7 @@ class PostfixView: public Node {
 
 class GetPropView: public Node {
  public:
-  GetPropView(Node* target, Node* prop)
+  GetPropView(Handle<Node> target, Handle<Node> prop)
       : Node(NodeType::kGetPropView, 2u, {target, prop}) {}
 
 
@@ -1787,7 +1791,7 @@ class GetPropView: public Node {
 
 class GetElemView: public Node {
  public:
-  GetElemView(Node* target, Node* prop)
+  GetElemView(Handle<Node> target, Handle<Node> prop)
       : Node(NodeType::kGetElemView, 2u, {target, prop}) {}
 
   
@@ -1802,7 +1806,7 @@ class GetElemView: public Node {
 
 class AssignmentView: public Node {
  public:
-  AssignmentView(Token op, Node* target, Node* expr)
+  AssignmentView(Token op, Handle<Node> target, Handle<Node> expr)
       : Node(NodeType::kAssignmentView, 2u, {target, expr}) {
     set_operand(op);
   }
@@ -1819,7 +1823,7 @@ class AssignmentView: public Node {
 
 class TemaryExprView: public Node {
  public :
-  TemaryExprView(Node* cond, Node* then_expr, Node* else_expr)
+  TemaryExprView(Handle<Node> cond, Handle<Node> then_expr, Handle<Node> else_expr)
       : Node(NodeType::kTemaryExprView, 3u, {cond, then_expr, else_expr}) {}
 
 
@@ -1838,7 +1842,7 @@ class TemaryExprView: public Node {
 
 class BinaryExprView: public Node {
  public:
-  BinaryExprView(Token op, Node* first, Node* second)
+  BinaryExprView(Token op, Handle<Node> first, Handle<Node> second)
       : Node(NodeType::kBinaryExprView, 2u, {first, second}) {
     set_operand(op);
   }
@@ -1854,7 +1858,7 @@ class BinaryExprView: public Node {
 // Represent cast.
 class CastView: public Node {
  public:
-  CastView(Node* type_expr, Node* expr)
+  CastView(Handle<Node> type_expr, Handle<Node> expr)
       : Node(NodeType::kCastView, 2u, {type_expr, expr}) {}
 
 
@@ -1868,7 +1872,7 @@ class CastView: public Node {
 
 class UnaryExprView: public Node {
  public:
-  UnaryExprView(Token op, Node* expr)
+  UnaryExprView(Token op, Handle<Node> expr)
       : Node(NodeType::kUnaryExprView, 1u, {expr}) {
     set_operand(op);
   }
@@ -1932,7 +1936,7 @@ class RegularExprView: public Node {
 
 class ObjectElementView: public Node {
  public:
-  ObjectElementView(Node* key, Node* value)
+  ObjectElementView(Handle<Node> key, Handle<Node> value)
       : Node(NodeType::kObjectElementView, 2u, {key, value}) {}
 
   // Getter and setter for key_.
@@ -1946,7 +1950,7 @@ class ObjectElementView: public Node {
 
 class ObjectLiteralView: public Node {
  public:
-  ObjectLiteralView(std::initializer_list<Node*> properties)
+  ObjectLiteralView(std::initializer_list<Handle<Node>> properties)
       : Node(NodeType::kObjectLiteralView, 0, properties) {}
 
 
@@ -1957,7 +1961,7 @@ class ObjectLiteralView: public Node {
 
 class ArrayLiteralView: public Node {
  public:
-  ArrayLiteralView(std::initializer_list<Node*> elements)
+  ArrayLiteralView(std::initializer_list<Handle<Node>> elements)
       : Node(NodeType::kArrayLiteralView, 0, elements) {}
 
 
@@ -1991,7 +1995,7 @@ class DebuggerView: public Node {
 
 class ComprehensionExprView: public Node {
  public:
-  ComprehensionExprView(bool generator, Node* for_expr, Node* tail)
+  ComprehensionExprView(bool generator, Handle<Node> for_expr, Handle<Node> tail)
       : Node(NodeType::kComprehensionExprView, 2, {for_expr, tail}) {
     if (generator) {
       set_flag(0);

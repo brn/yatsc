@@ -24,7 +24,6 @@
 
 
 #include <gtest/gtest.h>
-#include "./signal-wait.h"
 #include "../src/utils/os.h"
 #include "../src/utils/backtrace.h"
 
@@ -35,7 +34,6 @@
 #endif
 
 void handler(int sig) {
-  yatsc::ScopedSpinLock lock(yatsc::testing::signal_lock);
   // print out all the frames to stderr
   yatsc::FPrintf(stderr, "Error: signal %d:\n", sig);
   yatsc::PrintStackTrace();

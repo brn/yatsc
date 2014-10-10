@@ -31,7 +31,6 @@
 #include "./uchar.h"
 #include "../utils/unicode.h"
 #include "../utils/utils.h"
-#include "../utils/regions.h"
 #include "unicode-iterator-adapter.h"
 
 namespace yatsc {
@@ -114,7 +113,7 @@ class UtfValueCache {
 };
 
 
-class UtfString : public RegionalObject {
+class UtfString {
  public:
   UtfString() = default;
   

@@ -29,21 +29,22 @@
 #include <vector>
 #include <sstream>
 #include <gtest/gtest.h>
+#include "../src/utils/stl.h"
 
 namespace yatsc {namespace testing {
 
-inline std::vector<std::string> Split(std::string buf, const char* delim) {
-  std::string::size_type pos = buf.find(delim);
-  std::string::size_type index = 0;
-  std::vector<std::string> ret;
+inline yatsc::Vector<yatsc::String> Split(yatsc::String buf, const char* delim) {
+  yatsc::String::size_type pos = buf.find(delim);
+  yatsc::String::size_type index = 0;
+  yatsc::Vector<yatsc::String> ret;
 
-  if (std::string::npos == pos) {
+  if (yatsc::String::npos == pos) {
     ret.push_back(buf);
     return std::move(ret);
   }
 
   while (1) {
-    if (std::string::npos != pos) {
+    if (yatsc::String::npos != pos) {
       ret.push_back(buf.substr(index, pos - index));
     } else {
       ret.push_back(buf.substr(index));
@@ -56,38 +57,38 @@ inline std::vector<std::string> Split(std::string buf, const char* delim) {
 }
 
 
-inline std::string Join(int pos, std::vector<std::string> v) {
-  typedef std::vector<std::string> Vector;
-  std::stringstream ss;
+inline yatsc::String Join(int pos, yatsc::Vector<yatsc::String> v) {
+  typedef yatsc::Vector<yatsc::String> Vector;
+  yatsc::StringStream ss;
   int i = 0;
   for (auto str: v) {
     ss << str << '\n';
     if (i == pos) {
-      std::string::size_type found = str.find_first_not_of(" ");
-      std::string::size_type found_end = str.find_last_not_of(" ");
-      found = found == std::string::npos? 0: found;
-      found_end = found_end == std::string::npos? str.size() - 1: found_end;
-      if (found != std::string::npos && found_end != std::string::npos) {
-        ss << std::string(found, ' ')
-           << std::string((found_end - found) + 1, '^')
+      yatsc::String::size_type found = str.find_first_not_of(" ");
+      yatsc::String::size_type found_end = str.find_last_not_of(" ");
+      found = found == yatsc::String::npos? 0: found;
+      found_end = found_end == yatsc::String::npos? str.size() - 1: found_end;
+      if (found != yatsc::String::npos && found_end != yatsc::String::npos) {
+        ss << yatsc::String(found, ' ')
+           << yatsc::String((found_end - found) + 1, '^')
            << "\n";
       }
     }
     i++;
   }
   if (i <= pos) {
-    ss << "\n" << std::string(0, ' ')
-       << std::string(v.back().size(), '^')
+    ss << "\n" << yatsc::String(0, ' ')
+       << yatsc::String(v.back().size(), '^')
        << "\n";
   }
-  std::string ret = std::move(ss.str());
+  yatsc::String ret = std::move(ss.str());
   ret.substr(0, ret.size() - 1);
   return std::move(ret);
 }
 
 
-inline ::testing::AssertionResult DoCompareNode(int line_number, std::string value, std::string expected) {
-  typedef std::vector<std::string> Vector;
+inline ::testing::AssertionResult DoCompareNode(int line_number, yatsc::String value, yatsc::String expected) {
+  typedef yatsc::Vector<yatsc::String> Vector;
   auto v = Split(value, "\n");
   auto e = Split(expected, "\n");
   Vector::iterator v_it = v.begin();
@@ -133,7 +134,7 @@ inline ::testing::AssertionResult DoCompareNode(int line_number, std::string val
 }
 
 
-inline void CompareNode(int line_number, std::string value, std::string expected) {
+inline void CompareNode(int line_number, yatsc::String value, yatsc::String expected) {
   ASSERT_TRUE((DoCompareNode(line_number, value, expected)));
 }
 

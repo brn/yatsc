@@ -13,8 +13,6 @@ for PROJ in ${PROJECTS[*]}; do
     fi
     
     if [ $? != 0 ] ; then
-        exit $?
+        exit 1
     fi
 done
-    
-exit 0

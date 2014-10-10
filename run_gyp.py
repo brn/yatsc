@@ -70,9 +70,7 @@ if __name__ == '__main__':
       args.extend('-f xcode'.split())
 
       args.append('-Dtarget_arch=' + platform)
-  
-    args.append('-Dcomponent=static_library')
-    args.append('-Dlibrary=static_library')  
+      
     args.append('-Dcurrent_dir=' + os.getcwd().replace('\\', '/'))
     gyp_args = list(args)
     print gyp_args

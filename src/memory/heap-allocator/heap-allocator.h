@@ -48,19 +48,28 @@ class HeapReferenceCounter {
   virtual ~HeapReferenceCounter() {};
 
   // Add reference.
-  YATSC_INLINE void AddReference();
+  YATSC_INLINE void AddReference() YATSC_NO_SE;
 
   // Release reference.
   template <typename T>
-  YATSC_INLINE void ReleaseReference();
+  YATSC_INLINE void ReleaseReference() YATSC_NO_SE;
 
   // Return internal
   template <typename T>
-  YATSC_INLINE T* Get() {return reinterpret_cast<T*>(ptr_);}
+  YATSC_INLINE T* Get() YATSC_NOEXCEPT {return reinterpret_cast<T*>(ptr_);}
+
+
+  // Return internal
+  template <typename T>
+  YATSC_INLINE const T* Get() YATSC_NO_SE {return reinterpret_cast<T*>(ptr_);}
+
+
+  template <typename T>
+  bool operator == (T t) YATSC_NO_SE {return t == ptr_;}
 
  private:
   void* ptr_;
-  std::atomic<uint32_t> ref_;
+  mutable std::atomic<uint32_t> ref_;
 };
 
 
@@ -89,6 +98,10 @@ class Handle {
   // Null Handle is not allowed any operation that touch the internal pointer.
   Handle()
       : ref_count_(nullptr) {}
+
+
+  Handle(heap::HeapReferenceCounter* ref_count)
+      : ref_count_(ref_count) {}
 
 
   ~Handle();
@@ -130,15 +143,65 @@ class Handle {
   Handle<T>& operator = (Handle<U>&& heap_handle);
 
 
+  // Equality comparator of Handle<U>.
+  template <typename U>
+  YATSC_INLINE bool operator == (const Handle<U>& heap_handle) YATSC_NO_SE {
+    return heap_handle.ref_count_ == ref_count_;
+  }
+
+
+  // Equality comparator of Handle<T>.
+  YATSC_INLINE bool operator == (const Handle<T>& heap_handle) YATSC_NO_SE {
+    return heap_handle.ref_count_ == ref_count_;
+  }
+
+
+  // Equality comparator of Handle<U>.
+  template <typename U>
+  YATSC_INLINE bool operator == (const U* ptr) YATSC_NO_SE {
+    return *ref_count_ == ptr;
+  }
+
+
+  // Equality comparator of Handle<T>.
+  YATSC_INLINE bool operator == (const T* ptr) YATSC_NO_SE {
+    return *ref_count_ == ptr;
+  }
+  
+
+  // Cast to bool.
+  YATSC_INLINE operator bool() YATSC_NO_SE {return ref_count_ != nullptr;}
+
+
+  YATSC_INLINE T* Get() YATSC_NOEXCEPT {return ref_count_->Get<T>();}
+
+
+  YATSC_INLINE const T* Get() YATSC_NO_SE {return ref_count_->Get<T>();}
+  
+
   // Access to the internal pointer.
-  YATSC_INLINE T* operator ->() {
+  YATSC_INLINE T* operator ->() YATSC_NOEXCEPT {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>();
+  }
+
+
+  // Access to the internal pointer.
+  YATSC_INLINE const T* operator ->() YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
     return ref_count_->Get<T>();
   }
 
 
   // Get reference type of the T.
-  YATSC_INLINE T& operator *() {
+  YATSC_INLINE T& operator *() YATSC_NOEXCEPT {
+    ASSERT(true, ref_count_ != nullptr);
+    return *(ref_count_->Get<T>());
+  }
+
+
+  // Get reference type of the T.
+  YATSC_INLINE const T& operator *() YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
     return *(ref_count_->Get<T>());
   }
@@ -146,7 +209,15 @@ class Handle {
 
   // Index access of the reference type of T.
   template <typename U>
-  YATSC_INLINE T* operator[] (U index) {
+  YATSC_INLINE T* operator[] (U index) YATSC_NOEXCEPT {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>()[index];
+  }
+
+
+  // Index access of the reference type of T.
+  template <typename U>
+  YATSC_INLINE const T* operator[] (U index) YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
     return ref_count_->Get<T>()[index];
   }
@@ -168,7 +239,14 @@ class Handle {
 
   // Call operator+ of reference type of T.
   template <typename U>
-  YATSC_INLINE T* operator + (U x) {
+  YATSC_INLINE T* operator + (U x) YATSC_NOEXCEPT {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>() + x;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE const T* operator + (U x) YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
     return ref_count_->Get<T>() + x;
   }
@@ -176,17 +254,27 @@ class Handle {
 
   // Call operator- of reference type of T.
   template <typename U>
-  YATSC_INLINE T* operator - (U x) {
+  YATSC_INLINE T* operator - (U x) YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
     return ref_count_->Get<T>() - x;
   }
 
 
- private:
-  // The Handle that has valid value is only instantiable from Heap class.
-  Handle(heap::HeapReferenceCounter* ref_count)
-      : ref_count_(ref_count) {}
+  // Call operator- of reference type of T.
+  template <typename U>
+  YATSC_INLINE const T* operator - (U x) YATSC_NO_SE {
+    ASSERT(true, ref_count_ != nullptr);
+    return ref_count_->Get<T>() - x;
+  }
+
   
+  // Cast to Handle<U>.
+  template <typename U>
+  YATSC_INLINE Handle<U> To() YATSC_NOEXCEPT {
+    return std::move(Handle<U>(ref_count_));
+  }
+  
+ private:
   heap::HeapReferenceCounter* ref_count_;
 };
 
