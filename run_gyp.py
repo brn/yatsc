@@ -69,7 +69,7 @@ if __name__ == '__main__':
     elif sys.platform == 'darwin':
       args.extend('-f xcode'.split())
 
-      args.append('-Dtarget_arch=' + platform)
+    args.append('-Dtarget_arch=' + platform)
       
     args.append('-Dcurrent_dir=' + os.getcwd().replace('\\', '/'))
     gyp_args = list(args)
@@ -77,5 +77,10 @@ if __name__ == '__main__':
     print '\n'
     run_gyp(gyp_args)
 
-for item in [{'name': 'celero.gyp', 'commons': False}, {'name': 'perf-test.gyp', 'commons': True}, {'name': 'test.gyp', 'commons': True}]:
-  doRun(item, sys.argv[1] or 'x86');
+  if len(sys.argv) >= 2:
+    platform = sys.argv[1]
+  else:
+    platform = 'x86'
+
+  for item in [{'name': 'celero.gyp', 'commons': False}, {'name': 'perf-test.gyp', 'commons': True}, {'name': 'test.gyp', 'commons': True}]:
+    doRun(item, platform);

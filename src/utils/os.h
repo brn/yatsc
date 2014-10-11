@@ -1,4 +1,3 @@
-//
 // The MIT License (MIT)
 //
 // Copyright (c) 2013 Taketoshi Aono(brn)
@@ -29,7 +28,6 @@
 #include <string>
 #include <stdexcept>
 #include <stdlib.h>
-#include "./stl.h"
 
 #ifdef _WIN32
 #define K_ERRNO _doserrno
@@ -38,23 +36,53 @@
 #endif
 
 namespace yatsc {
-void Strerror(String* buf, int err);
+template <typename T, typename Traits, typename Allocator>
+void Strerror(std::basic_string<T, std::char_traits<Traits>, Allocator>* buf, int err);
+
+
 void Printf(const char* format, ...);
-void SPrintf(String& buf, bool append, const char* format, ...);
-void VSPrintf(String& buf, bool append, const char* format, va_list args);
+
+
+template <typename T, typename Traits, typename Allocator>
+void SPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buf, bool append, const char* format, ...);
+
+
+template <typename T, typename Traits, typename Allocator>
+void VSPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buf, bool append, const char* format, va_list args);
+
+
 void VFPrintf(FILE* fp, const char* format, ...);
+
+
 void FPrintf(FILE* fp, const char* format, ...);
+
+
 FILE* FOpen(const char* filename, const char* mode);
+
+
 size_t FRead(void* buffer, size_t buffer_size, size_t element_size, size_t count, FILE* fp);
+
+
 void FClose(FILE* fp);
-void GetEnv(String *buf, const char* env);
+
+
+template <typename T, typename Traits, typename Allocator>
+void GetEnv(std::basic_string<T, std::char_traits<Traits>, Allocator> *buf, const char* env);
+
+
 bool Sleep(int nano_time);
 int Utime(const char* path);
 time_t Time(time_t* time);
-int Asctime(String* buf, tm* tm);
+
+
+template <typename T, typename Traits, typename Allocator>
+int Asctime(std::basic_string<T, std::char_traits<Traits>, Allocator>* buf, tm* tm);
 int LocalTime(tm* t, time_t* time);
 void OnExit(void(*callback)());
-void GetLastError(String* buf);
+
+
+template <typename T, typename Traits, typename Allocator>
+void GetLastError(std::basic_string<T, std::char_traits<Traits>, Allocator>* buf);
 FILE* POpen(const char* name, const char* mode);
 void PClose(FILE* fp);
 char* Strdup(const char* path);
@@ -94,5 +122,7 @@ class FileIOException : public std::exception {
   char* message_ = nullptr;
 };
 }
+
+#include "./os-inl.h"
 
 #endif

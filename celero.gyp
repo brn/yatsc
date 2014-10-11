@@ -40,7 +40,7 @@
         'msvs_configuration_platform': 'x86'
       }],
       ['OS == "win"', {
-        'defines': ['_CRT_SECURE_NO_WARNINGS', '_VARIADIC_MAX=10']
+        'defines': ['_CRT_SECURE_NO_WARNINGS', '_VARIADIC_MAX=10', 'WIN32']
       }],
       [ 'OS=="linux" or OS=="freebsd" or OS=="openbsd" or OS=="solaris"', {
         'cflags': [ '-Wall', '-std=c++11', '-std=gnu++11', '-pedantic']
@@ -113,7 +113,7 @@
         'msvs_settins': {
           'VCLinkerTool': {
             'GenerateDebugInformation': 'true',
-            'RuntimeLibrary': 0, # static debug
+            'RuntimeLibrary': 3, # static debug
             'Optimization': 0, # /Od, no optimization
             'OmitFramePointers': 'false',
             'BasicRuntimeChecks': 3, # /RTC1
@@ -133,7 +133,7 @@
         'msvs_settins': {
           'VCLinkerTool': {
             'GenerateDebugInformation': 'false',
-            'RuntimeLibrary': 1, # static
+            'RuntimeLibrary': 0, # static
             'EnableFiberSafeOptimizations': 'true',
             'Optimization': 3, # /Ox, full optimization
             'FavorSizeOrSpeed': 1, # /Ot, favour speed over size
