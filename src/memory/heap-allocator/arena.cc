@@ -43,6 +43,7 @@ CentralArena::CentralArena() {
 // Unmap all heap of LocalArena and unmap all LocalArena.
 CentralArena::~CentralArena() {
   LocalArena* current = local_arena_;
+  if (current == nullptr) {return;}
   
   while (1) {
     LocalArena* tmp = current->next();

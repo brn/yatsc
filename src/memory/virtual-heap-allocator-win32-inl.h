@@ -54,8 +54,6 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
   }
 
   void* ret = ::VirtualAlloc(addr, size, fl_allocation_type, fl_protect);
-  // used_ += size;
-  // printf("Req: %lu KB, Used: %llu MB\n", size / 1024, used_.load() / 1024 / 1024);
   
   if (ret == NULL) {
     return nullptr;
@@ -66,9 +64,8 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
 
 // Unmap virtual memory block with the munmap.
 inline void VirtualHeapAllocator::Unmap(void* addr, size_t size, uint8_t type) {
-  used_ -= size;
   if (type == Type::RELEASE) {
-    ::VirtualFree(addr, size, MEM_RELEASE);
+    ::VirtualFree(addr, 0, MEM_RELEASE);
   } else {
     ::VirtualFree(addr, size, MEM_DECOMMIT);
   }

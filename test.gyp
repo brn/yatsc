@@ -78,6 +78,7 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/tls.cc',
         './src/memory/virtual-heap-allocator.cc',
         './src/memory/aligned-heap-allocator.cc',
         './src/memory/heap-allocator/chunk-header.cc',
@@ -166,6 +167,7 @@
         './src/memory/heap-allocator/chunk-header.cc',
         './src/memory/heap-allocator/arena.cc',
         './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/tls.cc',
         './src/utils/utils.cc',
         './src/utils/os.cc',
         './src/utils/systeminfo.cc',
@@ -186,6 +188,7 @@
         './src/memory/heap-allocator/chunk-header.cc',
         './src/memory/heap-allocator/arena.cc',
         './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/tls.cc',
         './src/utils/utils.cc',
         './src/utils/os.cc',
         './src/utils/systeminfo.cc',

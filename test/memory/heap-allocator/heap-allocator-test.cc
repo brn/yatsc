@@ -30,6 +30,7 @@
 #include "../../../src/memory/heap-allocator/heap-allocator.h"
 #include "../../../src/utils/systeminfo.h"
 #include "../../../src/utils/utils.h"
+#include "../../../src/utils/os.h"
 
 namespace {
 size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();

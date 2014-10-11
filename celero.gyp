@@ -110,14 +110,16 @@
     },
     'configurations': {
       'Debug': {
-        'msvs_settins': {
-          'VCLinkerTool': {
-            'GenerateDebugInformation': 'true',
-            'RuntimeLibrary': 3, # static debug
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'RuntimeLibrary': 3, # DLL debug
             'Optimization': 0, # /Od, no optimization
+            'MinimalRebuild': 'true',
             'OmitFramePointers': 'false',
             'BasicRuntimeChecks': 3, # /RTC1
-            'MinimalRebuild': 'true',
+          },
+          'VCLinkerTool': {
+            'LinkIncremental': 2, # enable incremental linking
           },
         },
         'conditions' : [
@@ -130,30 +132,32 @@
         'cflags': [ '-O0' '-g'],
       },
       'Release': {
-        'msvs_settins': {
-          'VCLinkerTool': {
-            'GenerateDebugInformation': 'false',
-            'RuntimeLibrary': 0, # static
+        'msvs_settings': {
+          'VCCLCompilerTool': {
+            'RuntimeLibrary': 0, # static release
             'EnableFiberSafeOptimizations': 'true',
             'Optimization': 3, # /Ox, full optimization
             'FavorSizeOrSpeed': 1, # /Ot, favour speed over size
             'InlineFunctionExpansion': 2, # /Ob2, inline anything eligible
             'WholeProgramOptimization': 'true', # /GL, whole program optimization, needed for LTCG
             'OmitFramePointers': 'true',
-            'BasicRuntimeChecks': 3, # /RTC1
             'EnableFunctionLevelLinking': 'true',
             'EnableIntrinsicFunctions': 'true',
-            'LinkTimeCodeGeneration': 1, # link-time code generation
-            'OptimizeReferences': 2, # /OPT:REF
-            'EnableCOMDATFolding': 2, # /OPT:ICF
-            'LinkIncremental': 1, # disable incremental linking
-            'MinimalRebuild': 'false',
+            'AdditionalOptions': [
+              '/MP', # compile across multiple CPUs
+            ],
           },
           'VCLibrarianTool': {
             'AdditionalOptions': [
               '/LTCG', # link time code generation
             ],
           },
+          'VCLinkerTool': {
+            'LinkTimeCodeGeneration': 1, # link-time code generation
+            'OptimizeReferences': 2, # /OPT:REF
+            'EnableCOMDATFolding': 2, # /OPT:ICF
+            'LinkIncremental': 1, # disable incremental linking
+          }
         },
         'conditions' : [
           ['OS=="mac"', {

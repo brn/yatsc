@@ -30,16 +30,17 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include "../src/utils/stl.h"
 
 namespace yatsc {namespace testing {
-inline std::string ReadFile(const char* filename) {
+inline String ReadFile(const char* filename) {
   std::ifstream in(filename);
   if (in.fail()) {
     throw std::runtime_error("Invalid file.");
   }
-  std::stringstream buffer;
+  StringStream buffer;
   buffer << in.rdbuf();
-  return buffer.str();
+  return std::move(buffer.str());
 }
 }} //yatsc::testing end
 

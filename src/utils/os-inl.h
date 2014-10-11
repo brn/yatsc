@@ -36,7 +36,7 @@ namespace yatsc {
 
 #ifdef _WIN32
 
-int VAArgs_(const char* format, va_list args) {
+inline int VAArgs_(const char* format, va_list args) {
   return _vscprintf(format, args) + 1;
 }
 

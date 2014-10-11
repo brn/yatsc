@@ -27,6 +27,7 @@
 
 #include <gtest/gtest.h>
 #include <string>
+#include <algorithm>
 #include "../src/utils/stl.h"
 
 namespace yatsc { namespace testing {
@@ -44,9 +45,10 @@ yatsc::String Replace(yatsc::String str1, yatsc::String str2, yatsc::String str3
 }
 
 
-inline ::testing::AssertionResult CompareUchar(const yatsc::String& value, const yatsc::String expected, int i) {
-  char a = value.at(i);
-  char b = expected.at(i);
+inline ::testing::AssertionResult CompareUchar(const yatsc::String& value, const yatsc::String& expected, size_t i) {
+  char a = value[i];
+  char b = expected[i];
+  
   if (a == b) {
     return ::testing::AssertionSuccess();
   }
@@ -69,9 +71,8 @@ inline ::testing::AssertionResult CompareUchar(const yatsc::String& value, const
 
 
 inline void CompareBuffer(const yatsc::String& buffer, const yatsc::String& expectation) {
-  for (int i = 0, len = buffer.size(); i < len; i++) {
+  for (size_t i = 0, len = std::min(buffer.size(), expectation.size()); i < len; i++) {
     ASSERT_TRUE(CompareUchar(buffer, expectation, i));
-    i++;
   }
 }
 

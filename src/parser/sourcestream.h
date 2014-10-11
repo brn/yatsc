@@ -33,6 +33,7 @@
 #include "../utils/stl.h"
 #include "../utils/utils.h"
 #include "../utils/unicode.h"
+#include "../memory/heap.h"
 
 
 namespace yatsc {
@@ -52,6 +53,8 @@ class SourceStream : public MaybeFail, private Uncopyable {
 
 
   YATSC_INLINE const String& buffer() {return buffer_;}
+
+  YATSC_INLINE const char* cbuffer() {return buffer_.c_str();}
 
 
   YATSC_INLINE size_t size() const {return size_;}

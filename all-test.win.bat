@@ -1,5 +1,14 @@
 @echo off
 
+set config=""
+set args=""
+set last_test=""
+set %dir%=""
+
+IF "%1" == "Release" set dir=./Release
+IF "%1" == "Debug" set dir=./Debug
+IF "%2" == "Release" set dir=./Release
+IF "%2" == "Debug" set dir=./Debug
 
 call ./build.win.bat %*
 call :RUN IntrusiveRBTreeTest.exe

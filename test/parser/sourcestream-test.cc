@@ -32,14 +32,14 @@ const char filename[] = "test/parser/sourcestream-test-cases/jquery.js";
 
 TEST(SourceStream, read_all_ok) {
   yatsc::SourceStream st(filename);
-  std::string expected = yatsc::testing::ReadFile(filename);
-  yatsc::testing::CompareBuffer(st.buffer(), expected.c_str());
+  yatsc::String expected = yatsc::testing::ReadFile(filename);
+  yatsc::testing::CompareBuffer(st.cbuffer(), expected.c_str());
 }
 
 
 TEST(SourceStream, iterator_ok) {
   yatsc::SourceStream st(filename);
-  std::string expected = yatsc::testing::ReadFile(filename);
+  yatsc::String expected = yatsc::testing::ReadFile(filename);
   ASSERT_TRUE(st.success());
   auto it = st.begin();
   auto end = st.end();

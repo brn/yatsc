@@ -49,12 +49,12 @@ void SourceStream::Initialize() {
 
 
 void SourceStream::ReadBlock(FILE* fp)  {
-  char* buffer = new char[size_ + 1];
+  char* buffer = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
   size_t next = FRead(buffer, size_, sizeof(UC8), size_ - 1, fp);
   if (next > 0) {
     buffer[next] = '\0';
-    buffer_.append(buffer);
+    buffer_ = buffer;
   }
-  delete[] buffer;
+  Heap::Delete(buffer);
 }
 }

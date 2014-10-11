@@ -25,7 +25,6 @@
 #include <exception>
 #include "../utils/utils.h"
 #include "../utils/os.h"
-#include "../utils/stl.h"
 #include "./aligned-heap-allocator.h"
 #include "./virtual-heap-allocator.h"
 
@@ -69,9 +68,9 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       retry++;
 
       if (retry > kMaxRetry) {
-        String buf;
+        std::string buf;
         GetLastError(&buf);
-        FATAL("Memory allocation faild.\n" << buf);
+        FATAL("Memory allocation failed.\n" << buf);
       }
 
       // First allocation, we reserve memory block that contains target range.
@@ -79,7 +78,8 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       allocatedAddress = reinterpret_cast<Byte*>(VirtualHeapAllocator::Map(
           nullptr, allocatedSize,
           VirtualHeapAllocator::Prot::NONE,
-          VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE));
+          VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE,
+          VirtualHeapAllocator::Type::RESERVE));
       
       if (allocatedAddress == nullptr) {
         continue;
@@ -102,8 +102,8 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
       VirtualHeapAllocator::Unmap(allocatedAddress + (allocatedSize - unused), unused);
 #elif defined(PLATFORM_WIN)
-      lock_.lock();
-      VirtualHeapAllocator::Unmap(allocatedAddress, allocatedSize);
+      VirtualHeapAllocator::Unmap(allocatedAddress, roundup, VirtualHeapAllocator::Type::DECOMMIT);
+      VirtualHeapAllocator::Unmap(allocatedAddress + (allocatedSize - unused), unused, VirtualHeapAllocator::Type::DECOMMIT);
 #endif
       
       // Commit found memory block again.
@@ -112,9 +112,6 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
       ret = VirtualHeapAllocator::Map(alignedAddress, block_size,
                                       VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
                                       VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
-#ifdef PLATFORM_WIN
-      lock_.unlock();
-#endif
       
       // Check commited memory block address is less than the alignedAddress.
       if (ret != nullptr && ret != alignedAddress) {
