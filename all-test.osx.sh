@@ -8,7 +8,6 @@ build/${type}/HeapAllocatorTest --gtest_color=yes&&\
 build/${type}/SourceStreamTest --gtest_color=yes&&\
 build/${type}/UnicodeIteratorAdapterTest --gtest_color=yes &&\
 build/${type}/ScannerTest --gtest_color=yes &&\
-build/${type}/RegionsTest --gtest_color=yes &&\
 build/${type}/NodeTest --gtest_color=yes &&\
 build/${type}/ExpressionParseTest --gtest_color=yes &&\
 build/${type}/DeclarationParseTest --gtest_color=yes &&\

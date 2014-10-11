@@ -143,7 +143,7 @@ void FPrintf(FILE* fp, const char* format, ...) {
 FILE* FOpen(const char* filename, const char* mode) {
   FILE* fp = fopen(filename, mode);
   if (fp == NULL) {
-    String buf;
+    std::string buf;
     Strerror(&buf, errno);
     throw std::move(FileIOException(buf.c_str()));
   }

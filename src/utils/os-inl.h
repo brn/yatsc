@@ -132,7 +132,7 @@ void Strerror(std::basic_string<T, std::char_traits<Traits>, Allocator>* buf, in
 
 
 template <typename T, typename Traits, typename Allocator>
-void SPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buf, bool append, const char* format, ...) {
+void SPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buffer, bool append, const char* format, ...) {
   va_list args;
   va_start(args, format);
   char* buf = NULL;
@@ -147,7 +147,7 @@ void SPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buf, boo
 
 
 template <typename T, typename Traits, typename Allocator>
-void VSPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buf, bool append, const char* format, va_list args) {
+void VSPrintf(std::basic_string<T, std::char_traits<Traits>, Allocator>& buffer, bool append, const char* format, va_list args) {
   char* buf = NULL;
   vasprintf(&buf, format, args);
   if (!append) {

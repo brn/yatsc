@@ -564,7 +564,7 @@ inline NODE RbTreeBase<Key, T>::FindLeftMax(NODE node) YATSC_NOEXCEPT {
   return nullptr;
 }
 
-
+#if defined(DEBUG) || defined(UNIT_TEST)
 template <typename Key, typename T>
 inline std::string RbTreeBase<Key, T>::ToString() YATSC_NO_SE {
   std::string head;
@@ -588,6 +588,7 @@ inline std::string RbTreeBase<Key, T>::ToStringHelper(std::string& head, const c
   }
   return str;
 }
+
 
 template <typename Key, typename T>
 inline std::vector<typename RbTreeBase<Key, T>::CountResult> RbTreeBase<Key, T>::GetBlackNodeCountOfLeafs() YATSC_NO_SE {
@@ -621,4 +622,5 @@ inline void RbTreeBase<Key, T>::DoGetBlackNodeCountOfLeafs(std::vector<CountResu
   }
   DoGetBlackNodeCountOfLeafs(v, node->right());
 }
+#endif
 }

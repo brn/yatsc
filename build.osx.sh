@@ -1,6 +1,6 @@
 #!/usr/bin/sh
 
-PROJECTS=(celero.xcodeproj perf-test.xcodeproj test.xcodeproj)
+PROJECTS=(celero.xcodeproj heap.xcodeproj perf-test.xcodeproj test.xcodeproj)
 
 for PROJ in ${PROJECTS[*]}; do
     if [ "${1}" = "clean" ] ; then
