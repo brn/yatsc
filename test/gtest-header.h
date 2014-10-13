@@ -22,8 +22,6 @@
 // THE SOFTWARE.
 
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-#pragma GCC diagnostic ignored "-Wall"
+
 #include <gtest/gtest.h>
 

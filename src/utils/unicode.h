@@ -173,16 +173,16 @@ class Convertor : private Static {
  public:
   static UC8Bytes Convert(UC16 uc, UC16 trail) {
     UC32 result = unicode::Mask<16>(uc);
-    if (IsSurrogatePairUC16(result)) {
-      if (IsHighSurrogateUC16(result)) {
+    if (IsSurrogatePairUC16(static_cast<UC16>(result))) {
+      if (IsHighSurrogateUC16(static_cast<UC16>(result))) {
         if (trail == 0) {
           return UC8Bytes();
         }
         const UC32 low = unicode::Mask<16>(trail);
-        if (!IsLowSurrogateUC16(low)) {
+        if (!IsLowSurrogateUC16(static_cast<UC16>(low))) {
           return UC8Bytes();
         }
-        result = UC16ToUC32SurrogatePair(result, low);
+        result = UC16ToUC32SurrogatePair(static_cast<UC16>(result), static_cast<UC16>(low));
       } else {
         return UC8Bytes();
       }

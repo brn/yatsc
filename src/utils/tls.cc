@@ -15,7 +15,7 @@ namespace yatsc {
 // Chromium consumers.
 
 // g_native_tls_key is the one native TLS that we use.  It stores our table.
-std::atomic_uint_fast32_t g_native_tls_key(PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES);
+std::atomic_uint_fast32_t g_native_tls_key(static_cast<uint32_t>(PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES));
 
 // g_last_used_tls_key is the high-water-mark of allocated thread local storage.
 // Each allocation is an index into our g_tls_destructors[].  Each such index is
@@ -68,7 +68,7 @@ void** ConstructTlsVector() {
       PlatformThreadLocalStorage::FreeTLS(tmp);
     }
 
-    uint_fast32_t out_of_index = PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES;
+    uint_fast32_t out_of_index = static_cast<uint32_t>(PlatformThreadLocalStorage::TLS_KEY_OUT_OF_INDEXES);
     // Atomically test-and-set the tls_key.  If the key is
     // TLS_KEY_OUT_OF_INDEXES, go ahead and set it.  Otherwise, do nothing, as
     // another thread already did our dirty work.
@@ -262,7 +262,7 @@ namespace {
 #endif  // _WIN64
 
 // Static callback function to call with each thread termination.
-void NTAPI OnThreadExit(PVOID module, DWORD reason, PVOID reserved) {
+void NTAPI OnThreadExit(PVOID, DWORD reason, PVOID) {
   // On XP SP0 & SP1, the DLL_PROCESS_ATTACH is never seen. It is sent on SP2+
   // and on W2K and W2K3. So don't assume it is sent.
   if (DLL_THREAD_DETACH == reason || DLL_PROCESS_DETACH == reason)

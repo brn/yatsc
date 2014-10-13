@@ -27,36 +27,12 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/os.cc',
         './test/utils/intrusive-rb-tree-test.cc',
         './lib/gtest/gtest-all.cc',
         './test/test-main.cc',
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
       'xcode_settings': {
         'MACOSX_DEPLOYMENT_TARGET': '10.7',
         'OTHER_CFLAGS': [
@@ -133,36 +109,19 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './test/memory/heap-allocator/heap-allocator-test.cc',
         './lib/gtest/gtest-all.cc',
         './test/test-main.cc',
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'scanner_test',
@@ -171,6 +130,15 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/compiler-option.cc',
         './src/utils/environment.cc',
         './src/parser/token.cc',
@@ -180,32 +148,6 @@
         './test/parser/scanner-test.cc',
         './test/test-main.cc',
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'unicode_iterator_adapter_test',
@@ -214,36 +156,19 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './lib/gtest/gtest-all.cc',
         './test/parser/unicode-iterator-adapter-test.cc',
         './test/test-main.cc',
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'sourcestream_test',
@@ -252,37 +177,20 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/parser/sourcestream.cc',
         './lib/gtest/gtest-all.cc',
         './test/parser/sourcestream-test.cc',
         './test/test-main.cc',
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'node_test',
@@ -291,38 +199,21 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
         './test/ir/node-test.cc',
         './test/test-main.cc'
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'expression_parse_test',
@@ -331,6 +222,15 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/compiler-option.cc',
         './src/parser/token.cc',
         './src/utils/environment.cc',
@@ -339,32 +239,6 @@
         './test/parser/expression-parse-test.cc',
         './test/test-main.cc'
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'declaration_parse_test',
@@ -373,6 +247,15 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/compiler-option.cc',
         './src/parser/token.cc',
         './src/utils/systeminfo.cc',
@@ -382,32 +265,6 @@
         './test/parser/declaration-parse-test.cc',
         './test/test-main.cc'
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
     {
       'target_name': 'statement_parse_test',
@@ -416,6 +273,15 @@
       'include_dirs' : ['./lib', '/usr/local/include'],
       'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
       'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
         './src/compiler-option.cc',
         './src/parser/token.cc',
         './src/utils/environment.cc',
@@ -424,32 +290,6 @@
         './test/parser/statement-parse-test.cc',
         './test/test-main.cc'
       ],
-      'configurations': {
-        'Debug': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Debug/libheap.a']
-          }
-        },
-        'Release': {
-          'msvs_settings': {
-            'VCLinkerTool': {
-              'AdditionalDependencies': [
-                './Debug/heap.lib'
-              ]
-            }
-          },
-          'xcode_settings': {
-            'OTHER_LDFLAGS': ['./build/Release/libheap.a']
-          }
-        }
-      },
     },
   ] # targets
 }

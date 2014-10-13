@@ -34,8 +34,8 @@ namespace {
 size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();
 static const uint64_t kSize = 10000u;
 static const size_t kThreadSize = thread_size - 1 == 0? 1 : thread_size - 1;
-static const int kThreadObjectSize = 5000;
-static const int kSamples = 10;
+static const size_t kThreadObjectSize = 5000;
+static const size_t kSamples = 10;
 }
 
 
@@ -147,10 +147,9 @@ class ThreadRunner {
         std::uniform_int_distribution<size_t> size(1, 100);
         Base* last = nullptr;
         for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-          int s = size(mt);
-          int ss = s % 6 == 0;
-          int t = s % 3 == 0;
-          int f = s % 5 == 0;
+          size_t s = size(mt);
+          size_t t = s % 3 == 0;
+          size_t f = s % 5 == 0;
     
           if (t) {
             last = new Test1<std::atomic<uint64_t>>(&ok);
@@ -182,10 +181,9 @@ class ThreadRunner {
         std::uniform_int_distribution<size_t> size(1, 100);
         Base* last = nullptr;
         for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-          int s = size(mt);
-          int ss = s % 6 == 0;
-          int t = s % 3 == 0;
-          int f = s % 5 == 0;
+          size_t s = size(mt);
+          size_t t = s % 3 == 0;
+          size_t f = s % 5 == 0;
     
           if (t) {
             last = yatsc::Heap::New<Test1<std::atomic<uint64_t>>>(&ok);

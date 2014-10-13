@@ -82,5 +82,5 @@ if __name__ == '__main__':
   else:
     platform = 'x86'
 
-  for item in [{'name': 'celero.gyp', 'commons': False}, {'name': 'heap.gyp', 'commons': True}, {'name': 'perf-test.gyp', 'commons': True}, {'name': 'test.gyp', 'commons': True}]:
+  for item in [{'name': 'celero.gyp', 'commons': False}, {'name': 'perf-test.gyp', 'commons': True}, {'name': 'test.gyp', 'commons': True}]:
     doRun(item, platform);

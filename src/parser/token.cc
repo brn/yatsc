@@ -237,7 +237,7 @@ static const Token kPunctures[] = {
 
 // Get Identifier type from string.
 Token TokenInfo::GetIdentifierType(const char* maybe_keyword, const CompilerOption& co) {
-  const int input_length = Strlen(maybe_keyword);
+  const size_t input_length = Strlen(maybe_keyword);
   const int min_length = 2;
   const int max_length = 10;
   if (input_length < min_length || input_length > max_length) {

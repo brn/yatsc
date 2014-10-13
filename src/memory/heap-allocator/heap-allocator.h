@@ -364,48 +364,53 @@ class StandardAllocator: public std::allocator<T> {
 
 
   template <typename U>
-  StandardAllocator(const StandardAllocator<U>& allocator) {}
+  StandardAllocator(const StandardAllocator<U>&) {}
     
 
 
   // Allocate new memory.
-  pointer allocate(size_type num, const void* hint = 0) {
+  pointer allocate(size_type num, const void*) YATSC_NO_SE {
+    return allocate(num);
+  }
+
+  
+  pointer allocate(size_type num) YATSC_NO_SE {
     return reinterpret_cast<pointer>(Heap::NewPtr(sizeof(T) * num));
   }
 
   
   // Initialize already allocated block.  
-  void construct(pointer p, const T& value) {
+  void construct(pointer p, const T& value) YATSC_NOEXCEPT {
     new (static_cast<void*>(p)) T(value);
   }
 
   
   // Return object address.  
-  pointer address(reference value) const { 
+  pointer address(reference value) YATSC_NO_SE { 
     return &value;
   }
 
   
   // Return const object address.
-  const_pointer address(const_reference value) const { 
+  const_pointer address(const_reference value) YATSC_NO_SE { 
     return &value;
   }
 
   
   // Remove pointer.  
-  void destroy(pointer p) {
-    p->~T();
+  void destroy(pointer ptr) YATSC_NO_SE {
+    ptr->~T();
   }
 
   
   // Do nothing.  
-  void deallocate(pointer p, size_type n) {
+  void deallocate(pointer p, size_type) YATSC_NO_SE {
     Heap::Delete(p);
   }
 
   
   // Return the max size of allocatable.
-  size_type max_size() const throw() {
+  size_type max_size() YATSC_NO_SE {
     return std::numeric_limits<size_t>::max() / sizeof(T);
   }
 };

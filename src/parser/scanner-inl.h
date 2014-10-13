@@ -111,18 +111,18 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
 
 template<typename UCharInputIterator>
 UC16 Scanner<UCharInputIterator>::ScanHexEscape(const UChar& uchar, int len, bool* success) {
-  UC16 result = 0;
+  int result = 0;
   for (int i = 0; i < len; ++i) {
     const int d = ToHexValue(uchar);
     if (d < 0) {
       *success = false;
-      return d;
+      return 0;
     }
     *success = true;
     result = result * 16 + d;
     Advance();
   }
-  return result;
+  return static_cast<UC16>(result);
 }
 
 

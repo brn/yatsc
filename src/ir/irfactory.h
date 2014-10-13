@@ -36,7 +36,7 @@ class IRFactory : private Uncopyable {
   IRFactory() {}
   
   template <typename NodeName, typename ... Args>
-  YATSC_INLINE Handle<NodeName> New(Args ... args) {
+  inline Handle<NodeName> New(Args ... args) {
     return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
   }
 };

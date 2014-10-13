@@ -44,6 +44,7 @@ bool PlatformThreadLocalStorage::AllocTLS(TLSKey* key) {
 void PlatformThreadLocalStorage::FreeTLS(TLSKey key) {
   BOOL ret = TlsFree(key);
   ASSERT(true, !!ret);
+  (void)ret;
 }
 
 void* PlatformThreadLocalStorage::GetTLSValue(TLSKey key) {
@@ -53,6 +54,7 @@ void* PlatformThreadLocalStorage::GetTLSValue(TLSKey key) {
 void PlatformThreadLocalStorage::SetTLSValue(TLSKey key, void* value) {
   BOOL ret = TlsSetValue(key, value);
   ASSERT(true, !!ret);
+  (void)ret;
 }
 
 }  // namespace yatsc

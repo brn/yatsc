@@ -30,12 +30,12 @@
 #include "../../src/utils/rbtree-base.h"
 #include "../../src/utils/intrusive-rbtree.h"
 
-class RBValueObject: public yatsc::RbTreeNode<int, RBValueObject*> {
+class RBValueObject: public yatsc::RbTreeNode<size_t, RBValueObject*> {
  public:
   RBValueObject()
       : RbTreeNode() {}
 
-  RBValueObject(int i)
+  RBValueObject(size_t i)
       : RbTreeNode(i),
         s(i){}
 
@@ -78,13 +78,13 @@ inline ::testing::AssertionResult CompareDistance(const yatsc::IntrusiveRbTree<K
 
 
 TEST(IntrusiveRbTree, Insert) {
-yatsc::IntrusiveRbTree<int, RBValueObject*> tree;  
+  yatsc::IntrusiveRbTree<size_t, RBValueObject*> tree;  
   std::random_device rd;
   std::mt19937 mt(rd());
   std::uniform_int_distribution<size_t> size(1, 1000);
   std::vector<int> v;
   for (int i = 0; i < 10000; i++) {
-    int s = size(mt);
+    size_t s = size(mt);
     auto value = new RBValueObject();
     value->s = s;
     tree.Insert(s, value);
@@ -106,7 +106,7 @@ yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
 
 
 TEST(IntrusiveRbTree, Delete) {
-  yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
+  yatsc::IntrusiveRbTree<size_t, RBValueObject*> tree;
   std::vector<RBValueObject*> v;
   std::array<RBValueObject*, 33> x = {{
       new RBValueObject(3),
@@ -159,7 +159,7 @@ TEST(IntrusiveRbTree, Delete) {
 }
 
 
-static std::vector<int> kRandom;
+static std::vector<size_t> kRandom;
 
 
 TEST(IntrusiveRbTree, prepare) {
@@ -169,14 +169,14 @@ TEST(IntrusiveRbTree, prepare) {
   int is = 1000000;
   kRandom.reserve(is);
   for (int i = 0; i < is; i++) {
-    int s = size(mt);
+    size_t s = size(mt);
     kRandom.push_back(s);
   }
 }
 
 
 TEST(IntrusiveRbTree, InsertAndFind) {
-  yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
+  yatsc::IntrusiveRbTree<size_t, RBValueObject*> tree;
   int j = 0;
   for (auto i: kRandom) {
     auto value = new RBValueObject(i);
@@ -191,11 +191,11 @@ TEST(IntrusiveRbTree, InsertAndFind) {
 
 
 TEST(IntrusiveRbTree, map_InsertAndFind) {
-  std::map<int, RBValueObject*> tree;
+  std::map<size_t, RBValueObject*> tree;
   int j = 0;
   for (auto i: kRandom) {
     auto value = new RBValueObject(i);
-    tree.insert(std::pair<int, RBValueObject*>(i, value));
+    tree.insert(std::pair<size_t, RBValueObject*>(i, value));
     j++;
   }
 
@@ -206,12 +206,12 @@ TEST(IntrusiveRbTree, map_InsertAndFind) {
 
 
 TEST(IntrusiveRbTree, umap_InsertAndFind) {
-  std::unordered_map<int, RBValueObject*> tree;
+  std::unordered_map<size_t, RBValueObject*> tree;
   int j = 0;
   
   for (auto i: kRandom) {
     auto value = new RBValueObject(i);
-    tree.insert(std::pair<int, RBValueObject*>(i, value));
+    tree.insert(std::pair<size_t, RBValueObject*>(i, value));
     j++;
   }
 

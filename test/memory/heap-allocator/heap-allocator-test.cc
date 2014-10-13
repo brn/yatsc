@@ -37,8 +37,8 @@ size_t thread_size = yatsc::SystemInfo::GetOnlineProcessorCount();
 static const uint64_t kSize = 1000000u;
 static const uint64_t kSmallSize = 10000u;
 static const size_t kThreadSize = thread_size - 1 == 0? 1 : thread_size - 1;
-static const int kThreadObjectSize = 100000;
-static const int kStackSize = kThreadObjectSize * kThreadSize;
+static const size_t kThreadObjectSize = 100000;
+static const size_t kStackSize = kThreadObjectSize * kThreadSize;
 }
 
 #define LOOP_FOR_THREAD_SIZE for (unsigned i = 0; i < kThreadSize; i++)
@@ -188,9 +188,9 @@ TEST_F(Heap, random_New) {
   std::vector<Base*> v;
   v.reserve(kSize);
   for (uint64_t i = 0u; i < kSize; i++) {
-    int s = size(mt);
-    int t = s % 3 == 0;
-    int f = s % 5 == 0;
+    size_t s = size(mt);
+    size_t t = s % 3 == 0;
+    size_t f = s % 5 == 0;
     Base* ptr;
     if (t) {
       ptr = yatsc::Heap::New<Test1<>>(&ok);
@@ -202,7 +202,6 @@ TEST_F(Heap, random_New) {
     ptr->x = 100;
     v.push_back(ptr);
   }
-  size_t s = 0;
   for (auto x: v) {
     yatsc::Heap::Destruct(x);
   }
@@ -232,10 +231,10 @@ TEST_F(Heap, New_many_from_chunk_random_and_dealloc) {
   Base* last = nullptr;
   int count = 0;
   for (uint64_t i = 0u; i < kSize; i++) {
-    int s = size(mt);
-    int ss = s % 6 == 0;
-    int t = s % 3 == 0;
-    int f = s % 5 == 0;
+    size_t s = size(mt);
+    size_t ss = s % 6 == 0;
+    size_t t = s % 3 == 0;
+    size_t f = s % 5 == 0;
 
     if (ss) {
       if (last != nullptr) {
@@ -299,10 +298,10 @@ TEST_F(Heap, New_thread_random_dealloc) {
     std::uniform_int_distribution<size_t> size(1, 100);
     volatile Base* last = nullptr;
     for (uint64_t i = 0u; i < kThreadObjectSize; i++) {
-      int s = size(mt);
-      int ss = s % 6 == 0;
-      int t = s % 3 == 0;
-      int f = s % 5 == 0;
+      size_t s = size(mt);
+      size_t ss = s % 6 == 0;
+      size_t t = s % 3 == 0;
+      size_t f = s % 5 == 0;
 
       if (ss) {
         if (last != nullptr) {

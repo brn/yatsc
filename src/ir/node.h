@@ -312,7 +312,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   YATSC_CONST_GETTER(size_t, size, node_list_.size());
   
 
-  YATSC_CONST_GETTER(Handle<Node>, first_child, node_list_[0]);
+  YATSC_CONST_GETTER(Handle<Node>, first_child, node_list_.front());
 
 
   YATSC_CONST_GETTER(Handle<Node>, last_child, node_list_.back());
@@ -1196,7 +1196,7 @@ class MemberFunctionOverloadsView: public Node {
 class MemberFunctionOverloadView: public MemberFunctionDefinitionView {
  public:
   MemberFunctionOverloadView(bool getter, bool setter, bool generator, Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature)
-      : MemberFunctionDefinitionView(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {}
+      : MemberFunctionDefinitionView(NodeType::kMemberFunctionOverloadView, getter, setter, generator, 3u, {accessor, name, call_signature}) {}
 
   MemberFunctionOverloadView(Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionOverloadView, 3u, {accessor, name, call_signature}) {}
@@ -1209,7 +1209,7 @@ class MemberFunctionOverloadView: public MemberFunctionDefinitionView {
 class MemberFunctionView: public MemberFunctionDefinitionView {
  public:
   MemberFunctionView(bool getter, bool setter, bool generator, Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
-      : MemberFunctionDefinitionView(NodeType::kFunctionView, 5u, {accessor, name, call_signature, overloads, body}) {}
+      : MemberFunctionDefinitionView(NodeType::kFunctionView, getter, setter, generator, 5u, {accessor, name, call_signature, overloads, body}) {}
 
   MemberFunctionView(Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionView, 5u, {accessor, name, call_signature, overloads, body}) {}

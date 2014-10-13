@@ -42,7 +42,7 @@ namespace yatsc {
  * Inline macro.
  */
 #if !defined(DEBUG) && defined(HAVE_FORCE_INLINE)
-#define YATSC_INLINE inline __forceinline
+#define YATSC_INLINE inline __forceinline __declspec(nothrow)
 #elif !defined(DEBUG) && defined(HAVE_INLINE_ATTRIUTE)
 #define YATSC_INLINE inline __attribute__((always_inline))
 #else

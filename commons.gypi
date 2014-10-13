@@ -82,7 +82,7 @@
         'ExceptionHandling': 1, # /EHsc
         'SuppressStartupBanner': 'true',
         'WarnAsError': 'false',
-        'DisableSpecificWarnings': ['4127'], # /wd"4127"
+        'DisableSpecificWarnings': ['4127', '4714'], # /wd"4127" /wd"4714"
       },
       'VCLibrarianTool': {
         'AdditionalLibraryDirectories': ['./lib']

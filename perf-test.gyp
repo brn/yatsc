@@ -9,7 +9,7 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Debug/lib/celero.lib',
-              './Debug/heap.lib'
+              './Debug/lib/heap.lib'
             ]
           }
         },
@@ -22,7 +22,7 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Release/lib/celero.lib',
-              './Debug/heap.lib'
+              './Release/lib/heap.lib'
             ]
           }
         },
