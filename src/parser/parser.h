@@ -100,6 +100,13 @@ class Parser: public ParserBase {
         scanner_(scanner) {Next();}
 
  private:
+  struct AccessorType {
+    AccessorType(bool setter, bool getter, TokenCursor cursor)
+        : setter(setter), getter(getter) {}
+    bool setter;
+    bool getter;
+    TokenCursor cursor;
+  };
   
   /**
    * Return a next TokenInfo.
@@ -210,15 +217,18 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseConstructorOverloads(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> overloads);
+  Handle<ir::Node> ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
 
-  Handle<ir::Node> ParseMemberFunctionOverloads(Handle<ir::Node> mods);
+  bool IsMemberFunctionOverloadsBegin(TokenInfo* info);
+  
+  Handle<ir::Node> ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at);
 
-  Handle<ir::Node> ParseMemberFunctionOverloadOrImplementation(bool first, Handle<ir::Node> overloads);
+  Handle<ir::Node> ParseMemberFunctionOverloadOrImplementation(
+      bool first, Handle<ir::Node> mods, AccessorType* at, Handle<ir::Node> overloads);
 
   Handle<ir::Node> ParseGeneratorMethodOverloads(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> overloads);
+  Handle<ir::Node> ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
 
   Handle<ir::Node> ParseMemberVariable(Handle<ir::Node> mods);
 
@@ -391,8 +401,7 @@ class Parser: public ParserBase {
 
   void ConsumeLineTerminator();
 
-  template <typename T>
-  void SetModifiers(bool* first, Handle<ir::Node> mods, T fn);
+  AccessorType ParseAccessor();
 
   Handle<ir::Node> ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
 

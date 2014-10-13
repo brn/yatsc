@@ -3,7 +3,7 @@
 set config=""
 set args=""
 set last_test=""
-set %dir%=""
+set dir=./Debug
 
 IF "%1" == "Release" set dir=./Release
 IF "%1" == "Debug" set dir=./Debug

@@ -169,6 +169,16 @@ class UtfString {
   inline bool operator == (const char* str) const {
     return utf_value_cache_ == str;
   }
+
+  
+  inline bool operator != (const UtfString& utf_string) const {
+    return !((*this) == utf_string);
+  }
+
+
+  inline bool operator != (const char* str) const {
+    return !((*this) == str);
+  }
   
 
   inline UtfString& operator = (UtfString&& utf_string) {

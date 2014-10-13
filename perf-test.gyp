@@ -9,7 +9,6 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Debug/lib/celero.lib',
-              './Debug/lib/heap.lib'
             ]
           }
         },
@@ -22,12 +21,11 @@
           'VCLinkerTool': {
             'AdditionalDependencies': [
               './Release/lib/celero.lib',
-              './Release/lib/heap.lib'
             ]
           }
         },
         'xcode_settings': {
-          'OTHER_LDFLAGS': ['./build/Release/libcelero.a', './build/Release/libheap.a']
+          'OTHER_LDFLAGS': ['./build/Release/libcelero.a']
         }
       }
     }

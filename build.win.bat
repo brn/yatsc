@@ -1,6 +1,6 @@
 @echo off
 set VisualStudioVersion=12.0
-set config=""
+set config="/p:Configuration=Debug"
 set args=""
 IF "%1" == "Rebuild" set args=/t:Rebuild
 IF "%1" == "Release" set config=/p:Configuration=%1

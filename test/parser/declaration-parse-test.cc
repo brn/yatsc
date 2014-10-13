@@ -528,6 +528,9 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  public static member(a);"
                    "  static public member(b);"
                    "  public static member() {}"
+                   "  public static *gmember(a);"
+                   "  public static *gmember(b, c);"
+                   "  public static *gmember() {};"
                    "}",
                    "[ClassDeclView]\n"
                    "  [NameView][Foo]\n"
@@ -608,7 +611,51 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [Empty]\n"
                    "                [Empty]\n"
                    "            [Empty]\n"
-                   "            [Empty]\n"                   
+                   "            [Empty]\n"
+                   "      [BlockView]\n"
+                   "    [MemberFunctionView]\n"
+                   "      [ClassFieldModifiersView]\n"
+                   "        [ClassFieldAccessLevelView][TS_STATIC]\n"
+                   "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "      [NameView][gmember]\n"
+                   "      [CallSignatureView]\n"
+                   "        [ParamList]\n"
+                   "        [Empty]\n"
+                   "        [Empty]\n"
+                   "      [MemberFunctionOverloadsView]\n"
+                   "        [MemberFunctionOverloadView]\n"
+                   "          [ClassFieldModifiersView]\n"
+                   "            [ClassFieldAccessLevelView][TS_STATIC]\n"
+                   "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "          [NameView][gmember]\n"
+                   "          [CallSignatureView]\n"
+                   "            [ParamList]\n"
+                   "              [ParameterView]\n"
+                   "                [NameView][a]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"                   
+                   "            [Empty]\n"
+                   "            [Empty]\n"
+                   "        [MemberFunctionOverloadView]\n"
+                   "          [ClassFieldModifiersView]\n"
+                   "            [ClassFieldAccessLevelView][TS_STATIC]\n"
+                   "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "          [NameView][gmember]\n"
+                   "          [CallSignatureView]\n"
+                   "            [ParamList]\n"
+                   "              [ParameterView]\n"
+                   "                [NameView][b]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"
+                   "              [ParameterView]\n"
+                   "                [NameView][c]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"
+                   "                [Empty]\n"                   
+                   "            [Empty]\n"
+                   "            [Empty]\n"               
                    "      [BlockView]");
 
 
@@ -691,4 +738,72 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "      [SimpleTypeExprView]\n"
                    "        [NameView][Qux]\n"
                    "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                   "  public get bar(){}"
+                   "}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]\n"
+                   "    [MemberFunctionView]\n"
+                   "      [ClassFieldModifiersView]\n"
+                   "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "      [NameView][bar]\n"
+                   "      [CallSignatureView]\n"
+                   "        [ParamList]\n"
+                   "        [Empty]\n"
+                   "        [Empty]\n"
+                   "      [MemberFunctionOverloadsView]\n"
+                   "      [BlockView]");
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                   "  public set bar(x): void{}"
+                   "}",
+                   "[ClassDeclView]\n"
+                   "  [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]\n"
+                   "    [MemberFunctionView]\n"
+                   "      [ClassFieldModifiersView]\n"
+                   "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                   "      [NameView][bar]\n"
+                   "      [CallSignatureView]\n"
+                   "        [ParamList]\n"
+                   "          [ParameterView]\n"
+                   "            [NameView][x]\n"
+                   "            [Empty]\n"
+                   "            [Empty]\n"
+                   "            [Empty]\n"                   
+                   "        [SimpleTypeExprView]\n"
+                   "          [NameView][void]\n"
+                   "        [Empty]\n"
+                   "      [MemberFunctionOverloadsView]\n"
+                   "      [BlockView]");
+
+  
+  DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                         "  public get bar(x): void{}"
+                         "}", yatsc::SyntaxError);
+  
+  DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                         "  public get bar(): void{}"
+                         "}", yatsc::SyntaxError);
+
+  DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                         "  public get bar(): null{}"
+                         "}", yatsc::SyntaxError);
+
+  DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                         "  public set bar() {}"
+                         "}", yatsc::SyntaxError);
+
+  DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
+                         "  public set bar(): string {}"
+                         "}", yatsc::SyntaxError);
 }

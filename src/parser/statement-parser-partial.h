@@ -1189,6 +1189,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
   Handle<ir::Node> mods = ParseFieldModifiers();
+  AccessorType at = ParseAccessor();
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value() == "constructor") {
       return ParseConstructorOverloads(mods);
@@ -1197,13 +1198,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
       Next();
       if (Current()->type() == Token::TS_LEFT_PAREN) {
         SetBufferCursorPosition(cursor);
-        return ParseMemberFunctionOverloads(mods);
+        return ParseMemberFunctionOverloads(mods, &at);
       } else {
         SetBufferCursorPosition(cursor);
         return ParseMemberVariable(mods);
       }
     }
   } else if (Current()->type() == Token::TS_MUL) {
+    Next();
     return ParseGeneratorMethodOverloads(mods);
   }
   SYNTAX_ERROR("SyntaxError unexpected token", Current());
@@ -1265,15 +1267,57 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFieldModifier() {
 
 
 template <typename UCharInputIterator>
-template <typename T>
-void Parser<UCharInputIterator>::SetModifiers(bool* first, Handle<ir::Node> mods, T fn) {
-  if (*first) {
-    fn->set_modifiers(mods);
-    *first = false;
-    if (mods->size() > 0) {
-      fn->SetInformationForNode(mods);
+Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads) {
+  if (overloads->size() > 0) {
+    Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
+    if (!node->name()->string_equals(last->at(1))) {
+      SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", node->at(1)->source_position());
+    }
+    if (!node->modifiers()->Equals(last->modifiers())) {
+      Handle<ir::Node> target;
+      if (node->modifiers()->size() > last->modifiers()->size()) {
+        target = node->modifiers()->first_child();
+      } else {
+        target = last->modifiers()->first_child();
+      }
+      SYNTAX_ERROR_POS("SyntaxError member function overload must have same modifiers", target->source_position()); 
+    }
+  } else {
+    Handle<ir::MemberFunctionOverloadView> fn(node);
+    if (fn->getter()) {
+      Handle<ir::CallSignatureView> call_sig(fn->call_signature());
+      if (call_sig->param_list()->size() > 0) {
+        SYNTAX_ERROR_POS("SyntaxError the formal parameter of getter function must be empty.", call_sig->param_list()->source_position());
+      }
+      
+      if (call_sig->return_type()) {
+        Handle<ir::Node> ret = call_sig->return_type();
+        if (ret->HasSimpleTypeExprView()) {
+          Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
+          const UtfString& name = ret_type->string_value();
+          if (name == "void" || name == "null") {
+            SYNTAX_ERROR_POS("SyntaxError getter function must return value.", ret_type->source_position()); 
+          }
+        }
+      }
+    } else if (fn->setter()) {
+      Handle<ir::CallSignatureView> call_sig(fn->call_signature());
+      if (call_sig->param_list()->size() != 1) {
+        SYNTAX_ERROR_POS("SyntaxError the setter function allowed only one parameter.", call_sig->param_list()->source_position());
+      }
+      if (call_sig->return_type()) {
+        Handle<ir::Node> ret = call_sig->return_type();
+        if (ret->HasSimpleTypeExprView()) {
+          Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
+          const UtfString& name = ret_type->string_value();
+          if (name != "void" && name != "null") {
+            SYNTAX_ERROR_POS("SyntaxError setter function must not return value.", ret_type->source_position()); 
+          }
+        }
+      }
     }
   }
+  return ir::Node::Null();
 }
 
 
@@ -1288,13 +1332,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir
         Current()->type() == Token::TS_PUBLIC ||
         Current()->type() == Token::TS_PRIVATE ||
         Current()->type() == Token::TS_PROTECTED) {
-      Handle<ir::Node> fn = ParseConstructorOverloadOrImplementation(first, overloads);
+      Handle<ir::Node> fn = ParseConstructorOverloadOrImplementation(first, mods, overloads);
       if (fn->HasMemberFunctionOverloadView()) {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionOverloadView>(fn));
         overloads->InsertLast(fn);
         ValidateOverload(Handle<ir::MemberFunctionOverloadView>(fn), overloads);
       } else {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionView>(fn));
         ValidateOverload(Handle<ir::MemberFunctionView>(fn), overloads);
         return fn;
       }
@@ -1306,12 +1348,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> overloads) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation(
+    bool first,
+    Handle<ir::Node> mods,
+    Handle<ir::Node> overloads) {
+  
   LOG_PHASE(ParseConstructorOverloadOrImplementation);
-  Handle<ir::Node> mods;
+
   if (!first) {
     mods = ParseFieldModifiers();
   }
+  
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "constructor") {
     TokenCursor cursor = GetBufferCursorPosition();
@@ -1331,58 +1378,58 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplement
     } else {
       SYNTAX_ERROR("SyntaxError invalid constructor definition", PeekBuffer(cursor));
     }
-    ret->SetInformationForNode(PeekBuffer(cursor));
+    ret->SetInformationForNode(mods);
     return ret;
   }
   SYNTAX_ERROR("SyntaxError 'constructor' expected", Current());
 }
 
 
+// Check member function begging token.
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads) {
-  if (overloads->size() > 0) {
-    Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
-    if (!node->name()->string_equals(last->at(1))) {
-      SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", node->at(1)->source_position());
-    }
-    if (!node->modifiers()->Equals(last->modifiers())) {
-      Handle<ir::Node> target;
-      if (node->modifiers()->size() > last->modifiers()->size()) {
-        target = node->modifiers()->first_child();
-      } else {
-        target = last->modifiers()->first_child();
-      }
-      SYNTAX_ERROR_POS("SyntaxError member function overload must have same modifiers", target->source_position()); 
-    }
-  }
-  return ir::Node::Null();
+bool Parser<UCharInputIterator>::IsMemberFunctionOverloadsBegin(TokenInfo* info) {
+  return info->type() == Token::TS_IDENTIFIER ||
+    info->type() == Token::TS_PUBLIC ||
+    info->type() == Token::TS_PRIVATE ||
+    info->type() == Token::TS_STATIC ||
+    info->type() == Token::TS_PROTECTED;
 }
 
 
+// Parse member function overloads.
+// 
+// MemberFunctionOverloads
+//   MemberFunctionOverload
+//   MemberFunctionOverloads MemberFunctionOverload
+//
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle<ir::Node> mods) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at) {
   LOG_PHASE(ParseMemberFunctionOverloads);
+  
   auto overloads = New<ir::MemberFunctionOverloadsView>();
   bool first = true;
+  
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER ||
-        PeekBuffer(cursor)->type() == Token::TS_PUBLIC ||
-        PeekBuffer(cursor)->type() == Token::TS_PRIVATE ||
-        PeekBuffer(cursor)->type() == Token::TS_STATIC ||
-        PeekBuffer(cursor)->type() == Token::TS_PROTECTED) {
+    if (IsMemberFunctionOverloadsBegin(PeekBuffer(cursor))) {
+      // Reserve token position.
       SetBufferCursorPosition(cursor);
-      Handle<ir::Node> fn = ParseMemberFunctionOverloadOrImplementation(first, overloads);
+
+      // Parse an overload or an implementation.
+      Handle<ir::Node> fn = ParseMemberFunctionOverloadOrImplementation(first, mods, at, overloads);
+
+      // If function is overload decl,
+      // add node to the overloads list.
       if (fn->HasMemberFunctionOverloadView()) {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionOverloadView>(fn));
         ValidateOverload(Handle<ir::MemberFunctionOverloadView>(fn), overloads);
         overloads->InsertLast(fn);
       } else {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionView>(fn));
+        // Else, return node.
         ValidateOverload(Handle<ir::MemberFunctionView>(fn), overloads);
         return fn;
       }
+      first = false;
     } else {
       SYNTAX_ERROR("SyntaxError incomplete member function definition", PeekBuffer(cursor));
     }
@@ -1390,22 +1437,56 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle
 }
 
 
+// Parse a member function overload or implementation.
+// The member function overload is like follows.
+//
+// class Foo {
+//   public something(a: string, b: number): void
+//   public something(a: number): void
+//   public something(a: number, b: string): void {
+//     ...
+//   }
+// }
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementation(bool first, Handle<ir::Node> overloads) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementation(
+    bool first,
+    Handle<ir::Node> mods,
+    AccessorType* acessor_type,
+    Handle<ir::Node> overloads) {
   LOG_PHASE(ParseMemberFunctionOverloadOrImplementation);
-  Handle<ir::Node> mods;
+  
+  AccessorType at(false, false, 0);
+
+  // If this method is not a first function that is parsed from ParseMemberFunctionOverloads,
+  // parse modifiers.
   if (!first) {
     mods = ParseFieldModifiers();
+    at = ParseAccessor();
+  } else {
+    at = *acessor_type;
   }
+  
+
+  // Method must be began an js identifier.
   if (Current()->type() == Token::TS_IDENTIFIER) {
+    // Save position.
     TokenCursor cursor = GetBufferCursorPosition();
+
     Handle<ir::Node> name = ParseIdentifier();    
     Handle<ir::Node> call_signature = ParseCallSignature(false);
     Handle<ir::Node> ret;
+
+    // public something(): void {
+    // -------------------------^ here
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Handle<ir::Node> body = ParseFunctionBody(false);
-      ret = New<ir::MemberFunctionView>(mods, name, call_signature, overloads, body);
+      ret = New<ir::MemberFunctionView>(at.getter, at.setter, false, mods, name, call_signature, overloads, body);
     } else if (overloads) {
+      
+      // Getter and setter is not allowed to overload function declaration.
+      if (at.getter || at.setter) {
+        SYNTAX_ERROR("SyntaxError overload is not allowed to getter and setter.", PeekBuffer(at.cursor));
+      }
       ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
@@ -1415,7 +1496,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplem
     } else {
       SYNTAX_ERROR("SyntaxError invalid member function definition", PeekBuffer(cursor));
     }
-    ret->SetInformationForNode(PeekBuffer(cursor));
+    ret->SetInformationForNode(mods);
     return ret;
   }
   SYNTAX_ERROR("SyntaxError identifier expected", Current());
@@ -1430,23 +1511,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Handl
   while (1) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if ((PeekBuffer(cursor)->type() == Token::TS_IDENTIFIER ||
-         PeekBuffer(cursor)->type() == Token::TS_PUBLIC ||
-         PeekBuffer(cursor)->type() == Token::TS_PRIVATE ||
-         PeekBuffer(cursor)->type() == Token::TS_STATIC ||
-         PeekBuffer(cursor)->type() == Token::TS_PROTECTED) &&
-        Current()->type() == Token::TS_LEFT_PAREN) {
+    if (IsMemberFunctionOverloadsBegin(PeekBuffer(cursor))) {
       SetBufferCursorPosition(cursor);
-      Handle<ir::Node> fn = ParseGeneratorMethodOverloadOrImplementation(first, overloads);
+      Handle<ir::Node> fn = ParseGeneratorMethodOverloadOrImplementation(first, mods, overloads);
       if (fn->HasMemberFunctionOverloadView()) {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionView>(fn));
         ValidateOverload(Handle<ir::MemberFunctionOverloadView>(fn), overloads);
         overloads->InsertLast(fn);
       } else {
-        SetModifiers(&first, mods, Handle<ir::MemberFunctionView>(fn));
         ValidateOverload(Handle<ir::MemberFunctionView>(fn), overloads);
         return fn;
       }
+      first = false;
     } else {
       SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
     }
@@ -1455,39 +1530,47 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Handl
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> overloads) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementation(
+    bool first,
+    Handle<ir::Node> mods,
+    Handle<ir::Node> overloads) {
+  
   LOG_PHASE(ParseGeneratorMethodOverloadOrImplementation);
-  Handle<ir::Node> mods;
+  
   if (!first) {
     mods = ParseFieldModifiers();
   }
+
+  TokenCursor cursor = GetBufferCursorPosition();
   if (Current()->type() == Token::TS_MUL) {
-    TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    if (Current()->type() == Token::TS_IDENTIFIER) {
-      Next();
-      Handle<ir::Node> name = ParseIdentifier();    
-      Handle<ir::Node> call_signature = ParseCallSignature(false);
-      Handle<ir::Node> ret;
-      if (Current()->type() == Token::TS_LEFT_BRACE) {
-        Handle<ir::Node> body = ParseFunctionBody(false);
-        ret = New<ir::MemberFunctionView>(mods, name, call_signature, overloads, body);
-      } else if (overloads) {
-        ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
-        if (IsLineTermination()) {
-          ConsumeLineTerminator();
-        } else {
-          SYNTAX_ERROR("SyntaxError ';' expected", Current());
-        }
-      } else {
-        SYNTAX_ERROR("SyntaxError invalid member function definition", PeekBuffer(cursor));
-      }
-      ret->SetInformationForNode(PeekBuffer(cursor));
-      return ret;
-    }
-    SYNTAX_ERROR("SyntaxError identifier expected", Current());
+  } else if (!first) {
+    SYNTAX_ERROR("SyntaxError '*' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError '*' expected", Current());
+    
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    Handle<ir::Node> name = ParseIdentifier();    
+    Handle<ir::Node> call_signature = ParseCallSignature(false);
+    Handle<ir::Node> ret;
+      
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      Handle<ir::Node> body = ParseFunctionBody(false);
+      ret = New<ir::MemberFunctionView>(mods, name, call_signature, overloads, body);
+    } else if (overloads) {
+      ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else {
+        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+      }
+    } else {
+      SYNTAX_ERROR("SyntaxError invalid member function definition", PeekBuffer(cursor));
+    }
+      
+    ret->SetInformationForNode(mods);
+    return ret;
+  }
+  SYNTAX_ERROR("SyntaxError identifier expected", Current());
 }
 
 
@@ -1511,6 +1594,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node
   }
   SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
 }
+
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration) {

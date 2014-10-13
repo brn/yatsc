@@ -1589,4 +1589,35 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTemplateLiteral() {
   }
   SYNTAX_ERROR("SyntaxError template literal expected", Current());
 }
+
+
+template <typename UCharInputIterator>
+typename Parser<UCharInputIterator>::AccessorType Parser<UCharInputIterator>::ParseAccessor() {
+  LOG_PHASE(ParseAccessor);
+  
+  bool getter = false;
+  bool setter = false;
+  
+  TokenCursor before_get_set_cursor = GetBufferCursorPosition();
+  // Parse the getter or setter if inditifer is the get or set.
+  if (Current()->type() == Token::TS_IDENTIFIER &&
+      Current()->value() == "get") {
+    getter = true;
+    Next();
+  } else if (Current()->type() == Token::TS_IDENTIFIER &&
+             Current()->value() == "set") {
+    setter = true;
+    Next();
+  }
+
+  // If next token is left paren and getter or setter is true,
+  // get or set keyword is not treated as the keyword,
+  // so change current curosr position before the get or set.
+  if ((getter || setter) && Current()->type() == Token::TS_LEFT_PAREN) {
+    getter = setter = false;
+    SetBufferCursorPosition(before_get_set_cursor);
+  }
+
+  return AccessorType(setter, getter, before_get_set_cursor);
+}
 }

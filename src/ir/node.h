@@ -1209,7 +1209,7 @@ class MemberFunctionOverloadView: public MemberFunctionDefinitionView {
 class MemberFunctionView: public MemberFunctionDefinitionView {
  public:
   MemberFunctionView(bool getter, bool setter, bool generator, Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
-      : MemberFunctionDefinitionView(NodeType::kFunctionView, getter, setter, generator, 5u, {accessor, name, call_signature, overloads, body}) {}
+      : MemberFunctionDefinitionView(NodeType::kMemberFunctionView, getter, setter, generator, 5u, {accessor, name, call_signature, overloads, body}) {}
 
   MemberFunctionView(Handle<Node> accessor, Handle<Node> name, Handle<Node> call_signature, Handle<Node> overloads, Handle<Node> body)
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionView, 5u, {accessor, name, call_signature, overloads, body}) {}
