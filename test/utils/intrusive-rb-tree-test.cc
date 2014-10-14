@@ -190,37 +190,6 @@ TEST(IntrusiveRbTree, InsertAndFind) {
 }
 
 
-TEST(IntrusiveRbTree, map_InsertAndFind) {
-  std::map<size_t, RBValueObject*> tree;
-  int j = 0;
-  for (auto i: kRandom) {
-    auto value = new RBValueObject(i);
-    tree.insert(std::pair<size_t, RBValueObject*>(i, value));
-    j++;
-  }
-
-  for (auto i: kRandom) {
-    tree.find(i);
-  }
-}
-
-
-TEST(IntrusiveRbTree, umap_InsertAndFind) {
-  std::unordered_map<size_t, RBValueObject*> tree;
-  int j = 0;
-  
-  for (auto i: kRandom) {
-    auto value = new RBValueObject(i);
-    tree.insert(std::pair<size_t, RBValueObject*>(i, value));
-    j++;
-  }
-
-  for (auto i: kRandom) {
-    tree.find(i);
-  }
-}
-
-
 // TEST(IntrusiveRbTree, InsertAndDelete) {
 //   yatsc::IntrusiveRbTree<int, RBValueObject*> tree;
   

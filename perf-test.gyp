@@ -49,6 +49,18 @@
         './perfs/memory/heap-allocator/heap-allocator-perf-test.cc',
         './src/utils/os.cc',
       ],
+    },
+    {
+      'target_name': "intrusive_rbtree_perf_test",
+      'product_name': 'IntrusiveRbtreePerfTest',
+      'type': 'executable',
+      'defines' : ['UNIT_TEST=1'],
+      'include_dirs': ['/usr/local/include', './lib', './Celero/include'],
+      'sources': [
+        './src/utils/utils.cc',
+        './src/utils/os.cc',
+        './perfs/utils/intrusive-rb-tree-test.cc',
+      ],
     }
   ]
 }

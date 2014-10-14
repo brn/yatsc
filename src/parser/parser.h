@@ -203,6 +203,8 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
+  Handle<ir::Node> ParseInterfaceDeclaration();
+  
   Handle<ir::Node> ParseClassDeclaration(bool yield, bool has_default);
 
   Handle<ir::Node> ParseClassBases();

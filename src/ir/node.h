@@ -83,8 +83,7 @@ namespace yatsc {namespace ir {
   DECLARE(MemberFunctionOverloadView)                   \
   DECLARE(MemberFunctionView)                           \
   DECLARE(InterfaceView)                                \
-  DECLARE(InterfaceFieldListView)                       \
-  DECLARE(InterfaceFieldView)                           \
+  DECLARE(InterfaceExtendsView)                         \
   DECLARE(SimpleTypeExprView)                           \
   DECLARE(IndexSignatureView)                           \
   DECLARE(GenericTypeExprView)                          \
@@ -1067,21 +1066,27 @@ class ClassImplsView: public Node {
 
 class ClassDeclView: public Node {
  public:
-  ClassDeclView(Handle<Node> name, Handle<Node> bases, Handle<Node> field_list)
-      : Node(NodeType::kClassDeclView, 3u, {name, bases, field_list}) {}
+  ClassDeclView(Handle<Node> name, Handle<Node> type_parameters, Handle<Node> bases, Handle<Node> field_list)
+      : Node(NodeType::kClassDeclView, 4u, {name, type_parameters, bases, field_list}) {}
   
   ClassDeclView()
-      : Node(NodeType::kClassDeclView, 3u) {}
+      : Node(NodeType::kClassDeclView, 4u) {}
   
 
   // Getter and Setter for name.
   NODE_PROPERTY(name, 0);
 
-    // Getter and Setter for inheritance.
-  NODE_PROPERTY(bases, 1);
 
+  // Getter and Setter for type_parameters.
+  NODE_PROPERTY(type_parameters, 1);
+
+  
+    // Getter and Setter for inheritance.
+  NODE_PROPERTY(bases, 2);
+
+  
   // Getter and Setter for field_list.
-  NODE_PROPERTY(field_list, 2);
+  NODE_PROPERTY(field_list, 3);
 };
 
 
@@ -1230,49 +1235,38 @@ class MemberFunctionView: public MemberFunctionDefinitionView {
 // Represent interface.
 class InterfaceView: public Node {
  public:
-  InterfaceView(Handle<Node> name, Handle<Node> interface_field_list)
-      : Node(NodeType::kInterfaceView, 2u, {name, interface_field_list}) {}
+  InterfaceView(Handle<Node> name, Handle<Node> type_parameters, Handle<Node> extends, Handle<Node> interface_field_list)
+      : Node(NodeType::kInterfaceView, 4u, {name, type_parameters, extends, interface_field_list}) {}
 
   InterfaceView()
-      : Node(NodeType::kInterfaceView, 2u) {}
+      : Node(NodeType::kInterfaceView, 4u) {}
 
   
   // Getter and Setter for name.
   NODE_PROPERTY(name, 0);
 
 
+  // Getter and Setter for type_parameters.
+  NODE_PROPERTY(type_parameters, 1);
+
+
+  // Getter and Setter for impls.
+  NODE_PROPERTY(extends, 2);
+
+
   // Getter and Setter for name.
-  NODE_PROPERTY(field_list, 1);
+  NODE_PROPERTY(field_list, 3);
 };
 
 
-class InterfaceFieldListView: public Node {
-  InterfaceFieldListView(std::initializer_list<Handle<Node>> fields)
-      : Node(NodeType::kInterfaceFieldListView, 0, fields) {}
-
-
-  InterfaceFieldListView()
-      : Node(NodeType::kInterfaceFieldListView, 0) {}
-};
-
-
-// Represent interface field.
-class InterfaceFieldView: public Node {
+class InterfaceExtendsView: public Node {
  public:
-  InterfaceFieldView(Handle<Node> name, Handle<Node> value):
-      Node(NodeType::kInterfaceFieldView, 2u, {name, value}) {}
+  InterfaceExtendsView(std::initializer_list<Handle<Node>> extends)
+      : Node(NodeType::kInterfaceExtendsView, 0u, extends) {}
 
 
-  InterfaceFieldView():
-      Node(NodeType::kInterfaceFieldView, 2u) {}
-
-
-  // Getter and Setter for name.
-  NODE_PROPERTY(name, 0);
-
-
-  // Getter and Setter for value.
-  NODE_PROPERTY(value, 1);
+  InterfaceExtendsView()
+      : Node(NodeType::kInterfaceExtendsView, 0u) {}
 };
 
 
@@ -1379,11 +1373,11 @@ class ObjectTypeExprView: public Node {
  public:
   
   ObjectTypeExprView(std::initializer_list<Handle<Node>> type_member_list)
-      : Node(NodeType::kArrayTypeExprView, 0u, type_member_list) {}
+      : Node(NodeType::kObjectTypeExprView, 0u, type_member_list) {}
   
 
   ObjectTypeExprView()
-      : Node(NodeType::kArrayTypeExprView, 0u) {}
+      : Node(NodeType::kObjectTypeExprView, 0u) {}
 };
 
 
@@ -1413,11 +1407,12 @@ class PropertySignatureView: public Node {
 
 class MethodSignatureView: public Node {
  public:
-  MethodSignatureView(bool opt, Handle<Node> property_name, Handle<Node> type_expr)
+  MethodSignatureView(bool opt, bool getter, bool setter, bool generator, Handle<Node> property_name, Handle<Node> type_expr)
       : Node(NodeType::kMethodSignatureView, 2u, {property_name, type_expr}) {
-    if (opt) {
-      set_flag(0);
-    }
+    set_flag(0, opt);
+    set_flag(1, getter);
+    set_flag(2, setter);
+    set_flag(3, generator);
   }
 
 

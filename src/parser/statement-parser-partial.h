@@ -216,6 +216,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool y
       return ParseFunctionOverloads(yield, has_default, true);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, has_default);
+    case Token::TS_INTERFACE:
+      return ParseInterfaceDeclaration();
     case Token::TS_LET:
     case Token::TS_CONST: {
       Handle<ir::Node> node = ParseLexicalDeclaration(true, yield);
@@ -1115,30 +1117,51 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDebuggerStatement() {
 
 
 template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
+  if (Current()->type() == Token::TS_INTERFACE) {
+    Next();
+    Handle<ir::Node> name = ParseIdentifier();
+    Handle<ir::Node> type_parameters;
+    
+    if (Current()->type() == Token::TS_LESS) {
+      type_parameters = ParseTypeParameters();
+    }
+    
+    auto extends = New<ir::InterfaceExtendsView>();
+    
+    while (Current()->type() == Token::TS_EXTENDS) {
+      Next();
+      extends->InsertLast(ParseReferencedType());
+    }
+
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      Handle<ir::Node> interface_body = ParseObjectTypeExpression();
+      return New<ir::InterfaceView>(name, type_parameters, extends, interface_body);
+    }
+    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'interface' expected.", Current());
+}
+
+
+template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has_default) {
   LOG_PHASE(ParseClassDeclaration);
   if (Current()->type() == Token::TS_CLASS) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    Handle<ir::Node> name = ParseReferencedType();
-    if (name->HasGenericTypeExprView() || name->HasSimpleTypeExprView()) {
-      Handle<ir::Node> type_name;
-      if (name->HasGenericTypeExprView()) {
-        type_name = name->ToGenericTypeExprView()->type_name();
-      } else {
-        type_name = name->ToSimpleTypeExprView()->type_name();
-      }
-      if (!type_name->HasNameView()) {
-        SYNTAX_ERROR_POS("SyntaxError invalid class name.", name->source_position());
-      }
-    } else {
-      SYNTAX_ERROR_POS("SyntaxError invalid class name.", name->source_position());
+    Handle<ir::Node> name = ParseIdentifier();
+    Handle<ir::Node> type_parameters;
+    
+    if (Current()->type() == Token::TS_LESS) {
+      type_parameters = ParseTypeParameters();
     }
+    
     Handle<ir::Node> bases = ParseClassBases();
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Next();
       Handle<ir::Node> body = ParseClassBody();
-      auto class_decl = New<ir::ClassDeclView>(name, bases, body);
+      auto class_decl = New<ir::ClassDeclView>(name, type_parameters, bases, body);
       class_decl->SetInformationForNode(PeekBuffer(cursor));
       return class_decl;
     }

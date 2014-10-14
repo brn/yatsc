@@ -46,7 +46,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeParameters() {
     while (1) {
       if (Current()->type() == Token::TS_IDENTIFIER) {
         found = true;
-        Handle<ir::Node> name = ParsePrimaryExpression(false);
+        Handle<ir::Node> name = ParseIdentifier();
         if (Current()->type() == Token::TS_EXTENDS) {
           Next();
           Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(name, ParsePrimaryExpression(false));
@@ -290,7 +290,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeExpression() {
     while (Current()->type() != Token::TS_RIGHT_BRACE) {
       Handle<ir::Node> property = ParseObjectTypeElement();
       object_type->InsertLast(property);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
+                 RewindBuffer(1)->type() != Token::TS_RIGHT_BRACE) {
+        SYNTAX_ERROR("SyntaxError ';' expected", RewindBuffer(1));
+      }
     }
+    Next();
     return object_type;
   }
   SYNTAX_ERROR("SyntaxError '{' expected", Current());
@@ -315,37 +322,44 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
   } else if (Current()->type() == Token::TS_LEFT_PAREN) {
     return ParseCallSignature(false);
   } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
-    Next();
-    if (Current()->type() == Token::TS_IDENTIFIER) {
-      Handle<ir::Node> name = ParseLiteral();
-      if (Current()->type() == Token::TS_COLON) {
-        Next();
-        if (Current()->type() == Token::TS_IDENTIFIER &&
-            (Current()->value() == "string" || Current()->value() == "number")) {
-          Handle<ir::Node> ret = New<ir::AccessorTypeExprView>(name, ParsePrimaryExpression(false));
-          ret->SetInformationForNode(Current());
-          Next();
-          return ret;
-        } else {
-          SYNTAX_ERROR("SyntaxError type name in indexSignature only allowed one of 'string' or 'number'", Current());
-        }
-      }
-      SYNTAX_ERROR("SyntaxError ':' expected", Current());
-    }
-    SYNTAX_ERROR("SyntaxError identifier expected", Current());
+    return ParseIndexSignature();
   } else {
     bool optional = false;
-    Handle<ir::Node> key = ParsePropertyDefinition(false);
+    bool generator = false;
+    AccessorType at = ParseAccessor();
+    Handle<ir::Node> key;
+
+    if (Current()->type() == Token::TS_MUL) {
+      generator = true;
+      Next();
+    }
+
+    TokenCursor cursor = GetBufferCursorPosition();
+    try {
+      if (Current()->type() == Token::TS_IDENTIFIER) {
+        key = ParseIdentifierReference(false);
+      } else {
+        key = ParsePropertyName(false, false);
+      }
+    } catch (const SyntaxError& e) {
+      if (at.getter || at.setter) {
+        key = New<ir::NameView>(PeekBuffer(cursor)->value());
+        key->SetInformationForNode(PeekBuffer(cursor));
+      } else {
+        throw e;
+      }
+    }
+    
     if (Current()->type() == Token::TS_QUESTION_MARK) {
       optional = true;
       Next();
     }
-    if (Current()->type() == Token::TS_LEFT_PAREN) {
-      if (key->HasNameView()) {
+    if (Current()->type() == Token::TS_LEFT_PAREN || Current()->type() == Token::TS_LESS) {
+      if (!key->HasNameView()) {
         SYNTAX_ERROR_POS("SyntaxError invalid method name", key->source_position());
       }
       Handle<ir::Node> call_sig = ParseCallSignature(false);
-      Handle<ir::Node> ret = New<ir::MethodSignatureView>(optional, key, call_sig);
+      Handle<ir::Node> ret = New<ir::MethodSignatureView>(optional, at.getter, at.setter, generator, key, call_sig);
       ret->SetInformationForNode(key);
       return ret;
     } else if (Current()->type() == Token::TS_COLON) {
@@ -354,11 +368,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       Handle<ir::Node> ret = New<ir::PropertySignatureView>(optional, key, type_expr);
       ret->SetInformationForNode(type_expr);
       return ret;
-    } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
-      if (optional) {
-        SYNTAX_ERROR("SyntaxError unexpected '?'", Current());
-      }
-      return ParseTypeExpression();
     }
     Handle<ir::Node> ret = New<ir::PropertySignatureView>(optional, key, ir::Node::Null());
     ret->SetInformationForNode(key);
