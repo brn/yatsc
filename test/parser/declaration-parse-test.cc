@@ -74,7 +74,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "    [NumberView][100]\n"
                     "    [SimpleTypeExprView]\n"
                     "      [NameView][string]");
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c] = [1,2,3];",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
@@ -96,7 +96,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                     "      [NumberView][2]\n"
                     "      [NumberView][3]\n"
                     "    [Empty]");
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c} = {a:100,b:200,c:300};",
                     "[LexicalDeclView][TS_LET]\n"
                     "  [VariableView]\n"
@@ -384,16 +384,18 @@ TEST(DeclarationParseTest, ParseFunctionOverloads) {
 TEST(DeclarationParseTest, ParseClassDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
                    "  [ClassFieldListView]");
 
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {constructor(){}}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"                   
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -409,7 +411,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "      [MemberFunctionOverloadsView]\n"
                    "      [BlockView]");
 
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6,
                    "class Foo {"
                    "  constructor();"
@@ -417,7 +419,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  constructor(b){}"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"                   
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -467,7 +470,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  public member(){}"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -533,7 +537,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  public static *gmember() {};"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -572,7 +577,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [Empty]\n"
                    "                [Empty]\n"
                    "            [Empty]\n"
-                   "            [Empty]\n"                   
+                   "            [Empty]\n"
                    "      [BlockView]\n"
                    "    [MemberFunctionView]\n"
                    "      [ClassFieldModifiersView]\n"
@@ -634,7 +639,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [NameView][a]\n"
                    "                [Empty]\n"
                    "                [Empty]\n"
-                   "                [Empty]\n"                   
+                   "                [Empty]\n"
                    "            [Empty]\n"
                    "            [Empty]\n"
                    "        [MemberFunctionOverloadView]\n"
@@ -653,15 +658,16 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "                [NameView][c]\n"
                    "                [Empty]\n"
                    "                [Empty]\n"
-                   "                [Empty]\n"                   
+                   "                [Empty]\n"
                    "            [Empty]\n"
-                   "            [Empty]\n"               
+                   "            [Empty]\n"
                    "      [BlockView]");
 
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {member = 1;}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -676,7 +682,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {private static member = 1;}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -689,10 +696,11 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "      [Empty]\n"
                    "      [NumberView][1]");
 
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo extends Bar {}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [ClassHeritageView]\n"
                    "      [SimpleTypeExprView]\n"
@@ -700,10 +708,11 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "    [Empty]\n"
                    "  [ClassFieldListView]");
 
-  
+
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Bar {}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [ClassImplsView]\n"
@@ -714,7 +723,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo implements Bar implements Buz {}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [ClassImplsView]\n"
@@ -727,7 +737,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo extends Bar implements Buz implements Qux {}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [ClassHeritageView]\n"
                    "      [SimpleTypeExprView]\n"
@@ -744,7 +755,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  public get bar(){}"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -764,7 +776,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "  public set bar(x): void{}"
                    "}",
                    "[ClassDeclView]\n"
-                   "  [NameView][Foo]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
                    "  [ClassBasesView]\n"
                    "    [Empty]\n"
                    "    [Empty]\n"
@@ -779,18 +792,18 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                    "            [NameView][x]\n"
                    "            [Empty]\n"
                    "            [Empty]\n"
-                   "            [Empty]\n"                   
+                   "            [Empty]\n"
                    "        [SimpleTypeExprView]\n"
                    "          [NameView][void]\n"
                    "        [Empty]\n"
                    "      [MemberFunctionOverloadsView]\n"
                    "      [BlockView]");
 
-  
+
   DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
                          "  public get bar(x): void{}"
                          "}", yatsc::SyntaxError);
-  
+
   DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
                          "  public get bar(): void{}"
                          "}", yatsc::SyntaxError);
@@ -806,4 +819,78 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
   DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, "class Foo {"
                          "  public set bar(): string {}"
                          "}", yatsc::SyntaxError);
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo<T> {}",
+                   "[ClassDeclView]\n"
+                   "  [GenericTypeExprView]\n"
+                   "    [NameView][Foo]\n"
+                   "    [TypeArgumentsView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][T]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo<T, U, V> {}",
+                   "[ClassDeclView]\n"
+                   "  [GenericTypeExprView]\n"
+                   "    [NameView][Foo]\n"
+                   "    [TypeArgumentsView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][T]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][U]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][V]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo<T, U> extends Bar<BarT> implements Buz<BuzT> implements Qux<QuxT> {}",
+                   "[ClassDeclView]\n"
+                   "  [GenericTypeExprView]\n"
+                   "    [NameView][Foo]\n"
+                   "    [TypeArgumentsView]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][T]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][U]\n"
+                   "  [ClassBasesView]\n"
+                   "    [ClassHeritageView]\n"
+                   "      [GenericTypeExprView]\n"
+                   "        [NameView][Bar]\n"
+                   "        [TypeArgumentsView]\n"
+                   "          [SimpleTypeExprView]\n"
+                   "            [NameView][BarT]\n"
+                   "    [ClassImplsView]\n"
+                   "      [GenericTypeExprView]\n"
+                   "        [NameView][Buz]\n"
+                   "        [TypeArgumentsView]\n"
+                   "          [SimpleTypeExprView]\n"
+                   "            [NameView][BuzT]\n"
+                   "      [GenericTypeExprView]\n"
+                   "        [NameView][Qux]\n"
+                   "        [TypeArgumentsView]\n"
+                   "          [SimpleTypeExprView]\n"
+                   "            [NameView][QuxT]\n"
+                   "  [ClassFieldListView]");
+
+
+  DECLARATION_TEST(yatsc::LanguageMode::ES6, "class Foo {[x:string] number}",
+                   "[ClassDeclView]\n"
+                   "  [SimpleTypeExprView]\n"
+                   "    [NameView][Foo]\n"
+                   "  [ClassBasesView]\n"
+                   "    [Empty]\n"
+                   "    [Empty]\n"
+                   "  [ClassFieldListView]\n"
+                   "    [IndexSignatureView]\n"
+                   "      [NameView][x]\n"
+                   "      [SimpleTypeExprView]\n"
+                   "        [NameView][number]");
 }

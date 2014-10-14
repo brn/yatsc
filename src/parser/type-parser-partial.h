@@ -389,4 +389,33 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel
   }
   SYNTAX_ERROR("SyntaxError expected '('", Current());
 }
+
+
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseIndexSignature() {
+  if (Current()->type() == Token::TS_LEFT_BRACKET) {
+    Next();
+    Handle<ir::Node> identifier = ParseIdentifier();
+    if (Current()->type() == Token::TS_COLON) {
+      Next();
+      if (Current()->type() == Token::TS_IDENTIFIER) {
+        bool string_type = Current()->value() == "string";
+        bool number_type = Current()->value() == "number";
+        if (string_type || number_type) {
+          Next();
+          if (Current()->type() == Token::TS_RIGHT_BRACKET) {
+            Next();
+            Handle<ir::Node> type = ParseTypeExpression();
+            return New<ir::IndexSignatureView>(identifier, type, string_type);
+          }
+          SYNTAX_ERROR("SyntaxError ']' expected.", Current());
+        }        
+        SYNTAX_ERROR("SYNTAX_ERROR The IndexSignature must have a type 'string' or 'number'.", Current());
+      }
+      SYNTAX_ERROR("SYNTAX_ERROR The IndexSignature must have a simple identifier.", Current());
+    }
+    SYNTAX_ERROR("SYNTAX_ERROR The IndexSignature must have a type.", Current());
+  }
+  SYNTAX_ERROR("SyntaxError '[' expected.", Current());
+}
 }

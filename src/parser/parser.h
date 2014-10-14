@@ -261,6 +261,8 @@ class Parser: public ParserBase {
   Handle<ir::Node> ParseObjectTypeElement();
 
   Handle<ir::Node> ParseCallSignature(bool accesslevel_allowed);
+
+  Handle<ir::Node> ParseIndexSignature();
   
   // Parse expression.
   Handle<ir::Node> ParseExpression(bool in, bool yield);

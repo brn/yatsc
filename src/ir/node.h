@@ -86,6 +86,7 @@ namespace yatsc {namespace ir {
   DECLARE(InterfaceFieldListView)                       \
   DECLARE(InterfaceFieldView)                           \
   DECLARE(SimpleTypeExprView)                           \
+  DECLARE(IndexSignatureView)                           \
   DECLARE(GenericTypeExprView)                          \
   DECLARE(TypeConstraintsView)                          \
   DECLARE(TypeArgumentsView)                            \
@@ -1285,6 +1286,25 @@ class SimpleTypeExprView: public Node {
 
   // Getter and Setter for type_name_.
   NODE_PROPERTY(type_name, 0);
+};
+
+
+class IndexSignatureView: public Node {
+ public:
+  IndexSignatureView(Handle<Node> identifier, Handle<Node> type, bool string_type)
+      : Node(NodeType::kIndexSignatureView, 2u, {identifier, type}) {
+    set_flag(0, string_type);
+  }
+
+
+  IndexSignatureView()
+      : Node(NodeType::kIndexSignatureView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+  
+
+  NODE_FLAG_PROPERTY(string_type, 0);
 };
 
 

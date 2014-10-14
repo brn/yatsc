@@ -1120,7 +1120,20 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, b
   if (Current()->type() == Token::TS_CLASS) {
     TokenCursor cursor = GetBufferCursorPosition();
     Next();
-    Handle<ir::Node> name = ParseBindingIdentifier(false, false);
+    Handle<ir::Node> name = ParseReferencedType();
+    if (name->HasGenericTypeExprView() || name->HasSimpleTypeExprView()) {
+      Handle<ir::Node> type_name;
+      if (name->HasGenericTypeExprView()) {
+        type_name = name->ToGenericTypeExprView()->type_name();
+      } else {
+        type_name = name->ToSimpleTypeExprView()->type_name();
+      }
+      if (!type_name->HasNameView()) {
+        SYNTAX_ERROR_POS("SyntaxError invalid class name.", name->source_position());
+      }
+    } else {
+      SYNTAX_ERROR_POS("SyntaxError invalid class name.", name->source_position());
+    }
     Handle<ir::Node> bases = ParseClassBases();
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Next();
@@ -1176,7 +1189,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
       fields->InsertLast(ParseClassElement());
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (RewindBuffer(1)->type() != Token::TS_RIGHT_BRACE) {
+      } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
+                 RewindBuffer(1)->type() != Token::TS_RIGHT_BRACE) {
         SYNTAX_ERROR("SyntaxError ';' expected", RewindBuffer(1));
       }
     } else {
@@ -1188,6 +1202,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
+
+  if (Current()->type() == Token::TS_LEFT_BRACKET) {
+    return ParseIndexSignature();
+  }
+  
   Handle<ir::Node> mods = ParseFieldModifiers();
   AccessorType at = ParseAccessor();
   if (Current()->type() == Token::TS_IDENTIFIER) {

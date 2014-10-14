@@ -13,7 +13,7 @@
           }
         },
         'xcode_settings': {
-          'OTHER_LDFLAGS': ['./build/Debug/libcelero.a', './build/Debug/libheap.a']
+          'OTHER_LDFLAGS': ['./build/Debug/libcelero.a']
         }
       },
       'Release': {
