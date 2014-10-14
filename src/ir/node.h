@@ -661,18 +661,42 @@ class ExportView: public Node {
 // Represent import.
 class ImportView: public Node {
  public:
-  ImportView(Handle<Node> alias, Handle<Node> from_expr)
-      : Node(NodeType::kImportView, 2u, {alias, from_expr}) {}
+  ImportView(Handle<Node> import_clause, Handle<Node> from_expr)
+      : Node(NodeType::kImportView, 2u, {import_clause, from_expr}) {}
 
 
   ImportView()
       : Node(NodeType::kImportView, 2u) {}
 
   
-  NODE_PROPERTY(alias, 0);
+  NODE_PROPERTY(import_clause, 0);
 
   
   NODE_PROPERTY(from_expr, 1);
+};
+
+
+class ImportListView: public Node {
+ public:
+  ImportListView(std::initializer_list<Handle<Node>> list)
+      : Node(NodeType::kImportListView, 0u, list) {}
+
+
+  ImportListView()
+      : Node(NodeType::kImportList, 0u) {}
+};
+
+
+class ExternalModuleReference: public Node {
+ public:
+  ExternalModuleReference(const UtfString& utf_string)
+      : Node(NodeType::kExternalModuleReference, 0u) {
+    set_string_value(std::move(utf_string));
+  }
+
+
+  ExternalModuleReference()
+      : Node(NodeType::kExternalModuleReference, 0u) {}
 };
 
 
