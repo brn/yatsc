@@ -216,6 +216,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool y
       return ParseFunctionOverloads(yield, has_default, true);
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, has_default);
+    case Token::TS_ENUM:
+      return ParseEnumDeclaration(yield, has_default);
     case Token::TS_INTERFACE:
       return ParseInterfaceDeclaration();
     case Token::TS_LET:
@@ -1141,6 +1143,71 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     SYNTAX_ERROR("SyntaxError '{' expected.", Current());
   }
   SYNTAX_ERROR("SyntaxError 'interface' expected.", Current());
+}
+
+
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bool has_default) {
+  LOG_PHASE(ParseEnumDeclaration);
+  if (Current()->type() == Token::TS_ENUM) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
+    Handle<ir::Node> identifier = ParseIdentifier();
+    if (Current()->type() == Token::TS_LEFT_BRACE) {
+      Handle<ir::Node> enum_body = ParseEnumBody(yield, has_default);
+      auto ret = New<ir::EnumDeclView>(identifier, enum_body);
+      ret->SetInformationForNode(PeekBuffer(cursor));
+      return ret;
+    }
+    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  }
+  SYNTAX_ERROR("SyntaxError 'enum' expected.", Current());
+}
+
+
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_default) {
+  LOG_PHASE(ParseEnumBody);
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    auto ret = New<ir::EnumBodyView>();
+    ret->SetInformationForNode(Current());
+    Next();
+    while (1) {
+      ret->InsertLast(ParseEnumProperty(yield, has_default));
+      if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        Next();
+        return ret;
+      } else {
+        SYNTAX_ERROR("SyntaxError ',' or '}' expected.", Current());
+      }
+    }
+  }
+  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+}
+
+
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumProperty(bool yield, bool has_default) {
+  LOG_PHASE(ParseEnumProperty);
+  Handle<ir::Node> prop = ParsePropertyName(yield, false);
+  if (Current()->type() == Token::TS_ASSIGN) {
+    Next();
+    return CreateEnumFieldView(prop, ParseAssignmentExpression(true, yield));
+  }
+  return CreateEnumFieldView(prop, ir::Node::Null());
+}
+
+
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::CreateEnumFieldView(
+    Handle<ir::Node> name,
+    Handle<ir::Node> value) {
+  LOG_PHASE(CreateEnumFieldView);
+  auto ret = New<ir::EnumFieldView>(name, value);
+  ret->SetInformationForNode(name);
+  return ret;
 }
 
 

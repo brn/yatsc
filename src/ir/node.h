@@ -49,7 +49,14 @@ namespace yatsc {namespace ir {
   DECLARE(BlockView)                                    \
   DECLARE(ModuleDeclView)                               \
   DECLARE(ExportView)                                   \
+  DECLARE(NamedExportListView)                          \
+  DECLARE(NamedExportView)                              \
   DECLARE(ImportView)                                   \
+  DECLARE(ImportListView)                               \
+  DECLARE(NamedImportListView)                          \
+  DECLARE(NamedImportView)                              \
+  DECLARE(ExternalModuleReference)                      \
+  DECLARE(ModuleImportView)                             \
   DECLARE(VariableView)                                 \
   DECLARE(IfStatementView)                              \
   DECLARE(ContinueStatementView)                        \
@@ -70,6 +77,9 @@ namespace yatsc {namespace ir {
   DECLARE(ForOfStatementView)                           \
   DECLARE(WhileStatementView)                           \
   DECLARE(DoWhileStatementView)                         \
+  DECLARE(EnumDeclView)                                 \
+  DECLARE(EnumBodyView)                                 \
+  DECLARE(EnumFieldView)                                \
   DECLARE(ClassDeclView)                                \
   DECLARE(ClassBasesView)                               \
   DECLARE(ClassImplsView)                               \
@@ -562,11 +572,10 @@ class BlockView: public Node {
 // Represent file root of script.
 class FileScopeView: public Node {
  public:
-  FileScopeView(): Node(NodeType::kFileScopeView, 1u){};
+  FileScopeView(std::initializer_list<Handle<Node>> body): Node(NodeType::kFileScopeView, 0u, body){};
 
   
-  FileScopeView(Handle<Node> body):
-      Node(NodeType::kFileScopeView, 1u, {body}){};
+  FileScopeView(): Node(NodeType::kFileScopeView, 0u){};
 };
 
 
@@ -646,15 +655,56 @@ class ModuleDeclView: public Node {
 // Represent export.
 class ExportView: public Node {
  public:
-  ExportView(Handle<Node> target)
-      : Node(NodeType::kExportView, 1u, {target}) {}
+  ExportView(bool default_export, Handle<Node> export_clause, Handle<Node> from_clause)
+      : Node(NodeType::kExportView, 2u, {export_clause, from_clause}) {
+    set_flag(0, default_export);
+  }
+
+  
+  ExportView(Handle<Node> export_clause, Handle<Node> from_clause)
+      : Node(NodeType::kExportView, 2u, {export_clause, from_clause}) {}
 
 
   ExportView()
-      : Node(NodeType::kExportView, 1u) {}
+      : Node(NodeType::kExportView, 2u) {}
 
   
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(export_clause, 0);
+
+  NODE_PROPERTY(from_clause, 1);
+
+  NODE_FLAG_PROPERTY(default_export, 0);
+};
+
+
+class NamedExportListView: public Node {
+ public:
+  NamedExportListView(Handle<Node> binding)
+      : Node(NodeType::kNamedExportListView, 1u, {binding}) {}
+
+
+  NamedExportListView()
+      : Node(NodeType::kNamedExportListView, 1u) {}
+
+  
+  NODE_PROPERTY(binding, 0);
+};
+
+
+class NamedExportView: public Node {
+ public:
+  NamedExportView(Handle<Node> name, Handle<Node> binding)
+      : Node(NodeType::kNamedExportView, 2u, {name, binding}) {}
+
+
+  NamedExportView()
+      : Node(NodeType::kNamedExportView, 2u) {}
+
+
+  NODE_PROPERTY(name, 0);
+
+
+  NODE_PROPERTY(binding, 1);
 };
 
 
@@ -676,6 +726,23 @@ class ImportView: public Node {
 };
 
 
+class ModuleImportView: public Node {
+ public:
+  ModuleImportView(Handle<Node> binding, Handle<Node> module_specifier)
+      : Node(NodeType::kModuleImportView, 2u, {binding, module_specifier}) {}
+
+
+  ModuleImportView()
+      : Node(NodeType::kModuleImportView, 2u) {}
+
+
+  NODE_PROPERTY(binding, 0);
+
+
+  NODE_PROPERTY(module_specifier, 1);
+};
+
+
 class ImportListView: public Node {
  public:
   ImportListView(std::initializer_list<Handle<Node>> list)
@@ -683,7 +750,35 @@ class ImportListView: public Node {
 
 
   ImportListView()
-      : Node(NodeType::kImportList, 0u) {}
+      : Node(NodeType::kImportListView, 0u) {}
+};
+
+
+class NamedImportListView: public Node {
+ public:
+  NamedImportListView(Handle<Node> binding)
+      : Node(NodeType::kNamedImportListView, 0u, {binding}) {}
+
+
+  NamedImportListView()
+      : Node(NodeType::kNamedImportListView, 0u) {}
+};
+
+
+class NamedImportView: public Node {
+ public:
+  NamedImportView(Handle<Node> name, Handle<Node> binding)
+      : Node(NodeType::kNamedImportView, 2u, {name, binding}) {}
+
+
+  NamedImportView()
+      : Node(NodeType::kNamedImportView, 2u) {}
+
+
+  NODE_PROPERTY(name, 0);
+
+
+  NODE_PROPERTY(binding, 1);
 };
 
 
@@ -1063,6 +1158,50 @@ class DoWhileStatementView: public Node {
 
   // Getter and Setter for body .
   NODE_PROPERTY(body, 1);
+};
+
+
+class EnumDeclView: public Node {
+ public:
+  EnumDeclView(Handle<Node> name, Handle<Node> body)
+      : Node(NodeType::kEnumDeclView, 2u, {name, body}) {}
+
+
+  EnumDeclView()
+      : Node(NodeType::kEnumDeclView, 2u) {}
+
+
+  NODE_PROPERTY(name, 0);
+
+
+  NODE_PROPERTY(body, 1);
+};
+
+
+class EnumBodyView: public Node {
+ public:
+  EnumBodyView(std::initializer_list<Handle<Node>> fields)
+      : Node(NodeType::kEnumBodyView, 0u, fields) {}
+
+  EnumBodyView()
+      : Node(NodeType::kEnumBodyView, 0u) {}
+};
+
+
+class EnumFieldView: public Node {
+ public:
+  EnumFieldView(Handle<Node> name, Handle<Node> value)
+      : Node(NodeType::kEnumFieldView, 2u, {name, value}) {}
+
+
+  EnumFieldView()
+      : Node(NodeType::kEnumFieldView, 2u) {}
+
+
+  NODE_PROPERTY(name, 0);
+
+
+  NODE_PROPERTY(value, 1);
 };
 
 

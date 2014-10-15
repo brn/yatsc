@@ -204,6 +204,14 @@ class Parser: public ParserBase {
   Handle<ir::Node> ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
   Handle<ir::Node> ParseInterfaceDeclaration();
+
+  Handle<ir::Node> ParseEnumDeclaration(bool yield, bool has_default);
+
+  Handle<ir::Node> ParseEnumBody(bool yield, bool has_default);
+
+  Handle<ir::Node> ParseEnumProperty(bool yield, bool has_default);
+
+  Handle<ir::Node> CreateEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
   
   Handle<ir::Node> ParseClassDeclaration(bool yield, bool has_default);
 
@@ -401,6 +409,38 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseEmptyStatement();
 
+  Handle<ir::Node> ParseModule();
+
+  Handle<ir::Node> ParseImportDeclaration();
+
+  Handle<ir::Node> ParseExternalModuleReference();
+
+  Handle<ir::Node> ParseImportClause();
+
+  Handle<ir::Node> ParseNamedImport();
+
+  Handle<ir::Node> ParseFromClause();
+
+  Handle<ir::Node> ParseModuleImport();
+
+  Handle<ir::Node> ParseTSModule();
+
+  Handle<ir::Node> ParseTSModuleBody();
+
+  Handle<ir::Node> ParseExportDeclaration();
+
+  Handle<ir::Node> CreateExportView(
+      Handle<ir::Node> export_clause,
+      Handle<ir::Node> from_clause,
+      TokenInfo* token_info,
+      bool default_export = false);
+
+  Handle<ir::Node> ParseExportClause();
+
+  Handle<ir::Node> CreateNamedExportView(
+      Handle<ir::Node> identifier,
+      Handle<ir::Node> binding);
+
   bool IsLineTermination();
 
   void ConsumeLineTerminator();
@@ -427,6 +467,7 @@ class Parser: public ParserBase {
 #include "./expression-parser-partial.h"
 #include "./type-parser-partial.h"
 #include "./statement-parser-partial.h"
+#include "./module-parser-partial.h"
 
 #undef SYNTAX_ERROR
 #undef ARROW_PARAMETERS_ERROR

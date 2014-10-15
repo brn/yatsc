@@ -168,8 +168,10 @@ TEST_F(NodeTest, ModuleDeclView_ToModuleDeclView_test) {
 
 TEST_F(NodeTest, ExportView_target_test) {
   yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::ExportView> ex = irfactory.New<yatsc::ir::ExportView>(n);
-  ASSERT_EQ(ex->target(), n);
+  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
+  yatsc::Handle<yatsc::ir::ExportView> ex = irfactory.New<yatsc::ir::ExportView>(n, n2);
+  ASSERT_EQ(ex->export_clause(), n);
+  ASSERT_EQ(ex->from_clause(), n2);
 }
 
 
@@ -178,7 +180,7 @@ TEST_F(NodeTest, ImportView_alias_test) {
   yatsc::Handle<yatsc::ir::Node> n1 = irfactory.New<DummyView>();
   yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
   yatsc::Handle<yatsc::ir::ImportView> i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
-  ASSERT_EQ(i->alias(), n1);
+  ASSERT_EQ(i->import_clause(), n1);
   ASSERT_EQ(i->from_expr(), n2);
 }
 

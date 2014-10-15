@@ -291,5 +291,30 @@
         './test/test-main.cc'
       ],
     },
+    {
+      'target_name': 'module_parse_test',
+      'product_name': 'ModuleParseTest',
+      'type': 'executable',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/utils/utils.cc',
+        './src/utils/tls.cc',
+        './src/utils/systeminfo.cc',
+        './src/memory/virtual-heap-allocator.cc',
+        './src/memory/aligned-heap-allocator.cc',
+        './src/memory/heap-allocator/chunk-header.cc',
+        './src/memory/heap-allocator/arena.cc',
+        './src/memory/heap-allocator/heap-allocator.cc',
+        './src/utils/os.cc',
+        './src/compiler-option.cc',
+        './src/parser/token.cc',
+        './src/utils/environment.cc',
+        './lib/gtest/gtest-all.cc',
+        './src/ir/node.cc',
+        './test/parser/module-parse-test.cc',
+        './test/test-main.cc'
+      ],
+    },
   ] # targets
 }
