@@ -1891,8 +1891,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseEmptyStatement() {
-  auto node = New<ir::Empty>();
-  node->SetInformationForNode(Current());
-  return node;
+  if (Current()->type() == Token::LINE_TERMINATOR) {
+    Next();
+    auto node = New<ir::Empty>();
+    node->SetInformationForNode(Current());
+    return node;
+  }
+  SYNTAX_ERROR("SyntaxError ';' expected.", Current());
 }
 }

@@ -40,6 +40,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModule() {
     } else {
       file_scope->InsertLast(ParseStatementListItem(false, false, false, false));
     }
+    
+    if (IsLineTermination()) {
+      ConsumeLineTerminator();
+    }
   }
   return file_scope;
 }
@@ -51,7 +55,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseImportDeclaration() {
   if (Current()->type() == Token::TS_IMPORT) {
     TokenCursor begin = GetBufferCursorPosition();
     Next();
-    if (Current()->type() == Token::TS_IDENTIFIER) {
+    if (Current()->type() == Token::TS_IDENTIFIER ||
+        Current()->type() == Token::TS_LEFT_BRACE) {
       TokenCursor cursor = GetBufferCursorPosition();
       Next();
       if (Current()->type() == Token::TS_ASSIGN) {
@@ -76,7 +81,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseImportDeclaration() {
       import_view->SetInformationForNode(PeekBuffer(begin));
       return import_view;
     }
+    SYNTAX_ERROR("SyntaxError identifier or '{' or string literal expected.", Current());
   }
+  SYNTAX_ERROR("SyntaxError 'import' expected.", Current());
 }
 
 
@@ -108,22 +115,30 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseImportClause() {
   LOG_PHASE(ParseImportClause);
-  auto clause = New<ir::ImportListView>();
-  while (1) {
-    if (Current()->type() == Token::TS_IDENTIFIER) {
-      clause->InsertLast(ParseIdentifier());
-    } else if (Current()->type() == Token::TS_LEFT_BRACE) {
-      clause->InsertLast(ParseNamedImport());
-    }
+  Handle<ir::Node> first;
+  Handle<ir::Node> second;
+
+  if (Current()->type() == Token::TS_IDENTIFIER) {
+    first = ParseIdentifier();
     if (Current()->type() == Token::TS_COMMA) {
       Next();
-    } else if (Current()->type() == Token::TS_IDENTIFIER &&
-               Current()->value() == "from") {
-      return clause;
-    } else {
-      SYNTAX_ERROR("SyntaxError ',' or 'from' expected.", Current());
+      if (Current()->type() == Token::TS_LEFT_BRACE) {
+        second = ParseNamedImport();
+      } 
+    }
+  } else if (Current()->type() == Token::TS_LEFT_BRACE) {
+    first = ParseNamedImport();
+    if (Current()->type() == Token::TS_COMMA) {
+      Next();
+      if (Current()->type() == Token::TS_IDENTIFIER) {
+        second = ParseIdentifier();
+      } 
     }
   }
+  
+  auto ret = New<ir::ImportClauseView>(first, second);
+  ret->SetInformationForNode(first);
+  return ret;
 }
 
 
@@ -229,6 +244,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     auto block = New<ir::BlockView>();
     block->SetInformationForNode(Current());
+    Next();
+    
     while (Current()->type() != Token::TS_RIGHT_BRACE) {
       if (Current()->type() == Token::TS_EXPORT) {
         switch (Current()->type()) {

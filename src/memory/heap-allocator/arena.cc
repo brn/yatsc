@@ -122,6 +122,10 @@ void* CentralArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
   void* heap = VirtualHeapAllocator::Map(nullptr, size + sizeof(LargeHeader),
                                          VirtualHeapAllocator::Prot::WRITE | VirtualHeapAllocator::Prot::READ,
                                          VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
+  if (heap == nullptr) {
+    FATAL("Memory allocation failed.");
+  }
+  
   auto new_large_header = new(heap) LargeHeader(size);
 
   if (large_header != nullptr) {

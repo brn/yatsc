@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include <math.h>
 #include "../utils/utils.h"
 #include "../utils/stl.h"
 #include "../memory/heap.h"
@@ -52,7 +53,7 @@ namespace yatsc {namespace ir {
   DECLARE(NamedExportListView)                          \
   DECLARE(NamedExportView)                              \
   DECLARE(ImportView)                                   \
-  DECLARE(ImportListView)                               \
+  DECLARE(ImportClauseView)                             \
   DECLARE(NamedImportListView)                          \
   DECLARE(NamedImportView)                              \
   DECLARE(ExternalModuleReference)                      \
@@ -147,7 +148,7 @@ namespace yatsc {namespace ir {
   DECLARE(UndefinedView)                                \
   DECLARE(TemplateLiteralView)                          \
   DECLARE(ComprehensionExprView)                        \
-  DECLARE(Empty)                                        \
+  DECLARE(EmptyStatement)                               \
   DECLARE_LAST(DebuggerView)
 
 
@@ -270,7 +271,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
   // Create Node.
   YATSC_INLINE Node(NodeType node_type, size_t capacity = 0)
-      : node_type_(node_type),
+      : heap::HeapReference(),
+        node_type_(node_type),
         capacity_(capacity),
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
@@ -284,7 +286,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
   // Create Node.
   YATSC_INLINE Node(NodeType node_type, size_t capacity, std::initializer_list<Handle<Node>> node_list)
-      : node_list_(node_list),
+      : heap::HeapReference(),
+        node_list_(node_list),
         node_type_(node_type),
         capacity_(capacity),
         parent_node_(nullptr),
@@ -388,6 +391,12 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Return string value.
+  YATSC_INLINE bool has_string_value() YATSC_NO_SE {
+    return string_value_.utf8_length() > 0;
+  }
+
+
+  // Return string value.
   YATSC_INLINE const UtfString& string_value() YATSC_NO_SE {
     return string_value_;
   }
@@ -421,7 +430,12 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   YATSC_INLINE bool double_equals(Handle<Node> node) YATSC_NO_SE {
-    return double_value_ == node->double_value_;
+    return double_equals(node->double_value());
+  }
+
+
+  YATSC_INLINE bool double_equals(double double_value) YATSC_NO_SE {
+    return fabs(double_value_ - double_value) >= DBL_EPSILON;
   }
 
 
@@ -549,6 +563,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   void ToStringSelf(const Node* target, String& indent, StringStream& ss) const;
+  
   
   std::bitset<8> flags_;
   SourceInformation source_information_;
@@ -743,14 +758,20 @@ class ModuleImportView: public Node {
 };
 
 
-class ImportListView: public Node {
+class ImportClauseView: public Node {
  public:
-  ImportListView(std::initializer_list<Handle<Node>> list)
-      : Node(NodeType::kImportListView, 0u, list) {}
+  ImportClauseView(Handle<Node> first, Handle<Node> second)
+      : Node(NodeType::kImportClauseView, 2u, {first, second}) {}
 
 
-  ImportListView()
-      : Node(NodeType::kImportListView, 0u) {}
+  ImportClauseView()
+      : Node(NodeType::kImportClauseView, 2u) {}
+
+
+  NODE_PROPERTY(first, 0);
+
+
+  NODE_PROPERTY(second, 1);
 };
 
 
@@ -2195,7 +2216,7 @@ class ComprehensionExprView: public Node {
 class Empty: public Node {
  public:
   Empty()
-      : Node(NodeType::kEmpty, 0){}
+      : Node(NodeType::kEmptyStatement, 0){}
 };
 
 }} //yatsc::ir

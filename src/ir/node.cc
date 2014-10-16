@@ -22,7 +22,6 @@
 // THE SOFTWARE.
 
 
-#include <math.h>
 #include <float.h>
 #include "./node.h"
 #include "../memory/heap.h"
@@ -97,8 +96,8 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
       return true;
     }
     case NodeType::kNumberView: {
-      if (fabs(node->double_value_ - double_value_) >= DBL_EPSILON) {
-        return false;
+      if (node->double_equals(double_value_)) {
+        return true;
       }
     }
     default: {
@@ -214,11 +213,12 @@ void Node::DoToStringTree(String& indent, StringStream& ss) const {
 
 void Node::ToStringSelf(const Node* target, String& indent, StringStream& ss) const {
   ss << indent << '[' << target->ToString() << ']';
-  if ((target->HasNameView() || target->HasRegularExprView()) && target->string_value().utf8_length() > 0) {
-    ss << '[' << target->utf8_value() << ']';
-  }
-  if (target->HasStringView() && target->string_value().utf8_length() > 0) {
-    ss << "['" << target->utf8_value() << "']";
+  if (target->has_string_value() && !target->HasNumberView()) {
+    if (target->HasStringView()) {
+      ss << "[\'" << target->utf8_value() << "\']";
+    } else {
+      ss << '[' << target->utf8_value() << ']';
+    }
   }
   if (target->HasNumberView()) {
     ss << '[' << target->double_value() << ']';

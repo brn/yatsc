@@ -25,15 +25,27 @@
 
 #include <unistd.h>
 #include <execinfo.h>
+#include <cxxabi.h>
 
 
 namespace yatsc {
 void PrintStackTrace() {
-  void *array[10];
-  size_t size;
-
+  static const int kSize = 20;
+  void *array[kSize];
+  
   // get void*'s for all entries on the stack
-  size = backtrace(array, 10);
-  backtrace_symbols_fd(array, size, STDERR_FILENO);
+  int size = backtrace(array, kSize);
+  char** symbols =  backtrace_symbols(array, size);
+  for (int i = 0; i < size; i++) {
+    int status = 0;
+    char* demangled = abi::__cxa_demangle(symbols[i], 0, 0, &status);
+    if (status == 0) {
+      printf("%s\n", demangled);
+    } else {
+      printf("%s\n", symbols[i]);
+    }
+    free(demangled);
+  }
+  free(symbols);
 }
 }

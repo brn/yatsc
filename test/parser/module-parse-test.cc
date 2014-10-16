@@ -54,28 +54,111 @@ TEST(ModuleParser, ParseModule) {
   MODULE_TEST_ALL("import a from 'foo/bar/baz.js'",
                   "[FileScopeView]\n"
                   "  [ImportView]\n"
-                  "    [ImportListView]\n"
+                  "    [ImportClauseView]\n"
                   "      [NameView][a]\n"
-                  "    [StringView]['foo/bar/baz.js']");
-
-
-  MODULE_TEST_ALL("import a, b from 'foo/bar/baz.js'",
-                  "[FileScopeView]\n"
-                  "  [ImportView]\n"
-                  "    [ImportListView]\n"
-                  "      [NameView][a]\n"
-                  "      [NameView][b]\n"
+                  "      [Empty]\n"
                   "    [StringView]['foo/bar/baz.js']");
 
 
   MODULE_TEST_ALL("import a, {b as c} from 'foo/bar/baz.js'",
                   "[FileScopeView]\n"
                   "  [ImportView]\n"
-                  "    [ImportListView]\n"
+                  "    [ImportClauseView]\n"
                   "      [NameView][a]\n"
                   "      [NamedImportListView]\n"
                   "        [NamedImportView]\n"
                   "          [NameView][b]\n"
                   "          [NameView][c]\n"
                   "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("import foo, {bar as baz, qux, Foo as Bar} from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ImportView]\n"
+                  "    [ImportClauseView]\n"
+                  "      [NameView][foo]\n"
+                  "      [NamedImportListView]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][bar]\n"
+                  "          [NameView][baz]\n"
+                  "        [NameView][qux]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][Foo]\n"
+                  "          [NameView][Bar]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("import {bar as baz, qux, Foo as Bar}, foo from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ImportView]\n"
+                  "    [ImportClauseView]\n"
+                  "      [NamedImportListView]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][bar]\n"
+                  "          [NameView][baz]\n"
+                  "        [NameView][qux]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][Foo]\n"
+                  "          [NameView][Bar]\n"
+                  "      [NameView][foo]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("import {bar as baz, qux, Foo as Bar} from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ImportView]\n"
+                  "    [ImportClauseView]\n"
+                  "      [NamedImportListView]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][bar]\n"
+                  "          [NameView][baz]\n"
+                  "        [NameView][qux]\n"
+                  "        [NamedImportView]\n"
+                  "          [NameView][Foo]\n"
+                  "          [NameView][Bar]\n"
+                  "      [Empty]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("module Foo from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ModuleImportView]\n"
+                  "    [NameView][Foo]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+  
+  MODULE_TEST_ALL("import Foo = require('foo/bar/baz')",
+                  "[FileScopeView]\n"
+                  "  [ImportView]\n"
+                  "    [NameView][Foo]\n"
+                  "    [ExternalModuleReference][foo/bar/baz]");
+}
+
+
+TEST(ModuleParser, ParseTSModule) {
+  MODULE_TEST_ALL("module foo {}",
+                  "[FileScopeView]\n"
+                  "  [ModuleDeclView]\n"
+                  "    [NameView][foo]\n"
+                  "    [BlockView]");
+}
+
+
+TEST(ModuleParser, ParseExport) {
+  MODULE_TEST_ALL("export var a = 0;",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [VariableDeclView]\n"
+                  "      [VariableView]\n"
+                  "        [NameView][a]\n"
+                  "        [NumberView][0]\n"
+                  "        [Empty]\n"
+                  "    [Empty]");
+
+
+  MODULE_TEST_ALL("export * from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [StringView]['foo/bar/baz.js']\n"
+                  "    [Empty]");
 }
