@@ -294,7 +294,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
     Next();
     if (Current()->type() == Token::TS_MUL) {
       Next();
-      return CreateExportView(ParseFromClause(), ir::Node::Null(), PeekBuffer(cursor));
+      return CreateExportView(ir::Node::Null(), ParseFromClause(), PeekBuffer(cursor));
     }
 
     switch (Current()->type()) {
@@ -312,6 +312,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
       case Token::TS_CLASS:
       case Token::TS_INTERFACE:
       case Token::TS_LET:
+      case Token::TS_FUNCTION:
         return CreateExportView(ParseDeclaration(true, true, false), ir::Node::Null(), PeekBuffer(cursor));
       case Token::TS_DEFAULT:
       case Token::TS_ASSIGN: {
@@ -350,6 +351,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportClause() {
       Handle<ir::Node> identifier = ParseIdentifier();
       if (Current()->type() == Token::TS_IDENTIFIER &&
           Current()->value() == "as") {
+        Next();
         Handle<ir::Node> binding = ParseIdentifier();
         named_export_list->InsertLast(CreateNamedExportView(identifier, binding));
       } else {

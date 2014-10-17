@@ -694,15 +694,12 @@ class ExportView: public Node {
 
 class NamedExportListView: public Node {
  public:
-  NamedExportListView(Handle<Node> binding)
-      : Node(NodeType::kNamedExportListView, 1u, {binding}) {}
+  NamedExportListView(std::initializer_list<Handle<Node>> binding)
+      : Node(NodeType::kNamedExportListView, 0u, binding) {}
 
 
   NamedExportListView()
-      : Node(NodeType::kNamedExportListView, 1u) {}
-
-  
-  NODE_PROPERTY(binding, 0);
+      : Node(NodeType::kNamedExportListView, 0u) {}
 };
 
 

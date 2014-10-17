@@ -1284,6 +1284,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
         SYNTAX_ERROR("SyntaxError ';' expected", RewindBuffer(1));
       }
     } else {
+      Next();
       return fields;
     }
   }

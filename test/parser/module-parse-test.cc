@@ -159,6 +159,116 @@ TEST(ModuleParser, ParseExport) {
   MODULE_TEST_ALL("export * from 'foo/bar/baz.js'",
                   "[FileScopeView]\n"
                   "  [ExportView]\n"
-                  "    [StringView]['foo/bar/baz.js']\n"
+                  "    [Empty]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("export {x} from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [NamedExportListView]\n"
+                  "      [NamedExportView]\n"
+                  "        [NameView][x]\n"
+                  "        [Empty]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST_ALL("export {Foo as foo} from 'foo/bar/baz.js'",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [NamedExportListView]\n"
+                  "      [NamedExportView]\n"
+                  "        [NameView][Foo]\n"
+                  "        [NameView][foo]\n"
+                  "    [StringView]['foo/bar/baz.js']");
+
+
+  MODULE_TEST(yatsc::LanguageMode::ES6,
+              "export let x = 0",
+              "[FileScopeView]\n"
+              "  [ExportView]\n"
+              "    [LexicalDeclView][TS_LET]\n"
+              "      [VariableView]\n"
+              "        [NameView][x]\n"
+              "        [NumberView][0]\n"
+              "        [Empty]\n"
+              "    [Empty]");
+
+
+  MODULE_TEST(yatsc::LanguageMode::ES6,
+              "export const x = 0",
+              "[FileScopeView]\n"
+              "  [ExportView]\n"
+              "    [LexicalDeclView][TS_CONST]\n"
+              "      [VariableView]\n"
+              "        [NameView][x]\n"
+              "        [NumberView][0]\n"
+              "        [Empty]\n"
+              "    [Empty]");
+
+
+  MODULE_TEST_ALL("export class Foo {}",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [ClassDeclView]\n"
+                  "      [NameView][Foo]\n"
+                  "      [Empty]\n"
+                  "      [ClassBasesView]\n"
+                  "        [Empty]\n"
+                  "        [Empty]\n"
+                  "      [ClassFieldListView]\n"
+                  "    [Empty]");
+
+
+  MODULE_TEST_ALL("export interface Foo {}",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [InterfaceView]\n"
+                  "      [NameView][Foo]\n"
+                  "      [Empty]\n"
+                  "      [InterfaceExtendsView]\n"
+                  "      [ObjectTypeExprView]\n"
+                  "    [Empty]");
+
+
+  MODULE_TEST_ALL("export function foo(){}",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [FunctionView]\n"
+                  "      [FunctionOverloadsView]\n"
+                  "      [NameView][foo]\n"
+                  "      [CallSignatureView]\n"
+                  "        [ParamList]\n"
+                  "        [Empty]\n"
+                  "        [Empty]\n"
+                  "      [BlockView]\n"
+                  "    [Empty]");
+
+  
+  MODULE_TEST_ALL("export function *foo(){}",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [FunctionView]\n"
+                  "      [FunctionOverloadsView]\n"
+                  "      [NameView][foo]\n"
+                  "      [CallSignatureView]\n"
+                  "        [ParamList]\n"
+                  "        [Empty]\n"
+                  "        [Empty]\n"
+                  "      [BlockView]\n"
+                  "    [Empty]");
+
+
+  MODULE_TEST_ALL("export default Foo",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [NameView][Foo]\n"
+                  "    [Empty]");
+
+
+  MODULE_TEST_ALL("export = Foo",
+                  "[FileScopeView]\n"
+                  "  [ExportView]\n"
+                  "    [NameView][Foo]\n"
                   "    [Empty]");
 }
