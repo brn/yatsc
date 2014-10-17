@@ -343,7 +343,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
     } catch (const ArrowParametersError& a) {
       // If ArrowParameterError thrown, rethrow error because
       // that is a ParseError for the arrow_function_parameters.
-      throw a;   
+      throw a;
     } catch (const std::exception& e) {
       // Any errors except the SyntaxError and ArrowParametersError are goto here.
       throw e;
@@ -829,6 +829,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArguments(bool yield) {
         if (has_rest) {
           SYNTAX_ERROR("SyntaxError the spread argument must be the end of arguments", Current());
         }
+        Next();
         continue;
       } else if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
@@ -916,6 +917,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node>
       if (Current()->type() != Token::TS_RIGHT_BRACKET) {
         SYNTAX_ERROR("SyntaxError unexpected token", Current());
       }
+      Next();
       return result;
     }
     case Token::TS_DOT: {
@@ -1019,6 +1021,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
     auto array_literal = New<ir::ArrayLiteralView>();
     array_literal->SetInformationForNode(Current());
     Next();
+
+    if (Current()->type() == Token::TS_RIGHT_BRACKET) {
+      Next();
+      return array_literal;
+    }
+    
     while (1) {
       Handle<ir::Node> expr;
       bool spread = false;
@@ -1240,6 +1248,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     Handle<ir::ObjectLiteralView> object_literal = New<ir::ObjectLiteralView>();
     object_literal->SetInformationForNode(Current());
     Next();
+
+    if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      Next();
+      return object_literal;
+    }
+    
     while (1) {
       Handle<ir::Node> element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);

@@ -123,11 +123,7 @@ class Parser: public ParserBase {
   
 
  VISIBLE_FOR_TESTING:
-  Handle<ir::Node> ParseProgram();
-
-  Handle<ir::Node> ParseSourceElements();
-
-  Handle<ir::Node> ParseSourceElement();
+  Handle<ir::Node> Parse() {return ParseModule();};
 
   Handle<ir::Node> ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable);
 

@@ -23,64 +23,6 @@
 
 namespace yatsc {
 
-template <typename UCharInputSourceIterator>
-Handle<ir::Node> Parser<UCharInputSourceIterator>::ParseProgram() {
-  return ir::Node::Null();
-}
-
-
-// Parse root statements.
-template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseSourceElements() {
-  // BlockView* block_view = New<BlockView>();
-  
-  // while (1) {
-  //   const TokenInfo* token_info = Peek();
-  //   if (Token::END_OF_INPUT == token_info) {
-  //     break;
-  //   }
-  //   Handle<ir::Node> statement = ParseSourceElement();
-  //   block_view->InsertLast(statement);
-  // }
-  
-  // return block_view;
-  return ir::Node::Null();
-}
-
-
-// Parse root statement.
-template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseSourceElement() {
-  // Handle<ir::Node> result = nullptr;
-  // const TokenInfo* token_info = Peek();
-  // switch (token_info->type()) {
-  //   case Token::TS_CLASS: {
-  //     result = ParseClassDeclaration();
-  //   }
-  //     break;
-      
-  //   case Token::TS_FUNCTION: {
-  //     result = ParseFunction();
-  //   }
-  //     break;
-
-  //   case Token::TS_VAR: {
-  //     result = ParseVariableDeclaration();
-  //   }
-  //     break;
-
-  //   case Token::END_OF_INPUT: {
-  //     SYNTAX_ERROR("Unexpected end of input.", token_info);
-  //   }
-  //     break;
-
-  //   default:
-  //     result = ParseStatement();
-  // }
-  // return result;
-  return ir::Node::Null();
-}
-
 
 // Statement[Yield, Return]
 //   BlockStatement[?Yield, ?Return]
@@ -1017,15 +959,15 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseThrowStatement() {
   LOG_PHASE(ParseThrowStatement);
   if (Current()->type() == Token::TS_THROW) {
+    TokenCursor cursor = GetBufferCursorPosition();
+    Next();
     if (!IsLineTermination()) {
-      TokenCursor cursor = token_buffer_.cursor();
-      Next();
       Handle<ir::Node> expr = ParseExpression(false, false);
       Handle<ir::ThrowStatementView> throw_stmt = New<ir::ThrowStatementView>(expr);
-      throw_stmt->SetInformationForNode(token_buffer_.Peek(cursor));
+      throw_stmt->SetInformationForNode(PeekBuffer(cursor));
       return throw_stmt;
     }
-    SYNTAX_ERROR("SyntaxError throw statement expected expression", Current());
+    SYNTAX_ERROR("SyntaxError throw statement expected expression", PeekBuffer(cursor));
   }
   SYNTAX_ERROR("SyntaxError throw expected", Current());
 }

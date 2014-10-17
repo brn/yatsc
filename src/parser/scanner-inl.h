@@ -391,6 +391,7 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
     }
     return BuildToken(type1);
   } else if (lookahead1_ == unicode::u8('=')) {
+    Advance();
     return BuildToken(equal_comparator);
   }
   BuildToken(normal);
