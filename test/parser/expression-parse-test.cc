@@ -191,16 +191,27 @@ TEST(ExpressionParseTest, ParseExpression_call) {
 }
 
 
+TEST(ExpressionParseTest, ParseExpression_call_elem) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "func()[index]",
+            "[GetElemView]\n"
+            "  [CallView]\n"
+            "    [NameView][func]\n"
+            "    [CallArgsView]\n"
+            "    [Empty]\n"
+            "  [NameView][index]");
+}
+
+
 TEST(ExpressionParseTest, ParseExpression_property_call) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "foo.bar.null.func()",
             "[CallView]\n"
             "  [GetPropView]\n"
-            "    [NameView][foo]\n"
             "    [GetPropView]\n"
-            "      [NameView][bar]\n"
             "      [GetPropView]\n"
-            "        [NullView]\n"
-            "        [NameView][func]\n"
+            "        [NameView][foo]\n"
+            "        [NameView][bar]\n"
+            "      [NullView]\n"
+            "    [NameView][func]\n"
             "  [CallArgsView]\n"
             "  [Empty]");
 }
@@ -211,18 +222,47 @@ TEST(ExpressionParseTest, ParseExpression_property_call_call) {
             "[CallView]\n"
             "  [CallView]\n"
             "    [GetPropView]\n"
-            "      [CallView]\n"
-            "        [GetPropView]\n"
-            "          [NameView][foo]\n"
-            "          [NameView][func]\n"
-            "        [CallArgsView]\n"
-            "        [Empty]\n"
             "      [GetPropView]\n"
+            "        [CallView]\n"
+            "          [GetPropView]\n"
+            "            [NameView][foo]\n"
+            "            [NameView][func]\n"
+            "          [CallArgsView]\n"
+            "          [Empty]\n"
             "        [NameView][foo]\n"
-            "        [NameView][baz]\n"
+            "      [NameView][baz]\n"
             "    [CallArgsView]\n"
             "    [Empty]\n"
             "  [CallArgsView]\n"
+            "  [Empty]");
+}
+
+
+TEST(ExpressionParseTest, ParseExpression_property_elem_call) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "foo['bar'].baz()",
+            "[CallView]\n"
+            "  [GetPropView]\n"
+            "    [GetElemView]\n"
+            "      [NameView][foo]\n"
+            "      [StringView]['bar']\n"
+            "    [NameView][baz]\n"
+            "  [CallArgsView]\n"
+            "  [Empty]");
+}
+
+
+TEST(ExpressionParseTest, ParseExpression_property_call2) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "process.stdout.write(str + '\\n')",
+            "[CallView]\n"
+            "  [GetPropView]\n"
+            "    [GetPropView]\n"
+            "      [NameView][process]\n"
+            "      [NameView][stdout]\n"
+            "    [NameView][write]\n"
+            "  [CallArgsView]\n"
+            "    [BinaryExprView][TS_PLUS]\n"
+            "      [NameView][str]\n"
+            "      [StringView]['\\n']\n"
             "  [Empty]");
 }
 

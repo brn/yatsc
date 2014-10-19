@@ -698,10 +698,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePostfixExpression(bool yield) 
 // 	;
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseLeftHandSideExpression(bool yield) {
-  LOG_PHASE(ParseLeftHandSideExpression); 
-  
+  LOG_PHASE(ParseLeftHandSideExpression);
+  RecordedParserState rps = parser_state();
   if (Current()->type() == Token::TS_NEW) {
-    return ParseNewExpression(yield);
+    Next();
+    if (Current()->type() == Token::TS_NEW) {
+      RestoreParserState(rps);
+      return ParseNewExpression(yield);
+    }
+    RestoreParserState(rps);
+    return ParseCallExpression(yield);
   }
   return ParseCallExpression(yield);
 }
@@ -755,21 +761,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
     Handle<ir::Node> args = ParseArguments(yield);
     Handle<ir::Node> call = New<ir::CallView>(target, args, type_arguments);
     call->SetInformationForNode(target);
-    type_arguments;
     while (1) {
       switch (Current()->type()) {
-        case Token::TS_LESS: {
-          type_arguments = ParseTypeArguments();
-        }
         case Token::TS_LEFT_PAREN: {
           Handle<ir::Node> args = ParseArguments(yield);
-          call = New<ir::CallView>(call, args, type_arguments);
+          call = New<ir::CallView>(call, args, ir::Node::Null());
           call->MarkAsInValidLhs();
           call->SetInformationForNode(args);
           type_arguments;
           break;
         }
-        case Token::TS_LEFT_BRACE:
+        case Token::TS_LEFT_BRACKET:
         case Token::TS_DOT:
           if (type_arguments) {
             SYNTAX_ERROR_POS("SyntaxError unexpected token", type_arguments->source_position());
@@ -923,33 +925,34 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool yield) {
   LOG_PHASE(ParseGetPropOrElem);
-  
-  switch (Current()->type()) {
-    case Token::TS_LEFT_BRACKET: {
-      // [...] expression.
-      Next();
-      Handle<ir::Node> expr = ParseExpression(true, false);
-      Handle<ir::Node> result = New<ir::GetElemView>(node, expr);
-      result->SetInformationForNode(node);
-      if (Current()->type() != Token::TS_RIGHT_BRACKET) {
-        SYNTAX_ERROR("SyntaxError unexpected token", Current());
+  while (1) {
+    switch (Current()->type()) {
+      case Token::TS_LEFT_BRACKET: {
+        // [...] expression.
+        Next();
+        Handle<ir::Node> expr = ParseExpression(true, false);
+        node = New<ir::GetElemView>(node, expr);
+        node->SetInformationForNode(node);
+        if (Current()->type() != Token::TS_RIGHT_BRACKET) {
+          SYNTAX_ERROR("SyntaxError unexpected token", Current());
+        }
+        Next();
+        break;
       }
-      Next();
-      return result;
-    }
-    case Token::TS_DOT: {
-      // a.b.c expression.
-      Next();
-      Handle<ir::Node> expr = ParseMemberExpression(yield);
-      if (!expr->HasNameView() && !expr->HasKeywordLiteralView() && !expr->HasGetPropView() && !expr->HasGetElemView()) {
-        SYNTAX_ERROR_POS("SyntaxError identifier expected", expr->source_position());
+      case Token::TS_DOT: {
+        // a.b.c expression.
+        Next();
+        Handle<ir::Node> expr = ParsePrimaryExpression(yield);
+        if (!expr->HasNameView() && !expr->HasKeywordLiteralView()) {
+          SYNTAX_ERROR_POS("SyntaxError 'identifier' expected.", expr->source_position());
+        }
+        node = New<ir::GetPropView>(node, expr);
+        node->SetInformationForNode(node);
+        break;
       }
-      Handle<ir::Node> ret = New<ir::GetPropView>(node, expr);
-      ret->SetInformationForNode(node);
-      return ret;
+      default:
+        return node;
     }
-    default:
-      return node;
   }
 }
 

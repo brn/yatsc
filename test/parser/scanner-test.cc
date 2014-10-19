@@ -62,6 +62,13 @@ TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string) {
 }
 
 
+TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string2) {
+  INIT(token, "'\\uFEFF'");
+  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_STREQ(token->utf8_value(), "\\xEF\\xBB\\xBF");
+}
+
+
 TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string) {
   INIT_THROW(token, "'\\u006_foo_\\u0062_bar_\\u0063_baz'", yatsc::TokenException)
 }

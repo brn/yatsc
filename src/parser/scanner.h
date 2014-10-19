@@ -214,7 +214,7 @@ class Scanner: private Uncopyable, private Unmovable {
   void ScanBinaryLiteral();
   
   
-  bool ScanUnicodeEscapeSequence(UtfString*);
+  bool ScanUnicodeEscapeSequence(UtfString*, bool in_string_literal);
 
 
   void ScanRegularExpression();

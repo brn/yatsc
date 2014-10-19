@@ -113,6 +113,9 @@ template<typename UCharInputIterator>
 UC16 Scanner<UCharInputIterator>::ScanHexEscape(const UChar& uchar, int len, bool* success) {
   int result = 0;
   for (int i = 0; i < len; ++i) {
+    if (i != 0) {
+      Advance();
+    }
     const int d = ToHexValue(uchar);
     if (d < 0) {
       *success = false;
@@ -120,8 +123,8 @@ UC16 Scanner<UCharInputIterator>::ScanHexEscape(const UChar& uchar, int len, boo
     }
     *success = true;
     result = result * 16 + d;
-    Advance();
   }
+  printf("%d\n", result);
   return static_cast<UC16>(result);
 }
 
@@ -143,19 +146,23 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
     } else if (char_ == unicode::u8('\\')) {
       if (!escaped) {
         if (lookahead1_ == unicode::u8('u')) {
-          if (!ScanUnicodeEscapeSequence(&v)) {
+          if (!ScanUnicodeEscapeSequence(&v, true)) {
             return;
           }
+          continue;
         } else if (lookahead1_ == unicode::u8('x')) {
           if (!ScanAsciiEscapeSequence(&v)) {
             return;
           }
+          continue;
         } else {
           escaped = !escaped; 
         }
       } else {
         escaped = !escaped;
       }
+    } else {
+      escaped = false;
     }
     v += char_;
   }
@@ -289,7 +296,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
   UtfString v;  
   while (Character::IsInIdentifierRange(char_) || char_ == unicode::u8('\\')) {
     if (char_ == unicode::u8('\\')) {
-      if (!ScanUnicodeEscapeSequence(&v)) {
+      if (!ScanUnicodeEscapeSequence(&v, false)) {
         return;
       }
     } else {
@@ -471,17 +478,20 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
 
 
 template<typename UCharInputIterator>
-bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v) {
+bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool in_string_literal) {
   Advance();
   if (char_ != unicode::u8('u')) {
-    Error("Illegal Token");
+    Error("UnicodeEscapeSequence not started with 'u'");
     return false;
   }
   Advance();
   bool success;
   UC16 uc16 = ScanHexEscape(char_, 4, &success);
-  if (!success || uc16 == '\\' || !Character::IsIdentifierStartChar(uc16)) {
-    Illegal();
+  if (!success) {
+    Error("Not allowed token in UnicodeEscapeSequence.");
+    return false;
+  } else if (!in_string_literal && (uc16 == '\\' || !Character::IsIdentifierStartChar(uc16))) {
+    Error("Not allowed token in UnicodeEscapeSequence.");
     return false;
   }
   UC8Bytes bytes = utf16::Convertor::Convert(uc16, 0);
