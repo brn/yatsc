@@ -101,11 +101,11 @@ class Parser: public ParserBase {
 
  private:
   struct AccessorType {
-    AccessorType(bool setter, bool getter, TokenCursor cursor)
-        : setter(setter), getter(getter) {}
+    AccessorType(bool setter, bool getter, const TokenInfo& info)
+        : setter(setter), getter(getter), token_info(info) {}
     bool setter;
     bool getter;
-    TokenCursor cursor;
+    TokenInfo token_info;
   };
   
   /**
@@ -119,7 +119,10 @@ class Parser: public ParserBase {
    * Return current TokenInfo.
    * @return Current TokenInfo.
    */
-  YATSC_INLINE TokenInfo* Current();
+  YATSC_INLINE TokenInfo* Current() YATSC_NOEXCEPT;
+
+
+  YATSC_INLINE TokenInfo* Prev() YATSC_NOEXCEPT;
   
 
  VISIBLE_FOR_TESTING:
@@ -171,7 +174,7 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseForStatement(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseForIteration(Handle<ir::Node> reciever, TokenCursor, bool yield, bool has_return);
+  Handle<ir::Node> ParseForIteration(Handle<ir::Node> reciever, TokenInfo*, bool yield, bool has_return);
 
   Handle<ir::Node> ParseIterationBody(bool yield, bool has_return);
 
@@ -333,6 +336,9 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseLeftHandSideExpression(bool yield);
 
+  // Parse new expression.
+  Handle<ir::Node> ParseNewExpression(bool yield);
+  
   // Parse member expression.
   Handle<ir::Node> ParseMemberExpression(bool yield);
 
@@ -419,7 +425,7 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseModuleImport();
 
-  Handle<ir::Node> ParseTSModule();
+  Handle<ir::Node> ParseTSModule(Handle<ir::Node> identifier, TokenInfo* token_info);
 
   Handle<ir::Node> ParseTSModuleBody();
 
@@ -444,7 +450,7 @@ class Parser: public ParserBase {
   AccessorType ParseAccessor();
 
   Handle<ir::Node> ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
-
+  
 #if defined(UNIT_TEST) || defined(DEBUG)
   void PrintStackTrace() {
     Printf("%s\n", phase_buffer_.str().c_str());
@@ -452,6 +458,46 @@ class Parser: public ParserBase {
 #endif
 
  private:
+  class RecordedParserState {
+   public:
+    RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp, const TokenInfo& current, const TokenInfo& prev)
+        : rcp_(rcp),
+          current_(current),
+          prev_(prev) {}
+
+    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
+
+
+    YATSC_CONST_GETTER(const TokenInfo&, current, current_);
+
+
+    YATSC_CONST_GETTER(const TokenInfo&, prev, prev_);
+
+   private:
+    typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
+    TokenInfo current_;
+    TokenInfo prev_;
+  };
+
+  RecordedParserState parser_state() YATSC_NOEXCEPT {
+    TokenInfo prev;
+    TokenInfo current;
+    if (Prev() != nullptr) {
+      prev = *Prev();
+    }
+    if (Current() != nullptr) {
+      current = *Current();
+    }
+    
+    return RecordedParserState(scanner_->char_position(), current, prev);
+  }
+
+  void RestoreParserState(const RecordedParserState& rps) {
+    scanner_->RestoreScannerPosition(rps.rcp());
+    *current_token_info_ = rps.current();
+    prev_token_info_ = rps.prev();
+  }
+  
 #if defined(DEBUG) || defined(UNIT_TEST)
   StringStream phase_buffer_;
 #endif

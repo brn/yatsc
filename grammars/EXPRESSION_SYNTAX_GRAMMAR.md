@@ -167,7 +167,7 @@
 - ___super___ \[ [Expression\[In, ?Yield\]](#Expression) ]  
 - ___super___ ___.___ [IdentifierName](#IdentifierName)  
 - ___new___ ___super___ [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]\(opt\)](#Arguments)  
-- ___new___ ___\[___ *lookahead*  ___{___ ___super___ ___}___ ___]___ [MemberExpression\[?Yield\]](#MemberExpression)  
+- ___new___ ___\[___ *lookahead* ___!=___ ___{___ ___super___ ___}___ ___]___ [MemberExpression\[?Yield\]](#MemberExpression) [TypeArguments\(opt\)](./TYPE_SYNTAX_GRAMMAR.md#TypeArguments) [Arguments\[?Yield\]\(opt\)](#Arguments)
 
 ### <a name="Arguments"> Arguments\[Yield]
 - ___\(___ ___)___  

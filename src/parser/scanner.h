@@ -85,14 +85,10 @@ class Scanner: private Uncopyable, private Unmovable {
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
 
 
-  /**
-   * Check whether current token is regular expression or not.
-   * If current token is regular expression return TS_REGULAR_EXPR,
-   * if not regular expr return nullptr.
-   * @returns TS_REGULAR_EXPR TokenInfo or nullptr.
-   */
-  TokenInfo* CheckRegularExpression();
-  
+  // Check whether current token is regular expression or not.
+  // If current token is regular expression return TS_REGULAR_EXPR,
+  // if not regular expr return nullptr.
+  TokenInfo* CheckRegularExpression(TokenInfo* token_info);
   
  private:
 
@@ -129,7 +125,42 @@ class Scanner: private Uncopyable, private Unmovable {
     size_t current_line_number_;
     size_t start_line_number_;
   };
+
+ public:
   
+  class RecordedCharPosition {
+   public:
+    RecordedCharPosition(const ScannerSourcePosition& ssp, const UCharInputIterator& it,
+                         const UChar& uchar, const UChar& lookahead)
+        : ssp_(ssp),
+          ucii_(it),
+          uchar_(uchar),
+          lookahead_(lookahead){}
+
+
+    RecordedCharPosition(const RecordedCharPosition& rcp) = default;
+    
+
+    YATSC_CONST_GETTER(ScannerSourcePosition, ssp, ssp_);
+    YATSC_CONST_GETTER(UCharInputIterator, ucii, ucii_);
+    YATSC_CONST_GETTER(UChar, current, uchar_);
+    YATSC_CONST_GETTER(UChar, lookahead, lookahead_);
+
+   private:
+    ScannerSourcePosition ssp_;
+    UCharInputIterator ucii_;
+    UChar uchar_;
+    UChar lookahead_;
+  };
+
+  
+  RecordedCharPosition char_position() YATSC_NO_SE {
+    return RecordedCharPosition(scanner_source_position_, it_, char_, lookahead1_);
+  }
+
+  void RestoreScannerPosition(const RecordedCharPosition& rcp);
+
+ private:
 
   void LineFeed() {
     scanner_source_position_.AdvanceLine();
@@ -295,7 +326,6 @@ class Scanner: private Uncopyable, private Unmovable {
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
-  UChar last_char_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

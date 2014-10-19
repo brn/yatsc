@@ -45,6 +45,5 @@
 
 TEST(ParserTest, Parse) {
   yatsc::String code = yatsc::testing::ReadFile("test/parser/parser-test-case/case1.ts");
-  printf("%s\n", code.c_str());
   ENTIRE_PARSER_TEST_ALL(code.c_str(), "");
 }

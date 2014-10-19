@@ -201,6 +201,35 @@ class TokenInfo {
         line_terminator_state_(token_info.line_terminator_state_),
         source_position_(token_info.source_position_) {}
 
+
+  TokenInfo(TokenInfo&& token_info)
+      : utf_string_(std::move(token_info.utf_string_)),
+        multi_line_comment_(std::move(token_info.multi_line_comment_)),
+        type_(token_info.type_),
+        line_terminator_state_(token_info.line_terminator_state_),
+        source_position_(token_info.source_position_) {}
+
+
+  TokenInfo& operator = (const TokenInfo& token_info) {
+    utf_string_ = token_info.utf_string_;
+    multi_line_comment_ = token_info.multi_line_comment_;
+    type_ = token_info.type_;
+    line_terminator_state_ = token_info.line_terminator_state_;
+    source_position_ = token_info.source_position_;
+    return *this;
+  }
+
+
+  TokenInfo& operator = (TokenInfo&& token_info) {
+    utf_string_ = std::move(token_info.utf_string_);
+    multi_line_comment_ = std::move(token_info.multi_line_comment_);
+    type_ = token_info.type_;
+    line_terminator_state_ = token_info.line_terminator_state_;
+    source_position_ = token_info.source_position_;
+    return *this;
+  }
+      
+  
   
   ~TokenInfo() = default;
   

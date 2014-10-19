@@ -31,6 +31,7 @@
 #include "./uchar.h"
 #include "../utils/unicode.h"
 #include "../utils/utils.h"
+#include "../utils/stl.h"
 #include "unicode-iterator-adapter.h"
 
 namespace yatsc {
@@ -119,17 +120,17 @@ class UtfString {
   
   
   UtfString(const char* source) {
-    std::string st(source);
+    String st(source);
     Initialize(st);
   }
 
 
-  UtfString(const std::string& source) {
+  UtfString(const String& source) {
     Initialize(source);
   }
 
 
-  UtfString(std::string&& source) {
+  UtfString(String&& source) {
     Initialize(source);
   }
   
@@ -145,8 +146,8 @@ class UtfString {
       : utf_value_cache_(std::move(utf_string.utf_value_cache_)){}
 
 
-  void Initialize(const std::string& str) {
-    typedef std::string::const_iterator Iterator;
+  void Initialize(const String& str) {
+    typedef String::const_iterator Iterator;
     Iterator end = str.end();
     UnicodeIteratorAdapter<Iterator> it(str.begin());
     while (it != end) {

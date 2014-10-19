@@ -60,7 +60,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExpression(bool in, bool yield
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) {
   LOG_PHASE(ParseAssignmentPattern);
-  TokenCursor cursor = GetBufferCursorPosition();
+  TokenInfo info = *Current();
   Handle<ir::Node> node;
   switch(Current()->type()) {
     case Token::TS_LEFT_BRACE: {
@@ -72,10 +72,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) 
       break;
     }
     default:
-      SYNTAX_ERROR("SyntaxError unexpected token", PeekBuffer(cursor));
+      SYNTAX_ERROR("SyntaxError unexpected token", (&info));
   }
 
-  node->SetInformationForNode(PeekBuffer(cursor));
+  node->SetInformationForNode(&info);
   return node;
 }
 
@@ -207,7 +207,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPropertyList(bool yi
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield) {
   LOG_PHASE(ParseAssignmentProperty);
-  TokenCursor cursor = GetBufferCursorPosition();
+  TokenInfo info = *Current();
   
   Handle<ir::Node> property_name;
   Handle<ir::Node> elem;
@@ -238,7 +238,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield)
 
   // All destructuring assignment element is convert to BindingElementView.
   auto binding_element = New<ir::BindingElementView>(property_name, elem, init);
-  binding_element->SetInformationForNode(PeekBuffer(cursor));
+  binding_element->SetInformationForNode(&info);
   return binding_element;
 }
 
@@ -270,11 +270,11 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentRestElement(bool yield) {
   LOG_PHASE(ParseAssignmentRestElement);
   if (Current()->type() == Token::TS_REST) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     Handle<ir::Node> target = ParseDestructuringAssignmentTarget(yield);
     auto rest = New<ir::RestParamView>(target);
-    rest->SetInformationForNode(PeekBuffer(cursor));
+    rest->SetInformationForNode(&info);
   }
   SYNTAX_ERROR("SyntaxError '...' expected", Current());
 }
@@ -286,12 +286,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentRestElement(bool yie
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool yield) {
   LOG_PHASE(ParseDestructuringAssignmentTarget);
-  TokenCursor cursor = GetBufferCursorPosition();
+  RecordedParserState rps = parser_state();
   Handle<ir::Node> ret = ParseLeftHandSideExpression(yield);
   // Check whether DestructuringAssignmentTarget is IsValidAssignmentTarget or not.
   if (!ret->IsValidLhs()) {
     if (ret->HasObjectLiteralView() || ret->HasArrayLiteralView()) {
-      SetBufferCursorPosition(cursor);
+      RestoreParserState(rps);
       ret = ParseAssignmentPattern(yield);
     } else {
       SYNTAX_ERROR_POS("SyntaxError invalid Left-Hand-Side expression", ret->source_position());
@@ -327,7 +327,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
   Handle<ir::Node> node;
 
   // Record current buffer position.
-  TokenCursor cursor = GetBufferCursorPosition();
+  RecordedParserState rps = parser_state();
   
   if (Current()->type() == Token::TS_LEFT_PAREN ||
       Current()->type() == Token::TS_LESS) {
@@ -352,8 +352,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
     if (!failed) {
       return ParseConciseBody(in, node);
     }
-    
-    SetBufferCursorPosition(cursor);
+
+    RestoreParserState(rps);
   }
 
   Handle<ir::Node> expr;
@@ -373,7 +373,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
         throw e;
       }
       
-      SetBufferCursorPosition(cursor);
+      RestoreParserState(rps);
       expr = ParseAssignmentPattern(yield);
       parsed_as_assignment_pattern = true;
     }
@@ -384,7 +384,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
   }
   
   // Expression is not an arrow_function.
-  TokenInfo *token_info = Current();
+  const TokenInfo *token_info = Current();
   Token type = token_info->type();
 
   // Check assignment operators.
@@ -397,7 +397,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
         SYNTAX_ERROR_POS("Invalid Left-Hand-Side expression", expr->source_position());
       }
       
-      SetBufferCursorPosition(cursor);
+      RestoreParserState(rps);
       expr = ParseAssignmentPattern(yield);
     }
     Next();
@@ -429,7 +429,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrowFunction(bool in, bool yi
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseArrowFunctionParameters(bool yield, Handle<ir::Node> identifier) {
-  LOG_PHASE(ParseArrowFunction);
+  LOG_PHASE(ParseArrowFunctionParameters);
 
   Handle<ir::Node> call_sig;
   
@@ -701,7 +701,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLeftHandSideExpression(bool yi
   LOG_PHASE(ParseLeftHandSideExpression); 
   
   if (Current()->type() == Token::TS_NEW) {
-    return ParseMemberExpression(yield);
+    return ParseNewExpression(yield);
   }
   return ParseCallExpression(yield);
 }
@@ -741,12 +741,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   Handle<ir::Node> type_arguments;
 
   if (Current()->type() == Token::TS_LESS) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    RecordedParserState rps = parser_state();
     try {
       type_arguments = ParseTypeArguments();
       target->MarkAsInValidLhs();
     } catch (const SyntaxError&) {
-      SetBufferCursorPosition(cursor);
+      RestoreParserState(rps);
     }
   }
   
@@ -815,11 +815,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArguments(bool yield) {
     bool has_rest = false;
     while (1) {
       if (Current()->type() == Token::TS_REST) {
-        TokenCursor cursor = GetBufferCursorPosition();
+        TokenInfo info = *Current();
         Next();
         Handle<ir::Node> expr = ParseAssignmentExpression(true, yield);
         auto rest = New<ir::RestParamView>(expr);
-        rest->SetInformationForNode(PeekBuffer(cursor));
+        rest->SetInformationForNode(&info);
         args->InsertLast(rest);
         has_rest = true;
       } else {
@@ -842,6 +842,23 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArguments(bool yield) {
 }
 
 
+template <typename UCharInputIterator>
+Handle<ir::Node> Parser<UCharInputIterator>::ParseNewExpression(bool yield) {
+  if (Current()->type() == Token::TS_NEW) {
+    RecordedParserState rps = parser_state();
+    Next();
+    if (Current()->type() == Token::TS_NEW) {
+      auto ret = New<ir::NewCallView>(ParseNewExpression(yield), ir::Node::Null(), ir::Node::Null());
+      ret->SetInformationForNode(&(rps.current()));
+      return ret;
+    }
+    RestoreParserState(rps);
+    return ParseMemberExpression(yield); 
+  }
+  SYNTAX_ERROR("SyntaxError 'new' expected.", Current());
+}
+
+
 // MemberExpression[Yield]
 //   [Lexical goal InputElementRegExp] PrimaryExpression[?Yield]
 //   MemberExpression[?Yield] [ Expression[In, ?Yield] ]
@@ -859,13 +876,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
   TokenInfo* token_info = Current();
   Handle<ir::Node> node;
   if (token_info->type() ==  Token::TS_NEW) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     // Parse new Foo() expression.
     Next();
     Handle<ir::Node> member;
     if (Current()->type() == Token::TS_SUPER) {
       member = New<ir::SuperView>();
-      member->SetInformationForNode(PeekBuffer(cursor));
+      member->SetInformationForNode(&info);
     } else {
       member = ParseMemberExpression(yield);
     }
@@ -958,8 +975,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) 
   TokenInfo* token_info;
   
   // Allow regular expression in this context.
-  TokenInfo* maybe_regexp = scanner_->CheckRegularExpression();
-  if (maybe_regexp) {
+  TokenInfo* maybe_regexp = scanner_->CheckRegularExpression(Current());
+  if (maybe_regexp != nullptr) {
     token_info = maybe_regexp;
   } else {
     token_info = Current();
@@ -983,10 +1000,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) 
       // parse an array literal.
       return ParseArrayInitializer(yield);
     case Token::TS_LEFT_PAREN: {
-      TokenCursor cursor = GetBufferCursorPosition();
+      RecordedParserState rps = parser_state();
       Next();
       if (Current()->type() == Token::TS_FOR) {
-        SetBufferCursorPosition(cursor);
+        RestoreParserState(rps);
         return ParseGeneratorComprehension(yield);
       } else {
         Handle<ir::Node> node = ParseExpression(true, false);
@@ -1075,13 +1092,13 @@ template<typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
   LOG_PHASE(ParseArrayComprehension);
   if (Current()->type() == Token::TS_LEFT_BRACKET) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     Handle<ir::Node> expr = ParseComprehension(false, yield);
     if (Current()->type() == Token::TS_RIGHT_BRACKET) {
       Next();
       auto arr = New<ir::ArrayLiteralView>();
-      arr->SetInformationForNode(PeekBuffer(cursor));
+      arr->SetInformationForNode(&info);
       arr->InsertLast(expr);
       return arr;
     }
@@ -1122,7 +1139,7 @@ template<typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
   LOG_PHASE(ParseComprehensionFor);
   if (Current()->type() == Token::TS_FOR) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       Next();
@@ -1136,7 +1153,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
           auto for_expr = New<ir::ForOfStatementView>();
           for_expr->set_property_name(for_bindig);
           for_expr->set_expr(expr);
-          for_expr->SetInformationForNode(PeekBuffer(cursor));
+          for_expr->SetInformationForNode(&info);
           return for_expr;
         }
         SYNTAX_ERROR("SyntaxError ')' expected", Current());
@@ -1153,7 +1170,7 @@ template<typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseComprehensionIf(bool yield) {
   LOG_PHASE(ParseComprehensionIf);
   if (Current()->type() == Token::TS_IF) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       Next();
@@ -1162,7 +1179,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseComprehensionIf(bool yield) {
         Next();
         auto if_expr = New<ir::IfStatementView>();
         if_expr->set_expr(expr);
-        if_expr->SetInformationForNode(PeekBuffer(cursor));
+        if_expr->SetInformationForNode(&info);
         return if_expr;
       }
       SYNTAX_ERROR("SyntaxError ')' expected", Current());
@@ -1192,13 +1209,13 @@ template<typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseYieldExpression(bool in) {
   LOG_PHASE(ParseYieldExpression);
   if (Current()->type() == Token::TS_YIELD) {
+    TokenInfo info = *Current();
     Next();
 
-    TokenCursor cursor = GetBufferCursorPosition();
     bool end = Current()->type() == Token::LINE_TERMINATOR;
     
-    if (PeekBuffer(cursor)->has_line_break_before_next() ||
-        PeekBuffer(cursor)->has_line_terminator_before_next() ||
+    if (info.has_line_break_before_next() ||
+        info.has_line_terminator_before_next() ||
         end) {
 
       auto yield_expr = New<ir::YieldView>(false, ir::Node::Null());
@@ -1279,7 +1296,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
   bool generator = false;
   bool getter = false;
   bool setter = false;
-  TokenCursor cursor = GetBufferCursorPosition();
+  TokenInfo info = *Current();
    
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "get") {
@@ -1299,8 +1316,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
     }
   } catch (const SyntaxError& e) {
     if (getter || setter) {
-      key = New<ir::NameView>(PeekBuffer(cursor)->value());
-      key->SetInformationForNode(PeekBuffer(cursor));
+      key = New<ir::NameView>(info.value());
+      key->SetInformationForNode(&info);
     } else {
       throw e;
     }
@@ -1325,7 +1342,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
     value = ParseAssignmentExpression(true, false);
   }
   Handle<ir::ObjectElementView> element = New<ir::ObjectElementView>(key, value);
-  element->SetInformationForNode(PeekBuffer(cursor));
+  element->SetInformationForNode(&info);
   return element;
 }
 
@@ -1417,7 +1434,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayInitializer(bool yield) {
   LOG_PHASE(ParseArrayInitializer);
   if (Current()->type() == Token::TS_LEFT_BRACKET) {
-    TokenCursor cursor = GetBufferCursorPosition();
+    RecordedParserState rps = parser_state();
     Handle<ir::Node> ret;
     try {
       ret = ParseArrayLiteral(yield);
@@ -1426,7 +1443,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayInitializer(bool yield) {
       if (!LanguageModeUtil::IsES6(compiler_option_)) {
         throw e;
       }
-      SetBufferCursorPosition(cursor);
+      RestoreParserState(rps);
       ret = ParseArrayComprehension(yield);
     }
     return ret;
@@ -1464,7 +1481,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingIdentifier(bool default
     ret = New<ir::DefaultView>();
     Next();
   } else if (Current()->type() == Token::TS_YIELD) {
-    TokenCursor cursor = GetBufferCursorPosition();
     Next();
     Handle<ir::Node> expr = ParseIdentifier();
     ret = New<ir::YieldView>(false, expr);
@@ -1611,8 +1627,9 @@ typename Parser<UCharInputIterator>::AccessorType Parser<UCharInputIterator>::Pa
   
   bool getter = false;
   bool setter = false;
-  
-  TokenCursor before_get_set_cursor = GetBufferCursorPosition();
+
+  TokenInfo info = *Current();
+  RecordedParserState rps = parser_state();
   // Parse the getter or setter if inditifer is the get or set.
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "get") {
@@ -1629,9 +1646,9 @@ typename Parser<UCharInputIterator>::AccessorType Parser<UCharInputIterator>::Pa
   // so change current curosr position before the get or set.
   if ((getter || setter) && Current()->type() == Token::TS_LEFT_PAREN) {
     getter = setter = false;
-    SetBufferCursorPosition(before_get_set_cursor);
+    RestoreParserState(rps);
   }
 
-  return AccessorType(setter, getter, before_get_set_cursor);
+  return AccessorType(setter, getter, info);
 }
 }

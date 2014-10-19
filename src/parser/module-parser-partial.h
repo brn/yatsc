@@ -53,32 +53,27 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseImportDeclaration() {
   LOG_PHASE(ParseImportDeclaration);
   if (Current()->type() == Token::TS_IMPORT) {
-    TokenCursor begin = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     if (Current()->type() == Token::TS_IDENTIFIER ||
         Current()->type() == Token::TS_LEFT_BRACE) {
-      TokenCursor cursor = GetBufferCursorPosition();
-      Next();
+
+      Handle<ir::Node> import_clause = ParseImportClause();
+      
       if (Current()->type() == Token::TS_ASSIGN) {
         Next();
-        TokenCursor back = GetBufferCursorPosition();
-        SetBufferCursorPosition(cursor);
-        Handle<ir::Node> identifier = ParseIdentifier();
-        SetBufferCursorPosition(back);
-        auto import_view = New<ir::ImportView>(identifier, ParseExternalModuleReference());
-        import_view->SetInformationForNode(PeekBuffer(begin));
+        auto import_view = New<ir::ImportView>(import_clause, ParseExternalModuleReference());
+        import_view->SetInformationForNode(&info);
         return import_view;
       }
-      SetBufferCursorPosition(cursor);
-      Handle<ir::Node> import_clause = ParseImportClause();
       Handle<ir::Node> from_clause = ParseFromClause();
       auto import_view = New<ir::ImportView>(import_clause, from_clause);
-      import_view->SetInformationForNode(PeekBuffer(begin));
+      import_view->SetInformationForNode(&info);
       return import_view;
     } else if (Current()->type() == Token::TS_STRING_LITERAL) {
       Handle<ir::Node> module_specifier = ParseStringLiteral();
       auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier);
-      import_view->SetInformationForNode(PeekBuffer(begin));
+      import_view->SetInformationForNode(&info);
       return import_view;
     }
     SYNTAX_ERROR("SyntaxError identifier or '{' or string literal expected.", Current());
@@ -96,11 +91,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       Next();
       if (Current()->type() == Token::TS_STRING_LITERAL) {
-        TokenCursor cursor = GetBufferCursorPosition();
+        TokenInfo info = *Current();
         Next();
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
-          return New<ir::ExternalModuleReference>(PeekBuffer(cursor)->value());
+          return New<ir::ExternalModuleReference>(info.value());
         }
         SYNTAX_ERROR("SyntaxError ')' expected.", Current());
       }
@@ -184,10 +179,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFromClause() {
   LOG_PHASE(ParseFromClause);
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "from") {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
     Handle<ir::Node> module_specifier = ParseStringLiteral();
-    module_specifier->SetInformationForNode(PeekBuffer(cursor));
+    module_specifier->SetInformationForNode(&info);
     return module_specifier;
   }
   SYNTAX_ERROR("SyntaxError 'from' expected.", Current());
@@ -199,17 +194,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
   LOG_PHASE(ParseModuleImport);
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "module") {
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     Next();
-    Handle<ir::Node> binding;
-    binding = ParseBindingIdentifier(false, false);
+    Handle<ir::Node> binding = ParseBindingIdentifier(false, false);
+    
     if (Current()->type() == Token::TS_LEFT_BRACE) {
-      SetBufferCursorPosition(cursor);
-      return ParseTSModule(); 
+      return ParseTSModule(binding, &info);
     }
     Handle<ir::Node> module_specifier = ParseFromClause();
     auto ret = New<ir::ModuleImportView>(binding, module_specifier);
-    ret->SetInformationForNode(PeekBuffer(cursor));
+    ret->SetInformationForNode(&info);
     return ret;
   }
   SYNTAX_ERROR("SyntaxError 'module' expected.", Current());
@@ -217,24 +211,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModule() {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> identifier, TokenInfo* info) {
   LOG_PHASE(ParseTSModule);
-  if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "module") {
-    TokenCursor cursor = GetBufferCursorPosition();
-    Next();
-
-    Handle<ir::Node> identifier = ParseIdentifier();
-    
-    if (Current()->type() == Token::TS_LEFT_BRACE) {
-      Handle<ir::Node> body = ParseTSModuleBody();
-      auto ret = New<ir::ModuleDeclView>(identifier, body);
-      ret->SetInformationForNode(Current());
-      return ret;
-    }
-    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  if (Current()->type() == Token::TS_LEFT_BRACE) {
+    Handle<ir::Node> body = ParseTSModuleBody();
+    auto ret = New<ir::ModuleDeclView>(identifier, body);
+    ret->SetInformationForNode(info);
+    return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'module' expected.", Current());
+  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
 }
 
 
@@ -290,11 +275,12 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
   LOG_PHASE(ParseExportDeclaration);
   if (Current()->type() == Token::TS_EXPORT) {
-    TokenCursor cursor = GetBufferCursorPosition();
+
+    TokenInfo info = *Current();
     Next();
     if (Current()->type() == Token::TS_MUL) {
       Next();
-      return CreateExportView(ir::Node::Null(), ParseFromClause(), PeekBuffer(cursor));
+      return CreateExportView(ir::Node::Null(), ParseFromClause(), &info);
     }
 
     switch (Current()->type()) {
@@ -302,22 +288,22 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
         Handle<ir::Node> export_clause = ParseExportClause();
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value() == "from") {
-          return CreateExportView(export_clause, ParseFromClause(), PeekBuffer(cursor));
+          return CreateExportView(export_clause, ParseFromClause(), &info);
         }
-        return CreateExportView(export_clause, ir::Node::Null(), PeekBuffer(cursor));
+        return CreateExportView(export_clause, ir::Node::Null(), &info);
       }
       case Token::TS_VAR:
-        return CreateExportView(ParseVariableStatement(true, false), ir::Node::Null(), PeekBuffer(cursor));
+        return CreateExportView(ParseVariableStatement(true, false), ir::Node::Null(), &info);
       case Token::TS_CONST:
       case Token::TS_CLASS:
       case Token::TS_INTERFACE:
       case Token::TS_LET:
       case Token::TS_FUNCTION:
-        return CreateExportView(ParseDeclaration(true, true, false), ir::Node::Null(), PeekBuffer(cursor));
+        return CreateExportView(ParseDeclaration(true, true, false), ir::Node::Null(), &info);
       case Token::TS_DEFAULT:
       case Token::TS_ASSIGN: {
         Next();
-        return CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), PeekBuffer(cursor), true);
+        return CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), &info, true);
       }
       default:
         SYNTAX_ERROR("SyntaxError unexpected token.", Current());

@@ -42,6 +42,26 @@ UnicodeIteratorAdapter<InputIterator>::UnicodeIteratorAdapter(InputIterator begi
  * Copy constructor.
  */
 template <typename InputIterator>
+UnicodeIteratorAdapter<InputIterator>::UnicodeIteratorAdapter(const UnicodeIteratorAdapter<InputIterator>& it)
+    : current_position_(it.current_position_),
+      line_number_(it.line_number_),
+      begin_(it.begin_) {}
+
+
+/**
+ * Move constructor.
+ */
+template <typename InputIterator>
+UnicodeIteratorAdapter<InputIterator>::UnicodeIteratorAdapter(UnicodeIteratorAdapter<InputIterator>&& it)
+    : current_position_(it.current_position_),
+      line_number_(it.line_number_),
+      begin_(std::move(it.begin_)) {}
+
+
+/**
+ * Copy constructor.
+ */
+template <typename InputIterator>
 template <typename T>
 UnicodeIteratorAdapter<InputIterator>::UnicodeIteratorAdapter(const UnicodeIteratorAdapter<T>& it)
     : current_position_(it.current_position_),

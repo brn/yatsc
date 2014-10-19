@@ -399,6 +399,7 @@ class StandardAllocator: public std::allocator<T> {
   
   // Remove pointer.  
   void destroy(pointer ptr) YATSC_NO_SE {
+    (void)ptr;
     ptr->~T();
   }
 

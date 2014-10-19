@@ -293,8 +293,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeExpression() {
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
-                 RewindBuffer(1)->type() != Token::TS_RIGHT_BRACE) {
-        SYNTAX_ERROR("SyntaxError ';' expected", RewindBuffer(1));
+                 Prev()->type() != Token::TS_RIGHT_BRACE) {
+        SYNTAX_ERROR("SyntaxError ';' expected", Prev());
       }
     }
     Next();
@@ -334,7 +334,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       Next();
     }
 
-    TokenCursor cursor = GetBufferCursorPosition();
+    TokenInfo info = *Current();
     try {
       if (Current()->type() == Token::TS_IDENTIFIER) {
         key = ParseIdentifierReference(false);
@@ -343,8 +343,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       }
     } catch (const SyntaxError& e) {
       if (at.getter || at.setter) {
-        key = New<ir::NameView>(PeekBuffer(cursor)->value());
-        key->SetInformationForNode(PeekBuffer(cursor));
+        key = New<ir::NameView>(info.value());
+        key->SetInformationForNode(&info);
       } else {
         throw e;
       }

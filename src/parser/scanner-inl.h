@@ -400,11 +400,14 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
 
 // Check regular expression.
 template<typename UCharInputIterator>
-TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression() {
-  if (token_info_.type() == Token::TS_DIV) {
-    // Prepare for scanning.
-    BeforeScan();
-    UtfString expr;
+TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_info) {  
+  
+  // Prepare for scanning.
+  BeforeScan();
+  UtfString expr;
+
+  if (token_info->type() == Token::TS_DIV) {
+  
     // In this method, char_ point next token of TS_DIV,
     // so we now assign a '/'.
     expr += UChar::FromAscii('/');
@@ -415,6 +418,12 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression() {
       if (char_ == unicode::u8('\\')) {
         escaped = !escaped;
       } else if (char_ == unicode::u8('/') && false == escaped) {
+        while (lookahead1_ == unicode::u8('g') ||
+               lookahead1_ == unicode::u8('i') ||
+               lookahead1_ == unicode::u8('m')) {
+          Advance();
+          expr += char_;
+        }
         BuildToken(Token::TS_REGULAR_EXPR, expr);
         break;
       } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
@@ -427,12 +436,20 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression() {
     }
 
     // Teardown.
-    AfterScan();
+    AfterScan();  
     Advance();
     return &token_info_;
   }
-  
   return nullptr;
+}
+
+template<typename UCharInputIterator>
+void Scanner<UCharInputIterator>::RestoreScannerPosition(
+    const RecordedCharPosition& rcp) {
+  it_ = rcp.ucii();
+  char_ = rcp.current();
+  lookahead1_ = rcp.lookahead();
+  scanner_source_position_ = rcp.ssp();
 }
 
 
