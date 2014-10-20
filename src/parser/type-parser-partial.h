@@ -38,13 +38,16 @@ namespace yatsc {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeParameters() {
+  LOG_PHASE(ParseTypeParameters);
   if (Current()->type() == Token::TS_LESS) {
     Handle<ir::TypeParametersView> type_params = New<ir::TypeParametersView>();
     type_params->SetInformationForNode(Current());
     Next();
     bool found = false;
     while (1) {
-      if (Current()->type() == Token::TS_IDENTIFIER) {
+      ParseNestedGenericTypeEnd();
+      if (Current()->type() == Token::TS_IDENTIFIER ||
+          TokenInfo::IsKeyword(Current()->type())) {
         found = true;
         Handle<ir::Node> name = ParseIdentifier();
         if (Current()->type() == Token::TS_EXTENDS) {
@@ -98,7 +101,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeExpression() {
   if (Current()->type() == Token::TS_VOID) {
     Current()->set_type(Token::TS_IDENTIFIER);
   }
-  if (Current()->type() == Token::TS_IDENTIFIER) {
+  if (Current()->type() == Token::TS_NEW) {
+    Next();
+    Handle<ir::Node> call_sig = ParseCallSignature(false, true);
+    Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig);
+    ret->SetInformationForNode(call_sig);
+    return ret;
+  } else if (Current()->type() == Token::TS_TYPEOF) {
+    return ParseArrayType(ParseTypeQueryExpression());
+  } else if (Current()->type() == Token::TS_IDENTIFIER ||
+      TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
     return ParseArrayType(ParseReferencedType());
   } else if (Current()->type() == Token::TS_LEFT_PAREN) {
     Handle<ir::Node> types = ParseParameterList(false);
@@ -112,8 +125,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeExpression() {
     SYNTAX_ERROR("SyntaxError '=>' expected", Current());
   } else if (Current()->type() == Token::TS_LEFT_BRACE) {
     return ParseArrayType(ParseObjectTypeExpression());
-  } else if (Current()->type() == Token::TS_TYPEOF) {
-    return ParseArrayType(ParseTypeQueryExpression());
   }
   SYNTAX_ERROR("SyntaxError unexpected token", Current());
 }
@@ -224,12 +235,20 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeQueryExpression() {
 //   ;
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeArguments() {
+  LOG_PHASE(ParseTypeArguments);
   if (Current()->type() == Token::TS_LESS) {
     Handle<ir::TypeArgumentsView> type_arguments = New<ir::TypeArgumentsView>();
     type_arguments->SetInformationForNode(Current());
     Next();
     while (1) {
       type_arguments->InsertLast(ParseTypeExpression());
+      ParseNestedGenericTypeEnd();
+      if (Current()->type() == Token::TS_SHIFT_RIGHT) {
+        BackOneChar();
+        ScanGenericType();
+        Next();
+        NotScanNestedGenericType();
+      }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
       } else if (Current()->type() == Token::TS_GREATER) {
@@ -316,11 +335,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
   LOG_PHASE(ParseObjectTypeElement);
   if (Current()->type() == Token::TS_NEW) {
     Next();
-    Handle<ir::Node> call_sig = ParseCallSignature(false);
-    Handle<ir::Node> ctor_sig = New<ir::ConstructSignatureView>(call_sig);
-    ctor_sig->SetInformationForNode(call_sig);
+    Handle<ir::Node> call_sig = ParseCallSignature(false, true);
+    Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig);
+    ret->SetInformationForNode(call_sig);
+    return ret;
   } else if (Current()->type() == Token::TS_LEFT_PAREN) {
-    return ParseCallSignature(false);
+    return ParseCallSignature(false, true);
   } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
     return ParseIndexSignature();
   } else {
@@ -358,7 +378,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       if (!key->HasNameView()) {
         SYNTAX_ERROR_POS("SyntaxError invalid method name", key->source_position());
       }
-      Handle<ir::Node> call_sig = ParseCallSignature(false);
+      Handle<ir::Node> call_sig = ParseCallSignature(false, true);
       Handle<ir::Node> ret = New<ir::MethodSignatureView>(optional, at.getter, at.setter, generator, key, call_sig);
       ret->SetInformationForNode(key);
       return ret;
@@ -378,7 +398,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed, bool annotation) {
   LOG_PHASE(ParseCallSignature);
   Handle<ir::Node> type_parameters;
   if (Current()->type() == Token::TS_LESS) {
@@ -391,6 +411,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel
     if (Current()->type() == Token::TS_COLON) {
       Next();
       return_type = ParseTypeExpression();
+    } else if (annotation) {
+      if (Current()->type() == Token::TS_ARROW_GLYPH) {
+        Next();
+        return_type = ParseTypeExpression();
+      } else {
+        SYNTAX_ERROR("SyntaxError '=>' expected.", Current());
+      }
     }
     Handle<ir::Node> ret = New<ir::CallSignatureView>(parameter_list, return_type, type_parameters);
     ret->SetInformationForNode(&token);
@@ -414,8 +441,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIndexSignature() {
           Next();
           if (Current()->type() == Token::TS_RIGHT_BRACKET) {
             Next();
-            Handle<ir::Node> type = ParseTypeExpression();
-            return New<ir::IndexSignatureView>(identifier, type, string_type);
+            if (Current()->type() == Token::TS_COLON) {
+              Next();
+              Handle<ir::Node> type = ParseTypeExpression();
+              return New<ir::IndexSignatureView>(identifier, type, string_type);
+            }
+            SYNTAX_ERROR("SyntaxError ':' expected.", Current());
           }
           SYNTAX_ERROR("SyntaxError ']' expected.", Current());
         }        
@@ -426,5 +457,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIndexSignature() {
     SYNTAX_ERROR("SYNTAX_ERROR The IndexSignature must have a type.", Current());
   }
   SYNTAX_ERROR("SyntaxError '[' expected.", Current());
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::ParseNestedGenericTypeEnd() {
+  if (Current()->type() == Token::TS_SHIFT_RIGHT) {
+    BackOneChar();
+    ScanGenericType();
+    Next();
+    NotScanNestedGenericType();
+  }
 }
 }

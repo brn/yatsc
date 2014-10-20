@@ -629,6 +629,11 @@ TEST(ExpressionParseTest, ParseExpression_regexp) {
             "  [NameView][x]\n"
             "  [RegularExprView][/\\/abc\\/ddd\\/ee/]");
 
+  EXPR_TEST(yatsc::LanguageMode::ES3, "v = /^(\\/\\/\\/\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/",
+            "[AssignmentView][TS_ASSIGN]\n"
+            "  [NameView][v]\n"
+            "  [RegularExprView][/^(\\/\\/\\/\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/]");
+  
   
   EXPR_TEST(yatsc::LanguageMode::ES3, "m(/a/)",
             "[CallView]\n"

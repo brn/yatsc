@@ -320,6 +320,57 @@ uint8_t GetOperandPriority(Token t) {
   }
 }
 
+bool TokenInfo::IsKeyword(Token type) {
+  return type == Token::TS_BREAK ||
+    type == Token::TS_CASE ||
+    type == Token::TS_CATCH ||
+    type == Token::TS_CLASS ||
+    type == Token::TS_CONST ||
+    type == Token::TS_CONTINUE ||
+    type == Token::TS_DEBUGGER ||
+    type == Token::TS_DECLARE ||
+    type == Token::TS_DEFAULT ||
+    type == Token::TS_DELETE ||
+    type == Token::TS_DO ||
+    type == Token::TS_ELSE ||
+    type == Token::TS_ENUM ||
+    type == Token::TS_EXPORT ||
+    type == Token::TS_EXTENDS ||
+    type == Token::TS_FALSE ||
+    type == Token::TS_FINALLY ||
+    type == Token::TS_FOR ||
+    type == Token::TS_FUNCTION ||
+    type == Token::TS_IF ||
+    type == Token::TS_IMPLEMENTS ||
+    type == Token::TS_IMPORT ||
+    type == Token::TS_IN ||
+    type == Token::TS_INSTANCEOF ||
+    type == Token::TS_LET ||
+    type == Token::TS_MODULE ||
+    type == Token::TS_NEW ||
+    type == Token::TS_NULL ||
+    type == Token::TS_NAN ||
+    type == Token::TS_PACKAGE ||
+    type == Token::TS_PRIVATE ||
+    type == Token::TS_PROTECTED ||
+    type == Token::TS_PUBLIC ||
+    type == Token::TS_RETURN ||
+    type == Token::TS_STATIC ||
+    type == Token::TS_SUPER ||
+    type == Token::TS_SWITCH ||
+    type == Token::TS_THIS ||
+    type == Token::TS_THROW ||
+    type == Token::TS_TRUE ||
+    type == Token::TS_TRY ||
+    type == Token::TS_TYPEOF ||
+    type == Token::TS_UNDEFINED ||
+    type == Token::TS_VAR ||
+    type == Token::TS_VOID ||
+    type == Token::TS_WHILE ||
+    type == Token::TS_WITH ||
+    type == Token::TS_YIELD;
+}
+
 
 TokenInfo TokenInfo::kNullToken;
 }

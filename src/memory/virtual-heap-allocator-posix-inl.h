@@ -22,6 +22,7 @@
 // THE SOFTWARE.
 
 #include <sys/mman.h>
+#include "../utils/os.h"
 
 
 namespace yatsc {
@@ -73,7 +74,12 @@ inline void* VirtualHeapAllocator::Map(void* addr, size_t size, uint8_t prot, ui
 
 // Unmap virtual memory block with the munmap.
 inline void VirtualHeapAllocator::Unmap(void* addr, size_t size, uint8_t type) {
-  munmap(addr, size);
+  int ret = munmap(addr, size);
+  if (ret == -1) {
+    std::string buf;
+    GetLastError(&buf);
+    FATAL(buf);
+  }
 }
 
 }

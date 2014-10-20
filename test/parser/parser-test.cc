@@ -44,6 +44,8 @@
 
 
 TEST(ParserTest, Parse) {
-  yatsc::String code = yatsc::testing::ReadFile("test/parser/parser-test-case/case1.ts");
-  ENTIRE_PARSER_TEST_ALL(code.c_str(), "");
+  yatsc::String code1 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/core.ts");
+  ENTIRE_PARSER_TEST_ALL(code1.c_str(), "");
+  yatsc::String code2 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/parser.ts");
+  ENTIRE_PARSER_TEST_ALL(code2.c_str(), "");
 }

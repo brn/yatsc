@@ -225,7 +225,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> iden
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
-  LOG_PHASE(ParseTSModule);
+  LOG_PHASE(ParseTSModuleBody);
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     auto block = New<ir::BlockView>();
     block->SetInformationForNode(Current());
@@ -233,12 +233,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
     
     while (Current()->type() != Token::TS_RIGHT_BRACE) {
       if (Current()->type() == Token::TS_EXPORT) {
+        Next();
         switch (Current()->type()) {
           case Token::TS_VAR:
             block->InsertLast(ParseVariableStatement(true, false));
             break;
           case Token::TS_FUNCTION:
-            block->InsertLast(ParseFunctionOverloads(false, false, true));
+            block->InsertLast(ParseFunctionOverloads(false, false, true, true));
             break;
           case Token::TS_CLASS:
             block->InsertLast(ParseClassDeclaration(false, false));
@@ -255,11 +256,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
           default:
             if (Current()->type() == Token::TS_IDENTIFIER &&
                 Current()->value() == "module") {
-              block->InsertLast(ParseModule());
+              block->InsertLast(ParseModuleImport());
             } else {
               SYNTAX_ERROR("SyntaxError unexpected token.", Current());
             }
         }
+      } else if (Current()->type() == Token::TS_IDENTIFIER &&
+                 Current()->value() == "module") {
+        block->InsertLast(ParseModuleImport());
       } else {
         block->InsertLast(ParseStatementListItem(false, false, false, false));
       }

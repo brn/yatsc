@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 PROJECTS=(celero.xcodeproj perf-test.xcodeproj test.xcodeproj)
 

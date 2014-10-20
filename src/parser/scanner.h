@@ -89,6 +89,22 @@ class Scanner: private Uncopyable, private Unmovable {
   // If current token is regular expression return TS_REGULAR_EXPR,
   // if not regular expr return nullptr.
   TokenInfo* CheckRegularExpression(TokenInfo* token_info);
+
+
+  void BackOneChar() {
+    lookahead1_ = char_;
+    char_ = last_;
+  }
+
+
+  TokenInfo* ScanNestedGenericType() {
+    generic_type_ = true;
+  }
+
+  
+  TokenInfo* NotScanNestedGenericType() {
+    generic_type_ = false;
+  }
   
  private:
 
@@ -320,12 +336,14 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
   bool unscaned_;
+  bool generic_type_;
   Environment* environment_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
+  UChar last_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

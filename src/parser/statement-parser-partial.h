@@ -208,6 +208,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBlockStatement(bool yield, boo
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable) {
+  LOG_PHASE(ParseStatementListItem);
   Handle<ir::Node> node = ParseDeclaration(false, yield, false);
   if (node == ir::Node::Null()) {
     return ParseStatement(yield, has_return, breakable, continuable);
@@ -621,6 +622,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, b
         Next();
         Handle<ir::Node> expr = ParseExpression(true, yield);
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
+          Next();
           if (IsLineTermination()) {
             ConsumeLineTerminator();
           }
@@ -894,11 +896,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool h
         }
         Handle<ir::Node> body = New<ir::CaseBody>();
         while (1) {
-          if (Current()->type() == Token::TS_LEFT_BRACE) {
-            body->InsertLast(ParseBlockStatement(yield, has_return, true, continuable));
-          } else {
-            body->InsertLast(ParseStatementListItem(yield, has_return, true, continuable));
-          }
           if (Current()->type() == Token::TS_CASE ||
               Current()->type() == Token::TS_DEFAULT) {
             if (default_encounted && Current()->type() == Token::TS_DEFAULT) {
@@ -907,6 +904,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool h
             break;
           } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
             break;
+          }
+          if (Current()->type() == Token::TS_LEFT_BRACE) {
+            body->InsertLast(ParseBlockStatement(yield, has_return, true, continuable));
+          } else {
+            body->InsertLast(ParseStatementListItem(yield, has_return, true, continuable));
           }
         }
         
@@ -1058,6 +1060,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDebuggerStatement() {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
+  LOG_PHASE(ParseInterfaceDeclaration);
   if (Current()->type() == Token::TS_INTERFACE) {
     Next();
     Handle<ir::Node> name = ParseIdentifier();
@@ -1114,6 +1117,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_
       ret->InsertLast(ParseEnumProperty(yield, has_default));
       if (Current()->type() == Token::TS_COMMA) {
         Next();
+        if (Current()->type() == Token::TS_RIGHT_BRACE) {
+          Next();
+          return ret;
+        }
       } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
         Next();
         return ret;
@@ -1178,6 +1185,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, b
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBases() {
+  LOG_PHASE(ParseClassBases);
   bool extends_keyword = false;
   auto bases = New<ir::ClassBasesView>();
   auto impls = New<ir::ClassImplsView>();
@@ -1211,6 +1219,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBases() {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
+  LOG_PHASE(ParseClassBody);
   auto fields = New<ir::ClassFieldListView>();
   while (1) {
     if (Current()->type() != Token::TS_RIGHT_BRACE) {
@@ -1231,7 +1240,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
-
+  LOG_PHASE(ParseClassElement);
   if (Current()->type() == Token::TS_LEFT_BRACKET) {
     return ParseIndexSignature();
   }
@@ -1297,7 +1306,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFieldModifiers() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseFieldModifier() {  
+Handle<ir::Node> Parser<UCharInputIterator>::ParseFieldModifier() {
+  LOG_PHASE(ParseFieldModifier);
   switch (Current()->type()) {
     case Token::TS_STATIC:
     case Token::TS_PUBLIC:
@@ -1316,6 +1326,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFieldModifier() {
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads) {
+  LOG_PHASE(ValidateOverload);
   if (overloads->size() > 0) {
     Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
     if (!node->name()->string_equals(last->at(1))) {
@@ -1647,9 +1658,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export) {
   auto overloads = New<ir::FunctionOverloadsView>();
+  bool first = true;
   while (1) {
+    if (is_export && !first && Current()->type() == Token::TS_EXPORT) {
+      Next();
+    } else if (is_export && !first) {
+      SYNTAX_ERROR("SyntaxError export expected.", Current());
+    }
+    first = false;
     if (Current()->type() == Token::TS_FUNCTION) {
       Handle<ir::Node> fn = ParseFunctionOverloadOrImplementation(overloads, yield, has_default, declaration);
       if (fn->HasFunctionOverloadView()) {

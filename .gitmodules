@@ -5,3 +5,6 @@
 [submodule "Celero"]
 	path = Celero
 	url = https://github.com/DigitalInBlue/Celero.git
+[submodule "test/microsoft/typescript"]
+	path = test/microsoft/typescript
+	url = https://github.com/Microsoft/TypeScript

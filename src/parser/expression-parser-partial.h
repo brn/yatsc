@@ -367,6 +367,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
   } else {  
     try {
       expr = ParseConditionalExpression(in, yield);
+      if (expr->HasNameView() && Current()->type() == Token::TS_ARROW_GLYPH) {
+        return ParseArrowFunction(in, yield, expr);
+      }
     } catch (const SyntaxError& e) {
 
       if (!LanguageModeUtil::IsES6(compiler_option_)) {
@@ -377,10 +380,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, 
       expr = ParseAssignmentPattern(yield);
       parsed_as_assignment_pattern = true;
     }
-  }
-
-  if (expr->HasNameView() && Current()->type() == Token::TS_ARROW_GLYPH) {
-    return ParseArrowFunction(in, yield, expr);
   }
   
   // Expression is not an arrow_function.
@@ -449,9 +448,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrowFunctionParameters(bool y
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseConciseBody(bool in, Handle<ir::Node> call_sig) {
+  LOG_PHASE(ParseConciseBody);
   Handle<ir::Node> body;
   if (Current()->type() == Token::TS_LEFT_BRACE) {
-    Next();
     body = ParseFunctionBody(false);
   } else {
     body = ParseAssignmentExpression(true, false);
@@ -743,39 +742,32 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   } else {
     target = ParseMemberExpression(yield);
   }
-
-  Handle<ir::Node> type_arguments;
-
-  if (Current()->type() == Token::TS_LESS) {
-    RecordedParserState rps = parser_state();
-    try {
-      type_arguments = ParseTypeArguments();
-      target->MarkAsInValidLhs();
-    } catch (const SyntaxError&) {
-      RestoreParserState(rps);
-    }
-  }
   
-  if (Current()->type() == Token::TS_LEFT_PAREN) {
+  
+  if (Current()->type() == Token::TS_LEFT_PAREN ||
+      Current()->type() == Token::TS_LESS) {
     target->MarkAsInValidLhs();
-    Handle<ir::Node> args = ParseArguments(yield);
-    Handle<ir::Node> call = New<ir::CallView>(target, args, type_arguments);
+    NodePair pair = ParseArguments(yield);
+    Handle<ir::Node> call = New<ir::CallView>(target, pair.first, pair.second);
     call->SetInformationForNode(target);
+    if (!pair.first && !pair.second) {
+      return call;
+    }
     while (1) {
       switch (Current()->type()) {
+        case Token::TS_LESS:
         case Token::TS_LEFT_PAREN: {
-          Handle<ir::Node> args = ParseArguments(yield);
-          call = New<ir::CallView>(call, args, ir::Node::Null());
+          NodePair pair = ParseArguments(yield);
+          if (!pair.first) {
+            return call;
+          }
+          call = New<ir::CallView>(call, pair.first, pair.second);
           call->MarkAsInValidLhs();
-          call->SetInformationForNode(args);
-          type_arguments;
+          call->SetInformationForNode(pair.first);
           break;
         }
         case Token::TS_LEFT_BRACKET:
         case Token::TS_DOT:
-          if (type_arguments) {
-            SYNTAX_ERROR_POS("SyntaxError unexpected token", type_arguments->source_position());
-          }
           call = ParseGetPropOrElem(call, yield);
           break;
         default:
@@ -784,7 +776,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
     }
   } else if (Current()->type() == Token::TS_TEMPLATE_LITERAL) {
     Handle<ir::Node> template_literal = ParseTemplateLiteral();
-    Handle<ir::Node> call = New<ir::CallView>(target, template_literal, type_arguments);
+    Handle<ir::Node> call = New<ir::CallView>(target, template_literal, ir::Node::Null());
     call->SetInformationForNode(target);
     call->MarkAsInValidLhs();
     return call;
@@ -804,15 +796,27 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
 //   ArgumentList[?Yield] , ... AssignmentExpression[In, ?Yield]
 //
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseArguments(bool yield) {
+typename Parser<UCharInputIterator>::NodePair Parser<UCharInputIterator>::ParseArguments(bool yield) {
   LOG_PHASE(ParseArguments);
+
+  Handle<ir::Node> type_arguments;
+  RecordedParserState rps = parser_state();
+  if (Current()->type() == Token::TS_LESS) {
+    try {
+      type_arguments = ParseTypeArguments();
+    } catch(const SyntaxError&) {
+      RestoreParserState(rps);
+      return InvalidPair();
+    }
+  }
+  
   if (Current()->type() == Token::TS_LEFT_PAREN) {
     Handle<ir::CallArgsView> args = New<ir::CallArgsView>();
     args->SetInformationForNode(Current());
     Next();
     if (Current()->type() == Token::TS_RIGHT_PAREN) {
       Next();
-      return args;
+      return NodePair(args, type_arguments);
     }
     bool has_rest = false;
     while (1) {
@@ -829,18 +833,21 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArguments(bool yield) {
       }
       if (Current()->type() == Token::TS_COMMA) {
         if (has_rest) {
-          SYNTAX_ERROR("SyntaxError the spread argument must be the end of arguments", Current());
+          SYNTAX_ERROR_NO_RETURN("SyntaxError the spread argument must be the end of arguments", Current());
+          return InvalidPair();
         }
         Next();
         continue;
       } else if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
-        return args;
+        return NodePair(args, type_arguments);
       }
-      SYNTAX_ERROR("SyntaxError unexpected token in 'arguments'", Current());
+      SYNTAX_ERROR_NO_RETURN("SyntaxError unexpected token in 'arguments'", Current());
+      return InvalidPair();
     }
   }
-  return ir::Node::Null();
+  SYNTAX_ERROR_NO_RETURN("SyntaxError '(' expected.", Current());
+  return InvalidPair();
 }
 
 
@@ -889,24 +896,20 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
       member = ParseMemberExpression(yield);
     }
 
-    Handle<ir::Node> type_arguments;
-    if (Current()->type() == Token::TS_LESS) {
-      type_arguments = ParseTypeArguments();
-      member->MarkAsInValidLhs();
-    }
-
+    
     // New expression can omit parens.
     // If paren exists, continue parsing.
-    if (Current()->type() == Token::TS_LEFT_PAREN) {
-      Handle<ir::Node> args = ParseArguments(yield);
-      node = New<ir::NewCallView>(member, args, type_arguments);
+    if (Current()->type() == Token::TS_LEFT_PAREN ||
+        Current()->type() == Token::TS_LESS) {
+      NodePair pair = ParseArguments(yield);
+      node = New<ir::NewCallView>(member, pair.first, pair.second);
       node->SetInformationForNode(member);
       node->MarkAsInValidLhs();
       return ParseGetPropOrElem(node, yield);
     } else {
       // Parens are not exists.
       // Immediate return.
-      Handle<ir::Node> ret = New<ir::NewCallView>(member, ir::Node::Null(), type_arguments);
+      Handle<ir::Node> ret = New<ir::NewCallView>(member, ir::Node::Null(), ir::Node::Null());
       ret->SetInformationForNode(member);
       return ret;
     }
@@ -942,10 +945,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node>
       case Token::TS_DOT: {
         // a.b.c expression.
         Next();
-        Handle<ir::Node> expr = ParsePrimaryExpression(yield);
-        if (!expr->HasNameView() && !expr->HasKeywordLiteralView()) {
-          SYNTAX_ERROR_POS("SyntaxError 'identifier' expected.", expr->source_position());
+        if (Current()->type() != Token::TS_IDENTIFIER &&
+            !TokenInfo::IsKeyword(Current()->type())) {
+          SYNTAX_ERROR("SyntaxError 'identifier' expected.", Current());
         }
+        Handle<ir::Node> expr = ParsePrimaryExpression(yield);
         node = New<ir::GetPropView>(node, expr);
         node->SetInformationForNode(node);
         break;
@@ -1277,8 +1281,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     while (1) {
       Handle<ir::Node> element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);
+
       if (Current()->type() == Token::TS_COMMA) {
         Next();
+        if (Current()->type() == Token::TS_RIGHT_BRACE) {
+          Next();
+          break;
+        }
       } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
         Next();
         break;

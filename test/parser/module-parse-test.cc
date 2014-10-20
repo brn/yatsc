@@ -130,7 +130,9 @@ TEST(ModuleParser, ParseModule) {
   MODULE_TEST_ALL("import Foo = require('foo/bar/baz')",
                   "[FileScopeView]\n"
                   "  [ImportView]\n"
-                  "    [NameView][Foo]\n"
+                  "    [ImportClauseView]\n"
+                  "      [NameView][Foo]\n"
+                  "      [Empty]\n"
                   "    [ExternalModuleReference][foo/bar/baz]");
 }
 
@@ -141,6 +143,29 @@ TEST(ModuleParser, ParseTSModule) {
                   "  [ModuleDeclView]\n"
                   "    [NameView][foo]\n"
                   "    [BlockView]");
+
+
+  MODULE_TEST_ALL("module foo {"
+                  "  module bar {"
+                  "  }"
+                  "  module baz {"
+                  "  }"
+                  "  module qux {"
+                  "  }"
+                  "}",
+                  "[FileScopeView]\n"
+                  "  [ModuleDeclView]\n"
+                  "    [NameView][foo]\n"
+                  "    [BlockView]\n"
+                  "      [ModuleDeclView]\n"
+                  "        [NameView][bar]\n"
+                  "        [BlockView]\n"
+                  "      [ModuleDeclView]\n"
+                  "        [NameView][baz]\n"
+                  "        [BlockView]\n"
+                  "      [ModuleDeclView]\n"
+                  "        [NameView][qux]\n"
+                  "        [BlockView]");
 }
 
 

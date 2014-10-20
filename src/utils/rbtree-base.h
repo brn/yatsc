@@ -205,20 +205,20 @@ class RbTreeNode {
 
 
   // Compare equality of key.
-  YATSC_INLINE bool operator == (const Key& key) YATSC_NO_SE {
-    return key == key_;
+  YATSC_INLINE bool operator == (const Key& k) YATSC_NO_SE {
+    return k == key_;
   }
 
 
   // Compare key by greater than.
-  YATSC_INLINE bool operator > (const Key& key) YATSC_NO_SE {
-    return key_ > key;
+  YATSC_INLINE bool operator > (const Key& k) YATSC_NO_SE {
+    return key_ > k;
   }
 
 
   // Compare key by less than.
-  YATSC_INLINE bool operator < (const Key& key) YATSC_NO_SE {
-    return key_ < key;
+  YATSC_INLINE bool operator < (const Key& k) YATSC_NO_SE {
+    return key_ < k;
   }
 
 
@@ -337,6 +337,8 @@ class RbTreeNode {
       new_value->set_left(left);
       // Change left tree parent.
       left->set_parent(new_value);
+    } else {
+      new_value->set_left(nullptr);
     }
 
     // Change right tree.
@@ -344,6 +346,8 @@ class RbTreeNode {
       new_value->set_right(right);
       // Change right tree parent.
       right->set_parent(new_value);
+    } else {
+      new_value->set_right(nullptr);
     }
   
     Pointer parent = this->parent();
@@ -359,6 +363,8 @@ class RbTreeNode {
       } else {
         FATAL("Invalid parent.");
       }
+    } else {
+      new_value->set_parent(nullptr);
     }
     set_left(nullptr);
     set_right(nullptr);

@@ -66,7 +66,7 @@
 #define END_SCAN                                      \
   {                                                   \
     auto t = scanner.Scan();                          \
-    ASSERT_STREQ(t->ToString(), "END_OF_INPUT");      \
+    ASSERT_STREQ(t->ToString().c_str(), "END_OF_INPUT");  \
     ASSERT_EQ(t->type(), yatsc::Token::END_OF_INPUT); \
   }
 

@@ -559,6 +559,9 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   
  private:
 
+  String DoToString() const;
+  
+  
   void DoToStringTree(String& indent, StringStream& ss) const;
 
 

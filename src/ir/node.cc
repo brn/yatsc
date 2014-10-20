@@ -182,6 +182,14 @@ void Node::SetInformationForTree(const Handle<Node>& node) YATSC_NOEXCEPT  {
 
 
 String Node::ToString() const {
+  StringStream ss;
+  String i("");
+  ToStringSelf(this, i, ss);
+  return std::move(ss.str());
+}
+
+
+String Node::DoToString() const {
   return std::move(String(kNodeTypeStringList[static_cast<int>(node_type_)]));
 }
 
@@ -212,7 +220,7 @@ void Node::DoToStringTree(String& indent, StringStream& ss) const {
 
 
 void Node::ToStringSelf(const Node* target, String& indent, StringStream& ss) const {
-  ss << indent << '[' << target->ToString() << ']';
+  ss << indent << '[' << target->DoToString() << ']';
   if (target->has_string_value() && !target->HasNumberView()) {
     if (target->HasStringView()) {
       ss << "[\'" << target->utf8_value() << "\']";

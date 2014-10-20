@@ -372,7 +372,7 @@ TEST(ScannerTest, ScanPuncture_question_mark) {
 TEST(ScannerTest, SkipSingleLineComment) {
   const char* comment = "//abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()-_|\\`~{}[]\"\':;/?.<>,";
   INIT(token, comment);
-  ASSERT_STREQ("END_OF_INPUT", token->ToString());
+  ASSERT_STREQ("END_OF_INPUT", token->ToString().c_str());
   END_SCAN;
 }
 

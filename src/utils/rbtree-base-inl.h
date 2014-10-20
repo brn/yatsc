@@ -157,6 +157,9 @@ YATSC_INLINE NODE RbTreeBase<Key, T>::DeleteInternal(NODE node) YATSC_NOEXCEPT {
     if (node == root_) {
       root_ = nullptr;
       node->set_parent(nullptr);
+      node->set_left(nullptr);
+      node->set_right(nullptr);
+      return node;
     } else {
       // If node has black color,
       // black node count is decreased,
@@ -189,6 +192,9 @@ inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCE
     }
     DetachFromParent(target);
     node->Swap(target);
+    if (node == root_) {
+      root_ = target;
+    }
     target->set_color(node->color());
     return;
   } else if (target->IsRed()) {
@@ -196,7 +202,7 @@ inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCE
     DetachFromParent(target);
     node->Swap(target);
     target->ToBlack();
-    if (!target->HasParent()) {
+    if (node == root_) {
       root_ = target;
     }
     return;
@@ -206,6 +212,9 @@ inline void RbTreeBase<Key, T>::ElevateNode(NODE node, NODE target) YATSC_NOEXCE
   RebalanceWhenDelete(target);
   DetachFromParent(target);
   node->Swap(target);
+  if (node == root_) {
+    root_ = target;
+  }
 }
 
 
@@ -544,6 +553,8 @@ inline void RbTreeBase<Key, T>::DetachFromParent(NODE value) YATSC_NOEXCEPT {
       FATAL("Invalid parent pointer.");
     }
     value->set_parent(nullptr);
+    value->set_left(nullptr);
+    value->set_right(nullptr);
   }
 }
 
@@ -580,7 +591,7 @@ inline std::string RbTreeBase<Key, T>::ToStringHelper(std::string& head, const c
     str += ToStringHelper(tmp, "/", node->right());
     std::string node_str = node->color() == RbTreeNodeColor::kRed ? "R" : "B";
     std::stringstream ss;
-    ss << ":" << node->key();
+    ss << ":" << node->key() << '[' << reinterpret_cast<void*>(node) << ']';
     node_str += ss.str();
     str += head + bar + node_str + "\n";
     tmp = std::move(std::string(head + "    "));

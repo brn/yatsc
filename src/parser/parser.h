@@ -54,19 +54,61 @@ namespace yatsc {
   SYNTAX_ERROR_INTERNAL(message, pos, ArrowParametersError)
 
 
+// Generate SyntaxError and throw it.
+// Usage. SYNTAX_ERROR("test " << message, Current())
+#define SYNTAX_ERROR_NO_RETURN(message, token)                   \
+  SYNTAX_ERROR_POS_NO_RETURN(message, token->source_position())
+
+
+// Generate ArrowParametersError and throw it.
+// Usage. ARROW_PARAMETERS_ERROR("test " << message, Current())
+#define ARROW_PARAMETERS_ERROR_NO_RETURN(message, token)                   \
+  ARROW_PARAMETERS_ERROR_POS_NO_RETURN(message, token->source_position())
+
+
+// Generate SyntaxError that is pointed specified position and throw it.
+// Usage. SYNTAX_ERROR_POS("test " << message, node->source_position())
+#define SYNTAX_ERROR_POS_NO_RETURN(message, pos)       \
+  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, pos, SyntaxError)
+
+
+// Generate ArrowParametersError that is pointed specified position and throw it.
+// Usage. ARROW_PARAMETERS_ERROR_POS("test " << message, node->source_position())
+#define ARROW_PARAMETERS_ERROR_POS_NO_RETURN(message, pos)     \
+  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, pos, ArrowParametersError)
+
+
 
 #ifndef DEBUG
 // Throw error and return nullptr.
 #define SYNTAX_ERROR_INTERNAL(message, pos, error)  \
-  (*error_reporter_) << message;                    \
-  error_reporter_->Throw<error>(pos);               \
+  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error) \
   return ir::Node::Null()
+
+
+#define SYNTAX_ERROR_INTERNAL_NO_RETURN(message, pos, error)  \
+    REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error)
+
+
+#define REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error) \
+  (*error_reporter_) << message;                          \
+  error_reporter_->Throw<error>(pos)
+
 #else
 // Throw error that has source line and number for the error thrown position.
-#define SYNTAX_ERROR_INTERNAL(message, pos, error)                      \
-  (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
-  error_reporter_->Throw<error>(pos);                                   \
+#define SYNTAX_ERROR_INTERNAL(message, pos, error)    \
+  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error);  \
   return ir::Node::Null()
+
+
+// Throw error that has source line and number for the error thrown position.
+#define SYNTAX_ERROR_INTERNAL_NO_RETURN(message, pos, error)  \
+  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error)
+
+
+#define REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error)               \
+  (*error_reporter_) << message << '\n' << __FILE__ << ":" << __LINE__; \
+  error_reporter_->Throw<error>(pos)
 #endif
 
 
@@ -74,17 +116,17 @@ namespace yatsc {
 // Logging current parse phase.
 #define LOG_PHASE(name)                                          \
   if (Current() != nullptr) {                                           \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToString() << "\n"; \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
   } else {                                                              \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null\n"; \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
   }                                                                     \
   indent_ += "  ";                                                      \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
     if (this->Current() != nullptr) {                                   \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToString() << "\n"; \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
     } else {                                                            \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null\n"; \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
     }                                                                   \
   })
 #else
@@ -94,6 +136,7 @@ namespace yatsc {
 
 template <typename UCharInputSourceIterator>
 class Parser: public ParserBase {
+  
  public:
   Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
       : ParserBase(co, error_reporter),
@@ -107,6 +150,9 @@ class Parser: public ParserBase {
     bool getter;
     TokenInfo token_info;
   };
+
+  typedef std::pair<Handle<ir::Node>, Handle<ir::Node>> NodePair;
+  
   
   /**
    * Return a next TokenInfo.
@@ -123,6 +169,12 @@ class Parser: public ParserBase {
 
 
   YATSC_INLINE TokenInfo* Prev() YATSC_NOEXCEPT;
+
+
+  void NotifyGenericType() {scanner_->NotifyGenericType();}
+
+
+  void NotifyGenericTypeEnd() {scanner_->NotifyGenericTypeEnd();}
   
 
  VISIBLE_FOR_TESTING:
@@ -241,7 +293,7 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseMemberVariable(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseFunctionOverloads(bool yield, bool has_default, bool declaration);
+  Handle<ir::Node> ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export = false);
 
   Handle<ir::Node> ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration);
  
@@ -269,7 +321,7 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseObjectTypeElement();
 
-  Handle<ir::Node> ParseCallSignature(bool accesslevel_allowed);
+  Handle<ir::Node> ParseCallSignature(bool accesslevel_allowed, bool annotation = false);
 
   Handle<ir::Node> ParseIndexSignature();
   
@@ -347,7 +399,9 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> ParseCallExpression(bool yield);
 
-  Handle<ir::Node> ParseArguments(bool yield);
+  NodePair ParseArguments(bool yield);
+
+  NodePair InvalidPair() {return NodePair(ir::Node::Null(), ir::Node::Null());}
 
   Handle<ir::Node> ParsePrimaryExpression(bool yield);
 

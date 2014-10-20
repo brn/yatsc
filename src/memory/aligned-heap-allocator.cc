@@ -65,6 +65,7 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
     allocatedSize = block_size + (alignment - kAllocateAlignment);
     
     while (ret == nullptr) {
+   BEGIN:
       retry++;
 
       if (retry > kMaxRetry) {
@@ -91,34 +92,39 @@ void* AlignedHeapAllocator::Allocate(size_t block_size, size_t alignment) {
 
       // The roundup value of head addr.
       roundup = static_cast<uintptr_t>(alignedAddress - allocatedAddress);
-      // The 'unused' is tail unused memory block.
-      unused = alignment - kAllocateAlignment - roundup;
 
       // Restore alignment.
       alignment++;
+      
+      // The 'unused' is tail unused memory block.
+      unused = alignment - kAllocateAlignment - roundup;
 
       // Remove reserved block.
 #ifdef PLATFORM_POSIX
-      VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
-      VirtualHeapAllocator::Unmap(allocatedAddress + (allocatedSize - unused), unused);
+      if (roundup > 0) {
+        VirtualHeapAllocator::Unmap(allocatedAddress, roundup);
+      }
+      if (unused > 0) {
+        VirtualHeapAllocator::Unmap(allocatedAddress + allocatedSize - unused, unused);
+      }
+      mprotect(alignedAddress, block_size, PROT_READ | PROT_WRITE);
+      ret = alignedAddress;
 #elif defined(PLATFORM_WIN)
       VirtualHeapAllocator::Unmap(allocatedAddress, roundup, VirtualHeapAllocator::Type::DECOMMIT);
       VirtualHeapAllocator::Unmap(allocatedAddress + (allocatedSize - unused), unused, VirtualHeapAllocator::Type::DECOMMIT);
-#endif
-      
       // Commit found memory block again.
       // But,this commit may be failed,
       // because other process may use this block.
       ret = VirtualHeapAllocator::Map(alignedAddress, block_size,
                                       VirtualHeapAllocator::Prot::READ | VirtualHeapAllocator::Prot::WRITE,
-                                      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE | VirtualHeapAllocator::Flags::FIXED);
-      
+                                      VirtualHeapAllocator::Flags::ANONYMOUS | VirtualHeapAllocator::Flags::PRIVATE);
       // Check commited memory block address is less than the alignedAddress.
-      if (ret != nullptr && ret != alignedAddress) {
-        VirtualHeapAllocator::Unmap(ret, block_size);
+      if (ret != alignedAddress) {
+        VirtualHeapAllocator::Unmap(allocatedAddress, block_size + roundup + unused);
         // TODO Really continue?
-        continue;
+        goto BEGIN;
       }
+#endif
     }
     
     return alignedAddress;

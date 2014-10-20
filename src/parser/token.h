@@ -316,8 +316,13 @@ class TokenInfo {
   YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
 
 #ifdef UNIT_TEST
-  const char* ToString() const {
-    return tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
+  String ToString() const {
+    StringStream ss;
+    ss << tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
+    if (utf_string_ != nullptr && utf_string_->utf8_length() > 0) {
+      ss << "[" << utf_string_->utf8_value() << "]";
+    }
+    return std::move(ss.str());
   }
 
   static const char* ToString(Token token) {
@@ -344,6 +349,9 @@ class TokenInfo {
 
 
   static uint8_t GetOperandPriority(Token t);
+
+  
+  static bool IsKeyword(Token type);
   
  private:  
   UtfString* utf_string_;

@@ -43,7 +43,8 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
-    : environment_(Environment::Create()),
+    : generic_type_(false),
+      environment_(Environment::Create()),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
@@ -59,7 +60,8 @@ void Scanner<UCharInputIterator>::Advance()  {
     char_ = UChar::Null();
     return;
   }
-  
+
+  last_ = char_;
   char_ = *it_;
   scanner_source_position_.AdvancePosition(1);
   ++it_;
@@ -356,6 +358,9 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       return ScanBitwiseOrComparationOperator(
           Token::TS_SHIFT_LEFT, Token::TS_SHIFT_LEFT_LET, Token::ILLEGAL, Token::TS_LESS, Token::TS_LESS_EQUAL);
     case '>':
+      if (generic_type_) {
+        return BuildToken(Token::TS_GREATER);
+      }
       return ScanBitwiseOrComparationOperator(
           Token::TS_SHIFT_RIGHT, Token::TS_SHIFT_RIGHT_LET,
           Token::TS_U_SHIFT_RIGHT, Token::TS_GREATER, Token::TS_GREATER_EQUAL, true);
@@ -424,15 +429,20 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_
       expr += char_;
       if (char_ == unicode::u8('\\')) {
         escaped = !escaped;
-      } else if (char_ == unicode::u8('/') && false == escaped) {
-        while (lookahead1_ == unicode::u8('g') ||
-               lookahead1_ == unicode::u8('i') ||
-               lookahead1_ == unicode::u8('m')) {
+      } else if (char_ == unicode::u8('/')) {
+        if (escaped) {
+          escaped = false;
+        } else {
           Advance();
-          expr += char_;
+          while (char_ == unicode::u8('g') ||
+                 char_ == unicode::u8('i') ||
+                 char_ == unicode::u8('m')) {
+            expr += char_;
+            Advance();
+          }
+          BuildToken(Token::TS_REGULAR_EXPR, expr);
+          break;
         }
-        BuildToken(Token::TS_REGULAR_EXPR, expr);
-        break;
       } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
                  char_.IsInvalid()) {
         Error("Unterminated regular expression");
@@ -443,8 +453,7 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_
     }
 
     // Teardown.
-    AfterScan();  
-    Advance();
+    AfterScan();
     return &token_info_;
   }
   return nullptr;

@@ -79,7 +79,7 @@ YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
     lock_.unlock();
 
     // Simply unmap.
-    VirtualHeapAllocator::Unmap(large_header, large_header->size());
+    VirtualHeapAllocator::Unmap(large_header, large_header->size() + sizeof(LargeHeader));
   } else {
 
     // Get head of the heap by masking memory address.

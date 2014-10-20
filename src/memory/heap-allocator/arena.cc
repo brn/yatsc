@@ -132,7 +132,6 @@ void* CentralArena::AllocateLargeObject(size_t size) YATSC_NOEXCEPT {
     new_large_header->set_next(large_header);
   }
   large_header = new_large_header;
-
   large_bin_.Insert(size, new_large_header);
   
   return reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(reinterpret_cast<Byte*>(new_large_header) + sizeof(LargeHeader)) | 1);
@@ -150,7 +149,7 @@ LocalArena::~LocalArena() {
       header++;
     }
     auto tmp = current->next();
-    VirtualHeapAllocator::Unmap(current, 1);
+    //VirtualHeapAllocator::Unmap(current, 1);
     current = tmp;
   }
 }
