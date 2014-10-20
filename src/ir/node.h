@@ -1531,11 +1531,11 @@ class TypeQueryView: public Node {
  public:
   
   TypeQueryView(Handle<Node> var_name)
-      : Node(NodeType::kTypeArgumentsView, 1u, {var_name}) {}
+      : Node(NodeType::kTypeQueryView, 1u, {var_name}) {}
 
 
   TypeQueryView()
-      : Node(NodeType::kTypeArgumentsView, 1u) {}
+      : Node(NodeType::kTypeQueryView, 1u) {}
 };
 
 

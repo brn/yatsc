@@ -926,11 +926,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
 // Parse member expression suffix.
 // Like 'new foo.bar.baz()', 'new foo["bar"]', '(function(){return {a:1}}).a'
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool yield) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only) {
   LOG_PHASE(ParseGetPropOrElem);
   while (1) {
     switch (Current()->type()) {
       case Token::TS_LEFT_BRACKET: {
+        if (dot_only) {
+          SYNTAX_ERROR("SyntaxError '.' expected.", Current());
+        }
         // [...] expression.
         Next();
         Handle<ir::Node> expr = ParseExpression(true, false);
@@ -1071,6 +1074,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
                               Current());
         }
         Next();
+        if (Current()->type() == Token::TS_RIGHT_BRACKET) {
+          Next();
+          break;
+        }
       } else if (Current()->type() == Token::TS_RIGHT_BRACKET) {
         Next();
         break;

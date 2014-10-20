@@ -91,20 +91,18 @@ class Scanner: private Uncopyable, private Unmovable {
   TokenInfo* CheckRegularExpression(TokenInfo* token_info);
 
 
-  void BackOneChar() {
-    lookahead1_ = char_;
-    char_ = last_;
-  }
-
-
-  TokenInfo* ScanNestedGenericType() {
-    generic_type_ = true;
+  void EnableNestedGenericTypeScanMode() {
+    generic_type_++;
   }
 
   
-  TokenInfo* NotScanNestedGenericType() {
-    generic_type_ = false;
+  void DisableNestedGenericTypeScanMode() {
+    generic_type_--;
   }
+
+  bool IsGenericMode() {return generic_type_ > 0;}
+
+  int nested_generic_count() {return generic_type_;}
   
  private:
 
@@ -336,14 +334,13 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
   bool unscaned_;
-  bool generic_type_;
+  int generic_type_;
   Environment* environment_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;
   UCharInputIterator end_;
   TokenInfo token_info_;
-  UChar last_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

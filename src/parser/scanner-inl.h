@@ -43,7 +43,7 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      const CompilerOption& compiler_option)
-    : generic_type_(false),
+    : generic_type_(0),
       environment_(Environment::Create()),
       it_(it),
       end_(end),
@@ -61,7 +61,6 @@ void Scanner<UCharInputIterator>::Advance()  {
     return;
   }
 
-  last_ = char_;
   char_ = *it_;
   scanner_source_position_.AdvancePosition(1);
   ++it_;
@@ -358,7 +357,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
       return ScanBitwiseOrComparationOperator(
           Token::TS_SHIFT_LEFT, Token::TS_SHIFT_LEFT_LET, Token::ILLEGAL, Token::TS_LESS, Token::TS_LESS_EQUAL);
     case '>':
-      if (generic_type_) {
+      if (IsGenericMode()) {
         return BuildToken(Token::TS_GREATER);
       }
       return ScanBitwiseOrComparationOperator(

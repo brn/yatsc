@@ -116,17 +116,17 @@ namespace yatsc {
 // Logging current parse phase.
 #define LOG_PHASE(name)                                          \
   if (Current() != nullptr) {                                           \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
   } else {                                                              \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
   }                                                                     \
   indent_ += "  ";                                                      \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
     if (this->Current() != nullptr) {                                   \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToString() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
     } else {                                                            \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << std::boolalpha << scanner_->IsGenericMode() << "]\n"; \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
     }                                                                   \
   })
 #else
@@ -169,12 +169,6 @@ class Parser: public ParserBase {
 
 
   YATSC_INLINE TokenInfo* Prev() YATSC_NOEXCEPT;
-
-
-  void NotifyGenericType() {scanner_->NotifyGenericType();}
-
-
-  void NotifyGenericTypeEnd() {scanner_->NotifyGenericTypeEnd();}
   
 
  VISIBLE_FOR_TESTING:
@@ -395,7 +389,7 @@ class Parser: public ParserBase {
   Handle<ir::Node> ParseMemberExpression(bool yield);
 
   // Parser getprop or getelem expression.
-  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield);
+  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only = false);
 
   Handle<ir::Node> ParseCallExpression(bool yield);
 
@@ -500,6 +494,10 @@ class Parser: public ParserBase {
   bool IsLineTermination();
 
   void ConsumeLineTerminator();
+
+  void EnableNestedGenericTypeScanMode() {scanner_->EnableNestedGenericTypeScanMode();}
+
+  void DisableNestedGenericTypeScanMode() {scanner_->DisableNestedGenericTypeScanMode();}
 
   AccessorType ParseAccessor();
 

@@ -42,12 +42,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeParameters() {
   if (Current()->type() == Token::TS_LESS) {
     Handle<ir::TypeParametersView> type_params = New<ir::TypeParametersView>();
     type_params->SetInformationForNode(Current());
+    EnableNestedGenericTypeScanMode();
+    YATSC_SCOPED([&] {DisableNestedGenericTypeScanMode();});
     Next();
     bool found = false;
     while (1) {
-      ParseNestedGenericTypeEnd();
-      if (Current()->type() == Token::TS_IDENTIFIER ||
-          TokenInfo::IsKeyword(Current()->type())) {
+      if (Current()->type() == Token::TS_IDENTIFIER) {
         found = true;
         Handle<ir::Node> name = ParseIdentifier();
         if (Current()->type() == Token::TS_EXTENDS) {
@@ -109,8 +109,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeExpression() {
     return ret;
   } else if (Current()->type() == Token::TS_TYPEOF) {
     return ParseArrayType(ParseTypeQueryExpression());
-  } else if (Current()->type() == Token::TS_IDENTIFIER ||
-      TokenInfo::IsKeyword(Current()->type())) {
+  } else if (Current()->type() == Token::TS_IDENTIFIER) {
     Current()->set_type(Token::TS_IDENTIFIER);
     return ParseArrayType(ParseReferencedType());
   } else if (Current()->type() == Token::TS_LEFT_PAREN) {
@@ -189,29 +188,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeQueryExpression() {
     if (Current()->type() == Token::TS_IDENTIFIER) {
       Handle<ir::Node> name = ParsePrimaryExpression(false);
       if (Current()->type() == Token::TS_DOT) {
-        Next();
-        Handle<ir::GetPropView> getprop = New<ir::GetPropView>();
-        getprop->SetInformationForNode(name);
-        Handle<ir::GetPropView> root = getprop;
-        getprop->set_target(name);
-        while (1) {
-          if (Current()->type() == Token::TS_IDENTIFIER) {
-            getprop->set_prop(ParsePrimaryExpression(false));
-            if (Current()->type() == Token::TS_DOT) {
-              Handle<ir::GetPropView> getprop_tmp = New<ir::GetPropView>();
-              getprop_tmp->SetInformationForNode(name);
-              getprop->set_target(getprop_tmp);
-              getprop_tmp = getprop;
-            } else {
-              break;
-            }
-          } else {
-            break;
-          }
-        }
-        Handle<ir::Node> ret = New<ir::TypeQueryView>(root);
-        ret->SetInformationForNode(root);
-        return ret;
+        name = ParseGetPropOrElem(name, false, true);
       }
       Handle<ir::Node> ret = New<ir::TypeQueryView>(name);
       ret->SetInformationForNode(name);
@@ -239,16 +216,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeArguments() {
   if (Current()->type() == Token::TS_LESS) {
     Handle<ir::TypeArgumentsView> type_arguments = New<ir::TypeArgumentsView>();
     type_arguments->SetInformationForNode(Current());
+    EnableNestedGenericTypeScanMode();
+    YATSC_SCOPED([&] {DisableNestedGenericTypeScanMode();});
     Next();
     while (1) {
       type_arguments->InsertLast(ParseTypeExpression());
-      ParseNestedGenericTypeEnd();
-      if (Current()->type() == Token::TS_SHIFT_RIGHT) {
-        BackOneChar();
-        ScanGenericType();
-        Next();
-        NotScanNestedGenericType();
-      }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
       } else if (Current()->type() == Token::TS_GREATER) {
@@ -457,16 +429,5 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIndexSignature() {
     SYNTAX_ERROR("SYNTAX_ERROR The IndexSignature must have a type.", Current());
   }
   SYNTAX_ERROR("SyntaxError '[' expected.", Current());
-}
-
-
-template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::ParseNestedGenericTypeEnd() {
-  if (Current()->type() == Token::TS_SHIFT_RIGHT) {
-    BackOneChar();
-    ScanGenericType();
-    Next();
-    NotScanNestedGenericType();
-  }
 }
 }
