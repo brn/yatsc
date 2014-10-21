@@ -27,6 +27,7 @@
 
 #include <iterator>
 #include <string>
+#include "./uchar.h"
 #include "../utils/error-reporter.h"
 #include "../utils/os.h"
 #include "../utils/stat.h"
@@ -40,7 +41,7 @@ namespace yatsc {
 
 class SourceStream : public MaybeFail, private Uncopyable {
  public:
-  typedef String::iterator iterator;
+  typedef UCharBuffer::iterator iterator;
   SourceStream(const char* filepath);
 
   YATSC_INLINE ~SourceStream() = default;
@@ -52,26 +53,32 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE iterator end() {return buffer_.end();}
 
 
-  YATSC_INLINE const String& buffer() {return buffer_;}
+  YATSC_INLINE const UCharBuffer& buffer() {return buffer_;}
 
-  YATSC_INLINE const char* cbuffer() {return buffer_.c_str();}
+
+  YATSC_INLINE const UChar* cbuffer() {return buffer_.data();}
+
+
+  YATSC_INLINE const String& raw_buffer() {return raw_buffer_;}
+
+
+  YATSC_INLINE const char* raw_cbuffer() {return raw_buffer_.c_str();}
 
 
   YATSC_INLINE size_t size() const {return size_;}
   
 
  private:
-  YATSC_INLINE void ReadBlock(FILE* fp);
+  void ReadBlock(FILE* fp);
 
-  YATSC_INLINE void Initialize();
+  void Initialize();
 
   static const char* kCantOpenInput;
   
   size_t size_;
   String filepath_;
-  String buffer_;
+  String raw_buffer_;
+  UCharBuffer buffer_;
 };
 }
-
-#include "./sourcestream-inl.h"
 #endif

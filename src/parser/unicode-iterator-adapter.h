@@ -78,6 +78,18 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
 
 
   /**
+   * Implementation of equality compare to satisfy forward_iterator concept.
+   */
+  YATSC_INLINE bool operator == (char iter){return *begin_ == iter;}
+
+
+  /**
+   * Implementation of equality compare to satisfy forward_iterator concept.
+   */
+  YATSC_INLINE bool operator != (char iter){return *begin_ != iter;}
+
+  
+  /**
    * Implementation of dereference to satisfy forward_iterator concept.
    */
   YATSC_INLINE UChar operator* () const {return Convert();}
@@ -178,7 +190,7 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
    * @param utf8 buffer to reserve utf-8 byte sequence.
    * @return utf-32 byte sequence.
    */
-  UC32 Convert2Byte(UC8Bytes* utf8) const;
+  inline UC32 Convert2Byte(UC8Bytes* utf8) const;
 
 
   /**
@@ -186,7 +198,7 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
    * @param utf8 buffer to reserve utf-8 byte sequence.
    * @return utf-32 byte sequence.
    */
-  UC32 Convert3Byte(UC8Bytes* utf8) const;
+  inline UC32 Convert3Byte(UC8Bytes* utf8) const;
 
 
   /**
@@ -194,7 +206,7 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
    * @param utf8 buffer to reserve utf-8 byte sequence.
    * @return utf-32 byte sequence.
    */
-  UC32 Convert4Byte(UC8Bytes* utf8) const;
+  inline UC32 Convert4Byte(UC8Bytes* utf8) const;
 
   
   UC32 current_position_;

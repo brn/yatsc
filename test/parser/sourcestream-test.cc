@@ -33,7 +33,7 @@ const char filename[] = "test/parser/sourcestream-test-cases/jquery.js";
 TEST(SourceStream, read_all_ok) {
   yatsc::SourceStream st(filename);
   yatsc::String expected = yatsc::testing::ReadFile(filename);
-  yatsc::testing::CompareBuffer(st.cbuffer(), expected.c_str());
+  yatsc::testing::CompareBuffer(st.raw_cbuffer(), expected.c_str());
 }
 
 
@@ -46,8 +46,8 @@ TEST(SourceStream, iterator_ok) {
   size_t i = 0;
   while (it != end) {
     yatsc::UC8 expectation = static_cast<yatsc::UC8>(expected.at(i));
-    yatsc::UC8 actual = *it;
-    ASSERT_EQ(expectation, actual);
+    yatsc::UChar actual = *it;
+    ASSERT_EQ(expectation, actual.ToAscii());
     ++it;
     i++;
   }

@@ -36,7 +36,7 @@ namespace yatsc {
 namespace testing {
 inline yatsc::Vector<UChar> AsciiToUCharVector(const char* str) {
   size_t len = strlen(str);
-  yatsc::Vector<UChar> v;
+  yatsc::UCharBuffer v;
   yatsc::UC8Bytes b;
   v.reserve(len);
   for (size_t i = 0u; i < len; i++) {

@@ -81,8 +81,8 @@ namespace yatsc {
 
 #ifndef DEBUG
 // Throw error and return nullptr.
-#define SYNTAX_ERROR_INTERNAL(message, pos, error)  \
-  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error) \
+#define SYNTAX_ERROR_INTERNAL(message, pos, error)    \
+  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error);  \
   return ir::Node::Null()
 
 

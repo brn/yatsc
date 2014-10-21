@@ -22,39 +22,9 @@
  * THE SOFTWARE.
  */
 
+#include "./unicode-iterator-adapter.h"
 
 namespace yatsc {
-void SourceStream::Initialize() {
-  Stat stat(filepath_.c_str());
-  bool exists = stat.IsExist();
-  if (exists && stat.IsReg()) {
-    size_ = stat.Size();
-    if (buffer_.capacity() < (size_ + 1)) {
-      buffer_.reserve(size_ + 1);
-    }
-    try {
-      FILE* fp = FOpen(filepath_.c_str(), "r");
-      ReadBlock(fp);
-      FClose(fp);
-    } catch (const FileIOException& e) {
-      Fail() << kCantOpenInput << filepath_
-             << "\nbecause: " << e.what();
-    }
-  } else {
-    size_ = 0;
-    Fail() << kCantOpenInput << filepath_
-           << "\nbeacause: " << "No such file or directory";
-  }
-}
 
 
-void SourceStream::ReadBlock(FILE* fp)  {
-  char* buffer = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
-  size_t next = FRead(buffer, size_, sizeof(UC8), size_ - 1, fp);
-  if (next > 0) {
-    buffer[next] = '\0';
-    buffer_ = buffer;
-  }
-  Heap::Delete(buffer);
-}
 }

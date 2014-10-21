@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include "sourcestream.h"
+#include "unicode-iterator-adapter.h"
 
 namespace yatsc {
 
@@ -32,6 +33,48 @@ SourceStream::SourceStream(const char* filepath)
     : MaybeFail(),
       filepath_(filepath) {
   Initialize();
+}
+
+
+void SourceStream::Initialize() {
+  Stat stat(filepath_.c_str());
+  bool exists = stat.IsExist();
+  if (exists && stat.IsReg()) {
+    size_ = stat.Size();
+    try {
+      FILE* fp = FOpen(filepath_.c_str(), "r");
+      ReadBlock(fp);
+      FClose(fp);
+    } catch (const FileIOException& e) {
+      Fail() << kCantOpenInput << filepath_
+             << "\nbecause: " << e.what();
+    }
+  } else {
+    size_ = 0;
+    Fail() << kCantOpenInput << filepath_
+           << "\nbeacause: " << "No such file or directory";
+  }
+}
+
+
+void SourceStream::ReadBlock(FILE* fp)  {
+  if (raw_buffer_.capacity() > size_ + 1) {
+    raw_buffer_.reserve(size_ + 1);
+    buffer_.reserve(size_);
+  }
+  char* str = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
+  size_t next = FRead(str, size_, sizeof(UC8), size_ - 1, fp);
+  if (next > 0) {
+    str[next] = '\0';
+    raw_buffer_ = str;
+  }
+
+  auto it = UnicodeIteratorAdapter<char*>(str);
+  for (;it != '\0'; ++it) {
+    buffer_.push_back(std::move(*it));
+  }
+
+  Heap::Delete(str);
 }
 
 

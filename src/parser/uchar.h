@@ -28,6 +28,7 @@
 #include <string>
 #include <stdexcept>
 #include "../utils/utils.h"
+#include "../utils/stl.h"
 #include "../utils/os.h"
 #include "../utils/unicode.h"
 
@@ -54,7 +55,7 @@ class UChar {
    * @param c utf-32 byte.
    * @param utf8 utf-8 byte sequence.
    */
-  YATSC_INLINE explicit UChar(UC32 c, const UC8Bytes& utf8):
+  YATSC_INLINE UChar(UC32 c, const UC8Bytes& utf8):
       uchar_(c),
       utf8_(utf8){};
 
@@ -71,6 +72,13 @@ class UChar {
    */
   YATSC_INLINE UChar(const UChar& uchar):
       uchar_(uchar.uchar_), utf8_(uchar.utf8_) {}
+
+
+  /**
+   * Copy constructor.
+   */
+  YATSC_INLINE UChar(UChar&& uchar):
+      uchar_(std::move(uchar.uchar_)), utf8_(std::move(uchar.utf8_)) {}
   
 
   ~UChar() = default;
@@ -292,6 +300,9 @@ class UChar {
   UC32 uchar_;
   UC8Bytes utf8_;
 };
+
+
+typedef Vector<UChar> UCharBuffer;
 }
 
 

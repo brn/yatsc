@@ -38,7 +38,7 @@
     yatsc::String s = code;                                             \
     yatsc::String n = "anonymous";                                        \
     yatsc::ErrorReporter error_reporter(s, n);                          \
-    yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(code); \
+    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(code); \
     yatsc::CompilerOption compiler_option;                              \
     compiler_option.set_language_mode(type);                            \
     yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, compiler_option); \

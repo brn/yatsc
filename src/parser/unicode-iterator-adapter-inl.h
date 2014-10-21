@@ -88,10 +88,10 @@ UChar UnicodeIteratorAdapter<InputIterator>::Convert () const {
   auto next = ConvertUtf8ToUcs2(byte_count, &utf8);
   // invalidate.
   if (next != 0) {
-    return UChar(next, utf8);
+    return std::move(UChar(next, utf8));
   }
   // invalid UChar.
-  return UChar();
+  return std::move(UChar());
 }
 
 
@@ -113,7 +113,7 @@ uint32_t UnicodeIteratorAdapter<InputIterator>::ConvertUtf8ToUcs2(size_t byte_co
 
 
 template <typename InputIterator>
-uint32_t UnicodeIteratorAdapter<InputIterator>::Convert2Byte(UC8Bytes* utf8) const {
+inline UC32 UnicodeIteratorAdapter<InputIterator>::Convert2Byte(UC8Bytes* utf8) const {
   const uint8_t kMinimumRange = 0x00000080;
   auto c = *begin_;
   if (utf8::IsNotNull(c)) {
@@ -134,7 +134,7 @@ uint32_t UnicodeIteratorAdapter<InputIterator>::Convert2Byte(UC8Bytes* utf8) con
 
 
 template <typename InputIterator>
-uint32_t UnicodeIteratorAdapter<InputIterator>::Convert3Byte(UC8Bytes* utf8) const {
+inline UC32 UnicodeIteratorAdapter<InputIterator>::Convert3Byte(UC8Bytes* utf8) const {
   const int kMinimumRange = 0x00000800;
   auto c = *begin_;
   if (utf8::IsNotNull(c)) {
@@ -160,9 +160,9 @@ uint32_t UnicodeIteratorAdapter<InputIterator>::Convert3Byte(UC8Bytes* utf8) con
 
 
 template <typename InputIterator>
-uint32_t UnicodeIteratorAdapter<InputIterator>::Convert4Byte(UC8Bytes* utf8) const {
+inline UC32 UnicodeIteratorAdapter<InputIterator>::Convert4Byte(UC8Bytes* utf8) const {
   const int kMinimumRange = 0x000010000;
-  auto c = *begin_;
+  UC8 c = *begin_;
   if (utf8::IsNotNull(c)) {
     (*utf8)[0] = c;
     auto next = unicode::Mask<3>(c) << 18;
