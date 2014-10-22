@@ -1,26 +1,25 @@
-/*
- * The MIT License (MIT)
- * 
- * Copyright (c) 2013 Taketoshi Aono(brn)
- * 
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// The MIT License (MIT)
+// 
+// Copyright (c) 2013 Taketoshi Aono(brn)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 
 #ifndef PARSER_SCANNER_H_
 #define PARSER_SCANNER_H_
@@ -31,8 +30,8 @@
 #include "utfstring.h"
 #include "error_reporter.h"
 #include "lineterminator-state.h"
+#include "literalbuffer.h"
 #include "../compiler-option.h"
-#include "../utils/environment.h"
 
 
 namespace yatsc {
@@ -74,6 +73,7 @@ class Scanner: private Uncopyable, private Unmovable {
   Scanner(UCharInputIterator it,
           UCharInputIterator end,
           ErrorReporter* error_reporter,
+          LiteralBuffer* literal_buffer,
           const CompilerOption& compilation_option);
 
   /**
@@ -283,7 +283,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void UpdateTokenInfo() {
     if (last_multi_line_comment_.utf8_length() > 0) {
-      auto p_multi_line_comment = environment_->literal_buffer()->InsertValue(last_multi_line_comment_);
+      auto p_multi_line_comment = literal_buffer_->InsertValue(last_multi_line_comment_);
       token_info_.set_multi_line_comment(p_multi_line_comment);
     }
     last_multi_line_comment_.Clear();
@@ -313,7 +313,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void BuildToken(Token type, const UtfString& utf_string) {
     UpdateTokenInfo();
-    UtfString* p_utf_string = environment_->literal_buffer()->InsertValue(utf_string);
+    UtfString* p_utf_string = literal_buffer_->InsertValue(utf_string);
     token_info_.set_value(p_utf_string);
     token_info_.set_type(type);
   }
@@ -335,7 +335,6 @@ class Scanner: private Uncopyable, private Unmovable {
 
   bool unscaned_;
   int generic_type_;
-  Environment* environment_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;
@@ -345,6 +344,7 @@ class Scanner: private Uncopyable, private Unmovable {
   UChar lookahead1_;
   UtfString last_multi_line_comment_;
   ErrorReporter* error_reporter_;
+  LiteralBuffer* literal_buffer_;
   const CompilerOption& compiler_option_;
 };
 }

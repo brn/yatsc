@@ -142,6 +142,8 @@ class Parser: public ParserBase {
       : ParserBase(co, error_reporter),
         scanner_(scanner) {Next();}
 
+  Handle<ir::Node> Parse() {return ParseModule();};
+
  private:
   struct AccessorType {
     AccessorType(bool setter, bool getter, const TokenInfo& info)
@@ -172,7 +174,6 @@ class Parser: public ParserBase {
   
 
  VISIBLE_FOR_TESTING:
-  Handle<ir::Node> Parse() {return ParseModule();};
 
   Handle<ir::Node> ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable);
 

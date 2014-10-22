@@ -37,6 +37,15 @@ class LiteralBuffer: private Unmovable, private Uncopyable {
  public:
   LiteralBuffer() {}
 
+  
+  LiteralBuffer(const LiteralBuffer& literal_buffer)
+      : buffer_(literal_buffer.buffer_) {}
+
+
+  LiteralBuffer(LiteralBuffer&& literal_buffer)
+      : buffer_(std::move(literal_buffer.buffer_)) {}
+  
+
   UtfString* InsertValue(const UtfString& utf_string) {
     auto ret = buffer_.emplace(utf_string.utf8_value(), std::move(utf_string));
     return &(ret.first->second);

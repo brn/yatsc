@@ -27,6 +27,7 @@
 
 #include "../gtest-header.h"
 #include "../../src/parser/error_reporter.h"
+#include "../../src/parser/literalbuffer.h"
 #include "../../src/compiler-option.h"
 #include "../../src/parser/scanner.h"
 #include "../../src/parser/uchar.h"
@@ -35,12 +36,14 @@
 
 
 #define SCAN__(var, error_reporter, ex_type)                            \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, compiler_option); \
+  yatsc::LiteralBuffer lb;                                              \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
   auto var = scanner.Scan();
 
 
 #define SCAN_THROW__(var, error_reporter, ex_type)                      \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, compiler_option); \
+  yatsc::LiteralBuffer lb;                                              \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
   ASSERT_THROW(scanner.Scan(), ex_type);
 
 

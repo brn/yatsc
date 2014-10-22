@@ -28,43 +28,14 @@
 
 #include <iostream>
 #include <stdexcept>
-#include <sstream>
 #include <stdarg.h>
+#include "stl.h"
 #include "utils.h"
 #include "os.h"
 
 
 
 namespace yatsc {
-class ErrorReporter {
- public:
-  
-  YATSC_INLINE ErrorReporter(const char* message)
-      : message_(message){}
-  
-
-  YATSC_INLINE ErrorReporter(const std::string& message):
-      message_(std::move(message)){}
-
-
-  YATSC_INLINE ErrorReporter(const ErrorReporter& e)
-      : message_(e.message_){}
-
-
-  YATSC_INLINE ErrorReporter(const ErrorReporter&& e)
-      : message_(std::move(e.message_)){}
-
-  
-  YATSC_INLINE void Report(bool is_exit = false) {
-    std::cerr << message_ << std::endl;
-    if (is_exit) exit(1);
-  }
-
- private:
-  std::string message_;
-};
-
-
 class MaybeFail {
  public:
   YATSC_INLINE MaybeFail()
@@ -78,19 +49,19 @@ class MaybeFail {
   }
 
 
-  YATSC_INLINE std::stringstream& Fail() {
+  YATSC_INLINE StringStream& Fail() {
     success_ = false;
     return message_stream_;
   }
 
   
-  YATSC_INLINE std::string failed_message() const {
+  YATSC_INLINE String failed_message() const {
     return message_stream_.str();
   }
   
  private:
   bool success_;
-  std::stringstream message_stream_;
+  StringStream message_stream_;
 };
 
 } //namespace yatsc

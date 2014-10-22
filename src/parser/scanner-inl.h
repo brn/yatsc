@@ -42,12 +42,13 @@ template<typename UCharInputIterator>
 Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
+                                     LiteralBuffer* literal_buffer,
                                      const CompilerOption& compiler_option)
     : generic_type_(0),
-      environment_(Environment::Create()),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
+      literal_buffer_(literal_buffer),
       compiler_option_(compiler_option) {
   Advance();
   SkipWhiteSpace();
@@ -125,7 +126,6 @@ UC16 Scanner<UCharInputIterator>::ScanHexEscape(const UChar& uchar, int len, boo
     *success = true;
     result = result * 16 + d;
   }
-  printf("%d\n", result);
   return static_cast<UC16>(result);
 }
 

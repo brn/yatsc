@@ -25,6 +25,7 @@
 
 #include "../src/ir/node.h"
 #include "../src/parser/parser.h"
+#include "../src/parser/literalbuffer.h"
 #include "../src/utils/stl.h"
 #include "./compare-node.h"
 #include "./unicode-util.h"
@@ -36,12 +37,13 @@
 #define PARSER_TEST(method_expr, type, code, expected_str, dothrow, error_type) { int line_num__ = __LINE__; \
     typedef std::vector<yatsc::UChar>::iterator Iterator;               \
     yatsc::String s = code;                                             \
-    yatsc::String n = "anonymous";                                        \
+    yatsc::String n = "anonymous";                                      \
     yatsc::ErrorReporter error_reporter(s, n);                          \
-    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(code); \
+    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(code);  \
     yatsc::CompilerOption compiler_option;                              \
     compiler_option.set_language_mode(type);                            \
-    yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, compiler_option); \
+    yatsc::LiteralBuffer lb;                                            \
+    yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
     yatsc::Parser<Iterator> parser(compiler_option, &scanner, &error_reporter); \
     if (!dothrow) {                                                     \
       try {                                                             \

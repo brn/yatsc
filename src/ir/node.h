@@ -31,6 +31,7 @@
 #include <vector>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 #include "../utils/utils.h"
 #include "../utils/stl.h"
 #include "../memory/heap.h"
