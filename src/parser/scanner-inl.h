@@ -300,6 +300,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
       if (!ScanUnicodeEscapeSequence(&v, false)) {
         return;
       }
+      Advance();
     } else {
       v += char_;
       Advance();

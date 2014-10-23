@@ -746,8 +746,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   
   if (Current()->type() == Token::TS_LEFT_PAREN ||
       Current()->type() == Token::TS_LESS) {
-    target->MarkAsInValidLhs();
     NodePair pair = ParseArguments(yield);
+    if (!pair.first) {return target;}
+    target->MarkAsInValidLhs();
     Handle<ir::Node> call = New<ir::CallView>(target, pair.first, pair.second);
     call->SetInformationForNode(target);
     if (!pair.first && !pair.second) {

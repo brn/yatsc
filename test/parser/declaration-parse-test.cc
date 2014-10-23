@@ -883,7 +883,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]");
 
 
-  DECLARATION_TEST_ALL("class Foo {[x:string] number}",
+  DECLARATION_TEST_ALL("class Foo {[x:string]:number}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
@@ -976,7 +976,7 @@ TEST(DeclarationParseTest, ParseInterfaceDeclaration) {
                        "          [NameView][T]");
 
 
-  DECLARATION_TEST_ALL("interface Foo {[a:string] number}",
+  DECLARATION_TEST_ALL("interface Foo {[a:string]:number}",
                        "[InterfaceView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"

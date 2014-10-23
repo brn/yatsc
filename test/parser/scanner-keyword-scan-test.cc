@@ -58,7 +58,11 @@
 
 
 #define KEYWORD_TEST__(keyword, token_type)                   \
-  ASSERT_STREQ(#token_type, token->ToString().c_str());       \
+  yatsc::String str(#token_type);                             \
+  str += "[";                                                 \
+  str += #keyword;                                            \
+  str += "]";                                                 \
+  ASSERT_STREQ(str.c_str(), token->ToString().c_str());       \
   ASSERT_EQ(yatsc::Token::token_type, token->type());         \
   ASSERT_STREQ(token->utf8_value(), #keyword);                \
   ASSERT_EQ(token->value().utf8_length(), strlen(#keyword));  \

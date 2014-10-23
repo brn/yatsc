@@ -813,6 +813,18 @@ TEST(ExpressionParseTest, ParseExpression_binary_expr) {
                 "  [BinaryExprView][TS_MINUS]\n"
                 "    [NumberView][3]\n"
                 "    [NumberView][1]");
+
+
+  EXPR_TEST_ALL("1 > 1",
+                "[BinaryExprView][TS_GREATER]\n"
+                "  [NumberView][1]\n"
+                "  [NumberView][1]");
+
+
+  EXPR_TEST_ALL("1 < 1",
+                "[BinaryExprView][TS_LESS]\n"
+                "  [NumberView][1]\n"
+                "  [NumberView][1]");
 }
 
 
