@@ -26,6 +26,8 @@
 
 #include "./compilation-unit.h"
 #include "../memory/heap.h"
+#include "../utils/spinlock.h"
+#include "./worker.h"
 
 namespace yatsc {
 
@@ -34,11 +36,20 @@ class Compiler {
   Compiler(CompilerOption compiler_option);
 
   
-  Handle<CompilationUnit> Compile(const char* filename);
+  Vector<Handle<CompilationUnit>> Compile(const char* filename);
 
   
  private:
+
+  void DoCompile(const char* filename);
+
+  
+  void AddResult(Handle<CompilationUnit> result);
+  
   CompilerOption compiler_option_;
+  Worker* worker_;
+  Vector<Handle<CompilationUnit>> result_list_;
+  SpinLock lock_;
 };
 
 }

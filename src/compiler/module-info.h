@@ -20,14 +20,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef COMPILER_MODULE_INFO_H
+#define COMPILER_MODULE_INFO_H
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+namespace yatsc {
+
+class ModuleInfo {
+ public:
+  ModuleInfo(const String& module_name, bool typescript)
+      : module_name_(module_name),
+        typescript_(typescript) {}
+
+  
+  YATSC_CONST_GETTER(const char*, module_name, module_name_.c_str());
 
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+  YATSC_CONST_GETTER(bool, typescript, typescript_);
+
+  
+ private:
+  String module_name_;
+  bool typescript_;
+};
+
 }
+
+#endif

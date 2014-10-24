@@ -37,21 +37,22 @@
 
 #define SCAN__(var, error_reporter, ex_type)                            \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
   auto var = scanner.Scan();
 
 
 #define SCAN_THROW__(var, error_reporter, ex_type)                      \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
   ASSERT_THROW(scanner.Scan(), ex_type);
 
 
 #define INIT__(SCAN, var, str, type, ex_type)                           \
-  typedef yatsc::Vector<yatsc::UChar>::iterator Iterator;                 \
-  yatsc::String s = str;                                                  \
-  yatsc::String n = "anonymous";                                          \
-  yatsc::ErrorReporter error_reporter(s, n);                            \
+  typedef yatsc::Vector<yatsc::UChar>::iterator Iterator;               \
+  yatsc::String s = str;                                                \
+  yatsc::String n = "anonymous";                                        \
+  yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, true); \
+  yatsc::ErrorReporter error_reporter(s, module_info);                  \
   yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
   yatsc::CompilerOption compiler_option;                                \
   compiler_option.set_language_mode(type);                              \
@@ -66,11 +67,11 @@
 #define INIT_ES6_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES6, ex_type)
 
 
-#define END_SCAN                                      \
-  {                                                   \
-    auto t = scanner.Scan();                          \
+#define END_SCAN                                          \
+  {                                                       \
+    auto t = scanner.Scan();                              \
     ASSERT_STREQ(t->ToString().c_str(), "END_OF_INPUT");  \
-    ASSERT_EQ(t->type(), yatsc::Token::END_OF_INPUT); \
+    ASSERT_EQ(t->type(), yatsc::Token::END_OF_INPUT);     \
   }
 
 #endif

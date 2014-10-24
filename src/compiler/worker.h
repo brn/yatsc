@@ -21,13 +21,57 @@
 // THE SOFTWARE.
 
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+#ifndef COMPILER_WORKER_H
+#define COMPILER_WORKER_H
+
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <functional>
+#include "./channel.h"
+#include "../utils/utils.h"
+#include "../utils/stl.h"
+
+namespace yatsc {
+class Worker {
+ public :
+  static int default_worker_limit;
 
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+  Worker();
+
+
+  ~Worker(){};
+
+
+  static Worker* default_worker();
+
+
+  template <typename T>
+  void send_request(T);
+
+
+  template <typename T>
+  void send_requests(Vector<T>);
+
+
+  YATSC_INLINE int running_thread_count() const {return channel_.running_thread_count();}
+
+
+  YATSC_INLINE int current_thread_count() const {return channel_.current_thread_count();}
+
+
+ private :
+
+  static void Remove();
+
+
+  Channel channel_;
+  std::mutex mutex_;
+  static std::atomic_int flag_;
+  static Worker* default_worker_;
+};
+
 }
+#include "worker-inl.h"
+#endif

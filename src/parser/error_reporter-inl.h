@@ -29,7 +29,7 @@ namespace yatsc {
 
 template <typename Error>
 void ErrorReporter::Throw(const SourcePosition& source_position) {
-  st_ << "\n" << filename_ << ':' << source_position.start_line_number() << ':' << source_position.start_col()
+  st_ << "\n" << module_info_->module_name() << ':' << source_position.start_line_number() << ':' << source_position.start_col()
       << "\n" << GetLineSource(source_position)
       << "\n";
 

@@ -328,7 +328,7 @@ String Path::current_directory() {
     char tmp[GW_BUF_SIZE];
     char* dir = getcwd(tmp, sizeof (tmp));
     if (dir == NULL) {
-      FATAL(stderr, "GetCwd fail.");
+      FATAL("GetCwd fail.");
     };
     String current_dir(dir);
 #endif
@@ -348,7 +348,7 @@ String Path::home_directory() {
   }
 #else
   const char* tmp = getenv(HOME);
-  if (home) {
+  if (tmp != NULL) {
     buf = tmp;
   }
 #endif

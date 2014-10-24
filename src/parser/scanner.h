@@ -32,6 +32,7 @@
 #include "lineterminator-state.h"
 #include "literalbuffer.h"
 #include "../compiler-option.h"
+#include "../compiler/module-info.h"
 
 
 namespace yatsc {
@@ -74,7 +75,8 @@ class Scanner: private Uncopyable, private Unmovable {
           UCharInputIterator end,
           ErrorReporter* error_reporter,
           LiteralBuffer* literal_buffer,
-          const CompilerOption& compilation_option);
+          const CompilerOption& compilation_option,
+          Handle<ModuleInfo> module_info);
 
   /**
    * Scan the source file from the current position to the next token position.
@@ -346,6 +348,7 @@ class Scanner: private Uncopyable, private Unmovable {
   ErrorReporter* error_reporter_;
   LiteralBuffer* literal_buffer_;
   const CompilerOption& compiler_option_;
+  Handle<ModuleInfo> module_info_;
 };
 }
 

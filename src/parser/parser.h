@@ -138,9 +138,10 @@ template <typename UCharInputSourceIterator>
 class Parser: public ParserBase {
   
  public:
-  Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter)
+  Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter, Handle<ModuleInfo> module_info)
       : ParserBase(co, error_reporter),
-        scanner_(scanner) {Next();}
+        scanner_(scanner),
+        module_info_(module_info) {Next();}
 
   Handle<ir::Node> Parse() {return ParseModule();};
 
@@ -555,6 +556,7 @@ class Parser: public ParserBase {
   StringStream phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
+  Handle<ModuleInfo> module_info_;
 };
 } // yatsc
 

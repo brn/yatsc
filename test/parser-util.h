@@ -38,13 +38,14 @@
     typedef std::vector<yatsc::UChar>::iterator Iterator;               \
     yatsc::String s = code;                                             \
     yatsc::String n = "anonymous";                                      \
-    yatsc::ErrorReporter error_reporter(s, n);                          \
+    yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, true); \
+    yatsc::ErrorReporter error_reporter(s, module_info);                \
     yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(code);  \
     yatsc::CompilerOption compiler_option;                              \
     compiler_option.set_language_mode(type);                            \
     yatsc::LiteralBuffer lb;                                            \
-    yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option); \
-    yatsc::Parser<Iterator> parser(compiler_option, &scanner, &error_reporter); \
+    yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
+    yatsc::Parser<Iterator> parser(compiler_option, &scanner, &error_reporter, module_info); \
     if (!dothrow) {                                                     \
       try {                                                             \
         auto node = PARSER_METHOD_CALL__(parser, method_expr);          \

@@ -20,14 +20,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include "worker.h"
+#include "../utils/systeminfo.h"
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+namespace yatsc {
+
+Worker::Worker() : channel_(SystemInfo::GetOnlineProcessorCount()){}
 
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+Worker* Worker::default_worker() {
+  if (flag_ == 0) {
+    ++flag_;
+    default_worker_ = Heap::New<Worker>();
+    atexit(Remove);
+  }
+  return default_worker_;
+}
+
+
+void Worker::Remove() {
+  Heap::Destruct(default_worker_);
+}
+
+
+std::atomic_int Worker::flag_(0);
+
+
+Worker* Worker::default_worker_;
+
 }

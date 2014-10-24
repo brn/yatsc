@@ -43,13 +43,16 @@ Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      LiteralBuffer* literal_buffer,
-                                     const CompilerOption& compiler_option)
+                                     const CompilerOption& compiler_option,
+                                     Handle<ModuleInfo> module_info)
     : generic_type_(0),
       it_(it),
       end_(end),
       error_reporter_(error_reporter),
       literal_buffer_(literal_buffer),
-      compiler_option_(compiler_option) {
+      compiler_option_(compiler_option),
+  module_info_(module_info) {
+  
   Advance();
   SkipWhiteSpace();
 }

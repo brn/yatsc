@@ -21,13 +21,24 @@
 // THE SOFTWARE.
 
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+#include "./worker-queue.h"
+
+namespace yatsc {
+
+WorkerQueue::WorkerQueue(){}
 
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+WorkerQueue::~WorkerQueue(){}
+
+
+WorkerQueue::Request WorkerQueue::pop_request() {
+  if (!queue_.empty()) {
+    Request req = queue_.front();
+    queue_.pop_front();
+    return req;
+  }
+  return Request();
+}
+
+
 }

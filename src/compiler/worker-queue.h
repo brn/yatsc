@@ -21,13 +21,43 @@
 // THE SOFTWARE.
 
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+#ifndef COMPILER_WORKER_QUEUE_H
+#define COMPILER_WORKER_QUEUE_H
 
+#include <deque>
+#include <functional>
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+namespace yatsc {
+
+class WorkerQueue {
+ public :
+  typedef std::function<void()> Request;
+
+  
+  WorkerQueue();
+
+  
+  ~WorkerQueue();
+
+  
+  template <typename T>
+  void set_request(T request) {
+    Request fn = request;
+    queue_.push_back(fn);
+  }
+
+  
+  Request pop_request();
+
+  
+  bool empty() const {return queue_.empty();}
+
+  
+ private :
+  typedef std::deque<Request> Queue;
+  Queue queue_;
+};
+
 }
+
+#endif

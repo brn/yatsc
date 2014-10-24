@@ -21,13 +21,46 @@
 // THE SOFTWARE.
 
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+#ifndef COMPILER_WORKER_COUNT_H
+#define COMPILER_WORKER_COUNT_H
 
+#include <atomic>
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+namespace yatsc {
+class WorkerCount {
+ public :
+  WorkerCount(int limit);
+
+  
+  ~WorkerCount();
+
+  
+  int current_thread_count() const;
+
+  
+  int running_thread_count() const;
+
+  
+  void add_thread_count();
+
+  
+  void sub_thread_count();
+
+  
+  void add_running_thread_count();
+
+  
+  void sub_running_thread_count();
+
+  
+  bool limit() const;
+
+  
+ private :
+  int limit_;
+  std::atomic_int current_thread_count_;
+  std::atomic_int running_thread_count_;
+};
 }
+
+#endif

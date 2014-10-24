@@ -21,13 +21,49 @@
 // THE SOFTWARE.
 
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+#include <thread>
+#include "./worker-count.h"
+
+namespace yatsc {
+
+static const int thread_default_count = 4;
 
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+int GetThreadCount() {
+  if (std::thread::hardware_concurrency() >= thread_default_count) {
+    return std::thread::hardware_concurrency();
+  }
+  return thread_default_count;
+}
+
+
+WorkerCount::WorkerCount(int limit)
+    : limit_(limit),
+      current_thread_count_(GetThreadCount()),
+      running_thread_count_(0){}
+
+
+WorkerCount::~WorkerCount(){}
+
+
+int WorkerCount::current_thread_count() const {return static_cast<long>(current_thread_count_);}
+
+
+int WorkerCount::running_thread_count() const {return static_cast<long>(running_thread_count_);}
+
+
+void WorkerCount::add_thread_count() {++current_thread_count_;}
+
+
+void WorkerCount::sub_thread_count() {--current_thread_count_;}
+
+
+void WorkerCount::add_running_thread_count() {++running_thread_count_;}
+
+
+void WorkerCount::sub_running_thread_count() {--running_thread_count_;}
+
+
+bool WorkerCount::limit() const {return current_thread_count_ == limit_;}
+
 }

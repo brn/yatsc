@@ -20,14 +20,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <algorithm>
 
-#include "../gtest-header.h"
-#include "../../src/compiler/compiler.h"
+namespace yatsc {
 
+template <typename T>
+void Worker::send_request(T req) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  channel_.send_request(req);
+}
 
-TEST(Compiler, Compile) {
-  yatsc::CompilerOption compiler_option;
-  yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+template <typename T>
+void Worker::send_requests(Vector<T> reqs) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  std::for_each(reqs.begin(), reqs.end(), std::bind<void (T)>(&Channel::send_request, channel_, std::placeholders::_1));
+}
 }

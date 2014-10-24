@@ -29,13 +29,14 @@
 #include "../utils/stl.h"
 #include "../utils/utils.h"
 #include "./sourceposition.h"
+#include "../compiler/module-info.h"
 
 namespace yatsc {
 class ErrorReporter: private Unmovable, private Uncopyable {  
  public:
-  ErrorReporter(const String& source, const String& filename)
+  ErrorReporter(const String& source, Handle<ModuleInfo> module_info)
       : source_(source),
-        filename_(filename){}
+        module_info_(module_info){}
 
 
   template <typename T>
@@ -54,7 +55,7 @@ class ErrorReporter: private Unmovable, private Uncopyable {
   
   StringStream st_;
   const String& source_;
-  const String& filename_;
+  Handle<ModuleInfo> module_info_;
 };
 } //yatsc
 
