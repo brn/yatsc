@@ -25,9 +25,20 @@
 #include "../../src/compiler/compiler.h"
 
 
+inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>>& cu) {
+  for (auto i: cu) {
+    if (!i->success()) {
+      return ::testing::AssertionFailure() << "Compile failed in module \"" << i->module_name() << "\"\n"
+                                           << "Because\n" << i->error_message() << "\n";
+    }
+  }
+  return ::testing::AssertionSuccess();
+}
+
+
 TEST(Compiler, Compile) {
   yatsc::CompilerOption compiler_option;
   yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/core.ts");
-  ASSERT_TRUE(cu[0]->success());
+  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/tsc.ts");
+  ASSERT_TRUE(CheckCompilationResult(cu));
 }

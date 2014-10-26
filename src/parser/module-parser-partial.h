@@ -95,6 +95,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
         Next();
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
+          String dir = Path::Dirname(module_info_->module_name());
+          Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
           return New<ir::ExternalModuleReference>(info.value());
         }
         SYNTAX_ERROR("SyntaxError ')' expected.", Current());

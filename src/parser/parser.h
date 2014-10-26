@@ -27,6 +27,9 @@
 #include "../utils/stl.h"
 #include "./parser-base.h"
 #include "../compiler-option.h"
+#include "../utils/notificator.h"
+#include "../compiler/module-info.h"
+#include "../utils/path.h"
 
 namespace yatsc {
 
@@ -138,10 +141,15 @@ template <typename UCharInputSourceIterator>
 class Parser: public ParserBase {
   
  public:
-  Parser(const CompilerOption& co, Scanner<UCharInputSourceIterator>* scanner, ErrorReporter* error_reporter, Handle<ModuleInfo> module_info)
-      : ParserBase(co, error_reporter),
+  Parser(const CompilerOption& co,
+         Scanner<UCharInputSourceIterator>* scanner,
+         const Notificator<void(Handle<ModuleInfo>)>& notificator,
+         ErrorReporter* error_reporter, Handle<ModuleInfo> module_info)
+      : ParserBase(co, notificator, error_reporter),
         scanner_(scanner),
-        module_info_(module_info) {Next();}
+        module_info_(module_info) {
+    Next();
+  }
 
   Handle<ir::Node> Parse() {return ParseModule();};
 

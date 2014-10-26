@@ -25,17 +25,18 @@
 
 namespace yatsc {
 
-CompilationUnit::CompilationUnit(Handle<ir::Node> root, Handle<LiteralBuffer> literal_buffer)
+CompilationUnit::CompilationUnit(Handle<ir::Node> root, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer)
     : root_(root),
+      module_info_(module_info),
       literal_buffer_(literal_buffer) {}
 
 
-CompilationUnit::CompilationUnit(const char* error_message)
-    : error_message_(error_message) {}
+CompilationUnit::CompilationUnit(Handle<ModuleInfo> module_info, const char* error_message)
+    : module_info_(module_info), error_message_(error_message) {}
 
 
-CompilationUnit::CompilationUnit(const String& error_message)
-    : error_message_(error_message) {}
+CompilationUnit::CompilationUnit(Handle<ModuleInfo> module_info, const String& error_message)
+    : module_info_(module_info), error_message_(error_message) {}
 
 
 CompilationUnit::CompilationUnit(const CompilationUnit& compilation_unit)

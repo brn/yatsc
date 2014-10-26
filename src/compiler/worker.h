@@ -44,9 +44,6 @@ class Worker {
   ~Worker(){};
 
 
-  static Worker* default_worker();
-
-
   template <typename T>
   void send_request(T);
 
@@ -61,15 +58,18 @@ class Worker {
   YATSC_INLINE int current_thread_count() const {return channel_.current_thread_count();}
 
 
+  YATSC_INLINE void Wait() {channel_.Wait();}
+
+
+  YATSC_INLINE void Shutdown() {channel_.Shutdown();}
+
+
  private :
 
   static void Remove();
 
 
   Channel channel_;
-  std::mutex mutex_;
-  static std::atomic_int flag_;
-  static Worker* default_worker_;
 };
 
 }

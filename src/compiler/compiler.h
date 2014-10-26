@@ -24,10 +24,14 @@
 #ifndef COMPILER_COMPILER_H
 #define COMPILER_COMPILER_H
 
+#include <atomic>
 #include "./compilation-unit.h"
 #include "../memory/heap.h"
 #include "../utils/spinlock.h"
+#include "../utils/notificator.h"
+#include "../utils/stl.h"
 #include "./worker.h"
+#include "./module-info.h"
 
 namespace yatsc {
 
@@ -41,15 +45,54 @@ class Compiler {
   
  private:
 
-  void DoCompile(const char* filename);
+  class CompilationScheduler {
+   public:
+    CompilationScheduler(Worker* worker)
+        : worker_(worker) {
+      count_ = 0;
+    }
+
+    
+    YATSC_INLINE void AddCompilationCount(Handle<ModuleInfo> module_info) {
+      ScopedSpinLock lock(lock_);
+      ++count_;
+      compiled_modules_.insert(module_info->module_name());
+    };
+
+
+    YATSC_INLINE void ReleaseCompilationCount() YATSC_NO_SE {
+      if (--count_ == 0) {
+        worker_->Shutdown();
+      }
+    };
+
+
+    YATSC_INLINE bool ShouldCompile(Handle<ModuleInfo> module_info) YATSC_NO_SE {
+      return compiled_modules_.find(module_info->module_name()) == compiled_modules_.end();
+    }
+   private:
+    mutable std::atomic_int count_;
+    Worker* worker_;
+    HashSet<String> compiled_modules_;
+    SpinLock lock_;
+  };
+  
+
+  void Schedule(Handle<ModuleInfo>);
+
+
+  void Run(Handle<ModuleInfo> module_info);
 
   
   void AddResult(Handle<CompilationUnit> result);
   
   CompilerOption compiler_option_;
-  Worker* worker_;
+  CompilationScheduler* compilation_scheduler_;
+  LazyInitializer<CompilationScheduler> compilation_scheduler_init_;
+  Worker worker_;
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;
+  Notificator<void(Handle<ModuleInfo>)> notificator_;
 };
 
 }

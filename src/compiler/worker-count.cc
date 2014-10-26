@@ -38,9 +38,10 @@ int GetThreadCount() {
 
 
 WorkerCount::WorkerCount(int limit)
-    : limit_(limit),
-      current_thread_count_(GetThreadCount()),
-      running_thread_count_(0){}
+    : limit_(limit) {
+  current_thread_count_ = GetThreadCount();  
+  running_thread_count_ = 0;
+}
 
 
 WorkerCount::~WorkerCount(){}

@@ -26,13 +26,12 @@ namespace yatsc {
 
 template <typename T>
 void Worker::send_request(T req) {
-  std::lock_guard<std::mutex> lock(mutex_);
   channel_.send_request(req);
 }
 
+
 template <typename T>
 void Worker::send_requests(Vector<T> reqs) {
-  std::lock_guard<std::mutex> lock(mutex_);
   std::for_each(reqs.begin(), reqs.end(), std::bind<void (T)>(&Channel::send_request, channel_, std::placeholders::_1));
 }
 }

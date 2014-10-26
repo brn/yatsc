@@ -25,13 +25,21 @@
 
 namespace yatsc {
 
-WorkerQueue::WorkerQueue(){}
+WorkerQueue::WorkerQueue()
+    : pop_(false) {}
 
 
 WorkerQueue::~WorkerQueue(){}
 
 
 WorkerQueue::Request WorkerQueue::pop_request() {
+  pop_ = true;
+  YATSC_SCOPED([&]{
+    pop_ = false;
+    set_wait_.notify_one();
+  });
+  std::unique_lock<std::mutex> lock(lock_);
+  pop_wait_.wait(lock, [&] {return !queue_.empty();});
   if (!queue_.empty()) {
     Request req = queue_.front();
     queue_.pop_front();

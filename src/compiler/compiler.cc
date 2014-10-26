@@ -34,38 +34,68 @@
 namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
-    : compiler_option_(compiler_option),
-      worker_(Worker::default_worker()){}
+    : compiler_option_(compiler_option) {
+  compilation_scheduler_ = compilation_scheduler_init_(&worker_);
+  notificator_.AddListener("Parser::ModuleFound", [&](Handle<ModuleInfo> module_info) {
+    Schedule(module_info);
+  });
+}
 
 
 Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
-  DoCompile(filename);
-  while (worker_->running_thread_count() == 0) {}
-  while (worker_->running_thread_count()) {}
+  Handle<ModuleInfo> module_info = ModuleInfo::Create(filename);
+  Schedule(module_info);
+  worker_.Wait();
   return result_list_;
 }
 
 
-void Compiler::DoCompile(const char* filename) {
-  worker_->send_request([&]{
-    SourceStream ss(filename);
-    if (!ss.success()) {
-      AddResult(Heap::NewHandle<CompilationUnit>(ss.failed_message()));
-    }
-    Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
-    Handle<ModuleInfo> module_info = Heap::NewHandle<ModuleInfo>(Path::Resolve(filename), Path::Extname(filename) == ".ts");
-    ErrorReporter er(ss.raw_buffer(), module_info);
-    Scanner<UCharBuffer::iterator> scanner(ss.begin(), ss.end(), &er, literal_buffer.Get(), compiler_option_, module_info);
-    Parser<UCharBuffer::iterator> parser(compiler_option_, &scanner, &er, module_info);
-    try {
-      Handle<ir::Node> root = parser.Parse();
-      AddResult(Heap::NewHandle<CompilationUnit>(root, literal_buffer));
-    } catch (const SyntaxError& e) {
-      AddResult(Heap::NewHandle<CompilationUnit>(e.what()));
-    } catch (const std::exception& e) {
-      AddResult(Heap::NewHandle<CompilationUnit>(e.what()));
-    }
+void Compiler::Schedule(Handle<ModuleInfo> module_info) {
+  if (!compilation_scheduler_->ShouldCompile(module_info)) {
+    return;
+  }
+  compilation_scheduler_->AddCompilationCount(module_info);
+  
+  worker_.send_request([module_info, this]{
+    Run(module_info);
+    compilation_scheduler_->ReleaseCompilationCount();
   });
+}
+
+
+void Compiler::Run(Handle<ModuleInfo> module_info) {
+  SourceStream ss(module_info->module_name());
+  if (!ss.success()) {
+    AddResult(Heap::NewHandle<CompilationUnit>(module_info, ss.failed_message()));
+  }
+  printf("BEGIN %s\n", module_info->module_name());
+  Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
+  ErrorReporter er(ss.raw_buffer(), module_info);
+  try {
+    Scanner<UCharBuffer::iterator> scanner(
+        ss.begin(),
+        ss.end(),
+        &er,
+        literal_buffer.Get(),
+        compiler_option_,
+        module_info,
+        [module_info, this](const UtfString& path){
+          String dir = Path::Dirname(module_info->module_name());
+          notificator_.NotifyForKey("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, path.utf8_value())));
+        });
+    Parser<UCharBuffer::iterator> parser(compiler_option_, &scanner, notificator_, &er, module_info);
+    Handle<ir::Node> root = parser.Parse();
+    AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer));
+  } catch (const SyntaxError& e) {
+    AddResult(Heap::NewHandle<CompilationUnit>(module_info, e.what()));
+  } catch (const TokenException& e) {
+    AddResult(Heap::NewHandle<CompilationUnit>(module_info, e.what()));
+  } catch (const std::exception& e) {
+    AddResult(Heap::NewHandle<CompilationUnit>(module_info, e.what()));
+  } catch (...) {
+    AddResult(Heap::NewHandle<CompilationUnit>(module_info, "Unhandled Error."));
+  }
+  printf("END %s\n", module_info->module_name());
 }
 
 
@@ -73,5 +103,6 @@ void Compiler::AddResult(Handle<CompilationUnit> result) {
   std::lock_guard<SpinLock> lock(lock_);
   result_list_.push_back(result);
 }
+
 
 }

@@ -27,25 +27,4 @@ namespace yatsc {
 
 Worker::Worker() : channel_(SystemInfo::GetOnlineProcessorCount()){}
 
-
-Worker* Worker::default_worker() {
-  if (flag_ == 0) {
-    ++flag_;
-    default_worker_ = Heap::New<Worker>();
-    atexit(Remove);
-  }
-  return default_worker_;
-}
-
-
-void Worker::Remove() {
-  Heap::Destruct(default_worker_);
-}
-
-
-std::atomic_int Worker::flag_(0);
-
-
-Worker* Worker::default_worker_;
-
 }

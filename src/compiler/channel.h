@@ -28,6 +28,7 @@
 #include <deque>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 #include "../memory/heap.h"
 #include "./worker-count.h"
 #include "./worker-queue.h"
@@ -38,28 +39,29 @@ class Channel {
   typedef Handle<std::thread> ThreadHandle;
   typedef std::deque<ThreadHandle> Workers;
  public :
-  Channel();
-
   Channel(int limit);
 
   ~Channel();
 
   template <typename T>
   void send_request(T req) {
-    if (worker_count_.running_thread_count() >= (worker_count_.current_thread_count() - 1)) {
-      if (!worker_count_.limit()) {
-        worker_count_.add_thread_count();
-        CreateWorker(static_cast<int>(worker_count_.running_thread_count() + 1), true);
-      }
-    }
     worker_queue_.set_request(req);
-    cond_.notify_all();
   }
 
   YATSC_INLINE int running_thread_count() const {return worker_count_.running_thread_count();}
 
 
   YATSC_INLINE int current_thread_count() const {return worker_count_.current_thread_count();}
+
+
+  void Wait() {
+    for (auto worker: workers_) {
+      worker->join();
+    }
+  }
+
+
+  YATSC_INLINE void Shutdown() YATSC_NOEXCEPT {exit_ = true;}
   
  private :
   void Initialize();
@@ -81,9 +83,6 @@ class Channel {
   WorkerCount worker_count_;
   Workers workers_;
   WorkerQueue worker_queue_;
-  std::condition_variable cond_;
-  std::mutex mutex_;
-  std::mutex req_mutex_;
 };
 
 }

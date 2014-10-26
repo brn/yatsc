@@ -28,19 +28,20 @@
 #include "../parser/literalbuffer.h"
 #include "../utils/stl.h"
 #include "../ir/node.h"
+#include "./module-info.h"
 
 
 namespace yatsc {
 
 class CompilationUnit {
  public:
-  CompilationUnit(Handle<ir::Node> root, Handle<LiteralBuffer> literal_buffer);
+  CompilationUnit(Handle<ir::Node> root, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer);
 
   
-  explicit CompilationUnit(const char* error_message);
+  CompilationUnit(Handle<ModuleInfo> module_info, const char* error_message);
 
 
-  explicit CompilationUnit(const String& error_message);
+  CompilationUnit(Handle<ModuleInfo> module_info, const String& error_message);
 
   
   CompilationUnit(const CompilationUnit& compilation_unit);
@@ -51,10 +52,17 @@ class CompilationUnit {
 
   bool success() {return error_message_.empty();}
 
+
+  YATSC_CONST_GETTER(const char*, module_name, module_info_->module_name());
+
+
+  YATSC_CONST_GETTER(const char*, error_message, error_message_.c_str());
+
   
  private:
   String error_message_;
   Handle<ir::Node> root_;
+  Handle<ModuleInfo> module_info_;
   Handle<LiteralBuffer> literal_buffer_;
 };
 

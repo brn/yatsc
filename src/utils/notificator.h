@@ -1,0 +1,102 @@
+// The MIT License (MIT)
+// 
+// Copyright (c) 2013 Taketoshi Aono(brn)
+// 
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+// 
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+
+#ifndef UTILS_NOTIFICATOR_H
+#define UTILS_NOTIFICATOR_H
+
+#include <functional>
+#include "../memory/heap.h"
+#include "./stl.h"
+#include "./utils.h"
+#include "./spinlock.h"
+
+namespace yatsc {
+
+/**
+ * @class
+ * The event observer implementation.
+ */
+template<typename Signature>
+class Notificator {
+  typedef std::function<Signature> ListenerFunction;
+  typedef Handle<ListenerFunction> ListenerHandle;
+  //The unordered_multimap entry type.
+  typedef std::pair<const char*, ListenerHandle> ListenerSet;
+  typedef MultiHashMap<String, ListenerHandle> Listeners;
+  typedef typename Listeners::iterator ListenersIterator;
+  typedef typename Listeners::const_iterator ConstListenersIterator;
+  //The unordered_multimap equal_range type.
+  typedef std::pair<ConstListenersIterator, ConstListenersIterator> ListenersRange;
+  
+ public :
+  Notificator();
+  virtual ~Notificator(){};
+  Notificator(const Notificator<Signature>& notificator);
+  const Notificator<Signature>& operator = (const Notificator<Signature>& notificator);
+
+  
+  // Add listener to the observer.
+  // The added listener is identified by the string key.
+  template <typename Listener>
+  YATSC_INLINE void AddListener(const char* key, Listener listener);
+  
+
+  YATSC_INLINE void RemoveListener(const char* key);
+
+  
+  template <typename Listener>
+  YATSC_INLINE void operator += (std::pair<const char*, Listener> listener_pack);
+
+  
+  YATSC_INLINE void operator -= (const char* key);
+
+
+  // Notify event to the all listeners.
+  template <typename ... Args>
+  YATSC_INLINE void NotifyAll(Args ... args) YATSC_NO_SE;
+
+
+  template <typename ... Args>
+  YATSC_INLINE void NotifyForKey(const char* key, Args ... args) YATSC_NO_SE;
+  
+
+  // Return registered listener number.
+  YATSC_INLINE int size() YATSC_NO_SE {return listeners_.size();}
+
+  
+  YATSC_INLINE void swap(Notificator<Signature>& notificator);
+
+  
+  YATSC_INLINE bool empty() YATSC_NO_SE {return listeners_.empty();}
+
+  
+ private :
+  Listeners listeners_;
+  SpinLock lock_;
+};
+
+}
+
+#include "notificator-inl.h"
+
+#endif

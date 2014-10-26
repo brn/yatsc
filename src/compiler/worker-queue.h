@@ -26,6 +26,10 @@
 
 #include <deque>
 #include <functional>
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+#include "../utils/utils.h"
 
 namespace yatsc {
 
@@ -42,8 +46,11 @@ class WorkerQueue {
   
   template <typename T>
   void set_request(T request) {
+    std::unique_lock<std::mutex> lock(lock_);
+    set_wait_.wait(lock, [&] {return !pop_;});
     Request fn = request;
     queue_.push_back(fn);
+    pop_wait_.notify_one();
   }
 
   
@@ -52,10 +59,17 @@ class WorkerQueue {
   
   bool empty() const {return queue_.empty();}
 
+
+  size_t job_count() YATSC_NO_SE {return queue_.size();}
+
   
  private :
   typedef std::deque<Request> Queue;
   Queue queue_;
+  bool pop_;
+  std::mutex lock_;
+  std::condition_variable set_wait_;
+  std::condition_variable pop_wait_;
 };
 
 }

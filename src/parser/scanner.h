@@ -71,12 +71,23 @@ class Scanner: private Uncopyable, private Unmovable {
   /**
    * @param source The source file content.
    */
+  template <typename ReferencePathCallback>
+  Scanner(UCharInputIterator it,
+          UCharInputIterator end,
+          ErrorReporter* error_reporter,
+          LiteralBuffer* literal_buffer,
+          const CompilerOption& compilation_option,
+          Handle<ModuleInfo> module_info,
+          ReferencePathCallback reference_path_callback);
+
+
   Scanner(UCharInputIterator it,
           UCharInputIterator end,
           ErrorReporter* error_reporter,
           LiteralBuffer* literal_buffer,
           const CompilerOption& compilation_option,
           Handle<ModuleInfo> module_info);
+  
 
   /**
    * Scan the source file from the current position to the next token position.
@@ -288,6 +299,7 @@ class Scanner: private Uncopyable, private Unmovable {
       auto p_multi_line_comment = literal_buffer_->InsertValue(last_multi_line_comment_);
       token_info_.set_multi_line_comment(p_multi_line_comment);
     }
+
     last_multi_line_comment_.Clear();
     token_info_.ClearValue();
     token_info_.set_source_position(CreateSourcePosition());
@@ -348,6 +360,7 @@ class Scanner: private Uncopyable, private Unmovable {
   ErrorReporter* error_reporter_;
   LiteralBuffer* literal_buffer_;
   const CompilerOption& compiler_option_;
+  std::function<void(const UtfString&)> reference_path_callback_;
   Handle<ModuleInfo> module_info_;
 };
 }

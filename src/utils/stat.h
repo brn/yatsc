@@ -29,7 +29,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
-#include "utils.h"
+#include "./utils.h"
+#include "./stl.h"
 
 #ifdef _WIN32
 #define STAT_FN(filename, statObj) ::_stat (filename, statObj)
@@ -63,9 +64,18 @@ class Stat{
     is_exist_ = (STAT_FN(path, &fstat_) != -1);
   }
 
+  Stat(const String& str)
+      : Stat(str.c_str()) {}
+
 
   ~Stat(){};
 
+
+  YATSC_INLINE bool IsExistsAndFile() {return IsExist() && IsReg();}
+
+  
+  YATSC_INLINE bool IsExistsAndDir() {return IsExist() && IsDir();}
+  
 
   YATSC_INLINE bool IsExist() const { return is_exist_; }
 

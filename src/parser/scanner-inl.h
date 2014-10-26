@@ -39,18 +39,41 @@
 
 namespace yatsc {
 template<typename UCharInputIterator>
+template <typename ReferencePathCallback>
+Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
+                                     UCharInputIterator end,
+                                     ErrorReporter* error_reporter,
+                                     LiteralBuffer* literal_buffer,
+                                     const CompilerOption& compiler_option,
+                                     Handle<ModuleInfo> module_info,
+                                     ReferencePathCallback reference_path_callback)
+: generic_type_(0),
+  it_(it),
+  end_(end),
+  error_reporter_(error_reporter),
+  literal_buffer_(literal_buffer),
+  compiler_option_(compiler_option),
+  module_info_(module_info),
+  reference_path_callback_(reference_path_callback){
+  
+  Advance();
+  SkipWhiteSpace();
+}
+
+
+template<typename UCharInputIterator>
 Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
                                      UCharInputIterator end,
                                      ErrorReporter* error_reporter,
                                      LiteralBuffer* literal_buffer,
                                      const CompilerOption& compiler_option,
                                      Handle<ModuleInfo> module_info)
-    : generic_type_(0),
-      it_(it),
-      end_(end),
-      error_reporter_(error_reporter),
-      literal_buffer_(literal_buffer),
-      compiler_option_(compiler_option),
+: generic_type_(0),
+  it_(it),
+  end_(end),
+  error_reporter_(error_reporter),
+  literal_buffer_(literal_buffer),
+  compiler_option_(compiler_option),
   module_info_(module_info) {
   
   Advance();
@@ -68,7 +91,6 @@ void Scanner<UCharInputIterator>::Advance()  {
   char_ = *it_;
   scanner_source_position_.AdvancePosition(1);
   ++it_;
-  
   if (it_ == end_) {
     lookahead1_ = UChar::Null();
     return;
@@ -580,9 +602,82 @@ template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
   bool skip = false;
   if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
-    while (char_ != unicode::u8('\0') &&
-           Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
+    Advance();
+    if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
+      UtfString str;
       Advance();
+      Advance();
+      while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+      if (char_ == unicode::u8('<')) {
+        Advance();
+        while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+        if (char_ == unicode::u8('r') &&
+            lookahead1_ == unicode::u8('e')) {
+          Advance();
+          Advance();
+          if (char_ == unicode::u8('f') &&
+              lookahead1_ == unicode::u8('e')) {
+            Advance();
+            Advance();
+            if (char_ == unicode::u8('r') &&
+                lookahead1_ == unicode::u8('e')) {
+              Advance();
+              Advance();
+              if (char_ == unicode::u8('n') &&
+                  lookahead1_ == unicode::u8('c')) {
+                Advance();
+                Advance();
+                if (char_ == unicode::u8('e')) {
+                  Advance();
+                  while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+                  if (char_ == unicode::u8('p') &&
+                      lookahead1_ == unicode::u8('a')) {
+                    Advance();
+                    Advance();
+                    if (char_ == unicode::u8('t') &&
+                        lookahead1_ == unicode::u8('h')) {
+                      Advance();
+                      Advance();
+                      if (char_ == unicode::u8('=')) {
+                        Advance();
+                        if (char_ == unicode::u8('\'') ||
+                            char_ == unicode::u8('"')) {
+                          try {
+                            ScanStringLiteral();
+                            if (char_ == unicode::u8('\'') ||
+                                char_ == unicode::u8('"')) {
+                              Advance();
+                              while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+                              if (char_ == unicode::u8('/')) {
+                                Advance();
+                                while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+                                if (char_ == unicode::u8('>')) {
+                                  Advance();
+                                  if (reference_path_callback_) {
+                                    reference_path_callback_(token_info_.value());
+                                  }
+                                  goto SKIP;
+                                }
+                              }
+                            }
+                          } catch(const TokenException& e) {goto SKIP;}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      goto SKIP;
+    } else {
+   SKIP:
+      while (char_ != unicode::u8('\0') &&
+             Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
+        Advance();
+      }
     }
     skip = true;
   }

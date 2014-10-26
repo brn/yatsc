@@ -31,6 +31,8 @@
 #include "../compiler-option.h"
 #include "../utils/utils.h"
 #include "../utils/stl.h"
+#include "../utils/notificator.h"
+#include "../compiler/module-info.h"
 
 
 namespace yatsc {
@@ -42,8 +44,9 @@ class ParserBase: private Uncopyable, private Unmovable {
    * @param scanner Scanner instance that is not consume token yet.
    * @param error_reporter ErrorReporter instance to use report parse error.
    */
-  ParserBase(const CompilerOption& co, ErrorReporter* error_reporter)
+  ParserBase(const CompilerOption& co, const Notificator<void(Handle<ModuleInfo>)>& notificator, ErrorReporter* error_reporter)
       : compiler_option_(co),
+        notificator_(notificator),
         current_token_info_(nullptr),
         error_reporter_(error_reporter) {}
 
@@ -63,10 +66,17 @@ class ParserBase: private Uncopyable, private Unmovable {
   }
 
 
+  template <typename ... Args>
+  void Notify(const char* key, Args ... args) {
+    notificator_.NotifyForKey(key, std::forward<Args>(args)...);
+  }
+
+
   bool CheckLineTermination(TokenInfo* info = nullptr);
   
   
   const CompilerOption& compiler_option_;
+  const Notificator<void(Handle<ModuleInfo>)>& notificator_;
   TokenInfo* current_token_info_;
   TokenInfo prev_token_info_;
   ir::IRFactory irfactory_;

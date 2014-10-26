@@ -187,9 +187,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPropertyList(bool yi
     if (Current()->type() == Token::TS_COMMA) {
       Next();
       continue;
-    }
-    if (Current()->type() == Token::TS_RIGHT_BRACE) {
+    } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
       return prop_list;
+    } else {
+      SYNTAX_ERROR("SyntaxError ',' or '}' expected.", Current());
     }
   }
 
@@ -1351,7 +1352,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
   if (Current()->type() == Token::TS_LEFT_PAREN) {
     Handle<ir::Node> call_sig = ParseCallSignature(yield);
     if (Current()->type() == Token::TS_LEFT_BRACE) {
-      Next();
       Handle<ir::Node> body = ParseFunctionBody(yield || generator);
       value = New<ir::FunctionView>(getter, setter, generator, New<ir::FunctionOverloadsView>(), ir::Node::Null(), call_sig, body);
     }

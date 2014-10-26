@@ -23,6 +23,8 @@
 #ifndef COMPILER_MODULE_INFO_H
 #define COMPILER_MODULE_INFO_H
 
+#include "../utils/stl.h"
+
 namespace yatsc {
 
 class ModuleInfo {
@@ -37,6 +39,11 @@ class ModuleInfo {
 
   YATSC_CONST_GETTER(bool, typescript, typescript_);
 
+
+  static Handle<ModuleInfo> Create(const String& module_name) {return Create(module_name.c_str());}
+
+  
+  static Handle<ModuleInfo> Create(const char* module_name);
   
  private:
   String module_name_;

@@ -44,10 +44,12 @@
 
 
 TEST(ParserTest, Parse) {
-  yatsc::String code1 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/core.ts");
-  ENTIRE_PARSER_TEST_ALL(code1.c_str(), "");
-  yatsc::String code2 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/parser.ts");
-  ENTIRE_PARSER_TEST_ALL(code2.c_str(), "");
-  yatsc::String code3 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/scanner.ts");
-  ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
+  // yatsc::String code1 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/core.ts");
+  // ENTIRE_PARSER_TEST_ALL(code1.c_str(), "");
+  // yatsc::String code2 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/parser.ts");
+  // ENTIRE_PARSER_TEST_ALL(code2.c_str(), "");
+  // yatsc::String code3 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/scanner.ts");
+  // ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
+  yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/checker.ts");
+  ENTIRE_PARSER_TEST_ALL(code4.c_str(), "");
 }

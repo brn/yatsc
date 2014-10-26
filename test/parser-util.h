@@ -27,6 +27,7 @@
 #include "../src/parser/parser.h"
 #include "../src/parser/literalbuffer.h"
 #include "../src/utils/stl.h"
+#include "../src/utils/notificator.h"
 #include "./compare-node.h"
 #include "./unicode-util.h"
 
@@ -45,7 +46,8 @@
     compiler_option.set_language_mode(type);                            \
     yatsc::LiteralBuffer lb;                                            \
     yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
-    yatsc::Parser<Iterator> parser(compiler_option, &scanner, &error_reporter, module_info); \
+    yatsc::Notificator<void(yatsc::Handle<yatsc::ModuleInfo>)> notificator; \
+    yatsc::Parser<Iterator> parser(compiler_option, &scanner, notificator, &error_reporter, module_info); \
     if (!dothrow) {                                                     \
       try {                                                             \
         auto node = PARSER_METHOD_CALL__(parser, method_expr);          \

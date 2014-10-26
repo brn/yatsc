@@ -27,10 +27,6 @@
 
 namespace yatsc {
 
-Channel::Channel()
-    : exit_(false),
-      worker_count_(12) {Initialize();}
-
 
 Channel::Channel(int limit)
     : exit_(false),
@@ -39,8 +35,8 @@ Channel::Channel(int limit)
 
 Channel::~Channel() {
   exit_ = true;
-  cond_.notify_all();
   while (worker_count_.running_thread_count()){}
+  while (worker_count_.current_thread_count()){}
 }
 
 
@@ -50,49 +46,32 @@ inline void Channel::Initialize() {
   }
 }
 
-  
-inline WorkerQueue::Request Channel::Wait(bool additional) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  int count = 0;
-  while (worker_queue_.empty() && !exit_) {
-    if (additional) {
-      if (count > 0) {
-        return WorkerQueue::Request();
-      }
-      count++;
-      cond_.wait(lock, [&]{return worker_queue_.empty() && !exit_;});
-    } else {
-      cond_.wait(lock, [&]{return worker_queue_.empty() && !exit_;});
-    }
-  }
-  return worker_queue_.pop_request();
-}
-
 
 inline void Channel::CreateWorker(int i, bool additional) {
   ThreadHandle thread_handle = Heap::NewHandle<std::thread>(std::bind(&Channel::Run, this, i, additional));
-  thread_handle->detach();
   workers_.push_back(thread_handle);
 }
 
 
 inline void Channel::Run(int id, bool additional) {
-  while (1) {
-    WorkerQueue::Request fn = Wait(additional);
-    if (fn) {
-      ProcessRequest(fn, id);
-    } else {
-      worker_count_.sub_thread_count();
-      return;
+  while (!exit_) {
+    if (worker_queue_.empty()) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      continue;
     }
+    WorkerQueue::Request fn = worker_queue_.pop_request();
+    ProcessRequest(fn, id);
   }
+  worker_count_.sub_thread_count();
 }
 
 
 inline void Channel::ProcessRequest(const WorkerQueue::Request &fn, int id) {
-  worker_count_.add_running_thread_count();
-  fn();
-  worker_count_.sub_running_thread_count();
+  if (fn) {
+    worker_count_.add_running_thread_count();
+    fn();
+    worker_count_.sub_running_thread_count();
+  }
 }
 
 }

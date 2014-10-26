@@ -28,6 +28,8 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
 #include "../memory/heap.h"
 
 namespace yatsc {
@@ -35,6 +37,18 @@ typedef std::basic_string<char, std::char_traits<char>, StandardAllocator<char>>
 typedef std::basic_stringstream<char, std::char_traits<char>, StandardAllocator<char>> StringStream;
 template<typename T>
 using Vector = std::vector<T, StandardAllocator<T>>;
+template<typename Key, typename Value>
+using MultiHashMap = std::unordered_multimap<Key,
+                                             Value,
+                                             std::hash<Key>,
+                                             std::equal_to<Key>,
+                                             StandardAllocator<std::pair<const Key, Value>>>;
+
+template<typename Key>
+using HashSet = std::unordered_set<Key,
+                                   std::hash<Key>,
+                                   std::equal_to<Key>,
+                                   StandardAllocator<Key>>;
 }
 
 #endif

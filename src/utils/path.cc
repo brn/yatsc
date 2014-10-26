@@ -184,15 +184,13 @@ PathArray GetPathArray(const char* path) {
     tmp.erase(tmp.size() - 1, 1);
   }
   
-  while (1) {
+  while (pos != String::npos) {
     array.push_back(tmp.substr(index, pos - index));
     index = pos + 1;
     pos = tmp.find("/", index);
-    if (pos == String::npos) {
-      array.push_back(tmp.substr(index, tmp.size() - index));
-      return std::move(array);
-    }
   }
+  array.push_back(tmp.substr(index, tmp.size() - index));
+  return std::move(array);
   return std::move(array);
 }
 
@@ -225,10 +223,6 @@ String Path::Join(const char* base, const char* path) {
   
   PathArray base_array = GetPathArray(base);
   PathArray target_array = GetPathArray(path);
-  
-  if (Stat(base).IsReg()) {
-    base_array.pop_back();
-  }
 
   if (base_array[0] != target_array[0]) {
     base_array.insert(base_array.end(), target_array.begin(), target_array.end());
