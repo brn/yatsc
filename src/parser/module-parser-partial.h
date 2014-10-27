@@ -38,7 +38,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModule() {
     } else if (Current()->type() == Token::TS_EXPORT) {
       file_scope->InsertLast(ParseExportDeclaration());
     } else {
-      file_scope->InsertLast(ParseStatementListItem(false, false, false, false));
+      if (Current()->type() == Token::TS_IDENTIFIER &&
+          Current()->value() == "declare") {
+        file_scope->InsertLast(ParseAmbientDeclaration());
+      } else {
+        file_scope->InsertLast(ParseStatementListItem(false, false, false, false));
+      }
     }
     
     if (IsLineTermination()) {
@@ -269,6 +274,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
       } else {
         block->InsertLast(ParseStatementListItem(false, false, false, false));
       }
+      
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      }
     }
     Next();
     return block;
@@ -312,6 +321,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
         return CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), &info, true);
       }
       default:
+        if (Current()->type() == Token::TS_IDENTIFIER &&
+            Current()->value() == "declare") {
+          return CreateExportView(ParseAmbientDeclaration(), ir::Node::Null(), &info, true);
+        }
         SYNTAX_ERROR("SyntaxError unexpected token.", Current());
     }
   }

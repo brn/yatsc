@@ -29,25 +29,51 @@ namespace yatsc {
 
 template <typename Error>
 void ErrorReporter::Throw(const SourcePosition& source_position) {
-  st_ << "\n" << module_info_->module_name() << ':' << source_position.start_line_number() << ':' << source_position.start_col()
-      << "\n" << GetLineSource(source_position)
-      << "\n";
+  static const size_t kMaxWidth = 120;
+  String line_source = GetLineSource(source_position);
+  st_ << "\n" << module_info_->module_name() << ':' << source_position.start_line_number() <<
+    ':' << source_position.start_col() << '-' << source_position.end_col();
 
   size_t start_col = source_position.start_col();
   size_t end_col = source_position.end_col();
   size_t threshold = start_col - 1;
   size_t end = end_col > start_col? end_col - 1: end_col;
-  for (size_t i = 0; i < end; i++) {
-    if (i >= threshold) {
-      st_ << '^';
-    } else {
-      st_ << '-';
+  size_t start = 0;
+  
+  if (line_source.size() > kMaxWidth) {
+    st_ << "\n" << line_source.substr(0 * kMaxWidth, kMaxWidth) << "\n";
+    size_t wrap = 1;
+    size_t count = 0;
+    for (size_t i = start; i < end; i++, count++) {
+      if (count == kMaxWidth) {
+        st_ << "\n" << line_source.substr(wrap * kMaxWidth, kMaxWidth) << "\n";
+        wrap++;
+        count = 0;
+      }
+      if (i >= threshold) {
+        st_ << '^';
+      } else {
+        st_ << '-';
+      }
+    }
+    size_t last = wrap * kMaxWidth;
+    if (last < line_source.size()) {
+      st_ << "\n" << line_source.substr(last, line_source.size() - last);
+    }
+  } else {
+    st_ << "\n" << line_source << "\n";
+    for (size_t i = start; i < end; i++) {
+      if (i >= threshold) {
+        st_ << '^';
+      } else {
+        st_ << '-';
+      }
     }
   }
+  
   String message = st_.str();
   Error e(message.c_str());
-  static const String empty_string;
-  st_.str(empty_string);
+  st_.str("");
   st_.clear();
   st_ << std::dec;
   throw e;

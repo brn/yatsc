@@ -30,7 +30,7 @@
 #include "../utils/spinlock.h"
 #include "../utils/notificator.h"
 #include "../utils/stl.h"
-#include "./worker.h"
+#include "./thread-pool.h"
 #include "./module-info.h"
 
 namespace yatsc {
@@ -47,8 +47,8 @@ class Compiler {
 
   class CompilationScheduler {
    public:
-    CompilationScheduler(Worker* worker)
-        : worker_(worker) {
+    CompilationScheduler(ThreadPool* thread_pool)
+        : thread_pool_(thread_pool) {
       count_ = 0;
     }
 
@@ -62,7 +62,7 @@ class Compiler {
 
     YATSC_INLINE void ReleaseCompilationCount() YATSC_NO_SE {
       if (--count_ == 0) {
-        worker_->Shutdown();
+        thread_pool_->Shutdown();
       }
     };
 
@@ -72,7 +72,7 @@ class Compiler {
     }
    private:
     mutable std::atomic_int count_;
-    Worker* worker_;
+    ThreadPool* thread_pool_;
     HashSet<String> compiled_modules_;
     SpinLock lock_;
   };
@@ -89,7 +89,7 @@ class Compiler {
   CompilerOption compiler_option_;
   CompilationScheduler* compilation_scheduler_;
   LazyInitializer<CompilationScheduler> compilation_scheduler_init_;
-  Worker worker_;
+  ThreadPool thread_pool_;
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;
   Notificator<void(Handle<ModuleInfo>)> notificator_;

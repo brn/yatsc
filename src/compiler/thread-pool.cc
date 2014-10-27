@@ -20,47 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-
-#ifndef COMPILER_WORKER_COUNT_H
-#define COMPILER_WORKER_COUNT_H
-
-#include <atomic>
+#include "./thread-pool.h"
+#include "../utils/systeminfo.h"
 
 namespace yatsc {
-class WorkerCount {
- public :
-  WorkerCount(int limit);
 
-  
-  ~WorkerCount();
+ThreadPool::ThreadPool() : channel_(SystemInfo::GetOnlineProcessorCount()){}
 
-  
-  int current_thread_count() const;
-
-  
-  int running_thread_count() const;
-
-  
-  void add_thread_count();
-
-  
-  void sub_thread_count();
-
-  
-  void add_running_thread_count();
-
-  
-  void sub_running_thread_count();
-
-  
-  bool limit() const;
-
-  
- private :
-  int limit_;
-  std::atomic_int current_thread_count_;
-  std::atomic_int running_thread_count_;
-};
 }
-
-#endif

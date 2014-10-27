@@ -30,14 +30,14 @@
 #include <mutex>
 #include <condition_variable>
 #include "../memory/heap.h"
-#include "./worker-count.h"
-#include "./worker-queue.h"
+#include "./thread-pool-count.h"
+#include "./thread-pool-queue.h"
 
 
 namespace yatsc {
 class Channel {
   typedef Handle<std::thread> ThreadHandle;
-  typedef std::deque<ThreadHandle> Workers;
+  typedef std::deque<ThreadHandle> ThreadPools;
  public :
   Channel(int limit);
 
@@ -45,18 +45,18 @@ class Channel {
 
   template <typename T>
   void send_request(T req) {
-    worker_queue_.set_request(req);
+    thread_pool_queue_.set_request(req);
   }
 
-  YATSC_INLINE int running_thread_count() const {return worker_count_.running_thread_count();}
+  YATSC_INLINE int running_thread_count() const {return thread_pool_count_.running_thread_count();}
 
 
-  YATSC_INLINE int current_thread_count() const {return worker_count_.current_thread_count();}
+  YATSC_INLINE int current_thread_count() const {return thread_pool_count_.current_thread_count();}
 
 
   void Wait() {
-    for (auto worker: workers_) {
-      worker->join();
+    for (auto thread_pool: thread_pools_) {
+      thread_pool->join();
     }
   }
 
@@ -67,22 +67,22 @@ class Channel {
   void Initialize();
 
 
-  void CreateWorker(int i, bool additional);
+  void CreateThreadPool(int i, bool additional);
 
 
-  WorkerQueue::Request Wait(bool);
+  ThreadPoolQueue::Request Wait(bool);
 
 
   void Run(int id, bool additional);
 
 
-  void ProcessRequest(const WorkerQueue::Request &fn, int id);
+  void ProcessRequest(const ThreadPoolQueue::Request &fn, int id);
 
 
   bool exit_;
-  WorkerCount worker_count_;
-  Workers workers_;
-  WorkerQueue worker_queue_;
+  ThreadPoolCount thread_pool_count_;
+  ThreadPools thread_pools_;
+  ThreadPoolQueue thread_pool_queue_;
 };
 
 }

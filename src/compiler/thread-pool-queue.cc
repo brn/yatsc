@@ -21,57 +21,32 @@
 // THE SOFTWARE.
 
 
-#ifndef COMPILER_WORKER_QUEUE_H
-#define COMPILER_WORKER_QUEUE_H
-
-#include <deque>
-#include <functional>
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-#include "../utils/utils.h"
+#include "./thread-pool-queue.h"
 
 namespace yatsc {
 
-class WorkerQueue {
- public :
-  typedef std::function<void()> Request;
+ThreadPoolQueue::ThreadPoolQueue()
+    : pop_(false) {}
 
-  
-  WorkerQueue();
 
-  
-  ~WorkerQueue();
+ThreadPoolQueue::~ThreadPoolQueue(){}
 
-  
-  template <typename T>
-  void set_request(T request) {
-    std::unique_lock<std::mutex> lock(lock_);
-    set_wait_.wait(lock, [&] {return !pop_;});
-    Request fn = request;
-    queue_.push_back(fn);
-    pop_wait_.notify_one();
+
+ThreadPoolQueue::Request ThreadPoolQueue::pop_request() {
+  pop_ = true;
+  YATSC_SCOPED([&]{
+    pop_ = false;
+    set_wait_.notify_one();
+  });
+  std::unique_lock<std::mutex> lock(lock_);
+  pop_wait_.wait(lock, [&] {return !queue_.empty();});
+  if (!queue_.empty()) {
+    Request req = queue_.front();
+    queue_.pop_front();
+    return req;
   }
-
-  
-  Request pop_request();
-
-  
-  bool empty() const {return queue_.empty();}
-
-
-  size_t job_count() YATSC_NO_SE {return queue_.size();}
-
-  
- private :
-  typedef std::deque<Request> Queue;
-  Queue queue_;
-  bool pop_;
-  std::mutex lock_;
-  std::condition_variable set_wait_;
-  std::condition_variable pop_wait_;
-};
-
+  return Request();
 }
 
-#endif
+
+}

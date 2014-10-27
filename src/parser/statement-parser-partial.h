@@ -1071,10 +1071,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     }
     
     auto extends = New<ir::InterfaceExtendsView>();
-    
-    while (Current()->type() == Token::TS_EXTENDS) {
+
+    if (Current()->type() == Token::TS_EXTENDS) {
       Next();
-      extends->InsertLast(ParseReferencedType());
+      while (1) {
+        extends->InsertLast(ParseReferencedType());
+        if (Current()->type() == Token::TS_COMMA) {
+          Next();
+        } else {
+          break;
+        }
+      }
     }
 
     if (Current()->type() == Token::TS_LEFT_BRACE) {

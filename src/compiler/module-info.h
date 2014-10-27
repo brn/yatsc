@@ -36,8 +36,14 @@ class ModuleInfo {
   
   YATSC_CONST_GETTER(const char*, module_name, module_name_.c_str());
 
+  
+  YATSC_CONST_GETTER(const String&, module_name_string, module_name_);
+
 
   YATSC_CONST_GETTER(bool, typescript, typescript_);
+
+
+  bool IsDefinitionFile() const;
 
 
   static Handle<ModuleInfo> Create(const String& module_name) {return Create(module_name.c_str());}

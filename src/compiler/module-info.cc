@@ -26,6 +26,12 @@
 
 namespace yatsc {
 
+bool ModuleInfo::IsDefinitionFile() const {
+  String::size_type index = module_name_.find_last_of(".d.ts");
+  return index != String::npos && index == (module_name_.size() - 4);
+}
+
+
 Handle<ModuleInfo> ModuleInfo::Create(const char* module_name) {
   bool typescript = false;
   String name = module_name;

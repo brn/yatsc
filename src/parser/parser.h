@@ -151,7 +151,13 @@ class Parser: public ParserBase {
     Next();
   }
 
-  Handle<ir::Node> Parse() {return ParseModule();};
+  Handle<ir::Node> Parse() {
+    if (module_info_->IsDefinitionFile()) {
+      return ParseDeclarationModule();
+    } else {
+      return ParseModule();
+    }
+  };
 
  private:
   struct AccessorType {
@@ -501,6 +507,45 @@ class Parser: public ParserBase {
       Handle<ir::Node> identifier,
       Handle<ir::Node> binding);
 
+
+  // Ambient
+  Handle<ir::Node> ParseDeclarationModule();
+  
+  Handle<ir::Node> ParseAmbientDeclaration();
+
+  Handle<ir::Node> ParseAmbientVariableDeclaration(TokenInfo* info);
+
+  Handle<ir::Node> ParseAmbientFunctionDeclaration(TokenInfo* info);
+
+  Handle<ir::Node> ParseAmbientClassDeclaration(TokenInfo* info);
+
+  Handle<ir::Node> ParseAmbientClassBody();
+
+  Handle<ir::Node> ParseAmbientClassElement();
+
+  Handle<ir::Node> ParseAmbientConstructor(Handle<ir::Node> mods);
+
+  Handle<ir::Node> ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* acessor_type);
+
+  Handle<ir::Node> ParseAmbientGeneratorMethod(Handle<ir::Node> mods);
+
+  Handle<ir::Node> ParseAmbientMemberVariable(Handle<ir::Node> mods);
+
+  Handle<ir::Node> ParseAmbientEnumDeclaration(TokenInfo* info);
+
+  Handle<ir::Node> ParseAmbientEnumBody();
+
+  Handle<ir::Node> ParseAmbientEnumProperty();
+
+  Handle<ir::Node> CreateAmbientEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
+
+  Handle<ir::Node> ParseAmbientModuleDeclaration(TokenInfo* info);
+
+  Handle<ir::Node> ParseAmbientModuleBody(bool external);
+
+  Handle<ir::Node> ParseAmbientModuleElement(bool external);
+  
+
   bool IsLineTermination();
 
   void ConsumeLineTerminator();
@@ -573,6 +618,7 @@ class Parser: public ParserBase {
 #include "./type-parser-partial.h"
 #include "./statement-parser-partial.h"
 #include "./module-parser-partial.h"
+#include "./ambient-parser-partial.h"
 
 #undef SYNTAX_ERROR
 #undef ARROW_PARAMETERS_ERROR

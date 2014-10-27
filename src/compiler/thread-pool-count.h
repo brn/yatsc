@@ -21,50 +21,46 @@
 // THE SOFTWARE.
 
 
-#include <thread>
-#include "./worker-count.h"
+#ifndef COMPILER_THREAD_POOL_COUNT_H
+#define COMPILER_THREAD_POOL_COUNT_H
+
+#include <atomic>
 
 namespace yatsc {
+class ThreadPoolCount {
+ public :
+  ThreadPoolCount(int limit);
 
-static const int thread_default_count = 4;
+  
+  ~ThreadPoolCount();
 
+  
+  int current_thread_count() const;
 
-int GetThreadCount() {
-  if (std::thread::hardware_concurrency() >= thread_default_count) {
-    return std::thread::hardware_concurrency();
-  }
-  return thread_default_count;
+  
+  int running_thread_count() const;
+
+  
+  void add_thread_count();
+
+  
+  void sub_thread_count();
+
+  
+  void add_running_thread_count();
+
+  
+  void sub_running_thread_count();
+
+  
+  bool limit() const;
+
+  
+ private :
+  int limit_;
+  std::atomic_int current_thread_count_;
+  std::atomic_int running_thread_count_;
+};
 }
 
-
-WorkerCount::WorkerCount(int limit)
-    : limit_(limit) {
-  current_thread_count_ = GetThreadCount();  
-  running_thread_count_ = 0;
-}
-
-
-WorkerCount::~WorkerCount(){}
-
-
-int WorkerCount::current_thread_count() const {return static_cast<long>(current_thread_count_);}
-
-
-int WorkerCount::running_thread_count() const {return static_cast<long>(running_thread_count_);}
-
-
-void WorkerCount::add_thread_count() {++current_thread_count_;}
-
-
-void WorkerCount::sub_thread_count() {--current_thread_count_;}
-
-
-void WorkerCount::add_running_thread_count() {++running_thread_count_;}
-
-
-void WorkerCount::sub_running_thread_count() {--running_thread_count_;}
-
-
-bool WorkerCount::limit() const {return current_thread_count_ == limit_;}
-
-}
+#endif

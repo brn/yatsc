@@ -149,6 +149,18 @@ namespace yatsc {namespace ir {
   DECLARE(UndefinedView)                                \
   DECLARE(TemplateLiteralView)                          \
   DECLARE(ComprehensionExprView)                        \
+  DECLARE(AmbientVariableView)                          \
+  DECLARE(AmbientFunctionDeclarationView)               \
+  DECLARE(AmbientClassDeclarationView)                  \
+  DECLARE(AmbientClassFieldsView)                       \
+  DECLARE(AmbientConstructorView)                       \
+  DECLARE(AmbientMemberFunctionView)                    \
+  DECLARE(AmbientMemberVariableView)                    \
+  DECLARE(AmbientEnumDeclarationView)                   \
+  DECLARE(AmbientEnumBodyView)                          \
+  DECLARE(AmbientEnumFieldView)                         \
+  DECLARE(AmbientModuleView)                            \
+  DECLARE(AmbientModuleBody)                            \
   DECLARE(EmptyStatement)                               \
   DECLARE_LAST(DebuggerView)
 
@@ -2211,6 +2223,205 @@ class ComprehensionExprView: public Node {
   NODE_PROPERTY(tail, 1);
 
   NODE_FLAG_PROPERTY(generator, 0);
+};
+
+
+class AmbientFunctionDeclarationView: public Node {
+ public:
+  AmbientFunctionDeclarationView(bool generator, Handle<Node> identifier, Handle<Node> call_signature)
+      : Node(NodeType::kAmbientFunctionDeclarationView, 2u, {identifier, call_signature}) {
+    set_flag(generator, 0);
+  }
+
+
+  AmbientFunctionDeclarationView()
+      : Node(NodeType::kAmbientFunctionDeclarationView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+
+  NODE_PROPERTY(call_signature, 1);
+
+
+  NODE_FLAG_PROPERTY(generator, 0);
+};
+
+
+class AmbientClassDeclarationView: public Node {
+ public:
+  AmbientClassDeclarationView(Handle<Node> identifier, Handle<Node> type_parameters, Handle<Node> bases, Handle<Node> body)
+      : Node(NodeType::kAmbientClassDeclarationView, 4u, {identifier, type_parameters, bases, body}) {}
+
+  AmbientClassDeclarationView()
+      : Node(NodeType::kAmbientClassDeclarationView, 4u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+  
+  NODE_PROPERTY(type_parameters, 1);
+
+
+  NODE_PROPERTY(bases, 2);
+
+
+  NODE_PROPERTY(body, 3);
+};
+
+
+class AmbientClassFieldsView: public Node {
+ public:
+  AmbientClassFieldsView()
+      : Node(NodeType::kAmbientClassFieldsView, 0u) {}
+};
+
+
+class AmbientVariableView: public Node {
+ public:
+  AmbientVariableView(Handle<Node> identifier, Handle<Node> type)
+      : Node(NodeType::kAmbientVariableView, 2u, {identifier, type}) {}
+
+  
+  AmbientVariableView()
+      : Node(NodeType::kAmbientVariableView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+  
+  NODE_PROPERTY(type, 1);
+};
+
+
+class AmbientConstructorView: public Node {
+ public:
+  AmbientConstructorView(Handle<Node> modifiers, Handle<Node> call_signature)
+      : Node(NodeType::kAmbientConstructorView, 2u, {modifiers, call_signature}) {}
+
+
+  AmbientConstructorView()
+      : Node(NodeType::kAmbientConstructorView, 2u) {}
+
+
+  NODE_PROPERTY(modifiers, 0);
+
+
+  NODE_PROPERTY(call_signature, 1);
+};
+
+
+class AmbientMemberFunctionView: public Node {
+ public:
+  AmbientMemberFunctionView(bool getter, bool setter, bool generator, Handle<Node> modifiers, Handle<Node> identifier, Handle<Node> call_signature)
+      : Node(NodeType::kAmbientMemberFunctionView, 3u, {modifiers, identifier, call_signature}) {
+    set_flag(getter, 0);
+    set_flag(setter, 1);
+    set_flag(generator, 2);
+  }
+
+
+  AmbientMemberFunctionView()
+      : Node(NodeType::kAmbientMemberFunctionView, 3u) {}
+
+
+  NODE_PROPERTY(modifiers, 0);
+
+
+  NODE_PROPERTY(identifier, 1);
+
+  
+  NODE_PROPERTY(call_signature, 2);
+};
+
+
+class AmbientMemberVariableView: public Node {
+ public:
+  AmbientMemberVariableView(Handle<Node> modifiers, Handle<Node> identifier, Handle<Node> type)
+      : Node(NodeType::kAmbientMemberVariableView, 3u, {modifiers, identifier, type}) {}
+
+
+  AmbientMemberVariableView()
+      : Node(NodeType::kAmbientMemberVariableView, 3u) {}
+
+
+  NODE_PROPERTY(modifiers, 0);
+
+
+  NODE_PROPERTY(identifier, 1);
+
+
+  NODE_PROPERTY(type, 2);
+};
+
+
+class AmbientEnumDeclarationView: public Node {
+ public:
+  AmbientEnumDeclarationView(Handle<Node> identifier, Handle<Node> body)
+      : Node(NodeType::kAmbientEnumDeclarationView, 2u, {identifier, body}) {}
+
+
+  AmbientEnumDeclarationView()
+      : Node(NodeType::kAmbientEnumDeclarationView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+
+  NODE_PROPERTY(body, 1);
+};
+
+
+class AmbientEnumBodyView: public Node {
+ public:
+  AmbientEnumBodyView()
+      : Node(NodeType::kAmbientEnumBodyView, 0u) {}
+};
+
+
+class AmbientEnumFieldView: public Node {
+ public:
+  AmbientEnumFieldView(Handle<Node> property_name, Handle<Node> value)
+      : Node(NodeType::kAmbientEnumFieldView, 2u, {property_name, value}) {}
+
+
+  AmbientEnumFieldView()
+      : Node(NodeType::kAmbientEnumFieldView, 2u) {}
+
+
+  NODE_PROPERTY(property_name, 0);
+
+
+  NODE_PROPERTY(value, 1);
+};
+
+
+class AmbientModuleView: public Node {
+ public:
+  AmbientModuleView(bool external, Handle<Node> identifier, Handle<Node> body)
+      : Node(NodeType::kAmbientModuleView, 2u, {identifier, body}) {
+    set_flag(external, 0);
+  }
+
+
+  AmbientModuleView()
+      : Node(NodeType::kAmbientModuleView, 2u) {}
+
+
+  NODE_PROPERTY(identifier, 0);
+
+
+  NODE_PROPERTY(body, 1);
+
+
+  NODE_FLAG_PROPERTY(external, 0);
+};
+
+
+class AmbientModuleBody: public Node {
+ public:
+  AmbientModuleBody()
+      : Node(NodeType::kAmbientModuleBody, 0u) {}
 };
 
 

@@ -175,7 +175,6 @@ static const Token kPunctures[] = {
   KEYWORD("continue", Token::TS_CONTINUE)                               \
   KEYWORD_GROUP('d')                                                    \
   KEYWORD("debugger", Token::TS_DEBUGGER)                               \
-  KEYWORD("declare", Token::TS_DECLARE)                                 \
   KEYWORD("default", Token::TS_DEFAULT)                                 \
   KEYWORD("delete", Token::TS_DELETE)                                   \
   KEYWORD("do", Token::TS_DO)                                           \
@@ -328,7 +327,6 @@ bool TokenInfo::IsKeyword(Token type) {
     type == Token::TS_CONST ||
     type == Token::TS_CONTINUE ||
     type == Token::TS_DEBUGGER ||
-    type == Token::TS_DECLARE ||
     type == Token::TS_DEFAULT ||
     type == Token::TS_DELETE ||
     type == Token::TS_DO ||

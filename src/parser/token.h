@@ -47,7 +47,6 @@ namespace yatsc {
   DECLARE(TS_CONST)                                       \
   DECLARE(TS_CONTINUE)                                    \
   DECLARE(TS_DEBUGGER)                                    \
-  DECLARE(TS_DECLARE)                                     \
   DECLARE(TS_DEFAULT)                                     \
   DECLARE(TS_DELETE)                                      \
   DECLARE(TS_DO)                                          \

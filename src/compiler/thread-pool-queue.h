@@ -21,57 +21,57 @@
 // THE SOFTWARE.
 
 
-#ifndef COMPILER_WORKER_H
-#define COMPILER_WORKER_H
+#ifndef COMPILER_THREAD_POOL_QUEUE_H
+#define COMPILER_THREAD_POOL_QUEUE_H
 
-#include <atomic>
-#include <thread>
-#include <mutex>
+#include <deque>
 #include <functional>
-#include "./channel.h"
+#include <condition_variable>
+#include <mutex>
+#include <thread>
 #include "../utils/utils.h"
-#include "../utils/stl.h"
 
 namespace yatsc {
-class Worker {
+
+class ThreadPoolQueue {
  public :
-  static int default_worker_limit;
+  typedef std::function<void()> Request;
 
+  
+  ThreadPoolQueue();
 
-  Worker();
+  
+  ~ThreadPoolQueue();
 
-
-  ~Worker(){};
-
-
+  
   template <typename T>
-  void send_request(T);
+  void set_request(T request) {
+    std::unique_lock<std::mutex> lock(lock_);
+    set_wait_.wait(lock, [&] {return !pop_;});
+    Request fn = request;
+    queue_.push_back(fn);
+    pop_wait_.notify_one();
+  }
+
+  
+  Request pop_request();
+
+  
+  bool empty() const {return queue_.empty();}
 
 
-  template <typename T>
-  void send_requests(Vector<T>);
+  size_t job_count() YATSC_NO_SE {return queue_.size();}
 
-
-  YATSC_INLINE int running_thread_count() const {return channel_.running_thread_count();}
-
-
-  YATSC_INLINE int current_thread_count() const {return channel_.current_thread_count();}
-
-
-  YATSC_INLINE void Wait() {channel_.Wait();}
-
-
-  YATSC_INLINE void Shutdown() {channel_.Shutdown();}
-
-
+  
  private :
-
-  static void Remove();
-
-
-  Channel channel_;
+  typedef std::deque<Request> Queue;
+  Queue queue_;
+  bool pop_;
+  std::mutex lock_;
+  std::condition_variable set_wait_;
+  std::condition_variable pop_wait_;
 };
 
 }
-#include "worker-inl.h"
+
 #endif

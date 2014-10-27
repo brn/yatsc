@@ -28,14 +28,14 @@
 #include "../parser/sourcestream.h"
 #include "../utils/path.h"
 #include "./module-info.h"
-#include "./worker.h"
+#include "./thread-pool.h"
 
 
 namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
     : compiler_option_(compiler_option) {
-  compilation_scheduler_ = compilation_scheduler_init_(&worker_);
+  compilation_scheduler_ = compilation_scheduler_init_(&thread_pool_);
   notificator_.AddListener("Parser::ModuleFound", [&](Handle<ModuleInfo> module_info) {
     Schedule(module_info);
   });
@@ -45,7 +45,7 @@ Compiler::Compiler(CompilerOption compiler_option)
 Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
   Handle<ModuleInfo> module_info = ModuleInfo::Create(filename);
   Schedule(module_info);
-  worker_.Wait();
+  thread_pool_.Wait();
   return result_list_;
 }
 
@@ -56,7 +56,7 @@ void Compiler::Schedule(Handle<ModuleInfo> module_info) {
   }
   compilation_scheduler_->AddCompilationCount(module_info);
   
-  worker_.send_request([module_info, this]{
+  thread_pool_.send_request([module_info, this]{
     Run(module_info);
     compilation_scheduler_->ReleaseCompilationCount();
   });
