@@ -294,6 +294,9 @@ class Scanner: private Uncopyable, private Unmovable {
   bool SkipSingleLineComment();
 
 
+  void SkipTripleSlashComment();
+
+
   bool SkipMultiLineComment();
   
 

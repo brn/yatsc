@@ -52,6 +52,6 @@ TEST(ParserTest, Parse) {
   // yatsc::String code3 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/scanner.ts");
   // ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
   //yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/diagnosticInformationMap.generated.ts");
-  yatsc::String code5 = yatsc::testing::ReadFile("test/microsoft/typescript/src/services/core/arrayUtilities.ts");
+  yatsc::String code5 = yatsc::testing::ReadFile("test/microsoft/typescript/src/services/services.ts");
   ENTIRE_PARSER_TEST_ALL(code5.c_str(), "");
 }

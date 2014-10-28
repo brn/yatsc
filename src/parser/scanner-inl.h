@@ -616,74 +616,10 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
   if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
     Advance();
     if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
-      skip = true;
-      UtfString str;
       Advance();
       Advance();
-      SkipWhiteSpaceOnly();
-      if (char_ == unicode::u8('<')) {
-        Advance();
-        SkipWhiteSpaceOnly();
-        if (char_ == unicode::u8('r') &&
-            lookahead1_ == unicode::u8('e')) {
-          Advance();
-          Advance();
-          if (char_ == unicode::u8('f') &&
-              lookahead1_ == unicode::u8('e')) {
-            Advance();
-            Advance();
-            if (char_ == unicode::u8('r') &&
-                lookahead1_ == unicode::u8('e')) {
-              Advance();
-              Advance();
-              if (char_ == unicode::u8('n') &&
-                  lookahead1_ == unicode::u8('c')) {
-                Advance();
-                Advance();
-                if (char_ == unicode::u8('e')) {
-                  Advance();
-                  SkipWhiteSpaceOnly();
-                  if (char_ == unicode::u8('p') &&
-                      lookahead1_ == unicode::u8('a')) {
-                    Advance();
-                    Advance();
-                    if (char_ == unicode::u8('t') &&
-                        lookahead1_ == unicode::u8('h')) {
-                      Advance();
-                      Advance();
-                      if (char_ == unicode::u8('=')) {
-                        Advance();
-                        if (char_ == unicode::u8('\'') ||
-                            char_ == unicode::u8('"')) {
-                          ScanStringLiteral();
-                          if (char_ == unicode::u8('\'') ||
-                              char_ == unicode::u8('"')) {
-                            Advance();
-                            SkipWhiteSpaceOnly();
-                            if (char_ == unicode::u8('/')) {
-                              Advance();
-                              SkipWhiteSpaceOnly();
-                              if (char_ == unicode::u8('>')) {
-                                Advance();
-                                if (reference_path_callback_) {
-                                  reference_path_callback_(token_info_.value());
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      goto SKIP;
+      SkipTripleSlashComment();
     } else {
-   SKIP:
       while (char_ != unicode::u8('\0') &&
              Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
         Advance();
@@ -692,6 +628,47 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
     skip = true;
   }
   return skip;
+}
+
+
+template <typename UCharInputIterator>
+void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
+  SkipWhiteSpaceOnly();
+  if (char_ == unicode::u8('<')) {
+    Advance();
+    if (char_ == unicode::u8('r') &&
+        lookahead1_ == unicode::u8('e')) {
+      ScanIdentifier();
+      if (token_info_.value() == "reference") {
+        SkipWhiteSpaceOnly();
+        if (char_ == unicode::u8('p') && lookahead1_ == unicode::u8('a')) {
+          ScanIdentifier();
+          if (token_info_.value() == "path") {
+            if (char_ == unicode::u8('=')) {
+              Advance();
+              ScanStringLiteral();
+              Advance();
+              SkipWhiteSpaceOnly();
+              if (char_ == unicode::u8('/')) {
+                Advance();
+                SkipWhiteSpaceOnly();
+                if (char_ == unicode::u8('>')) {
+                  if (reference_path_callback_) {
+                    reference_path_callback_(token_info_.value());
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  while (char_ != unicode::u8('\0') &&
+         Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
+    Advance();
+  }
 }
 
 

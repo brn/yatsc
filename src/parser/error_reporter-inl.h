@@ -95,7 +95,7 @@ void ErrorReporter::Throw(const SourcePosition& source_position) {
   }
 
   if (last_line != 0) {
-    st_ << "\n" << (source_position.start_line_number() + 1) << ": " << line_source[last_line];
+    st_ << "\n" << (source_position.start_line_number() + 1) << ": " << line_source_list[last_line];
   }
   st_ << '\n';
   
@@ -121,14 +121,18 @@ Vector<String> ErrorReporter::GetLineSource(const SourcePosition& source_positio
     } else if (1 == source_position.start_line_number()) {
       line_source.push_back(std::move(String(source_)));
       return std::move(line_source);
-    } else {
+    } else if (count == 0) {
       line_source.push_back(source_);
       return std::move(line_source);
+    } else {
+      break;
     }
 
     if (source_position.start_line_number() >= count &&
         source_position.start_line_number() <= count + 1) {
       line_source.push_back(std::move(source_.substr(start, end - start)));
+    } else if (source_position.start_line_number() < count + 1) {
+      break;
     }
       
     start = end + 1;

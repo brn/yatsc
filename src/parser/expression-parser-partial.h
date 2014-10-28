@@ -72,7 +72,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) 
       break;
     }
     default:
-      PrintStackTrace();
       SYNTAX_ERROR("SyntaxError unexpected token", (&info));
   }
 
