@@ -35,7 +35,7 @@ namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
     : compiler_option_(compiler_option) {
-  compilation_scheduler_ = compilation_scheduler_init_(&thread_pool_);
+  compilation_scheduler_(&thread_pool_);
   notificator_.AddListener("Parser::ModuleFound", [&](Handle<ModuleInfo> module_info) {
     Schedule(module_info);
   });
@@ -56,7 +56,7 @@ void Compiler::Schedule(Handle<ModuleInfo> module_info) {
   }
   compilation_scheduler_->AddCompilationCount(module_info);
   
-  thread_pool_.send_request([module_info, this]{
+  thread_pool_.send_request([module_info, this](int thread_id) {
     Run(module_info);
     compilation_scheduler_->ReleaseCompilationCount();
   });
@@ -95,7 +95,7 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   } catch (...) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info, "Unhandled Error."));
   }
-  printf("END %s\n", module_info->module_name());
+  printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
 }
 
 

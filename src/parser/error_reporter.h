@@ -51,7 +51,7 @@ class ErrorReporter: private Unmovable, private Uncopyable {
 
 
  private:
-  inline String GetLineSource(const SourcePosition& source_position);
+  inline Vector<String> GetLineSource(const SourcePosition& source_position);
   
   StringStream st_;
   const String& source_;

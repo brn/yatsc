@@ -36,9 +36,15 @@ inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yat
 }
 
 
-TEST(Compiler, Compile) {
+inline void RunCompiler(const char* name) {
   yatsc::CompilerOption compiler_option;
   yatsc::Compiler compiler(compiler_option);
-  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile("test/microsoft/typescript/src/compiler/tsc.ts");
+  yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>> cu = compiler.Compile(name);
   ASSERT_TRUE(CheckCompilationResult(cu));
+}
+
+
+TEST(Compiler, Compile) {
+  RunCompiler("test/microsoft/typescript/src/compiler/tsc.ts");
+  RunCompiler("test/microsoft/typescript/src/services/services.ts");
 }

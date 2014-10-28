@@ -203,10 +203,23 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
       Current()->value() == "module") {
     TokenInfo info = *Current();
     Next();
+
+    RecordedParserState rps = parser_state();
     Handle<ir::Node> binding = ParseBindingIdentifier(false, false);
+
+    bool member = false;
+    if (Current()->type() == Token::TS_DOT) {
+      RestoreParserState(rps);
+      binding = ParseMemberExpression(false);
+      member = true;
+    }
     
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       return ParseTSModule(binding, &info);
+    }
+
+    if (member) {
+      SYNTAX_ERROR("SyntaxError unexpected token.", Current());
     }
     Handle<ir::Node> module_specifier = ParseFromClause();
     auto ret = New<ir::ModuleImportView>(binding, module_specifier);

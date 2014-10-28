@@ -54,6 +54,7 @@ inline void Channel::CreateThreadPool(int i, bool additional) {
 
 
 inline void Channel::Run(int id, bool additional) {
+  printf("Thread %d begin\n", id);
   while (!exit_) {
     if (thread_pool_queue_.empty()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -63,13 +64,14 @@ inline void Channel::Run(int id, bool additional) {
     ProcessRequest(fn, id);
   }
   thread_pool_count_.sub_thread_count();
+  printf("Thread %d exit\n", id);
 }
 
 
 inline void Channel::ProcessRequest(const ThreadPoolQueue::Request &fn, int id) {
   if (fn) {
     thread_pool_count_.add_running_thread_count();
-    fn();
+    fn(id);
     thread_pool_count_.sub_running_thread_count();
   }
 }

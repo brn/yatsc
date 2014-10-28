@@ -67,6 +67,9 @@ class Compiler {
     };
 
 
+    YATSC_CONST_GETTER(int, count, count_.load(std::memory_order_relaxed));
+
+
     YATSC_INLINE bool ShouldCompile(Handle<ModuleInfo> module_info) YATSC_NO_SE {
       return compiled_modules_.find(module_info->module_name()) == compiled_modules_.end();
     }
@@ -87,8 +90,7 @@ class Compiler {
   void AddResult(Handle<CompilationUnit> result);
   
   CompilerOption compiler_option_;
-  CompilationScheduler* compilation_scheduler_;
-  LazyInitializer<CompilationScheduler> compilation_scheduler_init_;
+  LazyInitializer<CompilationScheduler> compilation_scheduler_;
   ThreadPool thread_pool_;
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;

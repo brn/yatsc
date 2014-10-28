@@ -599,18 +599,31 @@ bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
 
 
 template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::SkipWhiteSpaceOnly() {
+  bool skip = false;
+  while(Character::IsWhiteSpace(char_, lookahead1_) &&
+        Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
+    Advance();
+    skip = true;
+  }
+  return skip;
+}
+
+
+template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
   bool skip = false;
   if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
     Advance();
     if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
+      skip = true;
       UtfString str;
       Advance();
       Advance();
-      while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+      SkipWhiteSpaceOnly();
       if (char_ == unicode::u8('<')) {
         Advance();
-        while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+        SkipWhiteSpaceOnly();
         if (char_ == unicode::u8('r') &&
             lookahead1_ == unicode::u8('e')) {
           Advance();
@@ -629,7 +642,7 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
                 Advance();
                 if (char_ == unicode::u8('e')) {
                   Advance();
-                  while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
+                  SkipWhiteSpaceOnly();
                   if (char_ == unicode::u8('p') &&
                       lookahead1_ == unicode::u8('a')) {
                     Advance();
@@ -642,25 +655,22 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
                         Advance();
                         if (char_ == unicode::u8('\'') ||
                             char_ == unicode::u8('"')) {
-                          try {
-                            ScanStringLiteral();
-                            if (char_ == unicode::u8('\'') ||
-                                char_ == unicode::u8('"')) {
+                          ScanStringLiteral();
+                          if (char_ == unicode::u8('\'') ||
+                              char_ == unicode::u8('"')) {
+                            Advance();
+                            SkipWhiteSpaceOnly();
+                            if (char_ == unicode::u8('/')) {
                               Advance();
-                              while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
-                              if (char_ == unicode::u8('/')) {
+                              SkipWhiteSpaceOnly();
+                              if (char_ == unicode::u8('>')) {
                                 Advance();
-                                while (Character::IsWhiteSpace(char_, lookahead1_)) {Advance();}
-                                if (char_ == unicode::u8('>')) {
-                                  Advance();
-                                  if (reference_path_callback_) {
-                                    reference_path_callback_(token_info_.value());
-                                  }
-                                  goto SKIP;
+                                if (reference_path_callback_) {
+                                  reference_path_callback_(token_info_.value());
                                 }
                               }
                             }
-                          } catch(const TokenException& e) {goto SKIP;}
+                          }
                         }
                       }
                     }

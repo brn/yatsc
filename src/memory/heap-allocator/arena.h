@@ -117,8 +117,7 @@ class CentralArena {
   
   
   AtomicLocalArena local_arena_;
-  ThreadLocalStorage::Slot* tls_;
-  LazyInitializer<ThreadLocalStorage::Slot> tls_once_init_;
+  LazyInitializer<ThreadLocalStorage::Slot> tls_;
   IntrusiveRbTree<size_t, LargeHeader*> large_bin_;
   SpinLock lock_;
   std::atomic_int released_arena_count_;

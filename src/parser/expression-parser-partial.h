@@ -72,6 +72,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) 
       break;
     }
     default:
+      PrintStackTrace();
       SYNTAX_ERROR("SyntaxError unexpected token", (&info));
   }
 
@@ -732,13 +733,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
     Next();
     if (Current()->type() == Token::TS_DOT) {
       Next();
-      Handle<ir::Node> literal = ParseLiteral();
-      if (literal->HasNameView()) {
-        target = New<ir::GetPropView>(target, literal);
-        target->SetInformationForNode(literal);
-      } else {
-        SYNTAX_ERROR_POS("SyntaxError unexpected token", literal->source_position());
-      }
+      Handle<ir::Node> identifier = ParseIdentifier();
+      target = New<ir::GetPropView>(target, identifier);
+      target->SetInformationForNode(identifier);
     }
   } else {
     target = ParseMemberExpression(yield);

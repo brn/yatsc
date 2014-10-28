@@ -1211,7 +1211,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBases() {
       bases->set_base(heritage);
     } else if (Current()->type() == Token::TS_IMPLEMENTS) {
       Next();
-      impls->InsertLast(ParseReferencedType());
+      while (1) {
+        impls->InsertLast(ParseReferencedType());
+        if (Current()->type() != Token::TS_COMMA) {
+          break;
+        }
+        Next();
+      }
     } else if (Current()->type() == Token::TS_LEFT_BRACE) {
       if (impls->size() > 0) {
         bases->set_impls(impls);
@@ -1235,6 +1241,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
         ConsumeLineTerminator();
       } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
                  Prev()->type() != Token::TS_RIGHT_BRACE) {
+        PrintStackTrace();
         SYNTAX_ERROR("SyntaxError ';' expected", Prev());
       }
     } else {
@@ -1260,7 +1267,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
     } else {
       RecordedParserState rps = parser_state();
       Next();
-      if (Current()->type() == Token::TS_LEFT_PAREN) {
+      if (Current()->type() == Token::TS_LEFT_PAREN ||
+          Current()->type() == Token::TS_LESS) {
         RestoreParserState(rps);
         return ParseMemberFunctionOverloads(mods, &at);
       } else {
@@ -1644,6 +1652,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node> mods) {
+  LOG_PHASE(ParseMemberVariable);
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> identifier = ParseIdentifier();
     Handle<ir::Node> value;
@@ -1704,7 +1713,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration) {
-  LOG_PHASE(ParseFunction);
+  LOG_PHASE(ParseFunctionOverloadOrImplementation);
   if (Current()->type() == Token::TS_FUNCTION) {
     bool generator = false;
     TokenInfo info = *Current();
@@ -1762,7 +1771,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameterList(bool accesslevel
       if (has_rest) {
         ARROW_PARAMETERS_ERROR_POS("Rest parameter must be at the end of the parameters", param_list->last_child()->source_position());
       }
-      if (Current()->type() == Token::TS_IDENTIFIER) {
+      if (Current()->type() == Token::TS_IDENTIFIER ||
+          Current()->type() == Token::TS_PRIVATE ||
+          Current()->type() == Token::TS_PUBLIC ||
+          Current()->type() == Token::TS_PROTECTED) {
         param_list->InsertLast(ParseParameter(false, accesslevel_allowed));
       } else if (Current()->type() == Token::TS_REST) {
         has_rest = true;
@@ -1848,6 +1860,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
       }
       auto node = ParseStatementListItem(yield, true, false, false);
       block->InsertLast(node);
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      }
     }
     return block;
   }

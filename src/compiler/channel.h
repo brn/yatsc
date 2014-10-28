@@ -61,7 +61,9 @@ class Channel {
   }
 
 
-  YATSC_INLINE void Shutdown() YATSC_NOEXCEPT {exit_ = true;}
+  YATSC_INLINE void Shutdown() YATSC_NOEXCEPT {
+    exit_ = true;
+  }
   
  private :
   void Initialize();

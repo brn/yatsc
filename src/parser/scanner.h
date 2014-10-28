@@ -288,6 +288,9 @@ class Scanner: private Uncopyable, private Unmovable {
   bool SkipWhiteSpace();
 
 
+  bool SkipWhiteSpaceOnly();
+
+
   bool SkipSingleLineComment();
 
 

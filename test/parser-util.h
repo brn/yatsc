@@ -31,6 +31,7 @@
 #include "./compare-node.h"
 #include "./unicode-util.h"
 
+bool print_stack_trace = true;
 
 #define PARSER_METHOD_CALL__(var, method_expr)  \
   var.method_expr
@@ -53,10 +54,13 @@
         auto node = PARSER_METHOD_CALL__(parser, method_expr);          \
         yatsc::testing::CompareNode(line_num__, node->ToStringTree(), yatsc::String(expected_str)); \
       } catch(const std::exception& e) {                                \
-        parser.PrintStackTrace();                                       \
+        if (print_stack_trace) {                                        \
+          parser.PrintStackTrace();                                     \
+        }                                                               \
         yatsc::FPrintf(stderr, "%s\n", e.what());                       \
         throw e;                                                        \
       }                                                                 \
+      print_stack_trace = true;                                         \
     } else {                                                            \
       ASSERT_THROW(PARSER_METHOD_CALL__(parser, method_expr), error_type); \
     }                                                                   \

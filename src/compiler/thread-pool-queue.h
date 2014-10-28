@@ -26,16 +26,15 @@
 
 #include <deque>
 #include <functional>
-#include <condition_variable>
-#include <mutex>
 #include <thread>
 #include "../utils/utils.h"
+#include "../utils/spinlock.h"
 
 namespace yatsc {
 
 class ThreadPoolQueue {
  public :
-  typedef std::function<void()> Request;
+  typedef std::function<void(int)> Request;
 
   
   ThreadPoolQueue();
@@ -46,11 +45,9 @@ class ThreadPoolQueue {
   
   template <typename T>
   void set_request(T request) {
-    std::unique_lock<std::mutex> lock(lock_);
-    set_wait_.wait(lock, [&] {return !pop_;});
+    ScopedSpinLock lock(spin_lock_);
     Request fn = request;
     queue_.push_back(fn);
-    pop_wait_.notify_one();
   }
 
   
@@ -67,9 +64,7 @@ class ThreadPoolQueue {
   typedef std::deque<Request> Queue;
   Queue queue_;
   bool pop_;
-  std::mutex lock_;
-  std::condition_variable set_wait_;
-  std::condition_variable pop_wait_;
+  SpinLock spin_lock_;
 };
 
 }

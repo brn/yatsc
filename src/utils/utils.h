@@ -250,23 +250,83 @@ YATSC_INLINE size_t Strlen(const T* str) {
 }
 
 
-template <typename T, bool kInitOnce = true>
+template <typename T>
 class LazyInitializer {
  public:
-  LazyInitializer() {lock_.clear();}
+  LazyInitializer() = default;
   ~LazyInitializer() {
     reinterpret_cast<T*>(heap_)->~T();
   }
+
   
   template <typename ... Args>
   T* operator()(Args ... args) {
-    if (kInitOnce) {
-      YATSC_CHECK(false, lock_.test_and_set());
-    }
     return new(heap_) T(args...);
   }
+
+
+  T* Get() {return reinterpret_cast<T*>(heap_);}
+
+  
+  const T* Get() const {return reinterpret_cast<T*>(heap_);}
+
+
+  T& operator * () {
+    return *reinterpret_cast<T*>(heap_);
+  }
+
+
+  const T& operator * () const {
+    return *reinterpret_cast<T*>(heap_);
+  }
+  
+
+  T* operator -> () {
+    return reinterpret_cast<T*>(heap_);
+  }
+
+
+  const T* operator -> () const {
+    return reinterpret_cast<T*>(heap_);
+  }
+  
+
+  template <typename U>
+  bool operator == (U u) const {
+    return *(reinterpret_cast<T*>(heap_)) == u;
+  }
+
+
+  template <typename U>
+  bool operator != (U u) const {
+    return *(reinterpret_cast<T*>(heap_)) != u;
+  }
+
+
+  template <typename U>
+  T& operator >> (U u) {
+    return *(reinterpret_cast<T*>(heap_)) >> u;
+  }
+
+
+  template <typename U>
+  const T& operator >> (U u) const {
+    return *(reinterpret_cast<T*>(heap_)) >> u;
+  }
+
+
+  template <typename U>
+  T& operator << (U u) {
+    return *(reinterpret_cast<T*>(heap_)) << u;
+  }
+
+
+  template <typename U>
+  const T& operator << (U u) const {
+    return *(reinterpret_cast<T*>(heap_)) << u;
+  }
+  
  private:
-  std::atomic_flag lock_;
   Byte heap_[sizeof(T)];
 };
 

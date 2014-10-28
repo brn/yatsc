@@ -34,8 +34,8 @@ inline void TlsFree(void* arena) {
 
 
 CentralArena::CentralArena() {
+  tls_(&TlsFree);
   local_arena_.store(nullptr, std::memory_order_relaxed);
-  tls_ = tls_once_init_(&TlsFree);
   released_arena_count_.store(0, std::memory_order_relaxed);
 }
 
