@@ -28,11 +28,20 @@
 #include "character.h"
 #include "token.h"
 #include "utfstring.h"
-#include "error_reporter.h"
+#include "error-reporter.h"
 #include "lineterminator-state.h"
 #include "literalbuffer.h"
+#include "../utils/stl.h"
 #include "../compiler-option.h"
 #include "../compiler/module-info.h"
+
+
+#if defined(DEBUG) || defined(UNIT_TEST)
+#define TOKEN_ERROR(message)                                            \
+  [&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}
+
+#define ILLEGAL_TOKEN() TOKEN_ERROR("Illegal Token");
+#endif
 
 
 namespace yatsc {
@@ -373,4 +382,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
 
 #include "scanner-inl.h"
+
+#undef TOKEN_ERROR
+#undef ILLEGAL_TOKEN
 #endif

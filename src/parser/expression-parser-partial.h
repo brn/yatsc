@@ -1387,6 +1387,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLiteralPropertyName() {
     case Token::TS_NUMERIC_LITERAL:
       return ParseNumericLiteral();
     default:
+      if (TokenInfo::IsKeyword(Current()->type())) {
+        Current()->set_type(Token::TS_IDENTIFIER);
+        return ParseIdentifier();
+      }
       SYNTAX_ERROR("SyntaxError identifier or string literal or numeric literal expected", Current());
   }
 }
@@ -1660,7 +1664,9 @@ typename Parser<UCharInputIterator>::AccessorType Parser<UCharInputIterator>::Pa
   // If next token is left paren and getter or setter is true,
   // get or set keyword is not treated as the keyword,
   // so change current curosr position before the get or set.
-  if ((getter || setter) && Current()->type() == Token::TS_LEFT_PAREN) {
+  if ((getter || setter) &&
+      (Current()->type() == Token::TS_LEFT_PAREN ||
+       Current()->type() == Token::TS_LESS)) {
     getter = setter = false;
     RestoreParserState(rps);
   }

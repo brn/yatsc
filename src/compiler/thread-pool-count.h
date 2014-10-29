@@ -53,7 +53,7 @@ class ThreadPoolCount {
   void sub_running_thread_count();
 
   
-  bool limit() const;
+  int limit() const;
 
   
  private :

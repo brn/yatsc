@@ -91,7 +91,7 @@ class Compiler {
   
   CompilerOption compiler_option_;
   LazyInitializer<CompilationScheduler> compilation_scheduler_;
-  ThreadPool thread_pool_;
+  LazyInitializer<ThreadPool> thread_pool_;
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;
   Notificator<void(Handle<ModuleInfo>)> notificator_;

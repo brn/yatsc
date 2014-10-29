@@ -62,13 +62,14 @@ void SourceStream::ReadBlock(FILE* fp)  {
     raw_buffer_.reserve(size_ + 1);
     buffer_.reserve(size_);
   }
+  
   char* str = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
-  size_t next = FRead(str, size_, sizeof(UC8), size_ - 1, fp);
+  size_t next = FRead(str, size_, sizeof(UC8), size_, fp);
   if (next > 0) {
     str[next] = '\0';
     raw_buffer_ = str;
   }
-
+  
   auto it = UnicodeIteratorAdapter<char*>(str);
   for (;it != '\0'; ++it) {
     buffer_.push_back(std::move(*it));

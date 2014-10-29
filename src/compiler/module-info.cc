@@ -34,7 +34,7 @@ bool ModuleInfo::IsDefinitionFile() const {
 
 Handle<ModuleInfo> ModuleInfo::Create(const char* module_name) {
   bool typescript = false;
-  String name = module_name;
+  String name = Path::Resolve(module_name);
   String ext = Path::Extname(name);
   if (ext == ".ts") {
     typescript = true;
@@ -49,7 +49,7 @@ Handle<ModuleInfo> ModuleInfo::Create(const char* module_name) {
     }
   }
 
-  return Heap::NewHandle<ModuleInfo>(Path::Resolve(module_name), typescript);
+  return Heap::NewHandle<ModuleInfo>(name, typescript);
 }
 
 }

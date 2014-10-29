@@ -34,7 +34,7 @@
   std::stringstream ss;                         \
   ss << message;                                \
   std::string&& s = std::move(ss.str());        \
-  return Error(s.c_str());                      \
+  return TOKEN_ERROR(s.c_str());                      \
 }
 
 namespace yatsc {
@@ -87,7 +87,7 @@ void Scanner<UCharInputIterator>::Advance()  {
     char_ = UChar::Null();
     return;
   }
-
+  
   char_ = *it_;
   scanner_source_position_.AdvancePosition(1);
   ++it_;
@@ -105,7 +105,7 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
   BeforeScan();
   
   if (!char_.IsAscii()) {
-    Illegal();
+    ILLEGAL_TOKEN();
   }
   
   if (char_ == unicode::u8('\0')) {
@@ -128,7 +128,7 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
     ScanOperator();
     Advance();
   } else {
-    Illegal();
+    ILLEGAL_TOKEN();
   }
 
   AfterScan();
@@ -168,7 +168,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
       }
       escaped = false;
     } else if (char_ == unicode::u8('\0')) {
-      return Error("Unterminated string literal.");
+      return TOKEN_ERROR("Unterminated string literal.");
     } else if (char_ == unicode::u8('\\')) {
       if (!escaped) {
         if (lookahead1_ == unicode::u8('u')) {
@@ -222,7 +222,7 @@ void Scanner<UCharInputIterator>::ScanDigit() {
       Character::IsNumericLiteral(char_)) {
     return ScanInteger();
   }
-  Illegal();
+  ILLEGAL_TOKEN();
 }
 
 
@@ -260,7 +260,7 @@ void Scanner<UCharInputIterator>::ScanBinaryLiteral() {
   str += char_;
   Advance();
   if (!Character::IsBinaryCharacter(char_)) {
-    return Error("Invalid binary literal token.");
+    return TOKEN_ERROR("Invalid binary literal token.");
   }
   while (Character::IsBinaryCharacter(char_)) {
     str += char_;
@@ -283,7 +283,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
     if (Character::IsNumericLiteral(char_)) {
       v += char_;
       if (exponent && !exponent_operator) {
-        return Illegal();
+        return ILLEGAL_TOKEN();
       }
       exponent = false;
       exponent_operator = false;
@@ -291,7 +291,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
       v += char_;
       exponent_operator = true;
     } else if (exponent) {
-      return Illegal();
+      return ILLEGAL_TOKEN();
     } else if (!exponent &&
                char_ == unicode::u8('.') &&
                !js_double && Character::IsNumericLiteral(lookahead1_)) {
@@ -300,7 +300,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
       v += char_;
       js_double = true;
     } else if (char_ == unicode::u8('.') && js_double) {
-      return Illegal();
+      return ILLEGAL_TOKEN();
     } else if (char_ == unicode::u8('e') || char_ == unicode::u8('E')) {
       exponent = true;
       v += char_;
@@ -310,7 +310,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
     Advance();
   }
   if (exponent || exponent_operator) {
-    return Illegal();
+    return ILLEGAL_TOKEN();
   }
   
   BuildToken(Token::TS_NUMERIC_LITERAL, v);
@@ -368,7 +368,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
           Advance();
           return BuildToken(Token::TS_REST);
         }
-        Illegal();
+        ILLEGAL_TOKEN();
       }
       return BuildToken(Token::TS_DOT);
     case '=':
@@ -390,7 +390,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
           Token::TS_SHIFT_RIGHT, Token::TS_SHIFT_RIGHT_LET,
           Token::TS_U_SHIFT_RIGHT, Token::TS_GREATER, Token::TS_GREATER_EQUAL, true);
     default:
-      Illegal();
+      ILLEGAL_TOKEN();
   }
 }
 
@@ -470,7 +470,7 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_
         }
       } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
                  char_.IsInvalid()) {
-        Error("Unterminated regular expression");
+        TOKEN_ERROR("Unterminated regular expression");
       } else {
         escaped = false;
       }
@@ -515,22 +515,22 @@ template<typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool in_string_literal) {
   Advance();
   if (char_ != unicode::u8('u')) {
-    Error("UnicodeEscapeSequence not started with 'u'");
+    TOKEN_ERROR("UnicodeEscapeSequence not started with 'u'");
     return false;
   }
   Advance();
   bool success;
   UC16 uc16 = ScanHexEscape(char_, 4, &success);
   if (!success) {
-    Error("Not allowed token in UnicodeEscapeSequence.");
+    TOKEN_ERROR("Not allowed token in UnicodeEscapeSequence.");
     return false;
   } else if (!in_string_literal && (uc16 == '\\' || !Character::IsIdentifierStartChar(uc16))) {
-    Error("Not allowed token in UnicodeEscapeSequence.");
+    TOKEN_ERROR("Not allowed token in UnicodeEscapeSequence.");
     return false;
   }
   UC8Bytes bytes = utf16::Convertor::Convert(uc16, 0);
   if (bytes.size() == 0) {
-    Illegal();
+    ILLEGAL_TOKEN();
     return false;
   }
   (*v) += UChar(uc16, bytes);
@@ -542,14 +542,14 @@ template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
   Advance();
   if (char_ != unicode::u8('x')) {
-    Error("Illegal Token");
+    TOKEN_ERROR("ILLEGAL_TOKEN Token");
     return false;
   }
   Advance();
   bool success;
   UC8 uc8 = unicode::u8(ScanHexEscape(char_, 2, &success));
   if (!success || !utf8::IsAscii(uc8)) {
-    Illegal();
+    ILLEGAL_TOKEN();
     return false;
   }
   (*v) += UChar::FromAscii(static_cast<char>(uc8));
@@ -579,7 +579,9 @@ bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
   bool skip = false;
   while(Character::IsWhiteSpace(char_, lookahead1_) ||
         Character::IsSingleLineCommentStart(char_, lookahead1_) ||
-        Character::IsMultiLineCommentStart(char_, lookahead1_)) {
+        Character::IsMultiLineCommentStart(char_, lookahead1_) ||
+        Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+    
     if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
       line_terminator_state_.set_line_break_before_next();
     }
@@ -613,6 +615,7 @@ bool Scanner<UCharInputIterator>::SkipWhiteSpaceOnly() {
 template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
   bool skip = false;
+  
   if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {
     Advance();
     if (Character::IsSingleLineCommentStart(char_, lookahead1_)) {

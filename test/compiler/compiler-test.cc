@@ -26,11 +26,15 @@
 
 
 inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>>& cu) {
+  yatsc::StringStream ss;
   for (auto i: cu) {
     if (!i->success()) {
-      return ::testing::AssertionFailure() << "Compile failed in module \"" << i->module_name() << "\"\n"
-                                           << "Because\n" << i->error_message() << "\n";
+      ss << "Compile failed in module \"" << i->module_name() << "\"\n"
+         << "Because\n" << i->error_message() << "\n";
     }
+  }
+  if (ss.str().size() > 0) {
+    return ::testing::AssertionFailure() << ss.str();
   }
   return ::testing::AssertionSuccess();
 }
@@ -47,4 +51,6 @@ inline void RunCompiler(const char* name) {
 TEST(Compiler, Compile) {
   RunCompiler("test/microsoft/typescript/src/compiler/tsc.ts");
   RunCompiler("test/microsoft/typescript/src/services/services.ts");
+  //RunCompiler("/Users/aono_taketoshi/Documents/workspace/tagsys_tag_admin2/src/main/webapp/ts/src/main/tagmgr/site/siteId/report/summary-main.ts");
+
 }

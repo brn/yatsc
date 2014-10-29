@@ -21,10 +21,9 @@
 // THE SOFTWARE.
 
 #include "./thread-pool.h"
-#include "../utils/systeminfo.h"
 
 namespace yatsc {
 
-ThreadPool::ThreadPool() : channel_(SystemInfo::GetOnlineProcessorCount()){}
+ThreadPool::ThreadPool(int num_threads) : channel_(num_threads){}
 
 }

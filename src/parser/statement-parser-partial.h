@@ -1831,7 +1831,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
     }
     if (Current()->type() == Token::TS_COLON) {
       Next();
-      pv->set_type_expr(ParseTypeExpression());
+      if (Current()->type() == Token::TS_STRING_LITERAL) {
+        pv->set_type_expr(ParseStringLiteral());
+      } else {
+        pv->set_type_expr(ParseTypeExpression());
+      }
     }
     if (Current()->type() == Token::TS_ASSIGN) {
       if (rest) {

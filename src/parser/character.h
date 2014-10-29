@@ -43,11 +43,11 @@ class Character : private Static {
   
   static bool IsWhiteSpace(const UChar& uchar, const UChar& lookahead) {
     return uchar.IsAscii() &&
-        (uchar == unicode::u8(0x09) ||
-         uchar == unicode::u8(0x0b) ||
-         uchar == unicode::u8(0x0c) ||
-         uchar == unicode::u8(0x20) ||
-         uchar == unicode::u8(255) ||
+        (uchar == unicode::u32(0x09) ||
+         uchar == unicode::u32(0x0b) ||
+         uchar == unicode::u32(0x0c) ||
+         uchar == unicode::u32(0x20) ||
+         uchar == unicode::u32(255) ||
          GetLineBreakType(uchar, lookahead) != LineBreakType::NONE ||
          uchar == unicode::u32(0x2028) ||
          uchar == unicode::u32(0x1680) ||
@@ -72,8 +72,8 @@ class Character : private Static {
 
 
   static bool IsDigitStart(const UChar& uchar, const UChar& lookahead) {
-    return (uchar == unicode::u8('.') && lookahead.IsAscii() && IsNumericLiteral(lookahead)) ||
-        (uchar == unicode::u8('0') && lookahead.IsAscii() && lookahead == unicode::u8('x')) ||
+    return (uchar == unicode::u32('.') && lookahead.IsAscii() && IsNumericLiteral(lookahead)) ||
+        (uchar == unicode::u32('0') && lookahead.IsAscii() && lookahead == unicode::u32('x')) ||
         IsNumericLiteral(uchar);
   }
 
@@ -85,8 +85,8 @@ class Character : private Static {
   
   static bool IsHexRange(const UChar& uchar) {
     return IsNumericLiteral(uchar) ||
-        (uchar >= unicode::u8('a') && uchar <= unicode::u8('f')) ||
-        (uchar >= unicode::u8('A') && uchar <= unicode::u8('F'));
+        (uchar >= unicode::u32('a') && uchar <= unicode::u32('f')) ||
+        (uchar >= unicode::u32('A') && uchar <= unicode::u32('F'));
   }
 
 
@@ -102,7 +102,7 @@ class Character : private Static {
 
 
   YATSC_INLINE static bool IsUnicodeEscapeSequenceStart(const UChar& uchar, const UChar& lookahead) {
-    return uchar == unicode::u8('\\') && lookahead == unicode::u8('u');
+    return uchar == unicode::u32('\\') && lookahead == unicode::u32('u');
   }
 
 
@@ -117,31 +117,31 @@ class Character : private Static {
 
 
   YATSC_INLINE static bool IsBinaryCharacter(const UChar& uchar) {
-    return uchar == unicode::u8('0') || uchar == unicode::u8('1');
+    return uchar == unicode::u32('0') || uchar == unicode::u32('1');
   }
 
 
   YATSC_INLINE static bool IsSingleLineCommentStart(const UChar& uchar, const UChar& lookahead) {
-    return uchar == unicode::u8('/') && lookahead == unicode::u8('/');
+    return uchar == unicode::u32('/') && lookahead == unicode::u32('/');
   }
 
 
   YATSC_INLINE static bool IsMultiLineCommentStart(const UChar& uchar, const UChar& lookahead) {
-    return uchar == unicode::u8('/') && lookahead == unicode::u8('*');
+    return uchar == unicode::u32('/') && lookahead == unicode::u32('*');
   }
 
 
   YATSC_INLINE static bool IsMultiLineCommentEnd(const UChar& uchar, const UChar& lookahead) {
-    return uchar == unicode::u8('*') && lookahead == unicode::u8('/');
+    return uchar == unicode::u32('*') && lookahead == unicode::u32('/');
   }
 
 
   static LineBreakType GetLineBreakType(const UChar& uchar, const UChar& lookahead) {
-    if (uchar == unicode::u8('\n')) {
+    if (uchar == unicode::u32('\n')) {
       return LineBreakType::LF;
     }
-    if (uchar == unicode::u8('\r')) {
-      if (lookahead == unicode::u8('\n')) {
+    if (uchar == unicode::u32('\r')) {
+      if (lookahead == unicode::u32('\n')) {
         return LineBreakType::CRLF;
       }
       return LineBreakType::CR;

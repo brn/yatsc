@@ -22,13 +22,12 @@
  * THE SOFTWARE.
  */
 
-#ifndef PARSER_ERROR_REPORTER_INL_H
-#define PARSER_ERROR_REPORTER_INL_H
+#include "./error-reporter.h"
+#include "../compiler/module-info.h"
 
 namespace yatsc {
 
-template <typename Error>
-void ErrorReporter::Throw(const SourcePosition& source_position) {
+void ErrorReporter::CreateErrorMessage(const SourcePosition& source_position) {
   static const size_t kMaxWidth = 120;
   
   Vector<String> line_source_list = GetLineSource(source_position);
@@ -50,13 +49,14 @@ void ErrorReporter::Throw(const SourcePosition& source_position) {
   size_t end = end_col > start_col? end_col - 1: end_col;
   size_t start = 0;
   size_t last_line = 2;
-
+  
   if (line_source_list.size() == 3) {
     st_ << "\n" << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
     line_source = std::move(line_source_list[1]);
   } else if (line_source_list.size() == 2) {
-    line_source = std::move(line_source_list[0]);
-    last_line = 1;
+    st_ << "\n" << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
+    line_source = std::move(line_source_list[1]);
+    last_line = 0;
   } else {
     line_source = std::move(line_source_list[0]);
     last_line = 0;
@@ -98,13 +98,6 @@ void ErrorReporter::Throw(const SourcePosition& source_position) {
     st_ << "\n" << (source_position.start_line_number() + 1) << ": " << line_source_list[last_line];
   }
   st_ << '\n';
-  
-  String message = st_.str();
-  Error e(message.c_str());
-  st_.str("");
-  st_.clear();
-  st_ << std::dec;
-  throw e;
 }
 
 
@@ -140,5 +133,3 @@ Vector<String> ErrorReporter::GetLineSource(const SourcePosition& source_positio
   return std::move(line_source);
 }
 }
-
-#endif

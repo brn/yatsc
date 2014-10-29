@@ -30,7 +30,7 @@ namespace yatsc {
 
 Channel::Channel(int limit)
     : exit_(false),
-      thread_pool_count_(limit || 1) {Initialize();}
+      thread_pool_count_(limit) {Initialize();}
 
 
 Channel::~Channel() {
@@ -41,7 +41,7 @@ Channel::~Channel() {
 
 
 inline void Channel::Initialize() {
-  for (int i = 0; i < thread_pool_count_.current_thread_count(); i++) {
+  for (int i = 0; i < thread_pool_count_.limit(); i++) {
     CreateThreadPool(i, false);
   }
 }
@@ -54,6 +54,7 @@ inline void Channel::CreateThreadPool(int i, bool additional) {
 
 
 inline void Channel::Run(int id, bool additional) {
+  thread_pool_count_.add_thread_count();
   printf("Thread %d begin\n", id);
   while (!exit_) {
     if (thread_pool_queue_.empty()) {

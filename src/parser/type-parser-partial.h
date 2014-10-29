@@ -112,12 +112,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeExpression() {
   } else if (Current()->type() == Token::TS_IDENTIFIER) {
     Current()->set_type(Token::TS_IDENTIFIER);
     return ParseArrayType(ParseReferencedType());
-  } else if (Current()->type() == Token::TS_LEFT_PAREN) {
+  } else if (Current()->type() == Token::TS_LEFT_PAREN ||
+             Current()->type() == Token::TS_LESS) {
+    Handle<ir::Node> type_params;
+    if (Current()->type() == Token::TS_LESS) {
+      type_params = ParseTypeParameters();
+    }
     Handle<ir::Node> types = ParseParameterList(false);
     if (Current()->type() == Token::TS_ARROW_GLYPH) {
       Next();
       Handle<ir::Node> ret_type = ParseTypeExpression();
-      Handle<ir::Node> ft = New<ir::FunctionTypeExprView>(types, ret_type);
+      Handle<ir::Node> ft = New<ir::FunctionTypeExprView>(types, ret_type, type_params);
       ft->SetInformationForNode(types);
       return ParseArrayType(ft);
     }
@@ -311,7 +316,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
     Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig);
     ret->SetInformationForNode(call_sig);
     return ret;
-  } else if (Current()->type() == Token::TS_LEFT_PAREN) {
+  } else if (Current()->type() == Token::TS_LEFT_PAREN ||
+             Current()->type() == Token::TS_LESS) {
     return ParseCallSignature(false, true);
   } else if (Current()->type() == Token::TS_LEFT_BRACKET) {
     return ParseIndexSignature();
@@ -328,6 +334,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
 
     TokenInfo info = *Current();
     try {
+      if (TokenInfo::IsKeyword(Current()->type())) {
+        Current()->set_type(Token::TS_IDENTIFIER);
+      }
       if (Current()->type() == Token::TS_IDENTIFIER) {
         key = ParseIdentifierReference(false);
       } else {
@@ -350,7 +359,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       if (!key->HasNameView()) {
         SYNTAX_ERROR_POS("SyntaxError invalid method name", key->source_position());
       }
-      Handle<ir::Node> call_sig = ParseCallSignature(false, true);
+      Handle<ir::Node> call_sig = ParseCallSignature(false, false);
       Handle<ir::Node> ret = New<ir::MethodSignatureView>(optional, at.getter, at.setter, generator, key, call_sig);
       ret->SetInformationForNode(key);
       return ret;

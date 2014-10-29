@@ -26,7 +26,7 @@
 #define TEST_PARSER_SCANNER_TEST_PRELUDE_H_
 
 #include "../gtest-header.h"
-#include "../../src/parser/error_reporter.h"
+#include "../../src/parser/error-reporter.h"
 #include "../../src/parser/literalbuffer.h"
 #include "../../src/compiler-option.h"
 #include "../../src/parser/scanner.h"

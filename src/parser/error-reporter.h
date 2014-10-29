@@ -29,9 +29,11 @@
 #include "../utils/stl.h"
 #include "../utils/utils.h"
 #include "./sourceposition.h"
-#include "../compiler/module-info.h"
+
 
 namespace yatsc {
+class ModuleInfo;
+
 class ErrorReporter: private Unmovable, private Uncopyable {  
  public:
   ErrorReporter(const String& source, Handle<ModuleInfo> module_info)
@@ -51,7 +53,10 @@ class ErrorReporter: private Unmovable, private Uncopyable {
 
 
  private:
-  inline Vector<String> GetLineSource(const SourcePosition& source_position);
+  void CreateErrorMessage(const SourcePosition& source_position);
+  
+  
+  Vector<String> GetLineSource(const SourcePosition& source_position);
   
   StringStream st_;
   const String& source_;
@@ -59,6 +64,6 @@ class ErrorReporter: private Unmovable, private Uncopyable {
 };
 } //yatsc
 
-#include "./error_reporter-inl.h"
+#include "./error-reporter-inl.h"
 
 #endif //PARSER_ERROR_REPORTER_H

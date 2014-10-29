@@ -38,7 +38,7 @@ class ThreadPool {
   static int default_thread_pool_limit;
 
 
-  ThreadPool();
+  ThreadPool(int num_threads);
 
 
   ~ThreadPool(){};

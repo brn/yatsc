@@ -1630,7 +1630,7 @@ class MethodSignatureView: public Node {
 // Represent function type expression like, `var x:(a:string, b:string) => string;`
 class FunctionTypeExprView: public Node {
  public:
-  FunctionTypeExprView(Handle<Node> param_list, Handle<Node> return_type)
+  FunctionTypeExprView(Handle<Node> param_list, Handle<Node> return_type, Handle<Node> type_parameters)
       : Node(NodeType::kFunctionTypeExprView, 2u, {param_list, return_type}) {}
 
 
@@ -1644,6 +1644,9 @@ class FunctionTypeExprView: public Node {
 
   // Getter and setter for return_type_.
   NODE_PROPERTY(return_type, 1);
+
+
+  NODE_PROPERTY(type_parameters, 2);
 };
 
 

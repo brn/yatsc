@@ -68,40 +68,6 @@ static std::mutex mutex_;
 
 typedef Vector<String> PathArray;
 
-char* GetDirectoryFromPath(const char* path, char* buffer) {
-  int index = strlen(path);
-  bool is_slashed = false;
-  while (index--) {
-    if (is_slashed) {
-      break;
-    }
-    if (path[index] == '/') {
-      is_slashed = true;
-    }
-  }
-  buffer = Strdup(path);
-  if (is_slashed) {
-    buffer[index + 1] = 0;
-  }
-  return buffer;
-}
-
-
-char* GetFileNameFromPath(const char* path, char* buffer) {
-  int len = strlen(path);
-  if (path[len - 1] == '/') {
-    return NULL;
-  }
-  const char* ptr = strrchr(path, '/');
-  if (ptr) {
-    buffer = Strdup(ptr + 1);
-  } else {
-    buffer = Strdup(path);
-  }
-  return buffer;
-}
-
-
 void ConvertBackSlash(String* buffer) {
   size_t len = buffer->size();
   for (int i = 0; i < len; i++) {
@@ -109,23 +75,6 @@ void ConvertBackSlash(String* buffer) {
       (*buffer)[i] = '/';
     }
   }
-}
-
-
-char* GetExtension(const char* path, char* buffer) {
-  bool has = false;
-  int begin = strlen(path) - 1;
-  for (int i = begin; i < -1; i--) {
-    if (path[i] == '.' && i < begin) {
-      has = true;
-      buffer = Strdup(&(path[i + 1]));
-      break;
-    }
-  }
-  if (!has) {
-    return NULL;
-  }
-  return buffer;
 }
 
 
@@ -155,9 +104,11 @@ void Path::NormalizeArray(Vector<String>* path_array) {
       if (it == path_array->end()) return;
     } else if (*it == ".") {
       it = path_array->erase(it);
+      continue;
     } else if (*it == "..") {
       it = path_array->erase(it - 1);
       it = path_array->erase(it);
+      continue;
     }
     ++it;
   }
@@ -167,6 +118,9 @@ void Path::NormalizeArray(Vector<String>* path_array) {
 PathArray GetPathArray(const char* path) {
   PathArray array;
   String tmp(path);
+  
+  if (tmp.size() == 0) {return array;}
+  
   ConvertBackSlash(&tmp);
   size_t index = 0;
   
@@ -216,7 +170,7 @@ String Path::Resolve(const char* path) {
 }
 
 
-String Path::Join(const char* base, const char* path) {
+String Path::Join(const char* base, const char* path) {  
   if (strcmp(base, path) == 0) {
     return String(base);
   }
@@ -224,6 +178,14 @@ String Path::Join(const char* base, const char* path) {
   PathArray base_array = GetPathArray(base);
   PathArray target_array = GetPathArray(path);
 
+  if (base_array.empty() && !target_array.empty()) {
+    return JoinPathArray(target_array);
+  } else if (!base_array.empty() && target_array.empty()) {
+    return JoinPathArray(base_array);
+  } else if (base_array.empty() && target_array.empty()) {
+    return String();
+  }
+  
   if (base_array[0] != target_array[0]) {
     base_array.insert(base_array.end(), target_array.begin(), target_array.end());
     NormalizeArray(&base_array);
@@ -251,6 +213,7 @@ String Path::Dirname(const char* path) {
 
 String Path::Extname(const char* path) {
   PathArray target_array = GetPathArray(path);
+  if (target_array.empty()) {return String();}
   NormalizeArray(&target_array);
   size_t pos = target_array.back().find_last_of(".");
   if (pos != String::npos) {

@@ -29,13 +29,15 @@
 #include "../utils/path.h"
 #include "./module-info.h"
 #include "./thread-pool.h"
+#include "../utils/systeminfo.h"
 
 
 namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
     : compiler_option_(compiler_option) {
-  compilation_scheduler_(&thread_pool_);
+  thread_pool_(SystemInfo::GetOnlineProcessorCount());
+  compilation_scheduler_(thread_pool_.Get());
   notificator_.AddListener("Parser::ModuleFound", [&](Handle<ModuleInfo> module_info) {
     Schedule(module_info);
   });
@@ -45,7 +47,7 @@ Compiler::Compiler(CompilerOption compiler_option)
 Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
   Handle<ModuleInfo> module_info = ModuleInfo::Create(filename);
   Schedule(module_info);
-  thread_pool_.Wait();
+  thread_pool_->Wait();
   return result_list_;
 }
 
@@ -56,7 +58,7 @@ void Compiler::Schedule(Handle<ModuleInfo> module_info) {
   }
   compilation_scheduler_->AddCompilationCount(module_info);
   
-  thread_pool_.send_request([module_info, this](int thread_id) {
+  thread_pool_->send_request([module_info, this](int thread_id) {
     Run(module_info);
     compilation_scheduler_->ReleaseCompilationCount();
   });

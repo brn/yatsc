@@ -26,20 +26,9 @@
 
 namespace yatsc {
 
-static const int thread_default_count = 4;
-
-
-int GetThreadCount() {
-  if (std::thread::hardware_concurrency() >= thread_default_count) {
-    return std::thread::hardware_concurrency();
-  }
-  return thread_default_count;
-}
-
-
 ThreadPoolCount::ThreadPoolCount(int limit)
     : limit_(limit) {
-  current_thread_count_ = GetThreadCount();  
+  current_thread_count_ = 0;
   running_thread_count_ = 0;
 }
 
@@ -65,6 +54,6 @@ void ThreadPoolCount::add_running_thread_count() {++running_thread_count_;}
 void ThreadPoolCount::sub_running_thread_count() {--running_thread_count_;}
 
 
-bool ThreadPoolCount::limit() const {return current_thread_count_ == limit_;}
+int ThreadPoolCount::limit() const {return limit_;}
 
 }
