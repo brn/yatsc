@@ -208,6 +208,10 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassElement() {
 
   Handle<ir::Node> mods = ParseFieldModifiers();
   AccessorType at = ParseAccessor();
+
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
   
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value() == "constructor") {
@@ -215,7 +219,8 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassElement() {
     } else {
       RecordedParserState rps = parser_state();
       Next();
-      if (Current()->type() == Token::TS_LEFT_PAREN) {
+      if (Current()->type() == Token::TS_LEFT_PAREN ||
+          Current()->type() == Token::TS_LESS) {
         RestoreParserState(rps);
         return ParseAmbientMemberFunction(mods, &at);
       } else {

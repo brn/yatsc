@@ -405,7 +405,7 @@ class Parser: public ParserBase {
   Handle<ir::Node> ParseMemberExpression(bool yield);
 
   // Parser getprop or getelem expression.
-  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only = false);
+  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only = false, bool is_throw = true);
 
   Handle<ir::Node> ParseCallExpression(bool yield);
 

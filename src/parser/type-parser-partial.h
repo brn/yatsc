@@ -52,7 +52,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTypeParameters() {
         Handle<ir::Node> name = ParseIdentifier();
         if (Current()->type() == Token::TS_EXTENDS) {
           Next();
-          Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(name, ParsePrimaryExpression(false));
+          Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(name, ParseReferencedType());
           type_constraints->SetInformationForNode(name);
           type_params->InsertLast(type_constraints);
         } else {
@@ -151,17 +151,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseReferencedType() {
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> node = ParsePrimaryExpression(false);
     if (Current()->type() == Token::TS_DOT) {
-      Handle<ir::GetPropView> get_prop_view = New<ir::GetPropView>();
-      get_prop_view->SetInformationForNode(node);
-      while (1) {
-        if (Current()->type() == Token::TS_DOT) {
-          Next();
-          get_prop_view->InsertLast(ParsePrimaryExpression(false));
-        } else {
-          break;
-        }
-      }
-      node = get_prop_view;
+      node = ParseGetPropOrElem(node, false, true, false);
     }
     if (!Current()->has_line_break_before_next() && Current()->type() == Token::TS_LESS) {
       Handle<ir::Node> type_parameter = ParseTypeArguments();

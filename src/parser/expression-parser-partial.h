@@ -924,13 +924,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
 // Parse member expression suffix.
 // Like 'new foo.bar.baz()', 'new foo["bar"]', '(function(){return {a:1}}).a'
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only) {
+Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only, bool is_throw) {
   LOG_PHASE(ParseGetPropOrElem);
   while (1) {
     switch (Current()->type()) {
       case Token::TS_LEFT_BRACKET: {
         if (dot_only) {
-          SYNTAX_ERROR("SyntaxError '.' expected.", Current());
+          if (is_throw) {
+            SYNTAX_ERROR("SyntaxError '.' expected.", Current());
+          }
+          return node;
         }
         // [...] expression.
         Next();
@@ -949,6 +952,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node>
         if (Current()->type() != Token::TS_IDENTIFIER &&
             !TokenInfo::IsKeyword(Current()->type())) {
           SYNTAX_ERROR("SyntaxError 'identifier' expected.", Current());
+        }
+        if (TokenInfo::IsKeyword(Current()->type())) {
+          Current()->set_type(Token::TS_IDENTIFIER);
         }
         Handle<ir::Node> expr = ParsePrimaryExpression(yield);
         node = New<ir::GetPropView>(node, expr);
