@@ -11,3 +11,6 @@
 [submodule "test/doppio"]
 	path = test/doppio
 	url = https://github.com/plasma-umass/doppio.git
+[submodule "test/promises-typescript"]
+	path = test/promises-typescript
+	url = https://github.com/stevan/promises-typescript.git

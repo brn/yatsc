@@ -1126,6 +1126,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_
     auto ret = New<ir::EnumBodyView>();
     ret->SetInformationForNode(Current());
     Next();
+    
+    if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      Next();
+      return ret;
+    }
+    
     while (1) {
       ret->InsertLast(ParseEnumProperty(yield, has_default));
       if (Current()->type() == Token::TS_COMMA) {

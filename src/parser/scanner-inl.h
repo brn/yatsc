@@ -637,6 +637,7 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
 template <typename UCharInputIterator>
 void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
   SkipWhiteSpaceOnly();
+  TokenInfo info = token_info_;
   if (char_ == unicode::u32('<')) {
     Advance();
     if (char_ == unicode::u32('r') &&
@@ -672,6 +673,7 @@ void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
          Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
     Advance();
   }
+  token_info_ = info;
 }
 
 

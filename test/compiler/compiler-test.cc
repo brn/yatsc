@@ -48,8 +48,21 @@ inline void RunCompiler(const char* name) {
 }
 
 
-TEST(Compiler, Compile) {
+TEST(Compiler, Compile_Products) {
   RunCompiler("test/microsoft/typescript/src/compiler/tsc.ts");
   RunCompiler("test/microsoft/typescript/src/services/services.ts");
   RunCompiler("test/doppio/console/doppioh.ts");
+  RunCompiler("test/promises-typescript/lib/Promises.ts");
+}
+
+
+TEST(Compiler, Compile_Ambient) {
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientDeclarations.ts");
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientDeclarationsExternal.ts");
+  //RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientErrors.ts");
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts");
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbientExternalModule.ts");
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleMerging.ts");
+  //RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts");
+  RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbientExternalModule.ts");
 }

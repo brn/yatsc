@@ -75,7 +75,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclarationModule() {
 }
 
 template <typename UCharInputInterator>
-Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration() {
+Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration(bool module_allowed) {
   LOG_PHASE(ParseAmbientDeclaration);
   if (Current()->type() == Token::TS_IDENTIFIER &&
       Current()->value() == "declare") {
@@ -93,6 +93,9 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration() {
       default:
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value() == "module") {
+          if (!module_allowed) {
+            SYNTAX_ERROR("SyntaxError ambient module declaration not allowed here.", Current());
+          }
           return ParseAmbientModuleDeclaration(&info);
         }
         SYNTAX_ERROR("SyntaxError unexpected token.", Current());
@@ -323,8 +326,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<i
     if (Current()->type() == Token::TS_COLON) {
       Next();
       type = ParseTypeExpression();
-    } else {
-      SYNTAX_ERROR("SyntaxError ':' expected.", Current());
     }
 
     auto member_variable = New<ir::AmbientMemberVariableView>(mods, identifier, type);
@@ -357,6 +358,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientEnumBody() {
     auto ret = New<ir::AmbientEnumBodyView>();
     ret->SetInformationForNode(Current());
     Next();
+
+    if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      Next();
+      return ret;
+    }
+    
     while (1) {
       ret->InsertLast(ParseAmbientEnumProperty());
       if (Current()->type() == Token::TS_COMMA) {

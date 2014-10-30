@@ -121,10 +121,10 @@ Vector<String> ErrorReporter::GetLineSource(const SourcePosition& source_positio
       break;
     }
 
-    if (source_position.start_line_number() >= count &&
+    if (source_position.start_line_number() >= count - 1 &&
         source_position.start_line_number() <= count + 1) {
       line_source.push_back(std::move(source_.substr(start, end - start)));
-    } else if (source_position.start_line_number() < count + 1) {
+    } else if (source_position.start_line_number() + 2 == count) {
       break;
     }
       

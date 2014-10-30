@@ -511,7 +511,7 @@ class Parser: public ParserBase {
   // Ambient
   Handle<ir::Node> ParseDeclarationModule();
   
-  Handle<ir::Node> ParseAmbientDeclaration();
+  Handle<ir::Node> ParseAmbientDeclaration(bool module_allowed = true);
 
   Handle<ir::Node> ParseAmbientVariableDeclaration(TokenInfo* info);
 

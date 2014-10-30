@@ -281,6 +281,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
             if (Current()->type() == Token::TS_IDENTIFIER &&
                 Current()->value() == "module") {
               block->InsertLast(ParseModuleImport());
+            } else if (Current()->type() == Token::TS_IDENTIFIER &&
+                       Current()->value() == "declare") {
+              block->InsertLast(ParseAmbientDeclaration(false));
             } else {
               SYNTAX_ERROR("SyntaxError unexpected token.", Current());
             }
