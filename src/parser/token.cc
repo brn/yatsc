@@ -343,6 +343,7 @@ bool TokenInfo::IsKeyword(Token type) {
     type == Token::TS_IMPORT ||
     type == Token::TS_IN ||
     type == Token::TS_INSTANCEOF ||
+    type == Token::TS_INTERFACE ||
     type == Token::TS_LET ||
     type == Token::TS_MODULE ||
     type == Token::TS_NEW ||

@@ -100,8 +100,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
         Next();
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
-          String dir = Path::Dirname(module_info_->module_name());
-          Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
+          if (info.value().utf8_length() > 0) {
+            if (info.utf8_value()[0] == '.') {
+              String dir = Path::Dirname(module_info_->module_name());
+              Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
+            }
+          }
           return New<ir::ExternalModuleReference>(info.value());
         }
         SYNTAX_ERROR("SyntaxError ')' expected.", Current());
@@ -327,6 +331,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
       case Token::TS_INTERFACE:
       case Token::TS_LET:
       case Token::TS_FUNCTION:
+      case Token::TS_ENUM:
         return CreateExportView(ParseDeclaration(true, true, false), ir::Node::Null(), &info);
       case Token::TS_DEFAULT:
       case Token::TS_ASSIGN: {

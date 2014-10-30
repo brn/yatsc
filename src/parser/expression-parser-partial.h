@@ -1379,6 +1379,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyName(bool yield, bool 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseLiteralPropertyName() {
   LOG_PHASE(ParseLiteralPropertyName);
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
   switch (Current()->type()) {
     case Token::TS_IDENTIFIER:
       return ParseIdentifier();

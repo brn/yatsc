@@ -8,3 +8,6 @@
 [submodule "test/microsoft/typescript"]
 	path = test/microsoft/typescript
 	url = https://github.com/Microsoft/TypeScript
+[submodule "test/doppio"]
+	path = test/doppio
+	url = https://github.com/plasma-umass/doppio.git

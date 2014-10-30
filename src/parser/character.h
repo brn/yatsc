@@ -62,12 +62,12 @@ class Character : private Static {
 
 
   YATSC_INLINE static bool IsPuncture(const UChar& uchar) {
-    return GetCharType(uchar.ToUC8Ascii()) == CharType::PUNCTURES;
+    return GetCharType(uchar.uchar()) == CharType::PUNCTURES;
   }
   
 
   YATSC_INLINE static bool IsOperatorStart(const UChar& uchar) {
-    return GetCharType(uchar.ToUC8Ascii()) == CharType::OPERATORS;
+    return GetCharType(uchar.uchar()) == CharType::OPERATORS;
   }
 
 
@@ -79,7 +79,7 @@ class Character : private Static {
 
   
   static bool IsStringLiteralStart(const UChar& uchar) {
-    return GetCharType(uchar.ToUC8Ascii()) == CharType::QUOTE;
+    return GetCharType(uchar.uchar()) == CharType::QUOTE;
   }
 
   
@@ -97,7 +97,7 @@ class Character : private Static {
 
   template <typename T>
   static bool IsIdentifierStartChar(T uchar) {
-    return GetCharType(static_cast<UC8>(uchar)) == CharType::IDENTIFIER;
+    return GetCharType(static_cast<UC16>(uchar)) == CharType::IDENTIFIER;
   }
 
 
@@ -112,7 +112,7 @@ class Character : private Static {
 
   
   YATSC_INLINE static bool IsNumericLiteral(const UChar& uchar) {
-    return GetCharType(uchar.ToUC8Ascii()) == CharType::NUMERIC;
+    return GetCharType(uchar.uchar()) == CharType::NUMERIC;
   }
 
 
@@ -160,7 +160,7 @@ class Character : private Static {
   };
 
   
-  static CharType GetCharType(UC8 ch) {
+  static CharType GetCharType(UC16 ch) {
     static const CharType kChars[] = {
       CharType::OTHER,      // 0
       CharType::OTHER,      // 1

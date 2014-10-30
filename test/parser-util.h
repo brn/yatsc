@@ -42,7 +42,7 @@ bool print_stack_trace = true;
     yatsc::String n = "anonymous";                                      \
     yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, true); \
     yatsc::ErrorReporter error_reporter(s, module_info);                \
-    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(code);  \
+    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(s);     \
     yatsc::CompilerOption compiler_option;                              \
     compiler_option.set_language_mode(type);                            \
     yatsc::LiteralBuffer lb;                                            \

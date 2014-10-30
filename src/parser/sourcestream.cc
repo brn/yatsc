@@ -42,7 +42,7 @@ void SourceStream::Initialize() {
   if (exists && stat.IsReg()) {
     size_ = stat.Size();
     try {
-      FILE* fp = FOpen(filepath_.c_str(), "r");
+      FILE* fp = FOpen(filepath_.c_str(), "rb");
       ReadBlock(fp);
       FClose(fp);
     } catch (const FileIOException& e) {

@@ -267,7 +267,7 @@ class Scanner: private Uncopyable, private Unmovable {
       Advance();
       return BuildToken(type1);
     }
-    if (lookahead1_ == unicode::u8('=')) {
+    if (lookahead1_ == unicode::u32('=')) {
       Advance();
       return BuildToken(type2);
     }

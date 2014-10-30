@@ -567,10 +567,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool h
       if (Current()->type() == Token::TS_RIGHT_PAREN) {
         Next();
         Handle<ir::Node> then_stmt = ParseStatement(yield, has_return, breakable, continuable);
+        if (Prev()->type() != Token::TS_RIGHT_BRACE && IsLineTermination()) {
+          ConsumeLineTerminator();
+        }
         Handle<ir::Node> else_stmt;
         if (Current()->type() == Token::TS_ELSE) {
           Next();
           else_stmt = ParseStatement(yield, has_return, breakable, continuable);
+          if (Prev()->type() != Token::TS_RIGHT_BRACE && IsLineTermination()) {
+            ConsumeLineTerminator();
+          }
         }
         Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr, then_stmt, else_stmt);
         if_stmt->SetInformationForNode(&info);
@@ -1261,6 +1267,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
   
   Handle<ir::Node> mods = ParseFieldModifiers();
   AccessorType at = ParseAccessor();
+
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
+  
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value() == "constructor") {
       return ParseConstructorOverloads(mods);
@@ -1466,7 +1477,8 @@ bool Parser<UCharInputIterator>::IsMemberFunctionOverloadsBegin(TokenInfo* info)
     info->type() == Token::TS_PUBLIC ||
     info->type() == Token::TS_PRIVATE ||
     info->type() == Token::TS_STATIC ||
-    info->type() == Token::TS_PROTECTED;
+    info->type() == Token::TS_PROTECTED ||
+    TokenInfo::IsKeyword(info->type());
 }
 
 
@@ -1539,6 +1551,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplem
     at = ParseAccessor();
   } else {
     at = *acessor_type;
+  }
+
+
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
   }
   
 
@@ -1623,6 +1640,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
   } else if (!first) {
     SYNTAX_ERROR("SyntaxError '*' expected", Current());
   }
+
+  
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
+  
     
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> name = ParseIdentifier();    
@@ -1653,6 +1676,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node> mods) {
   LOG_PHASE(ParseMemberVariable);
+
+  if (TokenInfo::IsKeyword(Current()->type())) {
+    Current()->set_type(Token::TS_IDENTIFIER);
+  }
+  
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> identifier = ParseIdentifier();
     Handle<ir::Node> value;

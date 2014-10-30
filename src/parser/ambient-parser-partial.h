@@ -109,14 +109,14 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(To
     Next();
     if (Current()->type() == Token::TS_IDENTIFIER) {
       Handle<ir::Node> identifier = ParseIdentifier();
+      Handle<ir::Node> type_annotation;
       if (Current()->type() == Token::TS_COLON) {
         Next();
-        Handle<ir::Node> annotation = ParseTypeExpression();
-        auto ret = New<ir::AmbientVariableView>(identifier, annotation);
-        ret->SetInformationForNode(info);
-        return ret;
+        type_annotation = ParseTypeExpression();
       }
-      SYNTAX_ERROR("SyntaxError ':' expected.", Current());
+      auto ret = New<ir::AmbientVariableView>(identifier, type_annotation);
+      ret->SetInformationForNode(info);
+      return ret;
     }
     SYNTAX_ERROR("SyntaxError 'identifier' expected.", Current());
   }

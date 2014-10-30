@@ -267,6 +267,41 @@ TEST(ExpressionParseTest, ParseExpression_property_call2) {
 }
 
 
+TEST(ExpressionParseTest, ParseExpression_property_call3) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "fs.readFile(path.resolve(dir, 'META-INF/MANIFEST.MF'), (err, data) => {})",
+            "[CallView]\n"
+            "  [GetPropView]\n"
+            "    [NameView][fs]\n"
+            "    [NameView][readFile]\n"
+            "  [CallArgsView]\n"
+            "    [CallView]\n"
+            "      [GetPropView]\n"
+            "        [NameView][path]\n"
+            "        [NameView][resolve]\n"
+            "      [CallArgsView]\n"
+            "        [NameView][dir]\n"
+            "        [StringView]['META-INF/MANIFEST.MF']\n"
+            "      [Empty]\n"
+            "    [ArrowFunctionView]\n"
+            "      [CallSignatureView]\n"
+            "        [ParamList]\n"
+            "          [ParameterView]\n"
+            "            [NameView][err]\n"
+            "            [Empty]\n"
+            "            [Empty]\n"
+            "            [Empty]\n"
+            "          [ParameterView]\n"
+            "            [NameView][data]\n"
+            "            [Empty]\n"
+            "            [Empty]\n"
+            "            [Empty]\n"
+            "        [Empty]\n"
+            "        [Empty]\n"
+            "      [BlockView]\n"
+            "  [Empty]");
+}
+
+
 TEST(ExpressionParseTest, ParseExpression_generic_call) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "func<string>()",
             "[CallView]\n"

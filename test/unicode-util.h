@@ -31,18 +31,15 @@
 #include <string.h>
 #include "../src/utils/stl.h"
 #include "../src/parser/uchar.h"
+#include "../src/parser/unicode-iterator-adapter.h"
 
 namespace yatsc {
 namespace testing {
-inline yatsc::Vector<UChar> AsciiToUCharVector(const char* str) {
-  size_t len = strlen(str);
+inline yatsc::Vector<UChar> AsciiToUCharVector(const yatsc::String& code) {
   yatsc::UCharBuffer v;
-  yatsc::UC8Bytes b;
-  v.reserve(len);
-  for (size_t i = 0u; i < len; i++) {
-    b[0] = str[i];
-    b[1] = '\0';
-    v.push_back(yatsc::UChar(unicode::u32(str[i]), b));
+  yatsc::UnicodeIteratorAdapter<yatsc::String::const_iterator> uia(code.cbegin());
+  for (;uia != code.end(); ++uia) {
+    v.push_back(std::move(*uia));
   }
   return v;
 }

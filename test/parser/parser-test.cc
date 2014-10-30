@@ -52,6 +52,6 @@ TEST(ParserTest, Parse) {
   // yatsc::String code3 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/scanner.ts");
   // ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
   //yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/diagnosticInformationMap.generated.ts");
-  
+  yatsc::String code5 = yatsc::testing::ReadFile("/Users/aono_taketoshi/github/npm-modules/yatsc/test/doppio/src/jar.ts");
   ENTIRE_PARSER_TEST_ALL(code5.c_str(), "");
 }

@@ -51,6 +51,5 @@ inline void RunCompiler(const char* name) {
 TEST(Compiler, Compile) {
   RunCompiler("test/microsoft/typescript/src/compiler/tsc.ts");
   RunCompiler("test/microsoft/typescript/src/services/services.ts");
-  //RunCompiler("/Users/aono_taketoshi/Documents/workspace/tagsys_tag_admin2/src/main/webapp/ts/src/main/tagmgr/site/siteId/report/summary-main.ts");
-
+  RunCompiler("test/doppio/console/doppioh.ts");
 }

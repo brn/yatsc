@@ -108,9 +108,9 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
     ILLEGAL_TOKEN();
   }
   
-  if (char_ == unicode::u8('\0')) {
+  if (char_ == unicode::u32('\0')) {
     BuildToken(Token::END_OF_INPUT);
-  } else if (char_ == unicode::u8(';')) {
+  } else if (char_ == unicode::u32(';')) {
     BuildToken(Token::LINE_TERMINATOR);
     Advance();
   } else if (Character::IsPuncture(char_)) {
@@ -167,16 +167,16 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
         break;
       }
       escaped = false;
-    } else if (char_ == unicode::u8('\0')) {
+    } else if (char_ == unicode::u32('\0')) {
       return TOKEN_ERROR("Unterminated string literal.");
-    } else if (char_ == unicode::u8('\\')) {
+    } else if (char_ == unicode::u32('\\')) {
       if (!escaped) {
-        if (lookahead1_ == unicode::u8('u')) {
+        if (lookahead1_ == unicode::u32('u')) {
           if (!ScanUnicodeEscapeSequence(&v, true)) {
             return;
           }
           continue;
-        } else if (lookahead1_ == unicode::u8('x')) {
+        } else if (lookahead1_ == unicode::u32('x')) {
           if (!ScanAsciiEscapeSequence(&v)) {
             return;
           }
@@ -199,17 +199,17 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
 
 template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanDigit() {
-  if (char_ == unicode::u8('0') && lookahead1_ == unicode::u8('x')) {
+  if (char_ == unicode::u32('0') && lookahead1_ == unicode::u32('x')) {
     return ScanHex();
   }
 
-  if (char_ == unicode::u8('0')) {
+  if (char_ == unicode::u32('0')) {
     if (Character::IsNumericLiteral(lookahead1_)) {
       if (!LanguageModeUtil::IsOctalLiteralAllowed(compiler_option_)) {
         SYNTAX_ERROR("Octal literals are not allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
       return ScanOctalLiteral();
-    } else if (lookahead1_ == unicode::u8('o') || lookahead1_ == unicode::u8('O')) {
+    } else if (lookahead1_ == unicode::u32('o') || lookahead1_ == unicode::u32('O')) {
       if (!LanguageModeUtil::IsBinaryLiteralAllowed(compiler_option_)) {
         SYNTAX_ERROR("Binary literals are allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
@@ -218,7 +218,7 @@ void Scanner<UCharInputIterator>::ScanDigit() {
   }
 
   
-  if ((char_ == unicode::u8('.') && Character::IsNumericLiteral(lookahead1_)) ||
+  if ((char_ == unicode::u32('.') && Character::IsNumericLiteral(lookahead1_)) ||
       Character::IsNumericLiteral(char_)) {
     return ScanInteger();
   }
@@ -274,7 +274,7 @@ template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanInteger() {
   UtfString v;
   v += char_;
-  bool js_double = char_ == unicode::u8('.');
+  bool js_double = char_ == unicode::u32('.');
   bool exponent = false;
   bool exponent_operator = false;
   Advance();
@@ -287,21 +287,21 @@ void Scanner<UCharInputIterator>::ScanInteger() {
       }
       exponent = false;
       exponent_operator = false;
-    } else if (exponent && (char_ == unicode::u8('+') || char_ == unicode::u8('-'))) {
+    } else if (exponent && (char_ == unicode::u32('+') || char_ == unicode::u32('-'))) {
       v += char_;
       exponent_operator = true;
     } else if (exponent) {
       return ILLEGAL_TOKEN();
     } else if (!exponent &&
-               char_ == unicode::u8('.') &&
+               char_ == unicode::u32('.') &&
                !js_double && Character::IsNumericLiteral(lookahead1_)) {
       v += char_;
       Advance();
       v += char_;
       js_double = true;
-    } else if (char_ == unicode::u8('.') && js_double) {
+    } else if (char_ == unicode::u32('.') && js_double) {
       return ILLEGAL_TOKEN();
-    } else if (char_ == unicode::u8('e') || char_ == unicode::u8('E')) {
+    } else if (char_ == unicode::u32('e') || char_ == unicode::u32('E')) {
       exponent = true;
       v += char_;
     } else {
@@ -320,8 +320,8 @@ void Scanner<UCharInputIterator>::ScanInteger() {
 template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanIdentifier() {
   UtfString v;  
-  while (Character::IsInIdentifierRange(char_) || char_ == unicode::u8('\\')) {
-    if (char_ == unicode::u8('\\')) {
+  while (Character::IsInIdentifierRange(char_) || char_ == unicode::u32('\\')) {
+    if (char_ == unicode::u32('\\')) {
       if (!ScanUnicodeEscapeSequence(&v, false)) {
         return;
       }
@@ -374,7 +374,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
     case '=':
       return ScanEqualityComparatorOrArrowGlyph();
     case '!':
-      if (lookahead1_ == unicode::u8('=')) {
+      if (lookahead1_ == unicode::u32('=')) {
         Advance();
         return ScanEqualityComparatorOrArrowGlyph(true);
       }
@@ -401,7 +401,7 @@ void Scanner<UCharInputIterator>::ScanArithmeticOperator(Token type1, Token type
     BuildToken(type1);
     return Advance();
   }
-  if (lookahead1_ == unicode::u8('=')) {
+  if (lookahead1_ == unicode::u32('=')) {
     BuildToken(type2);
     return Advance();
   }
@@ -414,12 +414,12 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
     Token type1, Token type2, Token type3, Token normal, Token equal_comparator, bool has_u) {
   if (lookahead1_ == char_) {
     Advance();
-    if (lookahead1_ == unicode::u8('=')) {
+    if (lookahead1_ == unicode::u32('=')) {
       Advance();
       return BuildToken(type2);
     } else if (has_u && lookahead1_ == char_) {
       Advance();
-      if (lookahead1_ == unicode::u8('=')) {
+      if (lookahead1_ == unicode::u32('=')) {
         Advance();
         return BuildToken(Token::TS_U_SHIFT_RIGHT_LET);
       } else {
@@ -427,7 +427,7 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
       }
     }
     return BuildToken(type1);
-  } else if (lookahead1_ == unicode::u8('=')) {
+  } else if (lookahead1_ == unicode::u32('=')) {
     Advance();
     return BuildToken(equal_comparator);
   }
@@ -452,16 +452,16 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_
   
     while (1) {
       expr += char_;
-      if (char_ == unicode::u8('\\')) {
+      if (char_ == unicode::u32('\\')) {
         escaped = !escaped;
-      } else if (char_ == unicode::u8('/')) {
+      } else if (char_ == unicode::u32('/')) {
         if (escaped) {
           escaped = false;
         } else {
           Advance();
-          while (char_ == unicode::u8('g') ||
-                 char_ == unicode::u8('i') ||
-                 char_ == unicode::u8('m')) {
+          while (char_ == unicode::u32('g') ||
+                 char_ == unicode::u32('i') ||
+                 char_ == unicode::u32('m')) {
             expr += char_;
             Advance();
           }
@@ -503,7 +503,7 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
       return BuildToken(Token::TS_EQ);
     }
     return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);
-  } else if (!not && lookahead1_ == unicode::u8('>')) {
+  } else if (!not && lookahead1_ == unicode::u32('>')) {
     Advance();
     return BuildToken(Token::TS_ARROW_GLYPH);
   }
@@ -514,7 +514,7 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
 template<typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool in_string_literal) {
   Advance();
-  if (char_ != unicode::u8('u')) {
+  if (char_ != unicode::u32('u')) {
     TOKEN_ERROR("UnicodeEscapeSequence not started with 'u'");
     return false;
   }
@@ -541,7 +541,7 @@ bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool i
 template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
   Advance();
-  if (char_ != unicode::u8('x')) {
+  if (char_ != unicode::u32('x')) {
     TOKEN_ERROR("ILLEGAL_TOKEN Token");
     return false;
   }
@@ -561,12 +561,12 @@ template <typename UCharInputIterator>
 template <typename T>
 int Scanner<UCharInputIterator>::ToHexValue(const T& uchar) YATSC_NO_SE {
   int ret = 0;
-  if (uchar >= unicode::u8('0') && uchar <= unicode::u8('9')) {
-    ret = static_cast<int>(uchar - unicode::u8('0'));
-  } else if (uchar >= unicode::u8('a') && uchar <= unicode::u8('f')) {
-    ret = static_cast<int>(uchar - unicode::u8('a') + 10);
-  } else if (uchar >= unicode::u8('A') && uchar <= unicode::u8('F')) {
-    ret = static_cast<int>(uchar - unicode::u8('A') + 10);
+  if (uchar >= unicode::u32('0') && uchar <= unicode::u32('9')) {
+    ret = static_cast<int>(uchar - unicode::u32('0'));
+  } else if (uchar >= unicode::u32('a') && uchar <= unicode::u32('f')) {
+    ret = static_cast<int>(uchar - unicode::u32('a') + 10);
+  } else if (uchar >= unicode::u32('A') && uchar <= unicode::u32('F')) {
+    ret = static_cast<int>(uchar - unicode::u32('A') + 10);
   } else {
     return -1;
   }
@@ -590,10 +590,10 @@ bool Scanner<UCharInputIterator>::SkipWhiteSpace() {
       Advance();
     }
   }
-  if (char_ == unicode::u8(';')) {
+  if (char_ == unicode::u32(';')) {
     line_terminator_state_.set_line_terminator_before_next();
   }
-  if (char_ == unicode::u8('\0')) {
+  if (char_ == unicode::u32('\0')) {
     line_terminator_state_.set_line_break_before_next();
   }
   return skip;
@@ -623,7 +623,7 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
       Advance();
       SkipTripleSlashComment();
     } else {
-      while (char_ != unicode::u8('\0') &&
+      while (char_ != unicode::u32('\0') &&
              Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
         Advance();
       }
@@ -637,25 +637,25 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
 template <typename UCharInputIterator>
 void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
   SkipWhiteSpaceOnly();
-  if (char_ == unicode::u8('<')) {
+  if (char_ == unicode::u32('<')) {
     Advance();
-    if (char_ == unicode::u8('r') &&
-        lookahead1_ == unicode::u8('e')) {
+    if (char_ == unicode::u32('r') &&
+        lookahead1_ == unicode::u32('e')) {
       ScanIdentifier();
       if (token_info_.value() == "reference") {
         SkipWhiteSpaceOnly();
-        if (char_ == unicode::u8('p') && lookahead1_ == unicode::u8('a')) {
+        if (char_ == unicode::u32('p') && lookahead1_ == unicode::u32('a')) {
           ScanIdentifier();
           if (token_info_.value() == "path") {
-            if (char_ == unicode::u8('=')) {
+            if (char_ == unicode::u32('=')) {
               Advance();
               ScanStringLiteral();
               Advance();
               SkipWhiteSpaceOnly();
-              if (char_ == unicode::u8('/')) {
+              if (char_ == unicode::u32('/')) {
                 Advance();
                 SkipWhiteSpaceOnly();
-                if (char_ == unicode::u8('>')) {
+                if (char_ == unicode::u32('>')) {
                   if (reference_path_callback_) {
                     reference_path_callback_(token_info_.value());
                   }
@@ -668,7 +668,7 @@ void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
     }
   }
   
-  while (char_ != unicode::u8('\0') &&
+  while (char_ != unicode::u32('\0') &&
          Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE) {
     Advance();
   }

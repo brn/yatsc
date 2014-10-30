@@ -90,7 +90,7 @@ namespace yatsc {
 
 
 #define SYNTAX_ERROR_INTERNAL_NO_RETURN(message, pos, error)  \
-    REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error)
+  REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error)
 
 
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, pos, error) \
