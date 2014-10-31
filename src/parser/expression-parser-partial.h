@@ -1282,6 +1282,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     Handle<ir::ObjectLiteralView> object_literal = New<ir::ObjectLiteralView>();
     object_literal->SetInformationForNode(Current());
+    Handle<ir::Properties> prop = object_literal->properties();
     Next();
 
     if (Current()->type() == Token::TS_RIGHT_BRACE) {
@@ -1292,6 +1293,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     while (1) {
       Handle<ir::Node> element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);
+      prop->Declare(element->first_child()->string_value().utf16_string(), element);
 
       if (Current()->type() == Token::TS_COMMA) {
         Next();

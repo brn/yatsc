@@ -27,7 +27,11 @@ namespace yatsc {
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseModule() {
   LOG_PHASE(ParseModule);
-  auto file_scope = New<ir::FileScopeView>();
+  Handle<ir::Scope> scope = NewScope();
+  set_current_scope(scope);
+  YATSC_SCOPED([&] {set_current_scope(scope->parent_scope());});
+  
+  auto file_scope = New<ir::FileScopeView>(scope);
   
   while (Current()->type() != Token::END_OF_INPUT) {
     if (Current()->type() == Token::TS_IMPORT) {
@@ -251,7 +255,10 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
   LOG_PHASE(ParseTSModuleBody);
   if (Current()->type() == Token::TS_LEFT_BRACE) {
-    auto block = New<ir::BlockView>();
+    Handle<ir::Scope> scope = NewScope();
+    set_current_scope(scope);
+    YATSC_SCOPED([&] {set_current_scope(scope->parent_scope());})
+    auto block = New<ir::BlockView>(scope);
     block->SetInformationForNode(Current());
     Next();
     

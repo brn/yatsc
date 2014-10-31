@@ -20,25 +20,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef IR_IR_FACTORY_H
-#define IR_IR_FACTORY_H
 
-#include "../utils/utils.h"
-#include "../memory/heap.h"
+#ifndef IR_DEPTH_FIRST_CALLBACK_H
+#define IR_DEPTH_FIRST_CALLBACK_H
 
-namespace yatsc {namespace ir {
+namespace yatsc {
 
-class IRFactory : private Uncopyable {
+class DepthFirstCallback {
  public:
+  DepthFirstCallback() = default;
 
-  IRFactory() {}
-  
-  template <typename NodeName, typename ... Args>
-  inline Handle<NodeName> New(Args ... args) {
-    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
-  }
+
+  ~DepthFirstCallback() = default;
+
+
+  void Visit(Handle<ir::Node> node, Handle<ir::Node> root);
 };
 
-}}
+}
 
 #endif

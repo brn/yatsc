@@ -20,25 +20,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef IR_IR_FACTORY_H
-#define IR_IR_FACTORY_H
 
-#include "../utils/utils.h"
-#include "../memory/heap.h"
+#include "./scope.h"
+#include "./node.h"
+
 
 namespace yatsc {namespace ir {
 
-class IRFactory : private Uncopyable {
- public:
+Scope::Scope(Handle<Scope> parent_scope)
+    : parent_scope_(parent_scope) {}
 
-  IRFactory() {}
-  
-  template <typename NodeName, typename ... Args>
-  inline Handle<NodeName> New(Args ... args) {
-    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
+
+Scope::Scope() {}
+
+
+Scope::~Scope() {}
+
+
+void Scope::Declare(Handle<Node> var) {
+  if (var->HasVariableView()) {
+    if (var->first_child()->HasNameView()) {
+      declared_items_.insert(std::make_pair(var->first_child()->string_value()->utf16_string(), var));
+    }
   }
-};
+}
+
 
 }}
-
-#endif

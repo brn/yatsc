@@ -26,7 +26,10 @@ namespace yatsc {
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclarationModule() {
   LOG_PHASE(ParseDeclarationModule);
-  auto ret = New<ir::FileScopeView>();
+  Handle<ir::Scope> scope = NewScope();
+  set_current_scope(scope);
+  YATSC_SCOPED([&] {set_current_scope(scope->parent_scope());});
+  auto ret = New<ir::FileScopeView>(scope);
   ret->SetInformationForNode(Current());
   while (1) {
     Handle<ir::ExportView> export_view;

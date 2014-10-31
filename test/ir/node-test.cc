@@ -41,7 +41,7 @@ class NodeTest: public ::testing::Test {
 yatsc::ir::IRFactory NodeTest::irfactory;
 
 TEST_F(NodeTest, FileScopeView_ToFileScopeView_test) {
-  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::FileScopeView>();
+  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::FileScopeView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
 
   yatsc::Handle<yatsc::ir::FileScopeView> scope = node->ToFileScopeView();
   ASSERT_TRUE(scope);
@@ -134,7 +134,7 @@ TEST_F(NodeTest, FalseView_ToFalseView_test) {
 
 
 TEST_F(NodeTest, BlockView_ToBlockView_test) {
-  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::BlockView>();
+  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::BlockView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
   yatsc::Handle<yatsc::ir::BlockView> scope = node->ToBlockView();
   ASSERT_TRUE(scope);
 }

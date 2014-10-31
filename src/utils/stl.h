@@ -44,11 +44,28 @@ using MultiHashMap = std::unordered_multimap<Key,
                                              std::equal_to<Key>,
                                              StandardAllocator<std::pair<const Key, Value>>>;
 
+template<typename Key, typename Value>
+using HashMap = std::unordered_map<Key,
+                                   Value,
+                                   std::hash<Key>,
+                                   std::equal_to<Key>,
+                                   StandardAllocator<std::pair<const Key, Value>>>;
+
 template<typename Key>
 using HashSet = std::unordered_set<Key,
                                    std::hash<Key>,
                                    std::equal_to<Key>,
                                    StandardAllocator<Key>>;
+
+
+template <typename Begin, typename End>
+using IteratorRange = std::pair<Begin, End>;
+
+
+template <typename Begin, typename End>
+inline IteratorRange<Begin, End> MakeRange(Begin begin, End end) {
+  return std::make_pair(begin, end);
+}
 }
 
 #endif

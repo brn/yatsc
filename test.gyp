@@ -234,6 +234,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/ir/node-test.cc',
         './test/test-main.cc'
       ],
@@ -262,6 +263,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/type-expression-parser-test.cc',
         './test/test-main.cc'
       ],
@@ -290,6 +292,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/expression-parse-test.cc',
         './test/test-main.cc'
       ],
@@ -319,6 +322,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/declaration-parse-test.cc',
         './test/test-main.cc'
       ],
@@ -347,6 +351,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/statement-parse-test.cc',
         './test/test-main.cc'
       ],
@@ -375,6 +380,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/module-parse-test.cc',
         './test/test-main.cc'
       ],
@@ -403,6 +409,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/ambient-parser-test.cc',
         './test/test-main.cc'
       ],
@@ -431,6 +438,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/parser/parser-test.cc',
         './test/test-main.cc'
       ],
@@ -466,6 +474,7 @@
         './src/utils/environment.cc',
         './lib/gtest/gtest-all.cc',
         './src/ir/node.cc',
+        './src/ir/scope.cc',
         './test/compiler/compiler-test.cc',
         './test/test-main.cc'
       ],

@@ -184,7 +184,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool y
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseBlockStatement);
-  auto block_view = New<ir::BlockView>();
+  Handle<ir::Scope> scope = NewScope();
+  set_current_scope(scope);
+  auto block_view = New<ir::BlockView>(scope);
   block_view->SetInformationForNode(Current());
 
   if (Current()->type() == Token::TS_LEFT_BRACE) {
@@ -200,6 +202,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBlockStatement(bool yield, boo
         block_view->InsertLast(statement);
       }
     }
+    set_current_scope(scope->parent_scope());
     return block_view;
   }
   SYNTAX_ERROR("SyntaxError '{' expected", Current());
@@ -547,6 +550,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, b
 
   Handle<ir::Node> ret = New<ir::VariableView>(lhs, value, type_expr);
   ret->SetInformationForNode(lhs);
+  current_scope()->Declare(ret);
+  
   return ret;
 }
 
@@ -1888,7 +1893,9 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
   LOG_PHASE(ParseFunctionBody);
   if (Current()->type() == Token::TS_LEFT_BRACE) {
-    auto block = New<ir::BlockView>();
+    Handle<ir::Scope> scope = NewScope();
+    set_current_scope(scope);
+    auto block = New<ir::BlockView>(scope);
     block->SetInformationForNode(Current());
     Next();
     while (1) {
@@ -1902,6 +1909,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
         ConsumeLineTerminator();
       }
     }
+    set_current_scope(scope->parent_scope());
     return block;
   }
   SYNTAX_ERROR("SyntaxError unexpected token in 'function body'", Current());

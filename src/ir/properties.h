@@ -20,23 +20,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef IR_IR_FACTORY_H
-#define IR_IR_FACTORY_H
+
+#ifndef YATSC_IR_PROPERTIES_H
+#define YATSC_IR_PROPERTIES_H
 
 #include "../utils/utils.h"
-#include "../memory/heap.h"
+#include "../utils/unicode.h"
+#include "../utils/stl.h"
 
 namespace yatsc {namespace ir {
 
-class IRFactory : private Uncopyable {
+class Node;
+class Scope;
+
+
+typedef HashMap<Utf16String, Handle<Node>> PropertyMap;
+typedef IteratorRange<PropertyMap::iterator, PropertyMap::iterator> PropertyRange;
+typedef std::pair<Utf16String, Handle<Node>> Property;
+
+class Properties: private Uncopyable {
  public:
 
-  IRFactory() {}
-  
-  template <typename NodeName, typename ... Args>
-  inline Handle<NodeName> New(Args ... args) {
-    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
+  Properties() = default;
+
+
+  ~Properties() = default;
+
+
+  void Declare(const Utf16String& name, Handle<Node> prop) {
+    properties_.insert(std::make_pair(name, prop));
   }
+
+
+  YATSC_INLINE Property FindDeclaredItem(const Utf16String& name) {
+    return *(properties_.find(name));
+  };
+
+
+  YATSC_INLINE PropertyRange declared_items() {return MakeRange(properties_.begin(), properties_.end());}
+
+ private:
+  HashMap<Utf16String, Handle<Node>> properties_;
 };
 
 }}

@@ -567,10 +567,14 @@ class Parser: public ParserBase {
  private:
   class RecordedParserState {
    public:
-    RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp, const TokenInfo& current, const TokenInfo& prev)
+    RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp,
+                        const TokenInfo& current,
+                        const TokenInfo& prev,
+                        Handle<ir::Scope> current_scope)
         : rcp_(rcp),
           current_(current),
-          prev_(prev) {}
+          prev_(prev),
+          scope_(current_scope){}
 
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
 
@@ -580,36 +584,57 @@ class Parser: public ParserBase {
 
     YATSC_CONST_GETTER(const TokenInfo&, prev, prev_);
 
+
+    YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
+
    private:
     typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
     TokenInfo current_;
     TokenInfo prev_;
+    Handle<ir::Scope> scope_;
   };
 
   RecordedParserState parser_state() YATSC_NOEXCEPT {
     TokenInfo prev;
     TokenInfo current;
+    Handle<ir::Scope> scope;
     if (Prev() != nullptr) {
       prev = *Prev();
     }
     if (Current() != nullptr) {
       current = *Current();
     }
+    if (scope_) {
+      scope = scope_;
+    }
     
-    return RecordedParserState(scanner_->char_position(), current, prev);
+    return RecordedParserState(scanner_->char_position(), current, prev, scope);
   }
 
   void RestoreParserState(const RecordedParserState& rps) {
     scanner_->RestoreScannerPosition(rps.rcp());
     *current_token_info_ = rps.current();
     prev_token_info_ = rps.prev();
+    scope_ = rps.scope();
   }
+
+
+  YATSC_INLINE void Declare(Handle<ir::Node> node) {
+    scope_->Declare(node);
+  }
+
+
+  YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_);
+
+
+  Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope());}
   
 #if defined(DEBUG) || defined(UNIT_TEST)
   StringStream phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;
+  Handle<ir::Scope> scope_;
 };
 } // yatsc
 

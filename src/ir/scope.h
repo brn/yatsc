@@ -20,23 +20,59 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#ifndef IR_IR_FACTORY_H
-#define IR_IR_FACTORY_H
+
+#ifndef YATSC_IR_SCOPE_H
+#define YATSC_IR_SCOPE_H
 
 #include "../utils/utils.h"
-#include "../memory/heap.h"
+#include "../utils/stl.h"
+#include "../utils/unicode.h"
 
 namespace yatsc {namespace ir {
 
-class IRFactory : private Uncopyable {
- public:
+class Node;
+class Scope;
 
-  IRFactory() {}
-  
-  template <typename NodeName, typename ... Args>
-  inline Handle<NodeName> New(Args ... args) {
-    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
-  }
+
+typedef Vector<Handle<Scope>> Scopes;
+typedef MultiHashMap<Utf16String, Handle<Node>> DeclaredMap;
+typedef IteratorRange<DeclaredMap::const_iterator, DeclaredMap::const_iterator> DeclaredRange;
+typedef IteratorRange<Scopes::iterator, Scopes::iterator> ScopeRange;
+
+class Scope: private Uncopyable {
+ public:
+  Scope(Handle<Scope> parent_scope);
+
+
+  Scope();
+
+
+  ~Scope();
+
+
+  void Declare(Handle<Node> variable);
+
+
+  YATSC_INLINE DeclaredRange FindDeclaredItem(const Utf16String& name) {
+    return declared_items_.equal_range(name);
+  };
+
+
+  void AddChild(Handle<Scope> child) {
+    child_scope_list_.push_back(child);
+  };
+
+
+  YATSC_INLINE ScopeRange Children() {return MakeRange(child_scope_list_.begin(), child_scope_list_.end());}
+
+
+  YATSC_PROPERTY(Handle<Scope>, parent_scope, parent_scope_);
+
+
+ private:
+  MultiHashMap<Utf16String, Handle<Node>> declared_items_;
+  Handle<Scope> parent_scope_;
+  Scopes child_scope_list_;
 };
 
 }}

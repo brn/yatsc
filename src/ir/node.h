@@ -36,6 +36,8 @@
 #include "../utils/stl.h"
 #include "../memory/heap.h"
 #include "../parser/token.h"
+#include "./scope.h"
+#include "./properties.h"
 
 namespace yatsc {namespace ir {
 
@@ -430,6 +432,12 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   }
 
 
+  // Return string value.
+  YATSC_INLINE const UC16* utf16_value() YATSC_NO_SE {
+    return string_value_.utf16_value();
+  }
+
+
   // Set double value.
   YATSC_INLINE void set_double_value(double d) YATSC_NOEXCEPT {
     double_value_ = d;
@@ -593,20 +601,73 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 };
 
 
-// Represent block.
-class BlockView: public Node {
+
+class ScopedNode: public Node, public Scope {
+ protected:
+  ScopedNode(NodeType type, size_t count, Handle<Scope> scope, std::initializer_list<Handle<Node>> nodes)
+      : Node(type, count, nodes),
+        scope_(scope) {}
+
+
+  ScopedNode(NodeType type, size_t count, Handle<Scope> scope)
+      : Node(type, count),
+        scope_(scope) {}
+
+
+  ScopedNode(NodeType type, Handle<Scope> scope)
+      : Node(type, 0u),
+        scope_(scope) {}
+
+
  public:
-  BlockView(): Node(NodeType::kBlockView){};
+  Handle<Scope> scope() {return scope_;}
+  
+
+ private:
+  Handle<Scope> scope_;
+};
+
+
+class PropertyNode: public Node, public Properties {
+ protected:
+  PropertyNode(NodeType type, size_t count, std::initializer_list<Handle<Node>> nodes)
+      : Node(type, count, nodes),
+        properties_(Heap::NewHandle<Properties>()) {}
+
+
+  PropertyNode(NodeType type, size_t count)
+      : Node(type, count),
+        properties_(Heap::NewHandle<Properties>()) {}
+
+
+  PropertyNode(NodeType type)
+      : Node(type, 0u),
+        properties_(Heap::NewHandle<Properties>()) {}
+
+
+ public:
+  Handle<Properties> properties() {return properties_;}
+  
+
+ private:
+  Handle<Properties> properties_;
+};
+
+
+// Represent block.
+class BlockView: public ScopedNode {
+ public:
+  BlockView(Handle<Scope> scope): ScopedNode(NodeType::kBlockView, scope){};
 };
 
 
 // Represent file root of script.
-class FileScopeView: public Node {
+class FileScopeView: public ScopedNode {
  public:
-  FileScopeView(std::initializer_list<Handle<Node>> body): Node(NodeType::kFileScopeView, 0u, body){};
+  FileScopeView(Handle<Scope> scope, std::initializer_list<Handle<Node>> body): ScopedNode(NodeType::kFileScopeView, 0u, scope, body){};
 
   
-  FileScopeView(): Node(NodeType::kFileScopeView, 0u){};
+  FileScopeView(Handle<Scope> scope): ScopedNode(NodeType::kFileScopeView, 0u, scope){};
 };
 
 
@@ -667,14 +728,14 @@ class FalseView: public Node {
 
 
 // Represent module.
-class ModuleDeclView: public Node {
+class ModuleDeclView: public PropertyNode {
  public:
   ModuleDeclView():
-      Node(NodeType::kModuleDeclView, 2u) {}
+      PropertyNode(NodeType::kModuleDeclView, 2u) {}
 
 
   ModuleDeclView(Handle<Node> name, Handle<Node> body):
-      Node(NodeType::kModuleDeclView, 2u, {name, body}) {}
+      PropertyNode(NodeType::kModuleDeclView, 2u, {name, body}) {}
 
   
   NODE_PROPERTY(name, 0);
@@ -1261,13 +1322,13 @@ class ClassImplsView: public Node {
 };
 
 
-class ClassDeclView: public Node {
+class ClassDeclView: public PropertyNode {
  public:
   ClassDeclView(Handle<Node> name, Handle<Node> type_parameters, Handle<Node> bases, Handle<Node> field_list)
-      : Node(NodeType::kClassDeclView, 4u, {name, type_parameters, bases, field_list}) {}
+      : PropertyNode(NodeType::kClassDeclView, 4u, {name, type_parameters, bases, field_list}) {}
   
   ClassDeclView()
-      : Node(NodeType::kClassDeclView, 4u) {}
+      : PropertyNode(NodeType::kClassDeclView, 4u) {}
   
 
   // Getter and Setter for name.
@@ -2163,14 +2224,14 @@ class ObjectElementView: public Node {
 };
 
 
-class ObjectLiteralView: public Node {
+class ObjectLiteralView: public PropertyNode {
  public:
   ObjectLiteralView(std::initializer_list<Handle<Node>> properties)
-      : Node(NodeType::kObjectLiteralView, 0, properties) {}
+      : PropertyNode(NodeType::kObjectLiteralView, 0, properties) {}
 
 
   ObjectLiteralView()
-      : Node(NodeType::kObjectLiteralView, 0) {}
+      : PropertyNode(NodeType::kObjectLiteralView, 0) {}
 };
 
 
