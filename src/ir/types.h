@@ -23,28 +23,58 @@ Y// The MIT License (MIT)
 #ifndef YATSC_IR_TYPES_H
 #define YATSC_IR_TYPES_H
 
+#include "../parser/token.h"
+#include "../utils/stl.h"
+#include "../utils/utils.h"
+#include "../utils/unicode.h"
 
 namespace yatsc {
 
+#define TYPE_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST)   \
+  DECLARE_FIRST(FunctionType)                   \
+  DECLARE(ObjectType)                           \
+  DECLARE(InterfaceType)                        \
+  DECLARE(ClassType)                            \
+  DECLARE(ModuleType)                           \
+  DECLARE_LAST(EnumType)
+
+
+#define DECLARE_TYPE_FIRST(type) k##type = 1,
+#define DECLARE_TYPE(type) k##type,
+#define DECLARE_TYPE_LAST(type) k##type
+
+enum class TypeId: uint8_t {
+  TYPE_LIST(DECLARE_TYPE, DECLARE_TYPE_FIRST, DECLARE_TYPE_LAST)
+};
+
+#undef DECLARE_TYPE_FIRST(type)
+#undef DECLARE_TYPE(type)
+#undef DECLARE_TYPE_LAST(type)
+
+
 class Type {
+ public:
+  Type(TypeId type)
+      : type_(type) {}
+
+#define TYPE_CHECK(t)                           \
+  YATSC_INLINE bool Is##t() YATSC_NO_SE {return return t == type_;}
+  TYPE_LIST(TYPE_CHECK, TYPE_CHECK, TYPE_CHECK)
+#undef TYPE_CHECK
+  
+ private:
+  type_;
 };
 
 
 class MemberDescriptor {
- public:
-  enum class Modifiers: uint8_t {
-    kPublic = 0,
-    kPrivate,
-    kProtected,
-    kExport
-  };
-  
-  MemberDescriptor(Modifiers mod, Handle<Type> type)
+ public:  
+  MemberDescriptor(Token mod, Handle<Type> type)
       : mod_(mod),
         type_(type) {}
 
  private:
-  Modifiers mod_;
+  Token mod_;
   Handle<Type> type_;
 };
 
@@ -52,7 +82,13 @@ class MemberDescriptor {
 class FunctionType: public Type {
  public:
   FunctionExpression()
-      :Type() {}
+      :Type(TypeId::kFunctionType) {}
+
+  void AddParameterType(Handle<Type> type);
+
+  Vector<Handle<Type>>& parameters() {return parameter_types_;}
+
+  YATSC_PROPERTY(Handle<Type>, return_type, return_type_);
 
  private:
   Vector<Handle<Type>> parameter_types_;
@@ -63,9 +99,18 @@ class FunctionType: public Type {
 class ObjectType: public Type {
 
  public:
+  typedef HashMap<Utf16String, Handle<Type>> Properties;
+  
   ObjectTypeExpression()
-      : Type() {}
+      : Type(TypeId::kObjectType) {}
 
+  void AddProperty(const Utf16String& name, Handle<Type> property);
+
+  Properties& properties() {return property_map_;}
+
+  void AddCall(Handle<Type> call);
+
+  Vector<FunctionType>& calls() {return calls_;}
   
  private:
   HashMap<Utf16String, Handle<Type>> property_map_;
@@ -73,20 +118,26 @@ class ObjectType: public Type {
 };
 
 
-class PropertiesType: public Type {
+class MemberType: public Type {
  public:
-  PropertiesType()
-      : Type() {}
+  typedef HashMap<Utf16String, MemberDescriptor> Members;
+  
+  MemberType(TypeId type)
+      : Type(type) {}
+
+  void AddMember(Token op, const Utf16String& name, Handle<Type> property);
+
+  Members& members() {return property_map_;}
 
  private:
   HashMap<Utf16String, MemberDescriptor> property_map_;
 };
 
 
-class InterfaceType: public PropertiesType {
+class InterfaceType: public MemberType {
  public:
   InterfaceType()
-      : PropertiesType() {}
+      : MemberType(TypeId::kInterfaceType) {}
 
  private:
   Vector<Handle<Type>> extends_;
@@ -94,21 +145,65 @@ class InterfaceType: public PropertiesType {
 };
 
 
-class ClassType: public PropertiesType {
+class TypeParameterDescriptor {
  public:
-  ClassType()
-      : PropertiesType() {}
+  TypeParameterDescriptor(const Utf16String& name, const Utf16String& constraints)
+      : name_(name),
+        constraints_(constraints) {}
 
+  const Utf16String& name() YATSC_NO_SE {return name_;}
+
+  const Utf16String& constraints() YATSC_NO_SE {return constraints_;}
+  
  private:
-  Vector<Handle<Type>> impls_;
-  Handle<Type> extend_;
+  const Utf16String& name_;
+  const Utf16String& constraints_;
 };
 
 
-class ModuleType: public PropertiesType {
+class ClassType: public MemberType {
+ public:
+  ClassType()
+      : MemberType(TypeId::kClassType) {}
+
+  void AddTypeParameter(Handle<TypeParameterDescriptor> descriptor);
+
+  Vector<Handle<TypeParameterDescriptor>>& type_parameters() YATSC_NO_SE {return type_parameters_;}
+  
+  void AddImpls(Handle<Type> type);
+
+  Vector<Handle<Type>>& impls() YATSC_NO_SE {return impls_;}
+
+  YATSC_PROPERTY(Type, constructor, constructor_);
+
+  YATSC_PROPERTY(Type, extends, extends_);
+
+ private:
+  Vector<Handle<Type>> impls_;
+  Vector<Handle<TypeParameterDescriptor>> type_parameters_;
+  Handle<Type> extend_;
+  Handle<Type> constructor_;
+};
+
+
+class ModuleType: public MemberType {
  public:
   ModuleType()
-      : PropertiesType() {}
+      : MemberType(TypeId::kModuleType) {}
+};
+
+
+class EnumType: public Type {
+ public:
+  EnumType()
+      : Type(TypeId::kEnumType) {}
+
+  void AddValue(const Utf16String& name);
+
+  bool HasValue(const Utf16String& name);
+
+ private:
+  HashSet<Utf16String>
 };
 }
 

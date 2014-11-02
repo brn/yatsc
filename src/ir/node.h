@@ -1601,7 +1601,7 @@ class TypeConstraintsView: public Node {
   NODE_PROPERTY(derived, 0);
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(base, 0);
+  NODE_PROPERTY(base, 1);
 };
 
 

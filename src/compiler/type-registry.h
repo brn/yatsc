@@ -23,8 +23,9 @@
 #ifndef YATSC_COMPILER_TYPE_REGISTRY
 #define YATSC_COMPILER_TYPE_REGISTRY
 
-#include "../utils/stl.h"
+#include "../ir/type.h"
 #include "../memory/heap.h"
+#include "../utils/stl.h"
 
 namespace yatsc {
 
@@ -45,8 +46,14 @@ class TypeRegistry {
   Handle<ir::Node> FindType(const UtfString& type_name);
 
 
+  static ir::Types* CreateType(Handle<ir::Node> node);
+
+
  private:
-  HashMap<Utf16String, Handle<ir::Node>> type_map_;
+  static ir::Type* CreateClassType(Handle<ir::Node> node);
+  
+  HashMap<Utf16String, Type*> type_map_;
+  Vector<Handle<ir::Type>> type_holder_;
 };
 
 }
