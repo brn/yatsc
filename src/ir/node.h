@@ -333,7 +333,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Getter for children list.
-  YATSC_CONST_GETTER(const List&, node_list, node_list_);
+  YATSC_GETTER(List&, node_list, node_list_);
 
   
   // Getter for size.
@@ -344,6 +344,18 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   YATSC_CONST_GETTER(Handle<Node>, last_child, node_list_.back());
+
+
+  YATSC_INLINE List::iterator begin() {return node_list_.begin();}
+
+
+  YATSC_INLINE List::iterator end() {return node_list_.end();}
+
+
+  YATSC_INLINE List::const_iterator cbegin() const {return node_list_.cbegin();}
+
+
+  YATSC_INLINE const List::const_iterator cend() const {return node_list_.cend();}
 
 
   YATSC_INLINE bool HasLiteralView() YATSC_NO_SE {

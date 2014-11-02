@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 // 
-// Copyright (c) Taketoshi Aono(brn)
+// Copyright (c) 2013 Taketoshi Aono(brn)
 // 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,44 +21,37 @@
 // THE SOFTWARE.
 
 
-#include "./scope.h"
-#include "./node.h"
+namespace yatsc {
+
+TypeRegistry::TypeRegistry() {}
 
 
-namespace yatsc {namespace ir {
-
-Scope::Scope(Handle<Scope> parent_scope)
-    : parent_scope_(parent_scope) {}
+TypeRegistry::~TypeRegistry() {}
 
 
-Scope::Scope() {}
-
-
-Scope::~Scope() {}
-
-
-void Scope::Declare(Handle<Node> var) {
-  if (var->HasVariableView()) {
-    if (var->first_child()->HasNameView()) {
-      declared_items_.insert(std::make_pair(var->first_child()->string_value().utf16_string(), var));
-    } else if (var->first_child()->HasBindingPropListView()) {
-      Declare(var->first_child());
-    }
-  } else if (var->HasBindingPropListView()) {
-    for (auto node: *var) {
-      if (!node->node_list()[1]) {
-        declared_items_.insert(std::make_pair(node->node_list()[1]->string_value().utf16_string(), node->node_list()[1]));
-      } else {
-        Declare(node->node_list()[1]);
-      }
-    }
-  } else if (var->HasFunctionView()) {
-    Handle<ir::Node> name = var->node_list()[1];
-    if (name && name->HasNameView()) {
-      declared_items_.insert(std::make_pair(name->string_value().utf16_string(), var));
-    }
+void TypeRegistry::Register(Handle<ir::Node> node) {
+  if (node->HasClassDeclView() ||
+      node->HasInterfaceView() ||
+      node->HasEnumDeclView() ||
+      node->HasModuleDeclView() ||
+      node->HasAmbientClassDeclarationView() ||
+      node->HasAmbientEnumDeclarationView() ||
+      node->HasAmbientModuleView()) {
+    Handle<ir::Node> name = node->first_child();
+    type_map_.insert(std::make_pair(name->string_value()->utf16_value(), node));
   }
 }
 
 
-}}
+void TypeRegistry::RegisterExernalPhaiType(Handle<ir::Node> external_type) {
+  if (external_type->HasNameView()) {
+    type_map_.insert(std::make_pair(external_type->string_value()->utf16_value(), external_type));
+  }
+}
+
+
+Handle<ir::Node> TypeRegistry::FindType(const Utf16String& name) {
+  return type_map_.find(name)->second;
+}
+
+}

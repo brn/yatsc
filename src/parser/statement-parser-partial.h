@@ -154,8 +154,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseStatement(bool yield, bool has
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, bool has_default) {
   switch (Current()->type()) {
-    case Token::TS_FUNCTION:
-      return ParseFunctionOverloads(yield, has_default, true);
+    case Token::TS_FUNCTION: {
+      Handle<ir::Node> node = ParseFunctionOverloads(yield, has_default, true);
+      current_scope()->Declare(node);
+      return node;
+    }
     case Token::TS_CLASS:
       return ParseClassDeclaration(yield, has_default);
     case Token::TS_ENUM:
@@ -288,6 +291,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl
 
   Handle<ir::Node> ret = New<ir::VariableView>(lhs, value, type_expr);
   ret->SetInformationForNode(lhs);
+  current_scope()->Declare(ret);
   return ret;
 }
 
