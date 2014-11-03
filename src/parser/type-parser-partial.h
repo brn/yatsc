@@ -334,7 +334,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       }
     } catch (const SyntaxError& e) {
       if (at.getter || at.setter) {
-        key = New<ir::NameView>(info.value());
+        key = New<ir::NameView>(NewSymbol(SymbolType::kPropertyName, info.value()));
         key->SetInformationForNode(&info);
       } else {
         throw e;
@@ -406,8 +406,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIndexSignature() {
     if (Current()->type() == Token::TS_COLON) {
       Next();
       if (Current()->type() == Token::TS_IDENTIFIER) {
-        bool string_type = Current()->value() == "string";
-        bool number_type = Current()->value() == "number";
+        bool string_type = Current()->value()->Equals("string");
+        bool number_type = Current()->value()->Equals("number");
         if (string_type || number_type) {
           Next();
           if (Current()->type() == Token::TS_RIGHT_BRACKET) {

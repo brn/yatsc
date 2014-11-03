@@ -313,7 +313,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingIdentifier(bool default
   } else if (Current()->type() == Token::TS_YIELD) {
     ret = New<ir::YieldView>(false, ir::Node::Null());
   } else if (Current()->type() == Token::TS_IDENTIFIER) {
-    ret = New<ir::NameView>(Current()->value());
+    ret = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
   } else {
     SYNTAX_ERROR("SyntaxError 'default', 'yield' or 'identifier' expected", Current());
   }
@@ -713,7 +713,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> 
       
     }
   } else if (Current()->type() == Token::TS_IDENTIFIER &&
-             Current()->value() == "of") {
+             Current()->value()->Equals("of")) {
     // for (var i in obj) ...
     Next();
     second = ParseAssignmentExpression(true, yield);
@@ -1288,7 +1288,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
   }
   
   if (Current()->type() == Token::TS_IDENTIFIER) {
-    if (Current()->value() == "constructor") {
+    if (Current()->value()->Equals("constructor")) {
       return ParseConstructorOverloads(mods);
     } else {
       RecordedParserState rps = parser_state();
@@ -1370,7 +1370,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
   LOG_PHASE(ValidateOverload);
   if (overloads->size() > 0) {
     Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
-    if (!node->name()->string_equals(last->at(1))) {
+    if (!node->name()->SymbolEquals(last->at(1))) {
       SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", node->at(1)->source_position());
     }
     if (!node->modifiers()->Equals(last->modifiers())) {
@@ -1428,7 +1428,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir
   bool first = true;
   while (1) {
     if ((Current()->type() == Token::TS_IDENTIFIER &&
-        Current()->value() == "constructor") ||
+         Current()->value()->Equals("constructor")) ||
         Current()->type() == Token::TS_PUBLIC ||
         Current()->type() == Token::TS_PRIVATE ||
         Current()->type() == Token::TS_PROTECTED) {
@@ -1460,7 +1460,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplement
   }
   
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "constructor") {
+      Current()->value()->Equals("constructor")) {
     TokenInfo info = *Current();
     Handle<ir::Node> name = ParseIdentifier();
     Handle<ir::Node> call_signature = ParseCallSignature(true);
@@ -1735,7 +1735,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
           Handle<ir::FunctionOverloadView> last(overloads->last_child());
           if (!last->name()) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
-          } else if (!last->name()->string_equals(overload->name())) {
+          } else if (!last->name()->SymbolEquals(overload->name())) {
             SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
           }
 
@@ -1860,7 +1860,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::ParameterView> pv = New<ir::ParameterView>();
     pv->SetInformationForNode(Current());
-    Handle<ir::NameView> nv = New<ir::NameView>(Current()->value());
+    Handle<ir::NameView> nv = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
     nv->SetInformationForNode(Current());
     pv->set_access_level(access_level);
     pv->set_name(nv);

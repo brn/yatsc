@@ -89,8 +89,15 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
   
   switch (node->node_type()) {
     case NodeType::kNameView: {
-      if (((string_value_.utf8_length() > 0 && node->string_value_.utf8_length() > 0))
-          && !string_equals(node)) {
+      if (((symbol_->utf16_length() > 0 && node->symbol()->utf16_length() > 0))
+          && !SymbolEquals(node)) {
+        return false;
+      }
+      return true;
+    }
+    case NodeType::kStringView: {
+      if (((string_value_->utf8_length() > 0 && node->string_value_->utf8_length() > 0))
+          && !StringEquals(node)) {
         return false;
       }
       return true;
@@ -223,10 +230,13 @@ void Node::ToStringSelf(const Node* target, String& indent, StringStream& ss) co
   ss << indent << '[' << target->DoToString() << ']';
   if (target->has_string_value() && !target->HasNumberView()) {
     if (target->HasStringView()) {
-      ss << "[\'" << target->utf8_value() << "\']";
+      ss << "[\'" << target->utf8_string_value() << "\']";
     } else {
-      ss << '[' << target->utf8_value() << ']';
+      ss << '[' << target->utf8_string_value() << ']';
     }
+  }
+  if (target->HasSymbol()) {
+    ss << '[' << target->utf8_symbol_value() << ']';
   }
   if (target->HasNumberView()) {
     ss << '[' << target->double_value() << ']';

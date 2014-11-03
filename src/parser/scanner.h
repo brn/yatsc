@@ -38,7 +38,7 @@
 
 #if defined(DEBUG) || defined(UNIT_TEST)
 #define TOKEN_ERROR(message)                                            \
-  [&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}
+  (void)[&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}
 
 #define ILLEGAL_TOKEN() TOKEN_ERROR("Illegal Token");
 #endif

@@ -27,6 +27,7 @@
 
 #include "../ir/node.h"
 #include "../ir/irfactory.h"
+#include "../ir/symbol.h"
 #include "../parser/scanner.h"
 #include "../compiler-option.h"
 #include "../utils/utils.h"
@@ -65,6 +66,12 @@ class ParserBase: private Uncopyable, private Unmovable {
     return irfactory_.New<T>(list);
   }
 
+
+  YATSC_INLINE Handle<Symbol> NewSymbol(SymbolType type, const UtfString* value) {
+    return Heap::NewHandle<Symbol>(type, value);
+  }
+
+    
 
   template <typename ... Args>
   void Notify(const char* key, Args ... args) {

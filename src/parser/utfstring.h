@@ -171,6 +171,10 @@ class UtfString {
     return utf_value_cache_ == str;
   }
 
+
+  template <typename T>
+  inline bool Equals(T val) {return *this == val;}
+
   
   inline bool operator != (const UtfString& utf_string) const {
     return !((*this) == utf_string);

@@ -192,7 +192,7 @@ TEST(ScannerTest, ScanBinaryLiteral_valid1) {
   INIT_ES6(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
   ASSERT_STREQ(token->utf8_value(), binary);
-  ASSERT_EQ(token->value().utf8_length(), strlen(binary));
+  ASSERT_EQ(token->value()->utf8_length(), strlen(binary));
 }
 
 
@@ -201,7 +201,7 @@ TEST(ScannerTest, ScanBinaryLiteral_valid2) {
   INIT_ES6(token, binary);
   ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
   ASSERT_STREQ(token->utf8_value(), binary);
-  ASSERT_EQ(token->value().utf8_length(), strlen(binary));
+  ASSERT_EQ(token->value()->utf8_length(), strlen(binary));
 }
 
 
@@ -396,8 +396,8 @@ TEST(ScannerTest, SkipMultiLineComment) {
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());
-  yatsc::UtfString utf_string = token->comment();
-  ASSERT_STREQ(comment_part, utf_string.utf8_value());
+  yatsc::UtfString* utf_string = token->comment();
+  ASSERT_STREQ(comment_part, utf_string->utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }
@@ -411,8 +411,8 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());
-  yatsc::UtfString utf_string = token->comment();
-  ASSERT_STREQ(comment_part, utf_string.utf8_value());
+  yatsc::UtfString* utf_string = token->comment();
+  ASSERT_STREQ(comment_part, utf_string->utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
 }

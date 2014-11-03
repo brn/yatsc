@@ -1163,7 +1163,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
       Next();
       Handle<ir::Node> for_bindig = ParseForBinding(yield);
       if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value() == "of") {
+          Current()->value()->Equals("of")) {
         Next();
         Handle<ir::Node> expr = ParseAssignmentExpression(true, yield);
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
@@ -1293,7 +1293,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     while (1) {
       Handle<ir::Node> element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);
-      prop->Declare(element->first_child()->string_value().utf16_string(), element);
+      if (element->first_child()->HasSymbol()) {
+        prop->Declare(element->first_child()->symbol()->utf16_value(), element);
+      }
 
       if (Current()->type() == Token::TS_COMMA) {
         Next();
@@ -1324,11 +1326,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
   TokenInfo info = *Current();
    
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "get") {
+      Current()->value()->Equals("get")) {
       getter = true;
       Next();
   } else if (Current()->type() == Token::TS_IDENTIFIER &&
-             Current()->value() == "set") {
+             Current()->value()->Equals("set")) {
       setter = true;
       Next();
   }
@@ -1339,9 +1341,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
     } else {
       key = ParsePropertyName(yield, false);
     }
+    if (key->HasSymbol()) {
+      key->symbol()->set_type(SymbolType::kPropertyName);
+    }
   } catch (const SyntaxError& e) {
     if (getter || setter) {
-      key = New<ir::NameView>(info.value());
+      key = New<ir::NameView>(NewSymbol(SymbolType::kPropertyName, info.value()));
       key->SetInformationForNode(&info);
     } else {
       throw e;
@@ -1547,7 +1552,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseIdentifier() {
   LOG_PHASE(ParseIdentifier);
   if (Current()->type() == Token::TS_IDENTIFIER) {
-    auto node = New<ir::NameView>(Current()->value());
+    auto node = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
     node->SetInformationForNode(Current());
     Next();
     return node;
@@ -1663,11 +1668,11 @@ typename Parser<UCharInputIterator>::AccessorType Parser<UCharInputIterator>::Pa
   RecordedParserState rps = parser_state();
   // Parse the getter or setter if inditifer is the get or set.
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "get") {
+      Current()->value()->Equals("get")) {
     getter = true;
     Next();
   } else if (Current()->type() == Token::TS_IDENTIFIER &&
-             Current()->value() == "set") {
+             Current()->value()->Equals("set")) {
     setter = true;
     Next();
   }

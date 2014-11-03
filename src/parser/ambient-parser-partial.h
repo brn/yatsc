@@ -81,7 +81,7 @@ template <typename UCharInputInterator>
 Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration(bool module_allowed) {
   LOG_PHASE(ParseAmbientDeclaration);
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "declare") {
+      Current()->value()->Equals("declare")) {
     TokenInfo info = *Current();
     Next();
     switch (Current()->type()) {
@@ -95,7 +95,7 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration(bool modul
         return ParseAmbientEnumDeclaration(&info);
       default:
         if (Current()->type() == Token::TS_IDENTIFIER &&
-            Current()->value() == "module") {
+            Current()->value()->Equals("module")) {
           if (!module_allowed) {
             SYNTAX_ERROR("SyntaxError ambient module declaration not allowed here.", Current());
           }
@@ -220,7 +220,7 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassElement() {
   }
   
   if (Current()->type() == Token::TS_IDENTIFIER) {
-    if (Current()->value() == "constructor") {
+    if (Current()->value()->Equals("constructor")) {
       return ParseAmbientConstructor(mods);
     } else {
       RecordedParserState rps = parser_state();
@@ -247,13 +247,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::
   LOG_PHASE(ParseAmbientConstructor);
   
   if ((Current()->type() == Token::TS_IDENTIFIER &&
-       Current()->value() == "constructor") ||
+       Current()->value()->Equals("constructor")) ||
       Current()->type() == Token::TS_PUBLIC ||
       Current()->type() == Token::TS_PRIVATE ||
       Current()->type() == Token::TS_PROTECTED) {
     
     if (Current()->type() == Token::TS_IDENTIFIER &&
-        Current()->value() == "constructor") {
+        Current()->value()->Equals("constructor")) {
       TokenInfo info = *Current();
       Next();
       Handle<ir::Node> call_signature = ParseCallSignature(true);
@@ -415,7 +415,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(Token
   LOG_PHASE(ParseAmbientModuleDeclaration);
 
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "module") {
+      Current()->value()->Equals("module")) {
     Next();
 
     Handle<ir::Node> identifier;
@@ -510,7 +510,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleElement(bool exte
       break;
     default:
       if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value() == "module") {
+          Current()->value()->Equals("module")) {
         node = ParseAmbientModuleDeclaration(&info);
       } else {
         SYNTAX_ERROR("SyntaxError unexpected token.", Current());

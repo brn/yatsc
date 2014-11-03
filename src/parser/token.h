@@ -267,8 +267,8 @@ class TokenInfo {
    * Return token value.
    * @returns The token value that is unicode encoded string.
    */
-  YATSC_INLINE const UtfString& value() YATSC_NO_SE {
-    return *utf_string_;
+  YATSC_INLINE UtfString* value() YATSC_NO_SE {
+    return utf_string_;
   }
 
   /**
@@ -289,8 +289,8 @@ class TokenInfo {
   }
 
 
-  YATSC_INLINE const UtfString& comment() YATSC_NO_SE {
-    return *multi_line_comment_;
+  YATSC_INLINE UtfString* comment() YATSC_NO_SE {
+    return multi_line_comment_;
   }
 
 

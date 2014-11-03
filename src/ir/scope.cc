@@ -40,14 +40,14 @@ Scope::~Scope() {}
 void Scope::Declare(Handle<Node> var) {
   if (var->HasVariableView()) {
     if (var->first_child()->HasNameView()) {
-      declared_items_.insert(std::make_pair(var->first_child()->string_value().utf16_string(), var));
+      declared_items_.insert(std::make_pair(var->first_child()->utf16_symbol_value(), var));
     } else if (var->first_child()->HasBindingPropListView()) {
       Declare(var->first_child());
     }
   } else if (var->HasBindingPropListView()) {
     for (auto node: *var) {
       if (!node->node_list()[1]) {
-        declared_items_.insert(std::make_pair(node->node_list()[1]->string_value().utf16_string(), node->node_list()[1]));
+        declared_items_.insert(std::make_pair(node->node_list()[1]->utf16_symbol_value(), node->node_list()[1]));
       } else {
         Declare(node->node_list()[1]);
       }
@@ -55,7 +55,7 @@ void Scope::Declare(Handle<Node> var) {
   } else if (var->HasFunctionView()) {
     Handle<ir::Node> name = var->node_list()[1];
     if (name && name->HasNameView()) {
-      declared_items_.insert(std::make_pair(name->string_value().utf16_string(), var));
+      declared_items_.insert(std::make_pair(name->utf16_symbol_value(), var));
     }
   }
 }

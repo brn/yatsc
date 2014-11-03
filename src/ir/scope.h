@@ -70,7 +70,7 @@ class Scope: private Uncopyable {
 
 
  private:
-  MultiHashMap<Utf16String, Handle<Node>> declared_items_;
+  DeclaredMap declared_items_;
   Handle<Scope> parent_scope_;
   Scopes child_scope_list_;
 };

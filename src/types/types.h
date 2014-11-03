@@ -1,4 +1,4 @@
-Y// The MIT License (MIT)
+// The MIT License (MIT)
 // 
 // Copyright (c) 2013 Taketoshi Aono(brn)
 // 
@@ -36,6 +36,7 @@ namespace yatsc {
   DECLARE(InterfaceType)                        \
   DECLARE(ClassType)                            \
   DECLARE(ModuleType)                           \
+  DECLARE(TypeParameter)                        \
   DECLARE_LAST(EnumType)
 
 
@@ -53,6 +54,7 @@ enum class TypeId: uint8_t {
 
 
 class Type {
+
  public:
   Type(TypeId type)
       : type_(type) {}
@@ -67,15 +69,44 @@ class Type {
 };
 
 
+class ParametarizedType {
+ public:
+  ParametarizedType(const Utf16String& name, std::initializer_list<const Utf16String&> type_parameter)
+      : name_(name),
+        type_parameter_(type_parameter) {}
+
+ private:
+  
+};
+
+
+class TypeParameterDescriptor {
+ public:
+  TypeParameterDescriptor(const Utf16String& name, Handle<TypeParameterDescriptor> constraints)
+      : name_(name),
+        constraints_(constraints) {}
+
+  const Utf16String& name() YATSC_NO_SE {return name_;}
+
+  Handle<TypeParameterDescriptor> constraints() YATSC_NO_SE {return constraints_;}
+  
+ private:
+  const Utf16String& name_;
+  Handle<TypeParameterDescriptor> constraints_;
+};
+
+
 class MemberDescriptor {
  public:  
-  MemberDescriptor(Token mod, Handle<Type> type)
+  MemberDescriptor(Token mod, Handle<Type> type, Handle<TypeParameterDescriptor> type_parameter)
       : mod_(mod),
-        type_(type) {}
+        type_(type),
+        type_parameter_(type_parameter) {}
 
  private:
   Token mod_;
   Handle<Type> type_;
+  Handle<TypeParameterDescriptor> type_parameter_;
 };
 
 
@@ -139,25 +170,13 @@ class InterfaceType: public MemberType {
   InterfaceType()
       : MemberType(TypeId::kInterfaceType) {}
 
+  void AddTypeParameter(Handle<TypeParameterDescriptor> descriptor);
+
+  Vector<Handle<TypeParameterDescriptor>>& type_parameters() YATSC_NO_SE {return type_parameters_;}
+
  private:
   Vector<Handle<Type>> extends_;
-  
-};
-
-
-class TypeParameterDescriptor {
- public:
-  TypeParameterDescriptor(const Utf16String& name, const Utf16String& constraints)
-      : name_(name),
-        constraints_(constraints) {}
-
-  const Utf16String& name() YATSC_NO_SE {return name_;}
-
-  const Utf16String& constraints() YATSC_NO_SE {return constraints_;}
-  
- private:
-  const Utf16String& name_;
-  const Utf16String& constraints_;
+  Vector<Handle<TypeParameterDescriptor>> type_parameters_;
 };
 
 

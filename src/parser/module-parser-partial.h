@@ -37,13 +37,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModule() {
     if (Current()->type() == Token::TS_IMPORT) {
       file_scope->InsertLast(ParseImportDeclaration());
     } else if (Current()->type() == Token::TS_IDENTIFIER &&
-               Current()->value() == "module") {
+               Current()->value()->Equals("module")) {
       file_scope->InsertLast(ParseModuleImport());
     } else if (Current()->type() == Token::TS_EXPORT) {
       file_scope->InsertLast(ParseExportDeclaration());
     } else {
       if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value() == "declare") {
+          Current()->value()->Equals("declare")) {
         file_scope->InsertLast(ParseAmbientDeclaration());
       } else {
         file_scope->InsertLast(ParseStatementListItem(false, false, false, false));
@@ -95,7 +95,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
   LOG_PHASE(ParseExternalModuleReference);
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "require") {
+      Current()->value()->Equals("require")) {
     Next();
     if (Current()->type() == Token::TS_LEFT_PAREN) {
       Next();
@@ -104,13 +104,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
         Next();
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
-          if (info.value().utf8_length() > 0) {
+          if (info.value()->utf8_length() > 0) {
             if (info.utf8_value()[0] == '.') {
               String dir = Path::Dirname(module_info_->module_name());
               Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
             }
           }
-          return New<ir::ExternalModuleReference>(info.value());
+          return New<ir::ExternalModuleReference>(NewSymbol(SymbolType::kVariableName, info.value()));
         }
         SYNTAX_ERROR("SyntaxError ')' expected.", Current());
       }
@@ -164,7 +164,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseNamedImport() {
       Handle<ir::Node> identifier = ParseBindingIdentifier(false, false);
       if (identifier->HasNameView() &&
           Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value() == "as") {
+          Current()->value()->Equals("as")) {
         Next();
         Handle<ir::Node> binding = ParseBindingIdentifier(false, false);
         auto named_import = New<ir::NamedImportView>(identifier, binding);
@@ -193,7 +193,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseFromClause() {
   LOG_PHASE(ParseFromClause);
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "from") {
+      Current()->value()->Equals("from")) {
     TokenInfo info = *Current();
     Next();
     Handle<ir::Node> module_specifier = ParseStringLiteral();
@@ -208,7 +208,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
   LOG_PHASE(ParseModuleImport);
   if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value() == "module") {
+      Current()->value()->Equals("module")) {
     TokenInfo info = *Current();
     Next();
 
@@ -286,17 +286,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
             break;
           default:
             if (Current()->type() == Token::TS_IDENTIFIER &&
-                Current()->value() == "module") {
+                Current()->value()->Equals("module")) {
               block->InsertLast(ParseModuleImport());
             } else if (Current()->type() == Token::TS_IDENTIFIER &&
-                       Current()->value() == "declare") {
+                       Current()->value()->Equals("declare")) {
               block->InsertLast(ParseAmbientDeclaration(false));
             } else {
               SYNTAX_ERROR("SyntaxError unexpected token.", Current());
             }
         }
       } else if (Current()->type() == Token::TS_IDENTIFIER &&
-                 Current()->value() == "module") {
+                 Current()->value()->Equals("module")) {
         block->InsertLast(ParseModuleImport());
       } else {
         block->InsertLast(ParseStatementListItem(false, false, false, false));
@@ -329,7 +329,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
       case Token::TS_LEFT_BRACE: {
         Handle<ir::Node> export_clause = ParseExportClause();
         if (Current()->type() == Token::TS_IDENTIFIER &&
-            Current()->value() == "from") {
+            Current()->value()->Equals("from")) {
           return CreateExportView(export_clause, ParseFromClause(), &info);
         }
         return CreateExportView(export_clause, ir::Node::Null(), &info);
@@ -350,7 +350,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
       }
       default:
         if (Current()->type() == Token::TS_IDENTIFIER &&
-            Current()->value() == "declare") {
+            Current()->value()->Equals("declare")) {
           return CreateExportView(ParseAmbientDeclaration(), ir::Node::Null(), &info, true);
         }
         SYNTAX_ERROR("SyntaxError unexpected token.", Current());
@@ -383,7 +383,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportClause() {
     while (1) {
       Handle<ir::Node> identifier = ParseIdentifier();
       if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value() == "as") {
+          Current()->value()->Equals("as")) {
         Next();
         Handle<ir::Node> binding = ParseIdentifier();
         named_export_list->InsertLast(CreateNamedExportView(identifier, binding));

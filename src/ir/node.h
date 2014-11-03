@@ -38,6 +38,7 @@
 #include "../parser/token.h"
 #include "./scope.h"
 #include "./properties.h"
+#include "./symbol.h"
 
 namespace yatsc {namespace ir {
 
@@ -412,41 +413,74 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Set string value.
-  YATSC_INLINE void set_string_value(UtfString str) YATSC_NOEXCEPT {
-    string_value_ = std::move(str);
+  YATSC_INLINE void set_string_value(UtfString* value) YATSC_NOEXCEPT {
+    string_value_ = value;
   }
 
 
   // Return string value.
   YATSC_INLINE bool has_string_value() YATSC_NO_SE {
-    return string_value_.utf8_length() > 0;
+    return string_value_->utf8_length() > 0;
   }
 
 
   // Return string value.
   YATSC_INLINE const UtfString& string_value() YATSC_NO_SE {
-    return string_value_;
+    return *string_value_;
   }
 
 
-  YATSC_INLINE bool string_equals(const Handle<Node>& node) YATSC_NO_SE {
-    if (node == nullptr) {
+  YATSC_INLINE void set_symbol(Handle<Symbol> symbol) {
+    symbol_ = symbol;
+  }
+  
+
+  YATSC_INLINE Handle<Symbol> symbol() YATSC_NO_SE {
+    return symbol_;
+  }
+
+
+  YATSC_INLINE const Utf16String& utf16_symbol_value() YATSC_NO_SE {
+    return symbol_->utf16_string();
+  }
+
+
+  YATSC_INLINE const Utf8String& utf8_symbol_value() YATSC_NO_SE {
+    return symbol_->utf8_string();
+  }
+
+
+  YATSC_INLINE bool HasSymbol() YATSC_NO_SE {
+    return static_cast<bool>(symbol_);
+  }
+
+
+  YATSC_INLINE bool StringEquals(const Handle<Node>& node) YATSC_NO_SE {
+    if (!node) {
       return false;
     }
     const UtfString& utf_string = node->string_value();
-    return utf_string == string_value_;
+    return utf_string == string_value();
+  }
+
+
+  YATSC_INLINE bool SymbolEquals(const Handle<Node>& node) YATSC_NO_SE {
+    if (!node) {
+      return false;
+    }
+    return symbol_->utf16_string() == node->symbol()->utf16_string();
   }
 
 
   // Return string value.
-  YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
-    return string_value_.utf8_value();
+  YATSC_INLINE const char* utf8_string_value() YATSC_NO_SE {
+    return string_value_->utf8_value();
   }
 
 
   // Return string value.
-  YATSC_INLINE const UC16* utf16_value() YATSC_NO_SE {
-    return string_value_.utf16_value();
+  YATSC_INLINE const UC16* utf16_string_value() YATSC_NO_SE {
+    return string_value_->utf16_value();
   }
 
 
@@ -609,7 +643,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   Token operand_;
   double double_value_;
   bool invalid_lhs_;
-  UtfString string_value_;
+  UtfString* string_value_;
+  Handle<Symbol> symbol_;
 };
 
 
@@ -891,9 +926,9 @@ class NamedImportView: public Node {
 
 class ExternalModuleReference: public Node {
  public:
-  ExternalModuleReference(const UtfString& utf_string)
+  ExternalModuleReference(Handle<Symbol> symbol)
       : Node(NodeType::kExternalModuleReference, 0u) {
-    set_string_value(std::move(utf_string));
+    set_symbol(symbol);
   }
 
 
@@ -1980,9 +2015,9 @@ class NewCallView: public Node {
 
 class NameView: public Node {
  public:
-  NameView(UtfString name)
+  NameView(Handle<Symbol> name)
       : Node(NodeType::kNameView, 0u) {
-    set_string_value(std::move(name));
+    set_symbol(name);
   }
 };
 
@@ -2179,9 +2214,9 @@ class ThisView: public Node {
 
 class NumberView: public Node {
  public:
-  NumberView(UtfString value)
+  NumberView(UtfString* value)
       : Node(NodeType::kNumberView, 0) {
-    const char* val = value.utf8_value();
+    const char* val = value->utf8_value();
     set_string_value(value);
     double d = 0l;
     sscanf(val, "%lf", &d);
@@ -2206,7 +2241,7 @@ class NaNView: public Node {
 
 class StringView: public Node {
  public:
-  StringView(UtfString str)
+  StringView(UtfString* str)
       : Node(NodeType::kStringView, 0) {
     set_string_value(str);
   }
@@ -2215,7 +2250,7 @@ class StringView: public Node {
 
 class RegularExprView: public Node {
  public:
-  RegularExprView(UtfString str)
+  RegularExprView(UtfString* str)
       : Node(NodeType::kRegularExprView, 0) {
     set_string_value(str);
   }
@@ -2267,7 +2302,7 @@ class UndefinedView: public Node {
 
 class TemplateLiteralView: public Node {
  public:
-  TemplateLiteralView(UtfString expr):
+  TemplateLiteralView(UtfString* expr):
       Node(NodeType::kUndefinedView, 0) {
     set_string_value(expr);
   }
@@ -2306,7 +2341,7 @@ class AmbientFunctionDeclarationView: public Node {
  public:
   AmbientFunctionDeclarationView(bool generator, Handle<Node> identifier, Handle<Node> call_signature)
       : Node(NodeType::kAmbientFunctionDeclarationView, 2u, {identifier, call_signature}) {
-    set_flag(generator, 0);
+    set_flag(0, generator);
   }
 
 
@@ -2391,9 +2426,9 @@ class AmbientMemberFunctionView: public Node {
  public:
   AmbientMemberFunctionView(bool getter, bool setter, bool generator, Handle<Node> modifiers, Handle<Node> identifier, Handle<Node> call_signature)
       : Node(NodeType::kAmbientMemberFunctionView, 3u, {modifiers, identifier, call_signature}) {
-    set_flag(getter, 0);
-    set_flag(setter, 1);
-    set_flag(generator, 2);
+    set_flag(0, getter);
+    set_flag(1, setter);
+    set_flag(2, generator);
   }
 
 
@@ -2476,7 +2511,7 @@ class AmbientModuleView: public Node {
  public:
   AmbientModuleView(bool external, Handle<Node> identifier, Handle<Node> body)
       : Node(NodeType::kAmbientModuleView, 2u, {identifier, body}) {
-    set_flag(external, 0);
+    set_flag(0, external);
   }
 
 

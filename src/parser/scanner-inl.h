@@ -30,12 +30,6 @@
 #include "token.h"
 #include "../utils/utils.h"
 
-#define SYNTAX_ERROR(message) {                 \
-  std::stringstream ss;                         \
-  ss << message;                                \
-  std::string&& s = std::move(ss.str());        \
-  return TOKEN_ERROR(s.c_str());                      \
-}
 
 namespace yatsc {
 template<typename UCharInputIterator>
@@ -206,12 +200,12 @@ void Scanner<UCharInputIterator>::ScanDigit() {
   if (char_ == unicode::u32('0')) {
     if (Character::IsNumericLiteral(lookahead1_)) {
       if (!LanguageModeUtil::IsOctalLiteralAllowed(compiler_option_)) {
-        SYNTAX_ERROR("Octal literals are not allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
+        TOKEN_ERROR("Octal literals are not allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
       return ScanOctalLiteral();
     } else if (lookahead1_ == unicode::u32('o') || lookahead1_ == unicode::u32('O')) {
       if (!LanguageModeUtil::IsBinaryLiteralAllowed(compiler_option_)) {
-        SYNTAX_ERROR("Binary literals are allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
+        TOKEN_ERROR("Binary literals are allowed in language mode " << LanguageModeUtil::ToString(compiler_option_));
       }
       return ScanBinaryLiteral();
     }
@@ -643,11 +637,11 @@ void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
     if (char_ == unicode::u32('r') &&
         lookahead1_ == unicode::u32('e')) {
       ScanIdentifier();
-      if (token_info_.value() == "reference") {
+      if (token_info_.value()->Equals("reference")) {
         SkipWhiteSpaceOnly();
         if (char_ == unicode::u32('p') && lookahead1_ == unicode::u32('a')) {
           ScanIdentifier();
-          if (token_info_.value() == "path") {
+          if (token_info_.value()->Equals("path")) {
             if (char_ == unicode::u32('=')) {
               Advance();
               ScanStringLiteral();
@@ -658,7 +652,7 @@ void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
                 SkipWhiteSpaceOnly();
                 if (char_ == unicode::u32('>')) {
                   if (reference_path_callback_) {
-                    reference_path_callback_(token_info_.value());
+                    reference_path_callback_(*(token_info_.value()));
                   }
                 }
               }
@@ -729,7 +723,6 @@ bool Scanner<UCharInputIterator>::ConsumeLineBreak() {
   return is_break;
 }
 
-#undef SYNTAX_ERROR
 } //namespace yatsc
 
 #endif
