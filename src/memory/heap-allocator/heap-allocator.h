@@ -143,6 +143,9 @@ class Handle {
   Handle<T>& operator = (Handle<U>&& heap_handle);
 
 
+  void Clear() {ref_count_ = nullptr;}
+
+
   // Equality comparator of Handle<U>.
   template <typename U>
   YATSC_INLINE bool operator == (const Handle<U>& heap_handle) YATSC_NO_SE {

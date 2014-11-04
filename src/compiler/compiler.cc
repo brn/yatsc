@@ -70,7 +70,7 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   if (!ss.success()) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info, ss.failed_message()));
   }
-  printf("BEGIN %s\n", module_info->module_name());
+  //printf("BEGIN %s\n", module_info->module_name());
   Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
   ErrorReporter er(ss.raw_buffer(), module_info);
   try {
@@ -81,9 +81,9 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
         literal_buffer.Get(),
         compiler_option_,
         module_info,
-        [module_info, this](const UtfString& path){
+        [module_info, this](const Literal* path){
           String dir = Path::Dirname(module_info->module_name());
-          notificator_.NotifyForKey("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, path.utf8_value())));
+          notificator_.NotifyForKey("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, path->utf8_value())));
         });
     Parser<UCharBuffer::iterator> parser(compiler_option_, &scanner, notificator_, &er, module_info);
     Handle<ir::Node> root = parser.Parse();
@@ -97,7 +97,7 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   } catch (...) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info, "Unhandled Error."));
   }
-  printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
+  //printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
 }
 
 

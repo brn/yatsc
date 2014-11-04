@@ -25,15 +25,83 @@
 #ifndef PARSER_LITERLBUFFER_H
 #define PARSER_LITERLBUFFER_H
 
-#include <unordered_map>
+#include "../utils/stl.h"
+#include "../utils/utils.h"
 #include "./utfstring.h"
 
 namespace yatsc {
+
+class Literal {
+ public:
+  Literal(const UtfString& utf_string)
+      : id_ (Unique::id()),
+        value_(utf_string) {}
+
+
+  Literal(Literal&& literal)
+      : id_(literal.id_),
+        value_(std::move(literal.value_)) {}
+
+  
+  Literal(const Literal& literal)
+      : id_(literal.id_),
+        value_(literal.value_) {}
+
+
+  YATSC_CONST_GETTER(Unique::Id, id, id_);
+
+
+  bool Equals(Literal* literal) YATSC_NO_SE {
+    return literal->id_ == id_;
+  }
+
+
+  bool Equals(const Literal* literal) YATSC_NO_SE {
+    return literal->id_ == id_;
+  }
+
+
+  bool Equals(Literal& literal) YATSC_NO_SE {
+    return literal.id_ == id_;
+  }
+
+
+  bool Equals(const Literal& literal) YATSC_NO_SE {
+    return literal.id_ == id_;
+  }
+
+
+  template <typename T>
+  bool Equals(T value) YATSC_NO_SE {
+    return value_ == value;
+  }
+  
+
+  const Utf8String& utf8_string() YATSC_NO_SE {return value_.utf8_string();}
+
+  
+  const Utf16String& utf16_string() YATSC_NO_SE {return value_.utf16_string();}
+
+
+  const char* utf8_value() YATSC_NO_SE {return value_.utf8_value();}
+
+  
+  const UC16* utf16_value() YATSC_NO_SE {return value_.utf16_value();}
+
+  
+  size_t utf8_length() YATSC_NO_SE {return value_.utf8_length();}
+
+  
+  size_t utf16_length() YATSC_NO_SE {return value_.utf8_length();}
+  
+ private:
+  Unique::Id id_;
+  UtfString value_;
+};
+
+
 class LiteralBuffer: private Unmovable, private Uncopyable {
-  typedef std::unordered_map<std::string, UtfString,
-                             std::hash<std::string>,
-                             std::equal_to<std::string>,
-                             StandardAllocator<std::pair<const std::string, UtfString>>> UtfStringBuffer;
+  typedef HashMap<String, Literal> UtfStringBuffer;
  public:
   LiteralBuffer() {}
 
@@ -46,8 +114,12 @@ class LiteralBuffer: private Unmovable, private Uncopyable {
       : buffer_(std::move(literal_buffer.buffer_)) {}
   
 
-  UtfString* InsertValue(const UtfString& utf_string) {
-    auto ret = buffer_.emplace(utf_string.utf8_value(), std::move(utf_string));
+  Literal* InsertValue(const UtfString& utf_string) {
+    UtfStringBuffer::iterator found = buffer_.find(utf_string.utf8_value());
+    if (found != buffer_.end()) {
+      return &(found->second);
+    }
+    auto ret = buffer_.insert(std::make_pair(utf_string.utf8_value(), Literal(utf_string)));
     return &(ret.first->second);
   }
   

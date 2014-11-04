@@ -193,7 +193,6 @@ class YatscScoped__ {
 #endif
 
 
-
 /**
  * Class traits.
  * Represent class which is not allowed to instantiation.
@@ -225,6 +224,15 @@ class Unmovable {
   virtual ~Unmovable() = default;
   Unmovable(Unmovable&&) = delete;
   Unmovable& operator = (Unmovable&&) = delete;
+};
+
+
+class Unique: private Static {
+ public:
+  typedef unsigned long long Id;
+  static Id id() {return id_++;}
+ private:
+  static std::atomic_ullong id_;
 };
 
 

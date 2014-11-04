@@ -652,7 +652,7 @@ void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
                 SkipWhiteSpaceOnly();
                 if (char_ == unicode::u32('>')) {
                   if (reference_path_callback_) {
-                    reference_path_callback_(*(token_info_.value()));
+                    reference_path_callback_(token_info_.value());
                   }
                 }
               }

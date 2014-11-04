@@ -27,6 +27,7 @@
 #include "../utils/utils.h"
 #include "../utils/stl.h"
 #include "../utils/unicode.h"
+#include "./symbol.h"
 
 namespace yatsc {namespace ir {
 
@@ -35,7 +36,7 @@ class Scope;
 
 
 typedef Vector<Handle<Scope>> Scopes;
-typedef MultiHashMap<Utf16String, Handle<Node>> DeclaredMap;
+typedef MultiHashMap<unsigned long long, Handle<Node>> DeclaredMap;
 typedef IteratorRange<DeclaredMap::const_iterator, DeclaredMap::const_iterator> DeclaredRange;
 typedef IteratorRange<Scopes::iterator, Scopes::iterator> ScopeRange;
 
@@ -53,8 +54,8 @@ class Scope: private Uncopyable {
   void Declare(Handle<Node> variable);
 
 
-  YATSC_INLINE DeclaredRange FindDeclaredItem(const Utf16String& name) {
-    return declared_items_.equal_range(name);
+  YATSC_INLINE DeclaredRange FindDeclaredItem(Handle<Symbol> name) {
+    return declared_items_.equal_range(name->id());
   };
 
 

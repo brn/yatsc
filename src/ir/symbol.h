@@ -24,7 +24,13 @@
 #ifndef YATSC_PARSER_SYMBOL_H
 #define YATSC_PARSER_SYMBOL_H
 
-namespace yatsc {
+#include <functional>
+#include "../utils/utils.h"
+#include "../parser/literalbuffer.h"
+
+namespace yatsc { namespace ir {
+
+
 
 #define SYMBOL_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST) \
   DECLARE_FIRST(VariableName)                           \
@@ -35,6 +41,7 @@ namespace yatsc {
   DECLARE(ModuleName)                                   \
   DECLARE(EnumName)                                     \
   DECLARE(TypeParameterName)                            \
+  DECLARE(LabelName)                                    \
   DECLARE_LAST(ImportedTypeName)
   
 
@@ -53,18 +60,20 @@ enum class SymbolType: uint8_t {
 
 class Symbol {
  public:
-  Symbol(SymbolType symbol_type, const UtfString* value)
+  Symbol(SymbolType symbol_type, const Literal* value)
       : type_(symbol_type),
         value_(value) {}
 
   
   ~Symbol() = default;
 
+  YATSC_CONST_GETTER(Unique::Id, id, value_->id());
 
+  
   YATSC_PROPERTY(SymbolType, type, type_);
 
   
-  YATSC_CONST_GETTER(const UtfString&, value, *value_);
+  YATSC_CONST_GETTER(const Literal*, value, value_);
 
 
   size_t utf8_length() const {return value_->utf8_length();}
@@ -84,6 +93,10 @@ class Symbol {
   
   const char* utf8_value() const {return value_->utf8_value();}
 
+  bool Equals(Handle<Symbol> symbol) YATSC_NO_SE {
+    return symbol->value_->Equals(value_);
+  }
+
 #define DECLARE_SYMBOL(t)                       \
   bool Is##t() {return SymbolType::k##t == type_;}
 
@@ -92,10 +105,10 @@ class Symbol {
   
  private:
   SymbolType type_;
-  const UtfString* value_;
+  const Literal* value_;
 };
 
-}
+}}
 
 #undef SYMBOL_LIST
 #endif

@@ -1294,7 +1294,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
       Handle<ir::Node> element = ParsePropertyDefinition(yield);
       object_literal->InsertLast(element);
       if (element->first_child()->HasSymbol()) {
-        prop->Declare(element->first_child()->symbol()->utf16_value(), element);
+        prop->Declare(element->first_child()->symbol(), element);
       }
 
       if (Current()->type() == Token::TS_COMMA) {
@@ -1342,11 +1342,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield)
       key = ParsePropertyName(yield, false);
     }
     if (key->HasSymbol()) {
-      key->symbol()->set_type(SymbolType::kPropertyName);
+      key->symbol()->set_type(ir::SymbolType::kPropertyName);
     }
   } catch (const SyntaxError& e) {
     if (getter || setter) {
-      key = New<ir::NameView>(NewSymbol(SymbolType::kPropertyName, info.value()));
+      key = New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value()));
       key->SetInformationForNode(&info);
     } else {
       throw e;
@@ -1552,7 +1552,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseIdentifier() {
   LOG_PHASE(ParseIdentifier);
   if (Current()->type() == Token::TS_IDENTIFIER) {
-    auto node = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
+    auto node = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, Current()->value()));
     node->SetInformationForNode(Current());
     Next();
     return node;

@@ -34,9 +34,9 @@ class Node;
 class Scope;
 
 
-typedef HashMap<Utf16String, Handle<Node>> PropertyMap;
+typedef HashMap<Unique::Id, Handle<Node>> PropertyMap;
 typedef IteratorRange<PropertyMap::iterator, PropertyMap::iterator> PropertyRange;
-typedef std::pair<Utf16String, Handle<Node>> Property;
+typedef std::pair<Unique::Id, Handle<Node>> Property;
 
 class Properties: private Uncopyable {
  public:
@@ -47,20 +47,20 @@ class Properties: private Uncopyable {
   ~Properties() = default;
 
 
-  void Declare(const Utf16String& name, Handle<Node> prop) {
-    properties_.insert(std::make_pair(name, prop));
+  void Declare(Handle<Symbol> symbol, Handle<Node> prop) {
+    properties_.insert(std::make_pair(symbol, prop));
   }
 
 
-  YATSC_INLINE Property FindDeclaredItem(const Utf16String& name) {
-    return *(properties_.find(name));
+  YATSC_INLINE Property FindDeclaredItem(Handle<Symbol> symbol) {
+    return *(properties_.find(symbol));
   };
 
 
   YATSC_INLINE PropertyRange declared_items() {return MakeRange(properties_.begin(), properties_.end());}
 
  private:
-  HashMap<Utf16String, Handle<Node>> properties_;
+  PropertyMap properties_;
 };
 
 }}

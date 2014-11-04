@@ -67,8 +67,8 @@ class ParserBase: private Uncopyable, private Unmovable {
   }
 
 
-  YATSC_INLINE Handle<Symbol> NewSymbol(SymbolType type, const UtfString* value) {
-    return Heap::NewHandle<Symbol>(type, value);
+  YATSC_INLINE Handle<ir::Symbol> NewSymbol(ir::SymbolType type, const Literal* value) {
+    return Heap::NewHandle<ir::Symbol>(type, value);
   }
 
     

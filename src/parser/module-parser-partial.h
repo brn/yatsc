@@ -110,7 +110,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
               Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
             }
           }
-          return New<ir::ExternalModuleReference>(NewSymbol(SymbolType::kVariableName, info.value()));
+          return New<ir::ExternalModuleReference>(NewSymbol(ir::SymbolType::kVariableName, info.value()));
         }
         SYNTAX_ERROR("SyntaxError ')' expected.", Current());
       }

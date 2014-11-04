@@ -311,8 +311,7 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void UpdateTokenInfo() {
     if (last_multi_line_comment_.utf8_length() > 0) {
-      auto p_multi_line_comment = literal_buffer_->InsertValue(last_multi_line_comment_);
-      token_info_.set_multi_line_comment(p_multi_line_comment);
+      token_info_.set_multi_line_comment(Heap::NewHandle<UtfString>(last_multi_line_comment_));
     }
 
     last_multi_line_comment_.Clear();
@@ -342,8 +341,8 @@ class Scanner: private Uncopyable, private Unmovable {
 
   void BuildToken(Token type, const UtfString& utf_string) {
     UpdateTokenInfo();
-    UtfString* p_utf_string = literal_buffer_->InsertValue(utf_string);
-    token_info_.set_value(p_utf_string);
+    Literal* literal = literal_buffer_->InsertValue(utf_string);
+    token_info_.set_value(literal);
     token_info_.set_type(type);
   }
 
@@ -375,7 +374,7 @@ class Scanner: private Uncopyable, private Unmovable {
   ErrorReporter* error_reporter_;
   LiteralBuffer* literal_buffer_;
   const CompilerOption& compiler_option_;
-  std::function<void(const UtfString&)> reference_path_callback_;
+  std::function<void(const Literal*)> reference_path_callback_;
   Handle<ModuleInfo> module_info_;
 };
 }

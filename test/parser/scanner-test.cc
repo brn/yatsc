@@ -396,7 +396,7 @@ TEST(ScannerTest, SkipMultiLineComment) {
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());
-  yatsc::UtfString* utf_string = token->comment();
+  const yatsc::UtfString* utf_string = token->comment();
   ASSERT_STREQ(comment_part, utf_string->utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;
@@ -411,7 +411,7 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());
-  yatsc::UtfString* utf_string = token->comment();
+  const yatsc::UtfString* utf_string = token->comment();
   ASSERT_STREQ(comment_part, utf_string->utf8_value());
   ASSERT_EQ(4u, token->source_position().start_line_number());
   END_SCAN;

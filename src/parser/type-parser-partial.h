@@ -334,7 +334,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectTypeElement() {
       }
     } catch (const SyntaxError& e) {
       if (at.getter || at.setter) {
-        key = New<ir::NameView>(NewSymbol(SymbolType::kPropertyName, info.value()));
+        key = New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value()));
         key->SetInformationForNode(&info);
       } else {
         throw e;

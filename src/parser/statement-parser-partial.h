@@ -313,7 +313,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingIdentifier(bool default
   } else if (Current()->type() == Token::TS_YIELD) {
     ret = New<ir::YieldView>(false, ir::Node::Null());
   } else if (Current()->type() == Token::TS_IDENTIFIER) {
-    ret = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
+    ret = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, Current()->value()));
   } else {
     SYNTAX_ERROR("SyntaxError 'default', 'yield' or 'identifier' expected", Current());
   }
@@ -946,6 +946,10 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> identifier = ParseLabelIdentifier(yield);
+    identifier->symbol()->set_type(ir::SymbolType::kLabelName);
+
+    current_scope()->Declare(identifier);
+    
     if (Current()->type() == Token::TS_COLON) {
       Next();
       Handle<ir::Node> stmt = ParseLabelledItem(yield, has_return, breakable, continuable);
@@ -1080,6 +1084,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     Next();
     Handle<ir::Node> name = ParseIdentifier();
     Handle<ir::Node> type_parameters;
+
+    name->symbol()->set_type(ir::SymbolType::kInterfaceName);
     
     if (Current()->type() == Token::TS_LESS) {
       type_parameters = ParseTypeParameters();
@@ -1116,6 +1122,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bo
     TokenInfo info = *Current();
     Next();
     Handle<ir::Node> identifier = ParseIdentifier();
+
+    identifier->symbol()->set_type(ir::SymbolType::kEnumName);
+    
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Handle<ir::Node> enum_body = ParseEnumBody(yield, has_default);
       auto ret = New<ir::EnumDeclView>(identifier, enum_body);
@@ -1192,6 +1201,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, b
     Next();
     Handle<ir::Node> name = ParseIdentifier();
     Handle<ir::Node> type_parameters;
+
+    name->symbol()->set_type(ir::SymbolType::kClassName);
     
     if (Current()->type() == Token::TS_LESS) {
       type_parameters = ParseTypeParameters();
@@ -1394,8 +1405,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
         Handle<ir::Node> ret = call_sig->return_type();
         if (ret->HasSimpleTypeExprView()) {
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
-          const UtfString& name = ret_type->string_value();
-          if (name == "void" || name == "null") {
+          const Literal* name = ret_type->string_value();
+          if (name->Equals("void") || name->Equals("null")) {
             SYNTAX_ERROR_POS("SyntaxError getter function must return value.", ret_type->source_position()); 
           }
         }
@@ -1409,8 +1420,8 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
         Handle<ir::Node> ret = call_sig->return_type();
         if (ret->HasSimpleTypeExprView()) {
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
-          const UtfString& name = ret_type->string_value();
-          if (name != "void" && name != "null") {
+          const Literal* name = ret_type->string_value();
+          if (name->Equals("void") && name->Equals("null")) {
             SYNTAX_ERROR_POS("SyntaxError setter function must not return value.", ret_type->source_position()); 
           }
         }
@@ -1860,7 +1871,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::ParameterView> pv = New<ir::ParameterView>();
     pv->SetInformationForNode(Current());
-    Handle<ir::NameView> nv = New<ir::NameView>(NewSymbol(SymbolType::kVariableName, Current()->value()));
+    Handle<ir::NameView> nv = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, Current()->value()));
     nv->SetInformationForNode(Current());
     pv->set_access_level(access_level);
     pv->set_name(nv);

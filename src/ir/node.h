@@ -413,7 +413,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Set string value.
-  YATSC_INLINE void set_string_value(UtfString* value) YATSC_NOEXCEPT {
+  YATSC_INLINE void set_string_value(Literal* value) YATSC_NOEXCEPT {
     string_value_ = value;
   }
 
@@ -425,8 +425,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Return string value.
-  YATSC_INLINE const UtfString& string_value() YATSC_NO_SE {
-    return *string_value_;
+  YATSC_INLINE const Literal* string_value() YATSC_NO_SE {
+    return string_value_;
   }
 
 
@@ -459,8 +459,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
     if (!node) {
       return false;
     }
-    const UtfString& utf_string = node->string_value();
-    return utf_string == string_value();
+    return node->string_value()->Equals(string_value_);
   }
 
 
@@ -468,7 +467,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
     if (!node) {
       return false;
     }
-    return symbol_->utf16_string() == node->symbol()->utf16_string();
+    return symbol_->Equals(node->symbol());
   }
 
 
@@ -643,7 +642,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   Token operand_;
   double double_value_;
   bool invalid_lhs_;
-  UtfString* string_value_;
+  Literal* string_value_;
   Handle<Symbol> symbol_;
 };
 
@@ -2214,7 +2213,7 @@ class ThisView: public Node {
 
 class NumberView: public Node {
  public:
-  NumberView(UtfString* value)
+  NumberView(Literal* value)
       : Node(NodeType::kNumberView, 0) {
     const char* val = value->utf8_value();
     set_string_value(value);
@@ -2241,7 +2240,7 @@ class NaNView: public Node {
 
 class StringView: public Node {
  public:
-  StringView(UtfString* str)
+  StringView(Literal* str)
       : Node(NodeType::kStringView, 0) {
     set_string_value(str);
   }
@@ -2250,7 +2249,7 @@ class StringView: public Node {
 
 class RegularExprView: public Node {
  public:
-  RegularExprView(UtfString* str)
+  RegularExprView(Literal* str)
       : Node(NodeType::kRegularExprView, 0) {
     set_string_value(str);
   }
@@ -2302,7 +2301,7 @@ class UndefinedView: public Node {
 
 class TemplateLiteralView: public Node {
  public:
-  TemplateLiteralView(UtfString* expr):
+  TemplateLiteralView(Literal* expr):
       Node(NodeType::kUndefinedView, 0) {
     set_string_value(expr);
   }
