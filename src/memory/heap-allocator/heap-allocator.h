@@ -276,6 +276,13 @@ class Handle {
   YATSC_INLINE Handle<U> To() YATSC_NOEXCEPT {
     return std::move(Handle<U>(ref_count_));
   }
+
+
+  template <typename U>
+  YATSC_INLINE Handle<T>& operator << (U& v) {
+    *(ref_count_->Get<T>()) << v;
+    return *this;
+  }
   
  private:
   heap::HeapReferenceCounter* ref_count_;

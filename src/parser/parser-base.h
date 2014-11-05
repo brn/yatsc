@@ -38,6 +38,34 @@
 
 namespace yatsc {
 
+
+class ErrorDescriptor {
+ public:
+  ErrorDescriptor(SourcePosition source_position)
+      : source_position_(source_position) {}
+
+    
+  ErrorDescriptor(ErrorDescriptor&& error_descriptor)
+      : source_position_(std::move(error_descriptor.source_position_)),
+        error_message_(std::move(error_descriptor.error_message_)) {}
+
+
+  template <typename T>
+  ErrorDescriptor& operator << (const T& message) {
+    error_message_ << message;
+    return *this;
+  }
+
+
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
+    
+
+ private:
+  SourcePosition source_position_;
+  StringStream error_message_;
+};
+
+
 class ParserBase: private Uncopyable, private Unmovable {
  public:
   
@@ -53,6 +81,8 @@ class ParserBase: private Uncopyable, private Unmovable {
 
 
  protected:
+
+  typedef Vector<Handle<ErrorDescriptor>> ErrorBuffer;
 
   
   template <typename T, typename ... Args>
@@ -80,6 +110,20 @@ class ParserBase: private Uncopyable, private Unmovable {
 
 
   bool CheckLineTermination(TokenInfo* info = nullptr);
+
+
+  // Add new error to the error message array.
+  void AddErrorMessage(const String& message);
+
+
+  // Return true if error has occurred.
+  bool HasPendingError() YATSC_NO_SE {return !errors_.empty()};
+
+
+  // Create a new handled ErrorDescript instance.
+  Handle<ErrorDescriptor> NewErrorDescriptor(const SourcePosition& source_position) {
+    return Heap::NewHandle<ErrorDescriptor>(source_position);
+  }
   
   
   const CompilerOption& compiler_option_;
@@ -88,8 +132,7 @@ class ParserBase: private Uncopyable, private Unmovable {
   TokenInfo prev_token_info_;
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
-  String error_message_;
-  bool has_pending_error_;
+  ErrorBuffer errors_;
 
 #ifdef DEBUG
   String indent_;

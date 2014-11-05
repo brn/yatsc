@@ -628,6 +628,9 @@ class Parser: public ParserBase {
 
 
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope());}
+
+  
+  void SkipTokensIfErrorOccured(Token token);
   
 #if defined(DEBUG) || defined(UNIT_TEST)
   StringStream phase_buffer_;

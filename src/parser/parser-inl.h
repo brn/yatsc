@@ -24,8 +24,7 @@
 
 namespace yatsc {
 
-// Return next token  if token buffer's cursor is in the end of input,
-// otherwise return a current token from the token buffer and advance token buffer cursor.
+// Return next token and replace previous token and current token.
 template <typename UCharInputIterator>
 TokenInfo* Parser<UCharInputIterator>::Next() {
   if (current_token_info_ != nullptr) {
@@ -35,14 +34,15 @@ TokenInfo* Parser<UCharInputIterator>::Next() {
 }
 
 
-// Return current token  if token buffer's cursor is in the end of input,
-// otherwise return current token from token buffer.
+// Return current token.
 template <typename UCharInputIterator>
 TokenInfo* Parser<UCharInputIterator>::Current() YATSC_NOEXCEPT {
   return current_token_info_;
 }
 
 
+
+// Return previous token.
 template <typename UCharInputIterator>
 TokenInfo* Parser<UCharInputIterator>::Prev() YATSC_NOEXCEPT {
   return &prev_token_info_;
@@ -61,6 +61,16 @@ bool Parser<UCharInputIterator>::IsLineTermination() {
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::ConsumeLineTerminator() {
   if (Current()->type() == Token::LINE_TERMINATOR) {
+    Next();
+  }
+}
+
+
+// Skip all tokens except given token and eof.
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) {
+  while (Current()->type() != Token::END_OF_INPUT &&
+         Current()->type() != token) {
     Next();
   }
 }
