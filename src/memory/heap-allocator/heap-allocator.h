@@ -279,7 +279,7 @@ class Handle {
 
 
   template <typename U>
-  YATSC_INLINE Handle<T>& operator << (U& v) {
+  YATSC_INLINE Handle<T>& operator << (U&& v) {
     *(ref_count_->Get<T>()) << v;
     return *this;
   }

@@ -51,7 +51,7 @@ class ErrorDescriptor {
 
 
   template <typename T>
-  ErrorDescriptor& operator << (const T& message) {
+  ErrorDescriptor& operator << (T&& message) {
     error_message_ << message;
     return *this;
   }
@@ -121,8 +121,26 @@ class ParserBase: private Uncopyable, private Unmovable {
 
 
   // Create a new handled ErrorDescript instance.
-  Handle<ErrorDescriptor> NewErrorDescriptor(const SourcePosition& source_position) {
-    return Heap::NewHandle<ErrorDescriptor>(source_position);
+  Handle<ErrorDescriptor> SyntaxError(const SourcePosition& source_position) {
+    auto ret = Heap::NewHandle<ErrorDescriptor>(source_position);
+    ret << "SyntaxError ";
+    errors_.push_back(ret);
+    return ret;
+  }
+
+
+  Handle<ErrorDescriptor> SyntaxError(TokenInfo* info) {
+    return SyntaxError(info->source_position());
+  }
+
+
+  Handle<ErrorDescriptor> SyntaxError(const TokenInfo& info) {
+    return SyntaxError(info.source_position());
+  }
+
+
+  Handle<ErrorDescriptor> SyntaxError(Handle<ir::Node> node) {
+    return SyntaxError(node->source_position());
   }
   
   
