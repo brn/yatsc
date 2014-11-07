@@ -69,9 +69,19 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() {
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) {
-  while (Current()->type() != Token::END_OF_INPUT &&
-         Current()->type() != token) {
-    Next();
+  if (token->type() == Token::LINE_TERMINATOR) {
+    while (Current()->type() != Token::LINE_TERMINATOR) {
+      if (Current()->has_line_break_before_next()) {
+        Next();
+        break;
+      }
+      Next();
+    }
+  } else {
+    while (Current()->type() != Token::END_OF_INPUT &&
+           Current()->type() != token) {
+      Next();
+    }
   }
 }
 }
