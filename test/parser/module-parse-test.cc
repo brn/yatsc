@@ -26,20 +26,20 @@
 
 
 #define MODULE_TEST(type, code, expected_str)                           \
-  PARSER_TEST(ParseModule(), type, code, expected_str, false, std::exception)
+  PARSER_TEST("anonymous", ParseModule(), type, code, expected_str, false)
 
-#define MODULE_THROW_TEST(type, code, error_type)                       \
-  PARSER_TEST(ParseModule(), type, code, "", true, error_type)
+#define MODULE_THROW_TEST(type, code)                                 \
+  PARSER_TEST("anonymous", ParseModule(), type, code, "", true)
 
 #define MODULE_TEST_ALL(code, expected_str)                             \
   [&]{MODULE_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();    \
   [&]{MODULE_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   [&]{MODULE_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
-#define MODULE_THROW_TEST_ALL(code, error_type)                         \
-  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
-  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
-  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
+#define MODULE_THROW_TEST_ALL(code)                                 \
+  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES3, code);}();        \
+  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code);}(); \
+  [&]{MODULE_THROW_TEST(yatsc::LanguageMode::ES6, code);}()
 
 
 

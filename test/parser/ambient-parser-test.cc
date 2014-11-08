@@ -25,11 +25,11 @@
 #include "../parser-util.h"
 
 
-#define AMBIENT_TEST(type, code, expected_str)                           \
-  PARSER_TEST(ParseDeclarationModule(), type, code, expected_str, false, std::exception)
+#define AMBIENT_TEST(type, code, expected_str)                          \
+  PARSER_TEST("anonymous", ParseDeclarationModule(), type, code, expected_str, false, false)
 
-#define AMBIENT_THROW_TEST(type, code, error_type)                       \
-  PARSER_TEST(ParseModule(), type, code, "", true, error_type)
+#define AMBIENT_THROW_TEST(type, code)                    \
+  PARSER_TEST("anonymous", ParseModule(), type, code, "", true, true)
 
 #define AMBIENT_TEST_ALL(code, expected_str)                             \
   [&]{AMBIENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();    \

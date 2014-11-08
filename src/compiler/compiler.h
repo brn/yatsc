@@ -81,7 +81,7 @@ class Compiler {
   };
   
 
-  void Schedule(Handle<ModuleInfo>);
+  void Schedule(const String& filename);
 
 
   void Run(Handle<ModuleInfo> module_info);
@@ -94,7 +94,7 @@ class Compiler {
   LazyInitializer<ThreadPool> thread_pool_;
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;
-  Notificator<void(Handle<ModuleInfo>)> notificator_;
+  Notificator<void(const String&)> notificator_;
 };
 
 }

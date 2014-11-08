@@ -26,7 +26,9 @@
 #define TEST_PARSER_SCANNER_TEST_PRELUDE_H_
 
 #include "../gtest-header.h"
-#include "../../src/parser/error-reporter.h"
+#include "../../src/parser/error-formatter.h"
+#include "../../src/parser/error-descriptor.h"
+#include "../../src/parser/semantic-error.h"
 #include "../../src/parser/literalbuffer.h"
 #include "../../src/compiler-option.h"
 #include "../../src/parser/scanner.h"
@@ -35,36 +37,48 @@
 #include "../unicode-util.h"
 
 
-#define SCAN__(var, error_reporter, ex_type)                            \
+#define SCAN__(var)                                                     \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
-  auto var = scanner.Scan();
+  yatsc::SemanticError se;                                              \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &lb, compiler_option); \
+  scanner.SetErrorCallback([&] (const char* message, const yatsc::SourcePosition& source_position){ \
+    se.SyntaxError(source_position) << message;                         \
+  });                                                                   \
+  auto var = scanner.Scan();                                            \
+  if (se.HasError()) {                                                  \
+    yatsc::ErrorFormatter error_formatter(module_info);                 \
+    error_formatter.Print(stderr, se);                                  \
+    ASSERT_FALSE(se.HasError());                                        \
+  }                                                                     \
 
 
-#define SCAN_THROW__(var, error_reporter, ex_type)                      \
+#define SCAN_ERROR__(var)                                               \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
-  ASSERT_THROW(scanner.Scan(), ex_type);
+  yatsc::SemanticError se;                                              \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &lb, compiler_option); \
+  scanner.SetErrorCallback([&] (const char* message, const yatsc::SourcePosition& source_position){ \
+    se.SyntaxError(source_position) << message;                         \
+  });                                                                   \
+  scanner.Scan();                                                       \
+  ASSERT_TRUE(se.HasError());
 
 
-#define INIT__(SCAN, var, str, type, ex_type)                           \
+#define INIT__(SCAN, var, str, type)                                    \
   typedef yatsc::Vector<yatsc::UChar>::iterator Iterator;               \
-  yatsc::String s = str;                                                \
   yatsc::String n = "anonymous";                                        \
-  yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, true); \
-  yatsc::ErrorReporter error_reporter(s, module_info);                  \
-  yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(str); \
+  yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, yatsc::String(str), true); \
+  yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(module_info->raw_source_code()); \
   yatsc::CompilerOption compiler_option;                                \
   compiler_option.set_language_mode(type);                              \
-  SCAN(var, error_reporter, ex_type)
+  SCAN(var)
   
 
-#define INIT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES3, nullptr)
-#define INIT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES3, ex_type)
-#define INIT_STRICT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES5_STRICT, nullptr)
-#define INIT_STRICT_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES5_STRICT, ex_type)
-#define INIT_ES6(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES6, nullptr)
-#define INIT_ES6_THROW(var, str, ex_type) INIT__(SCAN_THROW__, var, str, yatsc::LanguageMode::ES6, ex_type)
+#define INIT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES3)
+#define INIT_ERROR(var, str) INIT__(SCAN_ERROR__, var, str, yatsc::LanguageMode::ES3)
+#define INIT_STRICT(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES5_STRICT)
+#define INIT_STRICT_ERROR(var, str) INIT__(SCAN_ERROR__, var, str, yatsc::LanguageMode::ES5_STRICT)
+#define INIT_ES6(var, str) INIT__(SCAN__, var, str, yatsc::LanguageMode::ES6)
+#define INIT_ES6_ERROR(var, str) INIT__(SCAN_ERROR__, var, str, yatsc::LanguageMode::ES6)
 
 
 #define END_SCAN                                          \

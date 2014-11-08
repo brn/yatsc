@@ -26,6 +26,9 @@
 #include "../src/ir/node.h"
 #include "../src/parser/parser.h"
 #include "../src/parser/literalbuffer.h"
+#include "../src/parser/semantic-error.h"
+#include "../src/parser/error-formatter.h"
+#include "../src/parser/error-descriptor.h"
 #include "../src/utils/stl.h"
 #include "../src/utils/notificator.h"
 #include "./compare-node.h"
@@ -36,32 +39,29 @@ bool print_stack_trace = true;
 #define PARSER_METHOD_CALL__(var, method_expr)  \
   var.method_expr
 
-#define PARSER_TEST(method_expr, type, code, expected_str, dothrow, error_type) { int line_num__ = __LINE__; \
-    typedef std::vector<yatsc::UChar>::iterator Iterator;               \
-    yatsc::String s = code;                                             \
-    yatsc::String n = "anonymous";                                      \
-    yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, true); \
-    yatsc::ErrorReporter error_reporter(s, module_info);                \
-    yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(s);     \
-    yatsc::CompilerOption compiler_option;                              \
-    compiler_option.set_language_mode(type);                            \
-    yatsc::LiteralBuffer lb;                                            \
-    yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &error_reporter, &lb, compiler_option, module_info); \
-    yatsc::Notificator<void(yatsc::Handle<yatsc::ModuleInfo>)> notificator; \
-    yatsc::Parser<Iterator> parser(compiler_option, &scanner, notificator, &error_reporter, module_info); \
-    if (!dothrow) {                                                     \
-      try {                                                             \
-        auto node = PARSER_METHOD_CALL__(parser, method_expr);          \
-        yatsc::testing::CompareNode(line_num__, node->ToStringTree(), yatsc::String(expected_str)); \
-      } catch(const std::exception& e) {                                \
-        if (print_stack_trace) {                                        \
-          parser.PrintStackTrace();                                     \
-        }                                                               \
-        yatsc::FPrintf(stderr, "%s\n", e.what());                       \
-        throw e;                                                        \
-      }                                                                 \
-      print_stack_trace = true;                                         \
+#define PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num__ = __LINE__; \
+  typedef std::vector<yatsc::UChar>::iterator Iterator;                 \
+  auto module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(yatsc::String(name), yatsc::String(code), true); \
+  yatsc::UCharBuffer v__ = yatsc::testing::AsciiToUCharVector(module_info->source_stream()->raw_buffer()); \
+  yatsc::CompilerOption compiler_option;                                \
+  compiler_option.set_language_mode(type);                              \
+  yatsc::LiteralBuffer lb;                                              \
+  yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &lb, compiler_option); \
+  yatsc::Notificator<void(const yatsc::String&)> notificator;           \
+  yatsc::Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info); \
+  yatsc::ErrorFormatter error_formatter(module_info);                   \
+  auto node = PARSER_METHOD_CALL__(parser, method_expr);                \
+  if (!error) {                                                         \
+    if (!module_info->HasError()) {                                     \
+      yatsc::testing::CompareNode(line_num__, node->ToStringTree(), yatsc::String(expected_str)); \
     } else {                                                            \
-      ASSERT_THROW(PARSER_METHOD_CALL__(parser, method_expr), error_type); \
+      if (print_stack_trace) {                                          \
+        parser.PrintStackTrace();                                       \
+      }                                                                 \
+      error_formatter.Print(stderr, module_info->semantic_error());     \
     }                                                                   \
+  } else {                                                              \
+    ASSERT_TRUE(module_info->semantic_error()->HasError());             \
+  }                                                                     \
+  print_stack_trace = true;                                             \
   }

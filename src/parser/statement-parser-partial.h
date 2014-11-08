@@ -72,27 +72,27 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseStatement(bool yield, bool has
 
     case Token::TS_CONTINUE:
       if (!continuable) {
-        SYNTAX_ERROR("SyntaxError 'continue' only allowed in loops", Current());
+        SYNTAX_ERROR("'continue' only allowed in loops", Current());
       }
       result = ParseContinueStatement(yield);
       break;
 
     case Token::TS_BREAK: {
       if (!breakable) {
-        SYNTAX_ERROR("SyntaxError 'break' not allowed here", Current());
+        SYNTAX_ERROR("'break' not allowed here", Current());
       }
       result = ParseBreakStatement(yield);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
       break;
     }
 
     case Token::TS_RETURN:
       if (!has_return) {
-        SYNTAX_ERROR("SyntaxError 'return' statement only allowed in function", Current());
+        SYNTAX_ERROR("'return' statement only allowed in function", Current());
       }
       result = ParseReturnStatement(yield);
       break;
@@ -122,13 +122,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseStatement(bool yield, bool has
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
       return node;
     }
 
     case Token::END_OF_INPUT:
-      SYNTAX_ERROR("SyntaxError Unexpected end of input", Current());
+      SYNTAX_ERROR("Unexpected end of input", Current());
       
     default: {
       if (Current()->type() == Token::TS_IDENTIFIER) {
@@ -156,7 +156,7 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, bool has_default) {
   switch (Current()->type()) {
     case Token::TS_FUNCTION: {
-      Handle<ir::Node> node = ParseFunctionOverloads(yield, has_default, true);
+      Handle<ir::Node> node = ParseFunctionOverloads(yield, has_default, true, false);
       CHECK_AST(node);
       current_scope()->Declare(node);
       return node;
@@ -173,7 +173,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool y
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
       return node;
     }
@@ -181,7 +181,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclaration(bool error, bool y
       if (!error) {
         return ir::Node::Null();
       }
-      SYNTAX_ERROR("SyntaxError unexpected token", Current());
+      SYNTAX_ERROR("unexpected token", Current());
   }
 }
 
@@ -214,7 +214,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBlockStatement(bool yield, boo
     set_current_scope(scope->parent_scope());
     return block_view;
   }
-  SYNTAX_ERROR("SyntaxError '{' expected", Current());
+  SYNTAX_ERROR("'{' expected", Current());
 }
 
 
@@ -247,8 +247,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bo
     Next();
     while (1) {
       Handle<ir::Node> node = ParseLexicalBinding(has_const, in, yield);
-      CHECK_AST(node);
-      lexical_decl->InsertLast(node);
+      SKIP_TOKEN_OR(node, Token::LINE_TERMINATOR) {
+        lexical_decl->InsertLast(node);
+      }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
       } else {
@@ -257,7 +258,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bo
     }
     return lexical_decl;
   }
-  SYNTAX_ERROR("SyntaxError 'let' or 'const' expected", Current());
+  SYNTAX_ERROR("'let' or 'const' expected", Current());
 }
 
 
@@ -283,14 +284,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl
   CHECK_AST(lhs);
 
   if (!lhs->IsValidLhs()) {
-    SYNTAX_ERROR("SyntaxError left hand side of lexical binding is invalid", Current());
+    SYNTAX_ERROR("left hand side of lexical binding is invalid", Current());
   }
 
   Handle<ir::Node> type_expr;
   if (Current()->type() == Token::TS_COLON) {
     Next();
     type_expr = ParseTypeExpression();
-    CHECK_AST(node);
+    CHECK_AST(type_expr);
   }
   
   if (Current()->type() == Token::TS_ASSIGN) {
@@ -298,7 +299,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl
     value = ParseAssignmentExpression(in, yield);
     CHECK_AST(value);
   } else if (const_decl) {
-    SYNTAX_ERROR("SyntaxError const declaration must have an initializer", Current());
+    SYNTAX_ERROR("const declaration must have an initializer", Current());
   }
 
   Handle<ir::Node> ret = New<ir::VariableView>(lhs, value, type_expr);
@@ -319,7 +320,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingIdentifier(bool default
   Handle<ir::Node> ret;
   if (Current()->type() == Token::TS_DEFAULT) {
     if (!default_allowed) {
-      SYNTAX_ERROR("SyntaxError 'default' keyword not allowed here", Current());
+      SYNTAX_ERROR("'default' keyword not allowed here", Current());
     }
     ret = New<ir::DefaultView>();
   } else if (Current()->type() == Token::TS_YIELD) {
@@ -327,7 +328,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingIdentifier(bool default
   } else if (Current()->type() == Token::TS_IDENTIFIER) {
     ret = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, Current()->value()));
   } else {
-    SYNTAX_ERROR("SyntaxError 'default', 'yield' or 'identifier' expected", Current());
+    SYNTAX_ERROR("'default', 'yield' or 'identifier' expected", Current());
   }
   
   ret->SetInformationForNode(Current());
@@ -350,7 +351,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingPattern(bool yield, boo
     case Token::TS_LEFT_BRACKET:
       return ParseArrayBindingPattern(yield, generator_parameter);
     default:
-      SYNTAX_ERROR("SyntaxError '[' or '{' expected", Current());
+      SYNTAX_ERROR("'[' or '{' expected", Current());
   }
 }
 
@@ -388,11 +389,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yiel
           return binding_prop_list;
         }
         default:
-          SYNTAX_ERROR("SyntaxError unexpected token", Current());
+          SYNTAX_ERROR("unexpected token", Current());
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' expected", Current());
+  SYNTAX_ERROR("'{' expected", Current());
 }
 
 
@@ -430,7 +431,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield
         rest->SetInformationForNode(Current());
         Next();
         Handle<ir::Node> node = ParseBindingIdentifier(false, true, yield);
-        SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+        SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACKET) {
           rest->set_parameter(node);
           binding_array->InsertLast(rest);
           exit = true;
@@ -438,7 +439,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield
       } else {
         Handle<ir::Node> elem = ParseBindingElement(yield, generator_parameter);
         
-        SKIP_TOKEN_OR(elem, Token::TS_RIGHT_BRACE) {
+        SKIP_TOKEN_OR(elem, Token::TS_RIGHT_BRACKET) {
           Handle<ir::Node> init;
           if (Current()->type() == Token::TS_ASSIGN) {
             init = ParseAssignmentExpression(true, yield);
@@ -453,12 +454,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield
         Next();
         break;
       } else if (exit) {
-        SYNTAX_ERROR("SyntaxError spread binding must be end of bindings", Current());
-      } else if (Current()->type() == Token::TS_COMMA) {Next();}
+        SYNTAX_ERROR("spread binding must be end of bindings", Current());
+      } else if (Current()->type() == Token::TS_COMMA) {
+        Next();
+      } else {
+        SYNTAX_ERROR("unexpected token.", Current());
+      }
     }
     return binding_array;
   }
-  SYNTAX_ERROR("SyntaxError '[' expected", Current());
+  SYNTAX_ERROR("'[' expected", Current());
 }
 
 
@@ -481,7 +486,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bo
     key = ParseIdentifier();
     CHECK_AST(key);
   } else {
-    SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+    SYNTAX_ERROR("'identifier' expected", Current());
   }
   
   if (Current()->type() == Token::TS_COLON) {
@@ -545,7 +550,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseVariableStatement(bool in, boo
     }
     return vars;
   }
-  SYNTAX_ERROR("SyntaxError 'var' expected", Current());
+  SYNTAX_ERROR("'var' expected", Current());
 }
 
 
@@ -567,7 +572,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, b
   CHECK_AST(lhs);
 
   if (!lhs->IsValidLhs()) {
-    SYNTAX_ERROR("SyntaxError left hand side of variable declaration is invalid", Current());
+    SYNTAX_ERROR("left hand side of variable declaration is invalid", Current());
   }
 
   Handle<ir::Node> type_expr;
@@ -625,11 +630,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool h
         if_stmt->SetInformationForNode(&info);
         return if_stmt;
       }
-      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      SYNTAX_ERROR("')' expected", Current());
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'if' expected", Current());
+  SYNTAX_ERROR("'if' expected", Current());
 }
 
 
@@ -652,9 +657,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseWhileStatement(bool yield, boo
       while_stmt->SetInformationForNode(&info);
       return while_stmt;
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'while' expected", Current());
+  SYNTAX_ERROR("'while' expected", Current());
 }
 
 
@@ -684,13 +689,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, b
           do_while->SetInformationForNode(&info);
           return do_while;
         }
-        SYNTAX_ERROR("SyntaxError ')' expected", Current());
+        SYNTAX_ERROR("')' expected", Current());
       }
-      SYNTAX_ERROR("SyntaxError '(' expected", Current());
+      SYNTAX_ERROR("'(' expected", Current());
     }
-    SYNTAX_ERROR("SyntaxError 'while' expected", Current());
+    SYNTAX_ERROR("'while' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'do' expected", Current());
+  SYNTAX_ERROR("'do' expected", Current());
 }
 
 
@@ -729,9 +734,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseForStatement(bool yield, bool 
       }
       return ParseForIteration(reciever, &info, yield, has_return);
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'for' expected", Current());
+  SYNTAX_ERROR("'for' expected", Current());
 }
 
 
@@ -773,7 +778,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> 
     CHECK_AST(second);
     for_in = true;
   } else {
-    SYNTAX_ERROR("SyntaxError 'in' or 'of' or ';' expected", Current());
+    SYNTAX_ERROR("'in' or 'of' or ';' expected", Current());
   }
 
   Handle<ir::Node> body = ParseIterationBody(yield, has_return);
@@ -798,7 +803,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseIterationBody(bool yield, bool
     Next();
     return ParseStatement(yield, has_return, true, true);
   }
-  SYNTAX_ERROR("SyntaxError ')' expected", Current());
+  SYNTAX_ERROR("')' expected", Current());
 }
 
 
@@ -821,7 +826,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseContinueStatement(bool yield) 
     }
     return result = New<ir::ContinueStatementView>();
   }
-  SYNTAX_ERROR("SyntaxError 'continue' expected", Current());
+  SYNTAX_ERROR("'continue' expected", Current());
 }
 
 
@@ -843,7 +848,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseBreakStatement(bool yield) {
     }
     return result = New<ir::BreakStatementView>();
   }
-  SYNTAX_ERROR("SyntaxError 'break' expected", Current());
+  SYNTAX_ERROR("'break' expected", Current());
 }
 
 
@@ -869,7 +874,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
     CHECK_AST(node);
     return result = New<ir::ReturnStatementView>(node);
   }
-  SYNTAX_ERROR("SyntaxError 'return' expected", Current());
+  SYNTAX_ERROR("'return' expected", Current());
 }
 
 
@@ -897,11 +902,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool
         CHECK_AST(stmt);
         return result = New<ir::WithStatementView>(expr, stmt);
       }
-      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      SYNTAX_ERROR("')' expected", Current());
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'with' expected", Current());
+  SYNTAX_ERROR("'with' expected", Current());
 }
 
 
@@ -927,15 +932,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bo
             switch_stmt->SetInformationForNode(&info);
             return switch_stmt;
           }
-          SYNTAX_ERROR("SyntaxError '}' expected", Current());
+          SYNTAX_ERROR("'}' expected", Current());
         }
-        SYNTAX_ERROR("SyntaxError '{' expected", Current());
+        SYNTAX_ERROR("'{' expected", Current());
       }
-      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      SYNTAX_ERROR("')' expected", Current());
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'switch' expected", Current());
+  SYNTAX_ERROR("'switch' expected", Current());
 }
 
 
@@ -955,10 +960,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool h
         normal_case = true;
         Next();
         expr = ParseExpression(true, yield);
-        if (!expr) {
-          SkipTokensIfErrorOccured(Token::TS_RIGHT_BRACE);
-          break;
-        }
+        SKIP_TOKEN_IF_AND(expr, Token::TS_RIGHT_BRACE, break);
       }
       case Token::TS_DEFAULT: {
         if (!normal_case) {
@@ -968,14 +970,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool h
         if (Current()->type() == Token::TS_COLON) {
           Next();
         } else {
-          SYNTAX_ERROR("SyntaxError ':' expected", Current());
+          SYNTAX_ERROR("':' expected", Current());
         }
         Handle<ir::Node> body = New<ir::CaseBody>();
         while (1) {
           if (Current()->type() == Token::TS_CASE ||
               Current()->type() == Token::TS_DEFAULT) {
             if (default_encounted && Current()->type() == Token::TS_DEFAULT) {
-              SYNTAX_ERROR("SyntaxError More than one 'default' clause in switch statement", Current());
+              SYNTAX_ERROR("More than one 'default' clause in switch statement", Current());
             }
             break;
           } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
@@ -1003,7 +1005,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool h
         return case_list;
       }
       default:
-        SYNTAX_ERROR("SyntaxError unexpected token", Current());
+        SYNTAX_ERROR("unexpected token", Current());
     }
   }
 }
@@ -1026,16 +1028,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, 
       node->SetInformationForNode(identifier);
       return node;
     }
-    SYNTAX_ERROR("SyntaxError ':' expected", Current());
+    SYNTAX_ERROR("':' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+  SYNTAX_ERROR("'identifier' expected", Current());
 }
 
 
 template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable) {
   if (Current()->type() == Token::TS_FUNCTION) {
-    return ParseFunctionOverloads(yield, false, true);
+    return ParseFunctionOverloads(yield, false, true, false);
   }
   return ParseStatement(yield, has_return, breakable, continuable);
 }
@@ -1054,9 +1056,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseThrowStatement() {
       throw_stmt->SetInformationForNode(&info);
       return throw_stmt;
     }
-    SYNTAX_ERROR("SyntaxError throw statement expected expression", (&info));
+    SYNTAX_ERROR("throw statement expected expression", (&info));
   }
-  SYNTAX_ERROR("SyntaxError throw expected", Current());
+  SYNTAX_ERROR("throw expected", Current());
 }
 
 
@@ -1083,13 +1085,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool 
     }
 
     if (!has_catch_or_finally) {
-      SYNTAX_ERROR("SyntaxError try statement need catch block or finally block", Current());
+      SYNTAX_ERROR("try statement need catch block or finally block", Current());
     }
     Handle<ir::TryStatementView> try_stmt = New<ir::TryStatementView>(block, catch_block, finally_block);
     try_stmt->SetInformationForNode(&info);
     return try_stmt;
   }
-  SYNTAX_ERROR("SyntaxError 'try' expected", Current());
+  SYNTAX_ERROR("'try' expected", Current());
 }
 
 
@@ -1117,11 +1119,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool ha
         catch_stmt->SetInformationForNode(&info);
         return catch_stmt;
       }
-      SYNTAX_ERROR("SyntaxError ')' expected", Current());
+      SYNTAX_ERROR("')' expected", Current());
     }
-    SYNTAX_ERROR("SyntaxError '(' expected", Current());
+    SYNTAX_ERROR("'(' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'catch' expected", Current());
+  SYNTAX_ERROR("'catch' expected", Current());
 }
 
 
@@ -1137,7 +1139,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFinallyBlock(bool yield, bool 
     finally_stmt->SetInformationForNode(&info);
     return finally_stmt;
   }
-  SYNTAX_ERROR("SyntaxError 'finally' expected", Current());
+  SYNTAX_ERROR("'finally' expected", Current());
 }
 
 template <typename UCharInputIterator>
@@ -1149,7 +1151,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDebuggerStatement() {
     Next();
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'debugger' expected", Current());
+  SYNTAX_ERROR("'debugger' expected", Current());
 }
 
 
@@ -1159,14 +1161,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
   if (Current()->type() == Token::TS_INTERFACE) {
     Next();
     Handle<ir::Node> name = ParseIdentifier();
-    SKIP_TOKEN_IF_AND_RETURN(name, Token::TS_RIGHT_BRACE);
+    SKIP_TOKEN_IF_AND(name, Token::TS_RIGHT_BRACE, return ir::Node::Null());
     Handle<ir::Node> type_parameters;
 
     name->symbol()->set_type(ir::SymbolType::kInterfaceName);
     
     if (Current()->type() == Token::TS_LESS) {
       type_parameters = ParseTypeParameters();
-      SKIP_TOKEN_IF_AND_RETURN(type_parameters, Token::TS_RIGHT_BRACE);
+      SKIP_TOKEN_IF_AND(type_parameters, Token::TS_RIGHT_BRACE, return ir::Node::Null());
     }
     
     auto extends = New<ir::InterfaceExtendsView>();
@@ -1190,9 +1192,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
       Handle<ir::Node> interface_body = ParseObjectTypeExpression();
       return New<ir::InterfaceView>(name, type_parameters, extends, interface_body);
     }
-    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+    SYNTAX_ERROR("'{' expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'interface' expected.", Current());
+  SYNTAX_ERROR("'interface' expected.", Current());
 }
 
 
@@ -1214,9 +1216,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bo
       ret->SetInformationForNode(&info);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+    SYNTAX_ERROR("'{' expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'enum' expected.", Current());
+  SYNTAX_ERROR("'enum' expected.", Current());
 }
 
 
@@ -1248,11 +1250,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_
         Next();
         return ret;
       } else {
-        SYNTAX_ERROR("SyntaxError ',' or '}' expected.", Current());
+        SYNTAX_ERROR("',' or '}' expected.", Current());
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -1310,9 +1312,9 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, b
       class_decl->SetInformationForNode(&info);
       return class_decl;
     }
-    SYNTAX_ERROR("SyntaxError '{' expected", Current());
+    SYNTAX_ERROR("'{' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'class' expected", Current());
+  SYNTAX_ERROR("'class' expected", Current());
 }
 
 
@@ -1327,7 +1329,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBases() {
   while (1) {
     if (Current()->type() == Token::TS_EXTENDS) {
       if (extends_keyword) {
-        SYNTAX_ERROR("SyntaxError class extendable only one class", Current());
+        SYNTAX_ERROR("class extendable only one class", Current());
       }
       TokenInfo info = *Current();
       Next();
@@ -1354,7 +1356,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBases() {
       }
       return bases;
     } else {
-      SYNTAX_ERROR("SyntaxError unexpected token", Current());
+      SYNTAX_ERROR("unexpected token", Current());
     }
   }
 }
@@ -1374,7 +1376,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassBody() {
         } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
                    Prev()->type() != Token::TS_RIGHT_BRACE) {
           PrintStackTrace();
-          SYNTAX_ERROR("SyntaxError ';' expected", Prev());
+          SYNTAX_ERROR("';' expected", Prev());
         }
       }
     } else {
@@ -1419,7 +1421,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseClassElement() {
     Next();
     return ParseGeneratorMethodOverloads(mods);
   }
-  SYNTAX_ERROR("SyntaxError unexpected token", Current());
+  SYNTAX_ERROR("unexpected token", Current());
 }
 
 
@@ -1488,7 +1490,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
   if (overloads->size() > 0) {
     Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
     if (!node->name()->SymbolEquals(last->at(1))) {
-      SYNTAX_ERROR_POS("SyntaxError member function overload must have a same name", node->at(1)->source_position());
+      SYNTAX_ERROR("member function overload must have a same name", node->at(1));
     }
     if (!node->modifiers()->Equals(last->modifiers())) {
       Handle<ir::Node> target;
@@ -1497,14 +1499,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
       } else {
         target = last->modifiers()->first_child();
       }
-      SYNTAX_ERROR_POS("SyntaxError member function overload must have same modifiers", target->source_position()); 
+      SYNTAX_ERROR("member function overload must have same modifiers", target); 
     }
   } else {
     Handle<ir::MemberFunctionOverloadView> fn(node);
     if (fn->getter()) {
       Handle<ir::CallSignatureView> call_sig(fn->call_signature());
       if (call_sig->param_list()->size() > 0) {
-        SYNTAX_ERROR_POS("SyntaxError the formal parameter of getter function must be empty.", call_sig->param_list()->source_position());
+        SYNTAX_ERROR("the formal parameter of getter function must be empty.", call_sig->param_list());
       }
       
       if (call_sig->return_type()) {
@@ -1513,14 +1515,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
           const Literal* name = ret_type->string_value();
           if (name->Equals("void") || name->Equals("null")) {
-            SYNTAX_ERROR_POS("SyntaxError getter function must return value.", ret_type->source_position()); 
+            SYNTAX_ERROR("getter function must return value.", ret_type);
           }
         }
       }
     } else if (fn->setter()) {
       Handle<ir::CallSignatureView> call_sig(fn->call_signature());
       if (call_sig->param_list()->size() != 1) {
-        SYNTAX_ERROR_POS("SyntaxError the setter function allowed only one parameter.", call_sig->param_list()->source_position());
+        SYNTAX_ERROR("the setter function allowed only one parameter.", call_sig->param_list());
       }
       if (call_sig->return_type()) {
         Handle<ir::Node> ret = call_sig->return_type();
@@ -1528,7 +1530,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberF
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
           const Literal* name = ret_type->string_value();
           if (name->Equals("void") && name->Equals("null")) {
-            SYNTAX_ERROR_POS("SyntaxError setter function must not return value.", ret_type->source_position()); 
+            SYNTAX_ERROR("setter function must not return value.", ret_type);
           }
         }
       }
@@ -1559,7 +1561,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir
         return fn;
       }
     } else {
-      SYNTAX_ERROR("SyntaxError incomplete constructor definition", Current());
+      SYNTAX_ERROR("incomplete constructor definition", Current());
     }
   }
 }
@@ -1583,7 +1585,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplement
     TokenInfo info = *Current();
     Handle<ir::Node> name = ParseIdentifier();
     CHECK_AST(name);
-    Handle<ir::Node> call_signature = ParseCallSignature(true);
+    Handle<ir::Node> call_signature = ParseCallSignature(true, false);
     CHECK_AST(call_signature);
     Handle<ir::Node> ret;
     if (Current()->type() == Token::TS_LEFT_BRACE) {
@@ -1595,15 +1597,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseConstructorOverloadOrImplement
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
     } else {
-      SYNTAX_ERROR("SyntaxError invalid constructor definition", (&info));
+      SYNTAX_ERROR("invalid constructor definition", (&info));
     }
     ret->SetInformationForNode(mods);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'constructor' expected", Current());
+  SYNTAX_ERROR("'constructor' expected", Current());
 }
 
 
@@ -1656,7 +1658,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle
       }
       first = false;
     } else {
-      SYNTAX_ERROR("SyntaxError incomplete member function definition", (&info));
+      SYNTAX_ERROR("incomplete member function definition", (&info));
     }
   }
 }
@@ -1705,7 +1707,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplem
 
     Handle<ir::Node> name = ParseIdentifier();
     CHECK_AST(name);
-    Handle<ir::Node> call_signature = ParseCallSignature(false);
+    Handle<ir::Node> call_signature = ParseCallSignature(false, false);
     CHECK_AST(call_signature);
     Handle<ir::Node> ret;
 
@@ -1719,21 +1721,21 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplem
       
       // Getter and setter is not allowed to overload function declaration.
       if (at.getter || at.setter) {
-        SYNTAX_ERROR("SyntaxError overload is not allowed to getter and setter.", (&info));
+        SYNTAX_ERROR("overload is not allowed to getter and setter.", (&info));
       }
       ret = New<ir::MemberFunctionOverloadView>(mods, name, call_signature);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
     } else {
-      SYNTAX_ERROR("SyntaxError invalid member function definition", (&info));
+      SYNTAX_ERROR("invalid member function definition", (&info));
     }
     ret->SetInformationForNode(mods);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError identifier expected", Current());
+  SYNTAX_ERROR("identifier expected", Current());
 }
 
 
@@ -1759,7 +1761,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Handl
       }
       first = false;
     } else {
-      SYNTAX_ERROR("SyntaxError incomplete member function definition", Current());
+      SYNTAX_ERROR("incomplete member function definition", Current());
     }
   }
 }
@@ -1782,7 +1784,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
   if (Current()->type() == Token::TS_MUL) {
     Next();
   } else if (!first) {
-    SYNTAX_ERROR("SyntaxError '*' expected", Current());
+    SYNTAX_ERROR("'*' expected", Current());
   }
 
   
@@ -1794,7 +1796,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> name = ParseIdentifier();
     CHECK_AST(name);
-    Handle<ir::Node> call_signature = ParseCallSignature(false);
+    Handle<ir::Node> call_signature = ParseCallSignature(false, false);
     CHECK_AST(call_signature);
     Handle<ir::Node> ret;
       
@@ -1807,16 +1809,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImple
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
     } else {
-      SYNTAX_ERROR("SyntaxError invalid member function definition", (&info));
+      SYNTAX_ERROR("invalid member function definition", (&info));
     }
       
     ret->SetInformationForNode(mods);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError identifier expected", Current());
+  SYNTAX_ERROR("identifier expected", Current());
 }
 
 
@@ -1847,7 +1849,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node
     member_variable->SetInformationForNode(mods);
     return member_variable;
   }
-  SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+  SYNTAX_ERROR("'identifier' expected", Current());
 }
 
 
@@ -1859,7 +1861,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
     if (is_export && !first && Current()->type() == Token::TS_EXPORT) {
       Next();
     } else if (is_export && !first) {
-      SYNTAX_ERROR("SyntaxError export expected.", Current());
+      SYNTAX_ERROR("export expected.", Current());
     }
     first = false;
     if (Current()->type() == Token::TS_FUNCTION) {
@@ -1870,13 +1872,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
         if (overloads->size() > 0) {
           Handle<ir::FunctionOverloadView> last(overloads->last_child());
           if (!last->name()) {
-            SYNTAX_ERROR_POS("SyntaxError function overload must have a name", overload->source_position());
+            SYNTAX_ERROR("function overload must have a name", overload);
           } else if (!last->name()->SymbolEquals(overload->name())) {
-            SYNTAX_ERROR_POS("SyntaxError function overload must have a same name", overload->name()->source_position());
+            SYNTAX_ERROR("function overload must have a same name", overload->name());
           }
 
           if (last->generator() != overload->generator()) {
-            SYNTAX_ERROR_POS("SyntaxError generator function can only overloaded by generator function", overload->name()->source_position());
+            SYNTAX_ERROR("generator function can only overloaded by generator function", overload->name());
           }
         }
         overloads->InsertLast(fn);
@@ -1884,7 +1886,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, 
         return fn;
       }
     } else {
-      SYNTAX_ERROR("SyntaxError incomplete function definition", Current());
+      SYNTAX_ERROR("incomplete function definition", Current());
     }
   }
 }
@@ -1908,30 +1910,30 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementati
     }
 
     if (declaration && !name) {
-      SYNTAX_ERROR("SyntaxError function name required", Current());
+      SYNTAX_ERROR("function name required", Current());
     }
     
-    Handle<ir::Node> call_signature = ParseCallSignature(false);
+    Handle<ir::Node> call_signature = ParseCallSignature(false, false);
     CHECK_AST(call_signature);
     Handle<ir::Node> ret;
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Handle<ir::Node> body = ParseFunctionBody(yield? yield: generator);
-      SKIP_TOKEN_IF_AND_RETURN(body, Token::TS_RIGHT_BRACE);
+      SKIP_TOKEN_IF_AND(body, Token::TS_RIGHT_BRACE, return ir::Node::Null());
       ret = New<ir::FunctionView>(overloads, name, call_signature, body);
     } else if (overloads) {
       ret = New<ir::FunctionOverloadView>(generator, name, call_signature);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else {
-        SYNTAX_ERROR("SyntaxError ';' expected", Current());
+        SYNTAX_ERROR("';' expected", Current());
       }
     } else {
-      SYNTAX_ERROR("SyntaxError invalid function definition", (&info));
+      SYNTAX_ERROR("invalid function definition", (&info));
     }
     ret->SetInformationForNode(&info);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'function' expected", Current());
+  SYNTAX_ERROR("'function' expected", Current());
 }
 
 
@@ -1951,14 +1953,14 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameterList(bool accesslevel
     bool has_rest = false;
     while (1) {
       if (has_rest) {
-        ARROW_PARAMETERS_ERROR_POS("Rest parameter must be at the end of the parameters", param_list->last_child()->source_position());
+        SYNTAX_ERROR("Rest parameter must be at the end of the parameters", param_list->last_child());
       }
       if (Current()->type() == Token::TS_IDENTIFIER ||
           Current()->type() == Token::TS_PRIVATE ||
           Current()->type() == Token::TS_PUBLIC ||
           Current()->type() == Token::TS_PROTECTED) {
         auto node = ParseParameter(false, accesslevel_allowed);
-        SKIP_TOKEN_OR(node, Token::TS_COMMA) {
+        SKIP_TOKEN_OR(node, Token::TS_RIGHT_PAREN) {
           param_list->InsertLast(node);
         }
       } else if (Current()->type() == Token::TS_REST) {
@@ -1969,7 +1971,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameterList(bool accesslevel
         node->SetInformationForNode(&token);
         param_list->InsertLast(node);
       } else {
-        SYNTAX_ERROR("SyntaxError unexpected token in formal parameter list", Current());
+        SYNTAX_ERROR("unexpected token in formal parameter list", Current());
       }
 
       if (Current()->type() == Token::TS_COMMA) {
@@ -1978,11 +1980,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameterList(bool accesslevel
         Next();
         return param_list;
       } else {
-        SYNTAX_ERROR("SyntaxError ')' or ',' expected in parameter list", Current());
+        SYNTAX_ERROR("')' or ',' expected in parameter list", Current());
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '(' is expected in parameter list", Current());
+  SYNTAX_ERROR("'(' is expected in parameter list", Current());
 }
 
 
@@ -1995,7 +1997,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
       access_level = New<ir::ClassFieldAccessLevelView>(Current()->type());
       access_level->SetInformationForNode(Current());
     } else {
-      ARROW_PARAMETERS_ERROR("SyntaxError 'private' or 'public' not allowed here", Current());
+      SYNTAX_ERROR("'private' or 'public' not allowed here", Current());
     }
     Next();
   }
@@ -2009,7 +2011,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
     Next();
     if (Current()->type() == Token::TS_QUESTION_MARK) {
       if (rest) {
-        ARROW_PARAMETERS_ERROR("SyntaxError optional parameter not allowed in rest parameter", Current());
+        SYNTAX_ERROR("optional parameter not allowed in rest parameter", Current());
       }
       Next();
       pv->set_optional(true);
@@ -2017,21 +2019,27 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseParameter(bool rest, bool acce
     if (Current()->type() == Token::TS_COLON) {
       Next();
       if (Current()->type() == Token::TS_STRING_LITERAL) {
-        pv->set_type_expr(ParseStringLiteral());
+        auto node = ParseStringLiteral();
+        CHECK_AST(node);
+        pv->set_type_expr(node);
       } else {
-        pv->set_type_expr(ParseTypeExpression());
+        auto expr = ParseTypeExpression();
+        CHECK_AST(expr);
+        pv->set_type_expr(expr);
       }
     }
     if (Current()->type() == Token::TS_ASSIGN) {
       if (rest) {
-        ARROW_PARAMETERS_ERROR("SyntaxError default parameter not allowed in rest parameter", Current());
+        SYNTAX_ERROR("default parameter not allowed in rest parameter", Current());
       }
       Next();
-      pv->set_value(ParseAssignmentExpression(true, false));
+      auto node = ParseAssignmentExpression(true, false);
+      CHECK_AST(node);
+      pv->set_value(node);
     }
     return pv;
   }
-  SYNTAX_ERROR("SyntaxError identifier expected", Current());
+  SYNTAX_ERROR("identifier expected", Current());
 }
 
 
@@ -2048,9 +2056,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
       if (Current()->type() == Token::TS_RIGHT_BRACE) {
         Next();
         break;
+      } else if (Current()->type() == Token::END_OF_INPUT) {
+        SYNTAX_ERROR("unexpected end of input.", Current());
       }
       auto node = ParseStatementListItem(yield, true, false, false);
-      block->InsertLast(node);
+      SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+        block->InsertLast(node);
+      }
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       }
@@ -2058,7 +2070,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
     set_current_scope(scope->parent_scope());
     return block;
   }
-  SYNTAX_ERROR("SyntaxError unexpected token in 'function body'", Current());
+  SYNTAX_ERROR("unexpected token in 'function body'", Current());
 }
 
 
@@ -2070,6 +2082,6 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseEmptyStatement() {
     node->SetInformationForNode(Current());
     return node;
   }
-  SYNTAX_ERROR("SyntaxError ';' expected.", Current());
+  SYNTAX_ERROR("';' expected.", Current());
 }
 }

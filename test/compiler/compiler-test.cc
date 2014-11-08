@@ -23,6 +23,7 @@
 
 #include "../gtest-header.h"
 #include "../../src/compiler/compiler.h"
+#include "../../src/parser/error-formatter.h"
 
 
 inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yatsc::Handle<yatsc::CompilationUnit>>& cu) {
@@ -30,7 +31,11 @@ inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yat
   for (auto i: cu) {
     if (!i->success()) {
       ss << "Compile failed in module \"" << i->module_name() << "\"\n"
-         << "Because\n" << i->error_message() << "\n";
+         << "Because\n";
+      yatsc::ErrorFormatter ef(i->module_info());
+      for (auto c: i->semantic_error()->errors()) {
+        ss << ef.Format(c);
+      }
     }
   }
   if (ss.str().size() > 0) {

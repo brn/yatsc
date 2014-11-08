@@ -44,6 +44,6 @@ void Assert__(bool ok, const char* result, const char* expect, const char* file,
   }
 }
 
-std::atomic_ullong Unique::id_(0);
+std::atomic_ullong Unique::id_;
 
 }

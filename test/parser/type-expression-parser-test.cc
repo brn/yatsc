@@ -26,17 +26,17 @@
 
 
 #define TYPE_PARSER_TEST(type, code, expected_str)                      \
-  PARSER_TEST(ParseTypeExpression(), type, code, expected_str, false, std::exception)
+  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, expected_str, false, false)
 
-#define TYPE_PARSER_THROW_TEST(type, code, error_type)                  \
-  PARSER_TEST(ParseTypeExpression(), type, code, "", true, error_type)
+#define TYPE_PARSER_THROW_TEST(type, code)                              \
+  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, "", true, true)
 
 #define TYPE_PARSER_TEST_ALL(code, expected_str)                        \
   [&]{TYPE_PARSER_TEST(yatsc::LanguageMode::ES3, code, expected_str);}(); \
   [&]{TYPE_PARSER_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   [&]{TYPE_PARSER_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
-#define TYPE_PARSER_THROW_TEST_ALL(code, error_type)                    \
+#define TYPE_PARSER_THROW_TEST_ALL(code)                                \
   [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
   [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
   [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
@@ -83,8 +83,8 @@ TEST(TypeParser, ParseTypeExpression) {
                        "    [NameView][baz]");
 
   
-  TYPE_PARSER_THROW_TEST_ALL("typeof foo.bar['baz']", yatsc::SyntaxError);
-  TYPE_PARSER_THROW_TEST_ALL("typeof foo.['bar'].baz", yatsc::SyntaxError);
+  TYPE_PARSER_THROW_TEST_ALL("typeof foo.bar['baz']");
+  TYPE_PARSER_THROW_TEST_ALL("typeof foo.['bar'].baz");
 
 
   // Type Literal

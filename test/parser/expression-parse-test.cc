@@ -28,15 +28,15 @@
 
 
 #define EXPR_TEST_ALL(code, expected_str)                             \
-  []{PARSER_TEST(ParseExpression(true, false), yatsc::LanguageMode::ES3, code, expected_str, false, std::exception); }(); \
-  []{PARSER_TEST(ParseExpression(true, false), yatsc::LanguageMode::ES5_STRICT, code, expected_str, false, std::exception);}(); \
-  []{PARSER_TEST(ParseExpression(true, false), yatsc::LanguageMode::ES6, code, expected_str, false, std::exception)}()
+  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES3, code, expected_str, false); }(); \
+  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES5_STRICT, code, expected_str, false);}(); \
+  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES6, code, expected_str, false)}()
 
 #define EXPR_TEST(type, code, expected_str)                             \
-  PARSER_TEST(ParseExpression(true, false), type, code, expected_str, false, std::exception)
+  PARSER_TEST("anonymous", ParseExpression(true, false), type, code, expected_str, false)
 
-#define EXPR_THROW_TEST(type, code, error_type)                         \
-  PARSER_TEST(ParseExpression(true, false), type, code, "", true, error_type)
+#define EXPR_THROW_TEST(type, code)                                     \
+  PARSER_TEST("anonymous", ParseExpression(true, false), type, code, "", true)
 
 
 TEST(ExpressionParseTest, ParseLiteral_string) {
@@ -429,14 +429,11 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "    [NameView][a]\n"
             "    [NameView][b]");
   
-  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b, a) => a + b",
-                  yatsc::ArrowParametersError);
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b, a) => a + b");
 
-  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b = 1) => a + b",
-                  yatsc::ArrowParametersError);
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b = 1) => a + b");
 
-  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b?: string) => a + b",
-                  yatsc::ArrowParametersError);
+  EXPR_THROW_TEST(yatsc::LanguageMode::ES3, "(...b?: string) => a + b");
   
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "(a:string, ...b:number) => a + b",

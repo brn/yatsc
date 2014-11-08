@@ -28,7 +28,6 @@
 #include "character.h"
 #include "token.h"
 #include "utfstring.h"
-#include "error-reporter.h"
 #include "lineterminator-state.h"
 #include "literalbuffer.h"
 #include "../utils/stl.h"
@@ -38,64 +37,27 @@
 
 #if defined(DEBUG) || defined(UNIT_TEST)
 #define TOKEN_ERROR(message)                                            \
-  (void)[&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}
+  (void)[&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}()
+#else
+#define TOKEN_ERROR(message)                                            \
+  (void)[&]{StringStream ss;ss << message << '\n';Error(ss.str().c_str());}()
+#endif
 
 #define ILLEGAL_TOKEN() TOKEN_ERROR("Illegal Token");
-#endif
 
 
 namespace yatsc {
-class TokenException: public std::exception {
- public:
-  TokenException(const char* message)
-      : std::exception(),
-        message_(message) {}
-
-
-  TokenException(const TokenException& token_exception)
-      : std::exception(token_exception),
-        message_(token_exception.message_) {}
-
-
-  TokenException& operator = (const TokenException& token_exception) {
-    std::exception::operator = (token_exception);
-    message_ = token_exception.message_;
-    return *this;
-  }
-
-    
-  const char* what() const throw() {
-    return message_.c_str();
-  }
-    
- private:
-  std::string message_;
-    
-};
-
 
 template <typename UCharInputIterator>
-class Scanner: private Uncopyable, private Unmovable {
+class Scanner: public SemanticError, private Uncopyable, private Unmovable {
  public:
   /**
    * @param source The source file content.
    */
-  template <typename ReferencePathCallback>
   Scanner(UCharInputIterator it,
           UCharInputIterator end,
-          ErrorReporter* error_reporter,
           LiteralBuffer* literal_buffer,
-          const CompilerOption& compilation_option,
-          Handle<ModuleInfo> module_info,
-          ReferencePathCallback reference_path_callback);
-
-
-  Scanner(UCharInputIterator it,
-          UCharInputIterator end,
-          ErrorReporter* error_reporter,
-          LiteralBuffer* literal_buffer,
-          const CompilerOption& compilation_option,
-          Handle<ModuleInfo> module_info);
+          const CompilerOption& compilation_option);
   
 
   /**
@@ -122,9 +84,19 @@ class Scanner: private Uncopyable, private Unmovable {
     generic_type_--;
   }
 
+  
   bool IsGenericMode() {return generic_type_ > 0;}
 
+  
   int nested_generic_count() {return generic_type_;}
+
+  
+  template <typename T>
+  void SetErrorCallback(T callback) {error_callback_ = callback;}
+
+  
+  template <typename T>
+  void SetReferencePathCallback(T callback) {reference_path_callback_ = callback;}
   
  private:
 
@@ -204,6 +176,11 @@ class Scanner: private Uncopyable, private Unmovable {
 
   
   void BeforeScan() {
+    if (unscaned_) {
+      unscaned_ = false;
+      Advance();
+      SkipWhiteSpace();
+    }
     line_terminator_state_.Clear();
     scanner_source_position_.UpdateStartPosition();
   }
@@ -321,8 +298,9 @@ class Scanner: private Uncopyable, private Unmovable {
   
 
   void Error(const char* message) {
-    error_reporter() << message;
-    error_reporter_->Throw<TokenException>(CreateSourcePosition());
+    if (error_callback_) {
+      error_callback_(message, CreateSourcePosition());
+    }
   }
 
 
@@ -351,11 +329,6 @@ class Scanner: private Uncopyable, private Unmovable {
     UpdateTokenInfo();
     token_info_.set_type(type);
   }
-
-
-  YATSC_INLINE ErrorReporter& error_reporter() {
-    return *error_reporter_;
-  }
   
 
   void Advance();
@@ -371,11 +344,10 @@ class Scanner: private Uncopyable, private Unmovable {
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;
-  ErrorReporter* error_reporter_;
   LiteralBuffer* literal_buffer_;
   const CompilerOption& compiler_option_;
   std::function<void(const Literal*)> reference_path_callback_;
-  Handle<ModuleInfo> module_info_;
+  std::function<void(const char* message, const SourcePosition& source_position)> error_callback_;
 };
 }
 

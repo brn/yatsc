@@ -42,7 +42,11 @@ namespace yatsc {
 class SourceStream : public MaybeFail, private Uncopyable {
  public:
   typedef UCharBuffer::iterator iterator;
+  typedef UCharBuffer::const_iterator const_iterator;
   SourceStream(const char* filepath);
+
+  SourceStream() = default;
+  
 
   YATSC_INLINE ~SourceStream() = default;
   
@@ -53,19 +57,33 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE iterator end() {return buffer_.end();}
 
 
-  YATSC_INLINE const UCharBuffer& buffer() {return buffer_;}
+  YATSC_INLINE const_iterator cbegin() YATSC_NO_SE {return buffer_.cbegin();}
+  
+
+  YATSC_INLINE const_iterator cend() YATSC_NO_SE {return buffer_.cend();}
 
 
-  YATSC_INLINE const UChar* cbuffer() {return buffer_.data();}
+  YATSC_INLINE const UCharBuffer& buffer() YATSC_NO_SE {return buffer_;}
 
 
-  YATSC_INLINE const String& raw_buffer() {return raw_buffer_;}
+  YATSC_INLINE const UChar* cbuffer() YATSC_NO_SE {return buffer_.data();}
 
 
-  YATSC_INLINE const char* raw_cbuffer() {return raw_buffer_.c_str();}
+  YATSC_INLINE const String& raw_buffer() YATSC_NO_SE {return raw_buffer_;}
 
 
-  YATSC_INLINE size_t size() const {return size_;}
+  YATSC_INLINE const char* raw_cbuffer() YATSC_NO_SE {return raw_buffer_.c_str();}
+
+
+  YATSC_INLINE size_t size() YATSC_NO_SE {return size_;}
+
+
+  static Handle<SourceStream> FromSourceCode(const String& name, const String& code) {
+    return FromSourceCode(name.c_str(), code.c_str());
+  }
+  
+
+  static Handle<SourceStream> FromSourceCode(const char* name, const char* code);
   
 
  private:

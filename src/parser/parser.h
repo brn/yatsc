@@ -36,13 +36,20 @@ namespace yatsc {
 // Generate SyntaxError and throw it.
 // Usage. SYNTAX_ERROR("test " << message, Current())
 #define SYNTAX_ERROR(message, item)             \
-  SYNTAX_ERROR_POS(message, item)
+  SYNTAX_ERROR_INTERNAL(message, item)
 
 
 // Generate SyntaxError and throw it.
 // Usage. SYNTAX_ERROR("test " << message, Current())
 #define SYNTAX_ERROR_NO_RETURN(message, item)   \
-  SYNTAX_ERROR_POS_NO_RETURN(message, item)
+  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item)
+
+
+// Generate SyntaxError and throw it.
+// Usage. SYNTAX_ERROR("test " << message, Current())
+#define SYNTAX_ERROR_AND(message, item, expr)     \
+  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item);  \
+  expr
 
 
 #define CHECK_AST(node)                         \
@@ -57,10 +64,10 @@ namespace yatsc {
   SKIP_TOKEN_IF(node, token) else
 
 
-#define SKIP_TOKEN_IF_AND_RETURN(node, token)   \
+#define SKIP_TOKEN_IF_AND(node, token, expr)    \
   if (!node) {                                  \
     SkipTokensIfErrorOccured(token);            \
-    return ir::Node::Null();                    \
+    expr;                                       \
   }
 
 
@@ -77,12 +84,12 @@ namespace yatsc {
 #ifndef DEBUG
 
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item) \
-  SyntaxError(item) << message;
+  module_info_->semantic_error()->SyntaxError(item) << message;
 
 #else
 
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item)               \
-  SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
+  module_info_->semantic_error()->SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
 #endif
 
 
@@ -114,13 +121,11 @@ class Parser: public ParserBase {
  public:
   Parser(const CompilerOption& co,
          Scanner<UCharInputSourceIterator>* scanner,
-         const Notificator<void(Handle<ModuleInfo>)>& notificator,
-         ErrorReporter* error_reporter, Handle<ModuleInfo> module_info)
-      : ParserBase(co, notificator, error_reporter),
+         const Notificator<void(const String&)>& notificator,
+         Handle<ModuleInfo> module_info)
+      : ParserBase(co, notificator),
         scanner_(scanner),
-        module_info_(module_info) {
-    Next();
-  }
+        module_info_(module_info) {Initialize();}
 
   Handle<ir::Node> Parse() {
     if (module_info_->IsDefinitionFile()) {
@@ -161,193 +166,193 @@ class Parser: public ParserBase {
 
  VISIBLE_FOR_TESTING:
 
-  Handle<ir::Node> ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseStatementList(bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseStatementList(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseModuleStatement(bool* ok);
+  Handle<ir::Node> ParseModuleStatement();
 
-  Handle<ir::Node> ParseImportStatement(bool* ok);
+  Handle<ir::Node> ParseImportStatement();
 
-  Handle<ir::Node> ParseExportStatement(bool* ok);
+  Handle<ir::Node> ParseExportStatement();
 
-  Handle<ir::Node> ParseDeclaration(bool error, bool yield, bool has_default, bool* ok);
+  Handle<ir::Node> ParseDeclaration(bool error, bool yield, bool has_default);
   
-  Handle<ir::Node> ParseDebuggerStatement(bool* ok);
+  Handle<ir::Node> ParseDebuggerStatement();
 
-  Handle<ir::Node> ParseLexicalDeclaration(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseLexicalDeclaration(bool in, bool yield);
 
-  Handle<ir::Node> ParseLexicalBinding(bool const_decl, bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseLexicalBinding(bool const_decl, bool in, bool yield);
 
-  Handle<ir::Node> ParseBindingPattern(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParseBindingPattern(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseObjectBindingPattern(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParseObjectBindingPattern(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseArrayBindingPattern(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParseArrayBindingPattern(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseBindingProperty(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParseBindingProperty(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseBindingElement(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParseBindingElement(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseBindingIdentifier(bool default_allowed, bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseBindingIdentifier(bool default_allowed, bool in, bool yield);
 
-  Handle<ir::Node> ParseVariableStatement(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseVariableStatement(bool in, bool yield);
   
-  Handle<ir::Node> ParseVariableDeclaration(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseVariableDeclaration(bool in, bool yield);
 
-  Handle<ir::Node> ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseWhileStatement(bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseWhileStatement(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseDoWhileStatement(bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseDoWhileStatement(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseForStatement(bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseForStatement(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseForIteration(Handle<ir::Node> reciever, TokenInfo*, bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseForIteration(Handle<ir::Node> reciever, TokenInfo*, bool yield, bool has_return);
 
-  Handle<ir::Node> ParseIterationBody(bool yield, bool has_return, bool* ok);
+  Handle<ir::Node> ParseIterationBody(bool yield, bool has_return);
 
-  Handle<ir::Node> ParseContinueStatement(bool yield, bool* ok);
+  Handle<ir::Node> ParseContinueStatement(bool yield);
 
-  Handle<ir::Node> ParseBreakStatement(bool yield, bool* ok);
+  Handle<ir::Node> ParseBreakStatement(bool yield);
 
-  Handle<ir::Node> ParseReturnStatement(bool yield, bool* ok);
+  Handle<ir::Node> ParseReturnStatement(bool yield);
 
-  Handle<ir::Node> ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseSwitchStatement(bool yield, bool has_return, bool continuable, bool* ok);
+  Handle<ir::Node> ParseSwitchStatement(bool yield, bool has_return, bool continuable);
 
-  Handle<ir::Node> ParseCaseClauses(bool yield, bool has_return, bool continuable, bool* ok);
+  Handle<ir::Node> ParseCaseClauses(bool yield, bool has_return, bool continuable);
 
-  Handle<ir::Node> ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseThrowStatement(bool* ok);
+  Handle<ir::Node> ParseThrowStatement();
 
-  Handle<ir::Node> ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable, bool* ok);
+  Handle<ir::Node> ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable);
 
-  Handle<ir::Node> ParseInterfaceDeclaration(bool* ok);
+  Handle<ir::Node> ParseInterfaceDeclaration();
 
-  Handle<ir::Node> ParseEnumDeclaration(bool yield, bool has_default, bool* ok);
+  Handle<ir::Node> ParseEnumDeclaration(bool yield, bool has_default);
 
-  Handle<ir::Node> ParseEnumBody(bool yield, bool has_default, bool* ok);
+  Handle<ir::Node> ParseEnumBody(bool yield, bool has_default);
 
-  Handle<ir::Node> ParseEnumProperty(bool yield, bool has_default, bool* ok);
+  Handle<ir::Node> ParseEnumProperty(bool yield, bool has_default);
 
   Handle<ir::Node> CreateEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
   
-  Handle<ir::Node> ParseClassDeclaration(bool yield, bool has_default, bool* ok);
+  Handle<ir::Node> ParseClassDeclaration(bool yield, bool has_default);
 
-  Handle<ir::Node> ParseClassBases(bool* ok);
+  Handle<ir::Node> ParseClassBases();
 
-  Handle<ir::Node> ParseClassBody(bool* ok);
+  Handle<ir::Node> ParseClassBody();
 
-  Handle<ir::Node> ParseClassElement(bool* ok);
+  Handle<ir::Node> ParseClassElement();
 
-  Handle<ir::Node> ParseFieldModifiers(bool* ok);
+  Handle<ir::Node> ParseFieldModifiers();
   
-  Handle<ir::Node> ParseFieldModifier(bool* ok);
+  Handle<ir::Node> ParseFieldModifier();
 
-  Handle<ir::Node> ParseConstructorOverloads(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseConstructorOverloads(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads, bool* ok);
+  Handle<ir::Node> ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
 
   bool IsMemberFunctionOverloadsBegin(TokenInfo* info);
   
-  Handle<ir::Node> ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at, bool* ok);
+  Handle<ir::Node> ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at);
 
   Handle<ir::Node> ParseMemberFunctionOverloadOrImplementation(
-      bool first, Handle<ir::Node> mods, AccessorType* at, Handle<ir::Node> overloads, bool* ok);
+      bool first, Handle<ir::Node> mods, AccessorType* at, Handle<ir::Node> overloads);
 
-  Handle<ir::Node> ParseGeneratorMethodOverloads(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseGeneratorMethodOverloads(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads, bool* ok);
+  Handle<ir::Node> ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
 
-  Handle<ir::Node> ParseMemberVariable(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseMemberVariable(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export, bool* ok);
+  Handle<ir::Node> ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export);
 
-  Handle<ir::Node> ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration, bool* ok);
+  Handle<ir::Node> ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration);
  
-  Handle<ir::Node> ParseParameterList(bool accesslevel_allowed, bool* ok);
+  Handle<ir::Node> ParseParameterList(bool accesslevel_allowed);
   
-  Handle<ir::Node> ParseParameter(bool rest, bool accesslevel_allowed, bool* ok);
+  Handle<ir::Node> ParseParameter(bool rest, bool accesslevel_allowed);
 
-  Handle<ir::Node> ParseFunctionBody(bool yield, bool* ok);
+  Handle<ir::Node> ParseFunctionBody(bool yield);
 
-  Handle<ir::Node> ParseTypeExpression(bool* ok);
+  Handle<ir::Node> ParseTypeExpression();
 
-  Handle<ir::Node> ParseReferencedType(bool* ok);
+  Handle<ir::Node> ParseReferencedType();
 
-  Handle<ir::Node> ParseGenericType(bool* ok);
+  Handle<ir::Node> ParseGenericType();
 
-  Handle<ir::Node> ParseTypeArguments(bool* ok);
+  Handle<ir::Node> ParseTypeArguments();
 
-  Handle<ir::Node> ParseTypeParameters(bool* ok);
+  Handle<ir::Node> ParseTypeParameters();
 
-  Handle<ir::Node> ParseTypeQueryExpression(bool* ok);
+  Handle<ir::Node> ParseTypeQueryExpression();
 
-  Handle<ir::Node> ParseArrayType(Handle<ir::Node> type_expr, bool* ok);
+  Handle<ir::Node> ParseArrayType(Handle<ir::Node> type_expr);
 
-  Handle<ir::Node> ParseObjectTypeExpression(bool* ok);
+  Handle<ir::Node> ParseObjectTypeExpression();
 
-  Handle<ir::Node> ParseObjectTypeElement(bool* ok);
+  Handle<ir::Node> ParseObjectTypeElement();
 
-  Handle<ir::Node> ParseCallSignature(bool accesslevel_allowed, bool annotation, bool* ok);
+  Handle<ir::Node> ParseCallSignature(bool accesslevel_allowed, bool annotation);
 
-  Handle<ir::Node> ParseIndexSignature(bool* ok);
+  Handle<ir::Node> ParseIndexSignature();
   
   // Parse expression.
-  Handle<ir::Node> ParseExpression(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseExpression(bool in, bool yield);
 
   // Parse destructuring assignment.
-  Handle<ir::Node> ParseAssignmentPattern(bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentPattern(bool yield);
 
   // Parse destructuring assignment object pattern.
-  Handle<ir::Node> ParseObjectAssignmentPattern(bool yield, bool* ok);
+  Handle<ir::Node> ParseObjectAssignmentPattern(bool yield);
 
   // Parse destructuring assignment array pattern.
   // To simplify, we parse AssignmentElementList together.
-  Handle<ir::Node> ParseArrayAssignmentPattern(bool yield, bool* ok);
+  Handle<ir::Node> ParseArrayAssignmentPattern(bool yield);
 
   // Parse destructuring assignment object pattern properties.
-  Handle<ir::Node> ParseAssignmentPropertyList(bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentPropertyList(bool yield);
 
   // Parse destructuring assignment object pattern property.
-  Handle<ir::Node> ParseAssignmentProperty(bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentProperty(bool yield);
 
   // Parse destructuring assignment array pattern element.
-  Handle<ir::Node> ParseAssignmentElement(bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentElement(bool yield);
 
   // Parse destructuring assignment array pattern rest element.
-  Handle<ir::Node> ParseAssignmentRestElement(bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentRestElement(bool yield);
 
   // Parse destructuring assignment target node.
-  Handle<ir::Node> ParseDestructuringAssignmentTarget(bool yield, bool* ok);
+  Handle<ir::Node> ParseDestructuringAssignmentTarget(bool yield);
 
   // Parse assignment expression.
-  Handle<ir::Node> ParseAssignmentExpression(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseAssignmentExpression(bool in, bool yield);
 
-  Handle<ir::Node> ParseArrowFunction(bool in, bool yield, Handle<ir::Node> identifier, bool* ok);
+  Handle<ir::Node> ParseArrowFunction(bool in, bool yield, Handle<ir::Node> identifier);
 
-  Handle<ir::Node> ParseArrowFunctionParameters(bool yield, Handle<ir::Node> identifier, bool* ok);
+  Handle<ir::Node> ParseArrowFunctionParameters(bool yield, Handle<ir::Node> identifier);
 
-  Handle<ir::Node> ParseConciseBody(bool in, Handle<ir::Node> call_sig, bool* ok);
+  Handle<ir::Node> ParseConciseBody(bool in, Handle<ir::Node> call_sig);
 
   // Parse conditional expression.
-  Handle<ir::Node> ParseConditionalExpression(bool in, bool yield, bool* ok);
+  Handle<ir::Node> ParseConditionalExpression(bool in, bool yield);
 
 #define DEF_PARSE_BINARY_EXPR(name)                       \
-  Handle<ir::Node> Parse##name##Expression(bool in, bool yield, bool* ok);
+  Handle<ir::Node> Parse##name##Expression(bool in, bool yield);
 
   DEF_PARSE_BINARY_EXPR(LogicalOR);
   DEF_PARSE_BINARY_EXPR(LogicalAND);
@@ -362,161 +367,159 @@ class Parser: public ParserBase {
 #undef DEF_PARSE_BINARY_EXPR
 
   // Parse unary expression.
-  Handle<ir::Node> ParseUnaryExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParseUnaryExpression(bool yield);
 
   // Parse postfix expression.
-  Handle<ir::Node> ParsePostfixExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParsePostfixExpression(bool yield);
 
-  Handle<ir::Node> ParseLeftHandSideExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParseLeftHandSideExpression(bool yield);
 
   // Parse new expression.
-  Handle<ir::Node> ParseNewExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParseNewExpression(bool yield);
   
   // Parse member expression.
-  Handle<ir::Node> ParseMemberExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParseMemberExpression(bool yield);
 
   // Parser getprop or getelem expression.
-  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only, bool is_error, bool* ok);
+  Handle<ir::Node> ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only, bool is_error);
 
-  Handle<ir::Node> ParseCallExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParseCallExpression(bool yield);
 
-  NodePair ParseArguments(bool yield, bool* ok);
+  NodePair ParseArguments(bool yield);
 
   NodePair InvalidPair() {return NodePair(ir::Node::Null(), ir::Node::Null());}
 
-  Handle<ir::Node> ParsePrimaryExpression(bool yield, bool* ok);
+  Handle<ir::Node> ParsePrimaryExpression(bool yield);
 
-  Handle<ir::Node> ParseArrayLiteral(bool yield, bool* ok);
+  Handle<ir::Node> ParseArrayLiteral(bool yield);
 
-  Handle<ir::Node> ParseSpreadElement(bool yield, bool* ok);
+  Handle<ir::Node> ParseSpreadElement(bool yield);
 
-  Handle<ir::Node> ParseArrayComprehension(bool yield, bool* ok);
+  Handle<ir::Node> ParseArrayComprehension(bool yield);
 
-  Handle<ir::Node> ParseComprehension(bool generator, bool yield, bool* ok);
+  Handle<ir::Node> ParseComprehension(bool generator, bool yield);
 
-  Handle<ir::Node> ParseComprehensionTail(bool yield, bool* ok);
+  Handle<ir::Node> ParseComprehensionTail(bool yield);
 
-  Handle<ir::Node> ParseComprehensionFor(bool yield, bool* ok);
+  Handle<ir::Node> ParseComprehensionFor(bool yield);
 
-  Handle<ir::Node> ParseComprehensionIf(bool yield, bool* ok);
+  Handle<ir::Node> ParseComprehensionIf(bool yield);
 
-  Handle<ir::Node> ParseGeneratorComprehension(bool yield, bool* ok);
+  Handle<ir::Node> ParseGeneratorComprehension(bool yield);
 
-  Handle<ir::Node> ParseYieldExpression(bool in, bool* ok);
+  Handle<ir::Node> ParseYieldExpression(bool in);
 
-  Handle<ir::Node> ParseForBinding(bool yield, bool* ok);
+  Handle<ir::Node> ParseForBinding(bool yield);
 
-  Handle<ir::Node> ParseObjectLiteral(bool yield, bool* ok);
+  Handle<ir::Node> ParseObjectLiteral(bool yield);
 
-  Handle<ir::Node> ParsePropertyDefinition(bool yield, bool* ok);
+  Handle<ir::Node> ParsePropertyDefinition(bool yield);
 
-  Handle<ir::Node> ParsePropertyName(bool yield, bool generator_parameter, bool* ok);
+  Handle<ir::Node> ParsePropertyName(bool yield, bool generator_parameter);
 
-  Handle<ir::Node> ParseLiteralPropertyName(bool* ok);
+  Handle<ir::Node> ParseLiteralPropertyName();
 
-  Handle<ir::Node> ParseComputedPropertyName(bool yield, bool* ok);
+  Handle<ir::Node> ParseComputedPropertyName(bool yield);
 
-  Handle<ir::Node> ParseLiteral(bool* ok);
+  Handle<ir::Node> ParseLiteral();
 
-  Handle<ir::Node> ParseValueLiteral(bool* ok);
+  Handle<ir::Node> ParseValueLiteral();
 
-  Handle<ir::Node> ParseArrayInitializer(bool yield, bool* ok);
+  Handle<ir::Node> ParseArrayInitializer(bool yield);
 
-  Handle<ir::Node> ParseIdentifierReference(bool yield, bool* ok);
+  Handle<ir::Node> ParseIdentifierReference(bool yield);
 
-  Handle<ir::Node> ParseBindingIdentifier(bool default_allowed, bool yield, bool* ok);
+  Handle<ir::Node> ParseBindingIdentifier(bool default_allowed, bool yield);
 
-  Handle<ir::Node> ParseLabelIdentifier(bool yield, bool* ok);
+  Handle<ir::Node> ParseLabelIdentifier(bool yield);
 
-  Handle<ir::Node> ParseIdentifier(bool* ok);
+  Handle<ir::Node> ParseIdentifier();
 
-  Handle<ir::Node> ParseStringLiteral(bool* ok);
+  Handle<ir::Node> ParseStringLiteral();
 
-  Handle<ir::Node> ParseNumericLiteral(bool* ok);
+  Handle<ir::Node> ParseNumericLiteral();
 
-  Handle<ir::Node> ParseBooleanLiteral(bool* ok);
+  Handle<ir::Node> ParseBooleanLiteral();
 
-  Handle<ir::Node> ParseUndefinedLiteral(bool* ok);
+  Handle<ir::Node> ParseUndefinedLiteral();
 
-  Handle<ir::Node> ParseNaNLiteral(bool* ok);
+  Handle<ir::Node> ParseNaNLiteral();
 
-  Handle<ir::Node> ParseRegularExpression(bool* ok);
+  Handle<ir::Node> ParseRegularExpression();
 
-  Handle<ir::Node> ParseTemplateLiteral(bool* ok);
+  Handle<ir::Node> ParseTemplateLiteral();
 
-  Handle<ir::Node> ParseEmptyStatement(bool* ok);
+  Handle<ir::Node> ParseEmptyStatement();
 
-  Handle<ir::Node> ParseModule(bool* ok);
+  Handle<ir::Node> ParseModule();
 
-  Handle<ir::Node> ParseImportDeclaration(bool* ok);
+  Handle<ir::Node> ParseImportDeclaration();
 
-  Handle<ir::Node> ParseExternalModuleReference(bool* ok);
+  Handle<ir::Node> ParseExternalModuleReference();
 
-  Handle<ir::Node> ParseImportClause(bool* ok);
+  Handle<ir::Node> ParseImportClause();
 
-  Handle<ir::Node> ParseNamedImport(bool* ok);
+  Handle<ir::Node> ParseNamedImport();
 
-  Handle<ir::Node> ParseFromClause(bool* ok);
+  Handle<ir::Node> ParseFromClause();
 
-  Handle<ir::Node> ParseModuleImport(bool* ok);
+  Handle<ir::Node> ParseModuleImport();
 
-  Handle<ir::Node> ParseTSModule(Handle<ir::Node> identifier, TokenInfo* token_info, bool* ok);
+  Handle<ir::Node> ParseTSModule(Handle<ir::Node> identifier, TokenInfo* token_info);
 
-  Handle<ir::Node> ParseTSModuleBody(bool* ok);
+  Handle<ir::Node> ParseTSModuleBody();
 
-  Handle<ir::Node> ParseExportDeclaration(bool* ok);
+  Handle<ir::Node> ParseExportDeclaration();
 
   Handle<ir::Node> CreateExportView(
       Handle<ir::Node> export_clause,
       Handle<ir::Node> from_clause,
       TokenInfo* token_info,
-      bool default_export,
-      bool* ok);
+      bool default_export);
 
-  Handle<ir::Node> ParseExportClause(bool* ok);
+  Handle<ir::Node> ParseExportClause();
 
   Handle<ir::Node> CreateNamedExportView(
       Handle<ir::Node> identifier,
-      Handle<ir::Node> binding,
-      bool* ok);
+      Handle<ir::Node> binding);
 
 
   // Ambient
-  Handle<ir::Node> ParseDeclarationModule(bool* ok);
+  Handle<ir::Node> ParseDeclarationModule();
   
-  Handle<ir::Node> ParseAmbientDeclaration(bool module_allowed, bool* ok);
+  Handle<ir::Node> ParseAmbientDeclaration(bool module_allowed);
 
-  Handle<ir::Node> ParseAmbientVariableDeclaration(TokenInfo* info, bool* ok);
+  Handle<ir::Node> ParseAmbientVariableDeclaration(TokenInfo* info);
 
-  Handle<ir::Node> ParseAmbientFunctionDeclaration(TokenInfo* info, bool* ok);
+  Handle<ir::Node> ParseAmbientFunctionDeclaration(TokenInfo* info);
 
-  Handle<ir::Node> ParseAmbientClassDeclaration(TokenInfo* info, bool* ok);
+  Handle<ir::Node> ParseAmbientClassDeclaration(TokenInfo* info);
 
-  Handle<ir::Node> ParseAmbientClassBody(bool* ok);
+  Handle<ir::Node> ParseAmbientClassBody();
 
-  Handle<ir::Node> ParseAmbientClassElement(bool* ok);
+  Handle<ir::Node> ParseAmbientClassElement();
 
-  Handle<ir::Node> ParseAmbientConstructor(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseAmbientConstructor(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* acessor_type, bool* ok);
+  Handle<ir::Node> ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* acessor_type);
 
-  Handle<ir::Node> ParseAmbientGeneratorMethod(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseAmbientGeneratorMethod(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseAmbientMemberVariable(Handle<ir::Node> mods, bool* ok);
+  Handle<ir::Node> ParseAmbientMemberVariable(Handle<ir::Node> mods);
 
-  Handle<ir::Node> ParseAmbientEnumDeclaration(TokenInfo* info, bool* ok);
+  Handle<ir::Node> ParseAmbientEnumDeclaration(TokenInfo* info);
 
-  Handle<ir::Node> ParseAmbientEnumBody(bool* ok);
+  Handle<ir::Node> ParseAmbientEnumBody();
 
-  Handle<ir::Node> ParseAmbientEnumProperty(bool* ok);
+  Handle<ir::Node> ParseAmbientEnumProperty();
 
-  Handle<ir::Node> CreateAmbientEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value, bool* ok);
+  Handle<ir::Node> CreateAmbientEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
 
-  Handle<ir::Node> ParseAmbientModuleDeclaration(TokenInfo* info, bool* ok);
+  Handle<ir::Node> ParseAmbientModuleDeclaration(TokenInfo* info);
 
-  Handle<ir::Node> ParseAmbientModuleBody(bool external, bool* ok);
+  Handle<ir::Node> ParseAmbientModuleBody(bool external);
 
-  Handle<ir::Node> ParseAmbientModuleElement(bool external, bool* ok);
+  Handle<ir::Node> ParseAmbientModuleElement(bool external);
   
 
   bool IsLineTermination();
@@ -529,7 +532,7 @@ class Parser: public ParserBase {
 
   AccessorType ParseAccessor();
 
-  Handle<ir::Node> ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads, bool* ok);
+  Handle<ir::Node> ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
   
 #if defined(UNIT_TEST) || defined(DEBUG)
   void PrintStackTrace() {
@@ -566,6 +569,21 @@ class Parser: public ParserBase {
     TokenInfo prev_;
     Handle<ir::Scope> scope_;
   };
+
+
+  void Initialize() {
+    scanner_->SetReferencePathCallback([&](const Literal* path){
+      String dir = Path::Dirname(module_info_->module_name());
+      Notify("Parser::ModuleFound", Path::Join(dir, path->utf8_value()));
+    });
+
+    scanner_->SetErrorCallback([&](const char* message, const SourcePosition& source_position) {
+      module_info_->semantic_error()->SyntaxError(source_position) << message;
+    });
+    
+    Next();
+  }
+  
 
   RecordedParserState parser_state() YATSC_NOEXCEPT {
     TokenInfo prev;

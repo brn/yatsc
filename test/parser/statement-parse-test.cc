@@ -30,10 +30,10 @@ bool breakable = false;
 bool returnable = false;
 bool continuable = false;
 #define STATEMENT_TEST(type, code, expected_str)                        \
-  PARSER_TEST(ParseStatement(false, returnable, breakable, continuable), type, code, expected_str, false, std::exception)
+  PARSER_TEST("anonymous", ParseStatement(false, returnable, breakable, continuable), type, code, expected_str, false)
 
 #define STATEMENT_TEST_THROW(type, code)                                \
-  PARSER_TEST(ParseStatement(false, returnable, breakable, continuable), type, code, "", true, std::exception)
+  PARSER_TEST("anonymous",  ParseStatement(false, returnable, breakable, continuable), type, code, "", true)
 
 #define STATEMENT_TEST_ALL(code, expected_str)                          \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();  \

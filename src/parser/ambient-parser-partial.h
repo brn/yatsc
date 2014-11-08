@@ -38,7 +38,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclarationModule() {
       Next();
       if (Current()->type() == Token::TS_ASSIGN) {
         Next();
-        ret->InsertLast(CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), &info, true));
+        auto expr = ParseAssignmentExpression(true, false);
+        SKIP_TOKEN_OR(expr, Token::LINE_TERMINATOR) {
+          ret->InsertLast(CreateExportView(expr, ir::Node::Null(), &info, true));
+        }
         continue;
       } else {
         export_view = New<ir::ExportView>();
@@ -54,21 +57,22 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseDeclarationModule() {
         node = ParseImportDeclaration();
         break;
       default:
-        node = ParseAmbientDeclaration();
+        node = ParseAmbientDeclaration(true);
         break;
     }
-
     
-    if (IsLineTermination()) {
-      ConsumeLineTerminator();
-    }
+    SKIP_TOKEN_OR(node, Token::LINE_TERMINATOR) {
+      if (IsLineTermination()) {
+        ConsumeLineTerminator();
+      }
     
-    if (export_view) {
-      export_view->set_export_clause(node);
-      node = export_view;
-    }
+      if (export_view) {
+        export_view->set_export_clause(node);
+        node = export_view;
+      }
 
-    ret->InsertLast(node);
+      ret->InsertLast(node);
+    }
     
     if (Current()->type() == Token::END_OF_INPUT) {
       break;
@@ -97,14 +101,14 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientDeclaration(bool modul
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value()->Equals("module")) {
           if (!module_allowed) {
-            SYNTAX_ERROR("SyntaxError ambient module declaration not allowed here.", Current());
+            SYNTAX_ERROR("ambient module declaration not allowed here.", Current());
           }
           return ParseAmbientModuleDeclaration(&info);
         }
-        SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", Current());
     }
   }
-  SYNTAX_ERROR("SyntaxError 'declare' expected.", Current());
+  SYNTAX_ERROR("'declare' expected.", Current());
 }
 
 
@@ -115,18 +119,20 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(To
     Next();
     if (Current()->type() == Token::TS_IDENTIFIER) {
       Handle<ir::Node> identifier = ParseIdentifier();
+      CHECK_AST(identifier);
       Handle<ir::Node> type_annotation;
       if (Current()->type() == Token::TS_COLON) {
         Next();
         type_annotation = ParseTypeExpression();
+        CHECK_AST(type_annotation);
       }
       auto ret = New<ir::AmbientVariableView>(identifier, type_annotation);
       ret->SetInformationForNode(info);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError 'identifier' expected.", Current());
+    SYNTAX_ERROR("'identifier' expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'var' expected.", Current());
+  SYNTAX_ERROR("'var' expected.", Current());
 }
 
 
@@ -139,17 +145,19 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(To
     Next();
     if (Current()->type() == Token::TS_IDENTIFIER) {
       Handle<ir::Node> identifier = ParseIdentifier();
+      CHECK_AST(identifier);
       if (Current()->type() == Token::TS_MUL) {
         generator = true;
         Next();
       }
-      Handle<ir::Node> call_sig = ParseCallSignature(false);
+      Handle<ir::Node> call_sig = ParseCallSignature(false, false);
+      CHECK_AST(call_sig);
       auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier, call_sig);
       ret->SetInformationForNode(info);
       return ret;
     }
   }
-  SYNTAX_ERROR("SyntaxError 'function' expected.", Current());
+  SYNTAX_ERROR("'function' expected.", Current());
 }
 
 
@@ -159,20 +167,24 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassDeclaration(Token
   if (Current()->type() == Token::TS_CLASS) {
     Next();
     Handle<ir::Node> identifier = ParseIdentifier();
+    CHECK_AST(identifier);
     Handle<ir::Node> type_parameters;
     if (Current()->type() == Token::TS_LESS) {
      type_parameters = ParseTypeParameters();
+     CHECK_AST(type_parameters);
     }
     Handle<ir::Node> bases = ParseClassBases();
+    CHECK_AST(bases);
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       Handle<ir::Node> body = ParseAmbientClassBody();
+      CHECK_AST(body);
       auto ret = New<ir::AmbientClassDeclarationView>(identifier, type_parameters, bases, body);
       ret->SetInformationForNode(info);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+    SYNTAX_ERROR("'{' expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'class' expected.", Current());
+  SYNTAX_ERROR("'class' expected.", Current());
 }
 
 
@@ -191,17 +203,20 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassBody() {
         Next();
         return body;
       } else {
-        body->InsertLast(ParseAmbientClassElement());
+        auto node = ParseAmbientClassElement();
+        SKIP_TOKEN_OR(node, Token::LINE_TERMINATOR) {
+          body->InsertLast(node);
+        }
         if (IsLineTermination()) {
           ConsumeLineTerminator();
         } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
                    Prev()->type() != Token::TS_RIGHT_BRACE) {
-          SYNTAX_ERROR("SyntaxError ';' expected", Prev());
+          SYNTAX_ERROR("';' expected", Prev());
         }
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -213,6 +228,7 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassElement() {
   }
 
   Handle<ir::Node> mods = ParseFieldModifiers();
+  CHECK_AST(mods);
   AccessorType at = ParseAccessor();
 
   if (TokenInfo::IsKeyword(Current()->type())) {
@@ -238,7 +254,7 @@ Handle<ir::Node> Parser<UCharInputInterator>::ParseAmbientClassElement() {
     Next();
     return ParseAmbientGeneratorMethod(mods);
   }
-  SYNTAX_ERROR("SyntaxError unexpected token", Current());
+  SYNTAX_ERROR("unexpected token", Current());
 }
 
 
@@ -256,14 +272,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::
         Current()->value()->Equals("constructor")) {
       TokenInfo info = *Current();
       Next();
-      Handle<ir::Node> call_signature = ParseCallSignature(true);
+      Handle<ir::Node> call_signature = ParseCallSignature(true, false);
+      CHECK_AST(call_signature);
       auto ret = New<ir::AmbientConstructorView>(mods, call_signature);
       ret->SetInformationForNode(mods);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError 'constructor' expected", Current());
+    SYNTAX_ERROR("'constructor' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", Current());
 }
 
 
@@ -279,14 +296,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<i
     if (Current()->type() == Token::TS_IDENTIFIER) {
       TokenInfo info = *Current();
       Handle<ir::Node> name = ParseIdentifier();
-      Handle<ir::Node> call_signature = ParseCallSignature(true);
+      CHECK_AST(name);
+      Handle<ir::Node> call_signature = ParseCallSignature(true, false);
+      CHECK_AST(call_signature);
       auto ret = New<ir::AmbientMemberFunctionView>(accessor_type->getter, accessor_type->setter, false, mods, name, call_signature);
       ret->SetInformationForNode(mods);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+    SYNTAX_ERROR("'identifier' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", Current());
 }
 
 
@@ -297,7 +316,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<
   if (Current()->type() == Token::TS_MUL) {
     Next();
   } else {
-    SYNTAX_ERROR("SyntaxError '*' expected", Current());
+    SYNTAX_ERROR("'*' expected", Current());
   }
   
   if (Current()->type() == Token::TS_IDENTIFIER ||
@@ -308,14 +327,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<
     if (Current()->type() == Token::TS_IDENTIFIER) {
       TokenInfo info = *Current();
       Handle<ir::Node> name = ParseIdentifier();
-      Handle<ir::Node> call_signature = ParseCallSignature(true);
+      CHECK_AST(name);
+      Handle<ir::Node> call_signature = ParseCallSignature(true, false);
+      CHECK_AST(call_signature);
       auto ret = New<ir::AmbientMemberFunctionView>(false, false, true, mods, name, call_signature);
       ret->SetInformationForNode(mods);
       return ret;
     }
-    SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+    SYNTAX_ERROR("'identifier' expected", Current());
   }
-  SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", Current());
 }
 
 
@@ -324,18 +345,20 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<i
   LOG_PHASE(ParseAmbientMemberVariable);
   if (Current()->type() == Token::TS_IDENTIFIER) {
     Handle<ir::Node> identifier = ParseIdentifier();
+    CHECK_AST(identifier);
     Handle<ir::Node> type;
     
     if (Current()->type() == Token::TS_COLON) {
       Next();
       type = ParseTypeExpression();
+      CHECK_AST(type);
     }
 
     auto member_variable = New<ir::AmbientMemberVariableView>(mods, identifier, type);
     member_variable->SetInformationForNode(mods);
     return member_variable;
   }
-  SYNTAX_ERROR("SyntaxError 'identifier' expected", Current());
+  SYNTAX_ERROR("'identifier' expected", Current());
 }
 
 
@@ -346,11 +369,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientEnumDeclaration(TokenIn
     Next();
     Handle<ir::Node> identifier = ParseIdentifier();
     Handle<ir::Node> body = ParseAmbientEnumBody();
+    CHECK_AST(identifier);
+    CHECK_AST(body);
     auto ret = New<ir::AmbientEnumDeclarationView>(identifier, body);
     ret->SetInformationForNode(info);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'enum' expected.", Current());
+  SYNTAX_ERROR("'enum' expected.", Current());
 }
 
 
@@ -368,7 +393,10 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientEnumBody() {
     }
     
     while (1) {
-      ret->InsertLast(ParseAmbientEnumProperty());
+      auto node = ParseAmbientEnumProperty();
+      SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+        ret->InsertLast(node);
+      }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
         if (Current()->type() == Token::TS_RIGHT_BRACE) {
@@ -379,11 +407,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientEnumBody() {
         Next();
         return ret;
       } else {
-        SYNTAX_ERROR("SyntaxError ',' or '}' expected.", Current());
+        SYNTAX_ERROR("',' or '}' expected.", Current());
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' exepected.", Current());
+  SYNTAX_ERROR("'{' exepected.", Current());
 }
 
 
@@ -391,9 +419,12 @@ template <typename UCharInputIterator>
 Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientEnumProperty() {
   LOG_PHASE(ParseAmbientEnumProperty);
   Handle<ir::Node> prop = ParsePropertyName(false, false);
+  CHECK_AST(prop);
   if (Current()->type() == Token::TS_ASSIGN) {
     Next();
-    return CreateAmbientEnumFieldView(prop, ParseNumericLiteral());
+    auto node = ParseNumericLiteral();
+    CHECK_AST(node);
+    return CreateAmbientEnumFieldView(prop, node);
   }
   return CreateAmbientEnumFieldView(prop, ir::Node::Null());
 }
@@ -426,13 +457,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(Token
     } else {
       identifier = ParseIdentifier();
     }
+    CHECK_AST(identifier);
     
     Handle<ir::Node> body = ParseAmbientModuleBody(external);
+    CHECK_AST(body);
     auto ret = New<ir::AmbientModuleView>(external, identifier, body);
     ret->SetInformationForNode(info);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'module' expected.", Current());
+  SYNTAX_ERROR("'module' expected.", Current());
 }
 
 
@@ -448,15 +481,20 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleBody(bool externa
       if (Current()->type() == Token::TS_RIGHT_BRACE) {
         Next();
         return body;
+      } else if (Current()->type() == Token::END_OF_INPUT) {
+        SYNTAX_ERROR("unexpected end of input.", Current());
       } else {
-        body->InsertLast(ParseAmbientModuleElement(external));
+        auto node = ParseAmbientModuleElement(external);
+        SKIP_TOKEN_OR(node, Token::LINE_TERMINATOR) {
+          body->InsertLast(node);
+        }
       }
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -471,9 +509,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleElement(bool exte
     Next();
     if (external && Current()->type() == Token::TS_ASSIGN) {
       Next();
-      return CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), &info, true);
+      auto node = ParseAssignmentExpression(true, false);
+      CHECK_AST(node);
+      return CreateExportView(node, ir::Node::Null(), &info, true);
     } else if (Current()->type() == Token::TS_ASSIGN) {
-      SYNTAX_ERROR("SyntaxError export assignment is not allowed here.", Current());
+      SYNTAX_ERROR("export assignment is not allowed here.", Current());
     }
   }
 
@@ -489,20 +529,23 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleElement(bool exte
     case Token::TS_CLASS:
       node = ParseAmbientClassDeclaration(&info);
       break;
-    case Token::TS_INTERFACE:
+    case Token::TS_INTERFACE: {
       node = ParseInterfaceDeclaration();
+      CHECK_AST(node);
       node->SetInformationForNode(&info);
       break;
+    }
     case Token::TS_ENUM:
       node = ParseAmbientEnumDeclaration(&info);
       break;
     case Token::TS_IMPORT:
       node = ParseImportDeclaration();
+      CHECK_AST(node);
       if (!external) {
         Handle<ir::Node> maybe_from = node->ToExportView()->from_clause();
         if (maybe_from) {
           if (maybe_from->HasExternalModuleReference()) {
-            SYNTAX_ERROR_POS("SyntaxError 'require' not allowed here.", maybe_from->source_position());
+            SYNTAX_ERROR("'require' not allowed here.", maybe_from);
           }
         }
       }
@@ -513,9 +556,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseAmbientModuleElement(bool exte
           Current()->value()->Equals("module")) {
         node = ParseAmbientModuleDeclaration(&info);
       } else {
-        SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", Current());
       }
   }
+  
+  CHECK_AST(node);
 
   if (export_view) {
     export_view->set_export_clause(node);

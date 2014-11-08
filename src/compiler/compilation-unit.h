@@ -26,6 +26,8 @@
 
 #include "../memory/heap.h"
 #include "../parser/literalbuffer.h"
+#include "../parser/semantic-error.h"
+#include "../parser/sourcestream.h"
 #include "../utils/stl.h"
 #include "../ir/node.h"
 #include "./module-info.h"
@@ -38,10 +40,7 @@ class CompilationUnit {
   CompilationUnit(Handle<ir::Node> root, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer);
 
   
-  CompilationUnit(Handle<ModuleInfo> module_info, const char* error_message);
-
-
-  CompilationUnit(Handle<ModuleInfo> module_info, const String& error_message);
+  CompilationUnit(Handle<ModuleInfo> module_info);
 
   
   CompilationUnit(const CompilationUnit& compilation_unit);
@@ -50,17 +49,19 @@ class CompilationUnit {
   CompilationUnit(CompilationUnit&& compilation_unit);
 
 
-  bool success() {return error_message_.empty();}
+  bool success() const {return !module_info_->HasError();}
 
 
   YATSC_CONST_GETTER(const char*, module_name, module_info_->module_name());
 
 
-  YATSC_CONST_GETTER(const char*, error_message, error_message_.c_str());
+  YATSC_GETTER(Handle<SemanticError>, semantic_error, module_info_->semantic_error());
+
+
+  YATSC_GETTER(Handle<ModuleInfo>, module_info, module_info_);
 
   
  private:
-  String error_message_;
   Handle<ir::Node> root_;
   Handle<ModuleInfo> module_info_;
   Handle<LiteralBuffer> literal_buffer_;

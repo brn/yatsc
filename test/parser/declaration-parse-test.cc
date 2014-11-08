@@ -26,20 +26,20 @@
 
 
 #define DECLARATION_TEST(type, code, expected_str)                      \
-  PARSER_TEST(ParseDeclaration(true, true, false), type, code, expected_str, false, std::exception)
+  PARSER_TEST("anonymous", ParseDeclaration(true, true, false), type, code, expected_str, false)
 
-#define DECLARATION_THROW_TEST(type, code, error_type)                  \
-  PARSER_TEST(ParseDeclaration(true, true, false), type, code, "", true, error_type)
+#define DECLARATION_THROW_TEST(type, code)                              \
+  PARSER_TEST("anonymous", ParseDeclaration(true, true, false), type, code, "", true)
 
 #define DECLARATION_TEST_ALL(code, expected_str)                        \
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}(); \
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
-#define DECLARATION_THROW_TEST_ALL(code, error_type)                    \
-  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
-  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
-  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
+#define DECLARATION_THROW_TEST_ALL(code)                                \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES3, code);}();       \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code);}(); \
+  [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, code);}()
 
 
 TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
@@ -284,8 +284,8 @@ TEST(DeclarationParseTest, ParseFunctionOverloads) {
                        "    [Empty]\n"
                        "  [BlockView]");
 
-  DECLARATION_THROW_TEST_ALL("function *a();function a();function a() {}", yatsc::SyntaxError);
-  DECLARATION_THROW_TEST_ALL("function a();function b();function b() {}", yatsc::SyntaxError);
+  DECLARATION_THROW_TEST_ALL("function *a();function a();function a() {}");
+  DECLARATION_THROW_TEST_ALL("function a();function b();function b() {}");
 
   DECLARATION_TEST_ALL("function a(a,b,c) {}",
                        "[FunctionView]\n"
@@ -375,7 +375,7 @@ TEST(DeclarationParseTest, ParseFunctionOverloads) {
                        "  [BlockView]");
 
 
-  DECLARATION_THROW_TEST_ALL("function (a:string,b:number,...c:string[]): void {}", yatsc::SyntaxError);
+  DECLARATION_THROW_TEST_ALL("function (a:string,b:number,...c:string[]): void {}");
 }
 
 
@@ -797,23 +797,23 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
 
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public get bar(x): void{}"
-                             "}", yatsc::SyntaxError);
+                             "}");
 
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public get bar(): void{}"
-                             "}", yatsc::SyntaxError);
+                             "}");
 
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public get bar(): null{}"
-                             "}", yatsc::SyntaxError);
+                             "}");
 
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public set bar() {}"
-                             "}", yatsc::SyntaxError);
+                             "}");
 
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public set bar(): string {}"
-                             "}", yatsc::SyntaxError);
+                             "}");
 
 
   DECLARATION_TEST_ALL("class Foo<T> {}",
@@ -1071,6 +1071,6 @@ TEST(DeclarationParseTest, ParseEnumDeclaration) {
                        "        [NumberView][2]");
 
   
-  DECLARATION_THROW_TEST_ALL("enum Foo {BAR;BAZ}", yatsc::SyntaxError);
-  DECLARATION_THROW_TEST_ALL("enum {}", yatsc::SyntaxError);
+  DECLARATION_THROW_TEST_ALL("enum Foo {BAR;BAZ}");
+  DECLARATION_THROW_TEST_ALL("enum {}");
 }

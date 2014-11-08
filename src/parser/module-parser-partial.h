@@ -35,18 +35,28 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModule() {
   
   while (Current()->type() != Token::END_OF_INPUT) {
     if (Current()->type() == Token::TS_IMPORT) {
-      file_scope->InsertLast(ParseImportDeclaration());
+      auto node = ParseImportDeclaration();
+      SKIP_TOKEN_IF(node, Token::LINE_TERMINATOR);
+      file_scope->InsertLast(node);
     } else if (Current()->type() == Token::TS_IDENTIFIER &&
                Current()->value()->Equals("module")) {
-      file_scope->InsertLast(ParseModuleImport());
+      auto node = ParseModuleImport();
+      SKIP_TOKEN_IF(node, Token::LINE_TERMINATOR);
+      file_scope->InsertLast(node);
     } else if (Current()->type() == Token::TS_EXPORT) {
-      file_scope->InsertLast(ParseExportDeclaration());
+      auto node = ParseExportDeclaration();
+      SKIP_TOKEN_IF(node, Token::LINE_TERMINATOR);
+      file_scope->InsertLast(node);
     } else {
       if (Current()->type() == Token::TS_IDENTIFIER &&
           Current()->value()->Equals("declare")) {
-        file_scope->InsertLast(ParseAmbientDeclaration());
+        auto node = ParseAmbientDeclaration(true);
+        SKIP_TOKEN_IF(node, Token::LINE_TERMINATOR);
+        file_scope->InsertLast(node);
       } else {
-        file_scope->InsertLast(ParseStatementListItem(false, false, false, false));
+        auto node = ParseStatementListItem(false, false, false, false);
+        SKIP_TOKEN_IF(node, Token::LINE_TERMINATOR);
+        file_scope->InsertLast(node);
       }
     }
     
@@ -68,26 +78,31 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseImportDeclaration() {
         Current()->type() == Token::TS_LEFT_BRACE) {
 
       Handle<ir::Node> import_clause = ParseImportClause();
+      CHECK_AST(import_clause);
       
       if (Current()->type() == Token::TS_ASSIGN) {
         Next();
-        auto import_view = New<ir::ImportView>(import_clause, ParseExternalModuleReference());
+        auto external_module_ref = ParseExternalModuleReference();
+        CHECK_AST(external_module_ref);
+        auto import_view = New<ir::ImportView>(import_clause, external_module_ref);
         import_view->SetInformationForNode(&info);
         return import_view;
       }
       Handle<ir::Node> from_clause = ParseFromClause();
+      CHECK_AST(from_clause);
       auto import_view = New<ir::ImportView>(import_clause, from_clause);
       import_view->SetInformationForNode(&info);
       return import_view;
     } else if (Current()->type() == Token::TS_STRING_LITERAL) {
       Handle<ir::Node> module_specifier = ParseStringLiteral();
+      CHECK_AST(module_specifier);
       auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier);
       import_view->SetInformationForNode(&info);
       return import_view;
     }
-    SYNTAX_ERROR("SyntaxError identifier or '{' or string literal expected.", Current());
+    SYNTAX_ERROR("identifier or '{' or string literal expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'import' expected.", Current());
+  SYNTAX_ERROR("'import' expected.", Current());
 }
 
 
@@ -107,18 +122,18 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExternalModuleReference() {
           if (info.value()->utf8_length() > 0) {
             if (info.utf8_value()[0] == '.') {
               String dir = Path::Dirname(module_info_->module_name());
-              Notify("Parser::ModuleFound", ModuleInfo::Create(Path::Join(dir, info.utf8_value())));
+              Notify("Parser::ModuleFound", Path::Join(dir, info.utf8_value()));
             }
           }
           return New<ir::ExternalModuleReference>(NewSymbol(ir::SymbolType::kVariableName, info.value()));
         }
-        SYNTAX_ERROR("SyntaxError ')' expected.", Current());
+        SYNTAX_ERROR("')' expected.", Current());
       }
-      SYNTAX_ERROR("SyntaxError string literal expected.", Current());
+      SYNTAX_ERROR("string literal expected.", Current());
     }
-    SYNTAX_ERROR("SyntaxError '(' expected.", Current());
+    SYNTAX_ERROR("'(' expected.", Current());
   }
-  SYNTAX_ERROR("SyntaxError 'require' expected.", Current());
+  SYNTAX_ERROR("'require' expected.", Current());
 }
 
 
@@ -130,18 +145,22 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseImportClause() {
 
   if (Current()->type() == Token::TS_IDENTIFIER) {
     first = ParseIdentifier();
+    CHECK_AST(first);
     if (Current()->type() == Token::TS_COMMA) {
       Next();
       if (Current()->type() == Token::TS_LEFT_BRACE) {
         second = ParseNamedImport();
+        CHECK_AST(second);
       } 
     }
   } else if (Current()->type() == Token::TS_LEFT_BRACE) {
     first = ParseNamedImport();
+    CHECK_AST(first);
     if (Current()->type() == Token::TS_COMMA) {
       Next();
       if (Current()->type() == Token::TS_IDENTIFIER) {
         second = ParseIdentifier();
+        CHECK_AST(second);
       } 
     }
   }
@@ -162,11 +181,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseNamedImport() {
     
     while (1) {
       Handle<ir::Node> identifier = ParseBindingIdentifier(false, false);
+      CHECK_AST(identifier);
       if (identifier->HasNameView() &&
           Current()->type() == Token::TS_IDENTIFIER &&
           Current()->value()->Equals("as")) {
         Next();
         Handle<ir::Node> binding = ParseBindingIdentifier(false, false);
+        CHECK_AST(binding);
         auto named_import = New<ir::NamedImportView>(identifier, binding);
         named_import->SetInformationForNode(identifier);
         named_import_list->InsertLast(named_import);
@@ -180,12 +201,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseNamedImport() {
         Next();
         break;
       } else {
-        SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", Current());
       }
     }
     return named_import_list;
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -197,10 +218,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseFromClause() {
     TokenInfo info = *Current();
     Next();
     Handle<ir::Node> module_specifier = ParseStringLiteral();
+    CHECK_AST(module_specifier);
     module_specifier->SetInformationForNode(&info);
     return module_specifier;
   }
-  SYNTAX_ERROR("SyntaxError 'from' expected.", Current());
+  SYNTAX_ERROR("'from' expected.", Current());
 }
 
 
@@ -214,11 +236,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
 
     RecordedParserState rps = parser_state();
     Handle<ir::Node> binding = ParseBindingIdentifier(false, false);
+    CHECK_AST(binding);
 
     bool member = false;
     if (Current()->type() == Token::TS_DOT) {
       RestoreParserState(rps);
       binding = ParseMemberExpression(false);
+      CHECK_AST(binding);
       member = true;
     }
     
@@ -227,14 +251,15 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseModuleImport() {
     }
 
     if (member) {
-      SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+      SYNTAX_ERROR("unexpected token.", Current());
     }
     Handle<ir::Node> module_specifier = ParseFromClause();
+    CHECK_AST(module_specifier);
     auto ret = New<ir::ModuleImportView>(binding, module_specifier);
     ret->SetInformationForNode(&info);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError 'module' expected.", Current());
+  SYNTAX_ERROR("'module' expected.", Current());
 }
 
 
@@ -243,11 +268,12 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> iden
   LOG_PHASE(ParseTSModule);
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     Handle<ir::Node> body = ParseTSModuleBody();
+    CHECK_AST(body);
     auto ret = New<ir::ModuleDeclView>(identifier, body);
     ret->SetInformationForNode(info);
     return ret;
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -266,40 +292,76 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
       if (Current()->type() == Token::TS_EXPORT) {
         Next();
         switch (Current()->type()) {
-          case Token::TS_VAR:
-            block->InsertLast(ParseVariableStatement(true, false));
+          case Token::TS_VAR: {
+            auto node = ParseVariableStatement(true, false);
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
-          case Token::TS_FUNCTION:
-            block->InsertLast(ParseFunctionOverloads(false, false, true, true));
+          }
+          case Token::TS_FUNCTION: {
+            auto node = ParseFunctionOverloads(false, false, true, true);
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
-          case Token::TS_CLASS:
-            block->InsertLast(ParseClassDeclaration(false, false));
+          }
+          case Token::TS_CLASS: {
+            auto node = ParseClassDeclaration(false, false);
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
-          case Token::TS_INTERFACE:
-            block->InsertLast(ParseInterfaceDeclaration());
+          }
+          case Token::TS_INTERFACE: {
+            auto node = ParseInterfaceDeclaration();
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
-          case Token::TS_ENUM:
-            block->InsertLast(ParseEnumDeclaration(false, false));
+          }
+          case Token::TS_ENUM: {
+            auto node = ParseEnumDeclaration(false, false);
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
-          case Token::TS_IMPORT:
-            block->InsertLast(ParseImportDeclaration());
+          }
+          case Token::TS_IMPORT: {
+            auto node = ParseVariableStatement(true, false);
+            SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+              block->InsertLast(node);
+            }
             break;
+          }
           default:
             if (Current()->type() == Token::TS_IDENTIFIER &&
                 Current()->value()->Equals("module")) {
-              block->InsertLast(ParseModuleImport());
+              auto node = ParseModuleImport();
+              SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+                block->InsertLast(node);
+              }
             } else if (Current()->type() == Token::TS_IDENTIFIER &&
                        Current()->value()->Equals("declare")) {
-              block->InsertLast(ParseAmbientDeclaration(false));
+              auto node = ParseAmbientDeclaration(false);
+              SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+                block->InsertLast(node);
+              }
             } else {
-              SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+              SYNTAX_ERROR("unexpected token.", Current());
             }
         }
       } else if (Current()->type() == Token::TS_IDENTIFIER &&
                  Current()->value()->Equals("module")) {
-        block->InsertLast(ParseModuleImport());
+        auto node = ParseModuleImport();
+        SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+          block->InsertLast(node);
+        }
       } else {
-        block->InsertLast(ParseStatementListItem(false, false, false, false));
+        auto node = ParseStatementListItem(false, false, false, false);
+        SKIP_TOKEN_OR(node, Token::TS_RIGHT_BRACE) {
+          block->InsertLast(node);
+        }
       }
       
       if (IsLineTermination()) {
@@ -309,7 +371,7 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseTSModuleBody() {
     Next();
     return block;
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 
@@ -322,41 +384,56 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportDeclaration() {
     Next();
     if (Current()->type() == Token::TS_MUL) {
       Next();
-      return CreateExportView(ir::Node::Null(), ParseFromClause(), &info);
+      auto from_clause = ParseFromClause();
+      CHECK_AST(from_clause);
+      return CreateExportView(ir::Node::Null(), from_clause, &info, false);
     }
 
     switch (Current()->type()) {
       case Token::TS_LEFT_BRACE: {
         Handle<ir::Node> export_clause = ParseExportClause();
+        CHECK_AST(export_clause);
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value()->Equals("from")) {
-          return CreateExportView(export_clause, ParseFromClause(), &info);
+          auto from_clause = ParseFromClause();
+          CHECK_AST(from_clause);
+          return CreateExportView(export_clause, from_clause, &info, false);
         }
-        return CreateExportView(export_clause, ir::Node::Null(), &info);
+        return CreateExportView(export_clause, ir::Node::Null(), &info, false);
       }
-      case Token::TS_VAR:
-        return CreateExportView(ParseVariableStatement(true, false), ir::Node::Null(), &info);
+      case Token::TS_VAR: {
+        auto var = ParseVariableStatement(true, false);
+        CHECK_AST(var);
+        return CreateExportView(var, ir::Node::Null(), &info, false);
+      }
       case Token::TS_CONST:
       case Token::TS_CLASS:
       case Token::TS_INTERFACE:
       case Token::TS_LET:
       case Token::TS_FUNCTION:
-      case Token::TS_ENUM:
-        return CreateExportView(ParseDeclaration(true, true, false), ir::Node::Null(), &info);
+      case Token::TS_ENUM: {
+        auto decl = ParseDeclaration(true, true, false);
+        CHECK_AST(decl);
+        return CreateExportView(decl, ir::Node::Null(), &info, false);
+      }
       case Token::TS_DEFAULT:
       case Token::TS_ASSIGN: {
         Next();
-        return CreateExportView(ParseAssignmentExpression(true, false), ir::Node::Null(), &info, true);
+        auto expr = ParseAssignmentExpression(true, false);
+        CHECK_AST(expr);
+        return CreateExportView(expr, ir::Node::Null(), &info, true);
       }
       default:
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value()->Equals("declare")) {
-          return CreateExportView(ParseAmbientDeclaration(), ir::Node::Null(), &info, true);
+          auto node = ParseAmbientDeclaration(true);
+          CHECK_AST(node);
+          return CreateExportView(node, ir::Node::Null(), &info, true);
         }
-        SYNTAX_ERROR("SyntaxError unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", Current());
     }
   }
-  SYNTAX_ERROR("SyntaxError 'export' expected.", Current());
+  SYNTAX_ERROR("'export' expected.", Current());
 }
 
 
@@ -382,13 +459,17 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportClause() {
     Next();
     while (1) {
       Handle<ir::Node> identifier = ParseIdentifier();
-      if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value()->Equals("as")) {
-        Next();
-        Handle<ir::Node> binding = ParseIdentifier();
-        named_export_list->InsertLast(CreateNamedExportView(identifier, binding));
-      } else {
-        named_export_list->InsertLast(CreateNamedExportView(identifier, ir::Node::Null()));
+      SKIP_TOKEN_OR(identifier, Token::TS_RIGHT_BRACE) {
+        if (Current()->type() == Token::TS_IDENTIFIER &&
+            Current()->value()->Equals("as")) {
+          Next();
+          Handle<ir::Node> binding = ParseIdentifier();
+          SKIP_TOKEN_OR(binding, Token::TS_RIGHT_BRACE) {
+            named_export_list->InsertLast(CreateNamedExportView(identifier, binding));
+          }
+        } else {
+          named_export_list->InsertLast(CreateNamedExportView(identifier, ir::Node::Null()));
+        }
       }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
@@ -396,11 +477,11 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseExportClause() {
         Next();
         return named_export_list;
       } else {
-        SYNTAX_ERROR("SyntaxError ',' or '}' expected.", Current());
+        SYNTAX_ERROR("',' or '}' expected.", Current());
       }
     }
   }
-  SYNTAX_ERROR("SyntaxError '{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", Current());
 }
 
 

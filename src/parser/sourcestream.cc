@@ -42,7 +42,7 @@ void SourceStream::Initialize() {
   if (exists && stat.IsReg()) {
     size_ = stat.Size();
     try {
-      FILE* fp = FOpen(filepath_.c_str(), "rb");
+      FILE* fp = FOpen(filepath_.c_str(), "r");
       ReadBlock(fp);
       FClose(fp);
     } catch (const FileIOException& e) {
@@ -76,6 +76,19 @@ void SourceStream::ReadBlock(FILE* fp)  {
   }
 
   Heap::Delete(str);
+}
+  
+
+Handle<SourceStream> SourceStream::FromSourceCode(const char* name, const char* code) {
+  auto ret = Heap::NewHandle<SourceStream>();
+  ret->size_ = strlen(code);
+  ret->filepath_ = name;
+  ret->raw_buffer_ = code;
+  auto it = UnicodeIteratorAdapter<char*>(const_cast<char*>(code));
+  for (;it != '\0'; ++it) {
+    ret->buffer_.push_back(std::move(*it));
+  }
+  return ret;
 }
 
 

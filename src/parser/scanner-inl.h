@@ -32,47 +32,19 @@
 
 
 namespace yatsc {
-template<typename UCharInputIterator>
-template <typename ReferencePathCallback>
-Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
-                                     UCharInputIterator end,
-                                     ErrorReporter* error_reporter,
-                                     LiteralBuffer* literal_buffer,
-                                     const CompilerOption& compiler_option,
-                                     Handle<ModuleInfo> module_info,
-                                     ReferencePathCallback reference_path_callback)
-: generic_type_(0),
-  it_(it),
-  end_(end),
-  error_reporter_(error_reporter),
-  literal_buffer_(literal_buffer),
-  compiler_option_(compiler_option),
-  module_info_(module_info),
-  reference_path_callback_(reference_path_callback){
-  
-  Advance();
-  SkipWhiteSpace();
-}
-
 
 template<typename UCharInputIterator>
-Scanner<UCharInputIterator>::Scanner(UCharInputIterator it,
-                                     UCharInputIterator end,
-                                     ErrorReporter* error_reporter,
-                                     LiteralBuffer* literal_buffer,
-                                     const CompilerOption& compiler_option,
-                                     Handle<ModuleInfo> module_info)
-: generic_type_(0),
-  it_(it),
-  end_(end),
-  error_reporter_(error_reporter),
-  literal_buffer_(literal_buffer),
-  compiler_option_(compiler_option),
-  module_info_(module_info) {
-  
-  Advance();
-  SkipWhiteSpace();
-}
+Scanner<UCharInputIterator>::Scanner(
+    UCharInputIterator it,
+    UCharInputIterator end,
+    LiteralBuffer* literal_buffer,
+    const CompilerOption& compiler_option)
+    : unscaned_(true),
+      generic_type_(0),
+      it_(it),
+      end_(end),
+      literal_buffer_(literal_buffer),
+      compiler_option_(compiler_option) {}
 
 
 template<typename UCharInputIterator>

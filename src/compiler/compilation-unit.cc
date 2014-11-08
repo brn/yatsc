@@ -25,29 +25,27 @@
 
 namespace yatsc {
 
-CompilationUnit::CompilationUnit(Handle<ir::Node> root, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer)
+CompilationUnit::CompilationUnit(Handle<ir::Node> root,
+                                 Handle<ModuleInfo> module_info,
+                                 Handle<LiteralBuffer> literal_buffer)
     : root_(root),
       module_info_(module_info),
       literal_buffer_(literal_buffer) {}
 
 
-CompilationUnit::CompilationUnit(Handle<ModuleInfo> module_info, const char* error_message)
-    : module_info_(module_info), error_message_(error_message) {}
-
-
-CompilationUnit::CompilationUnit(Handle<ModuleInfo> module_info, const String& error_message)
-    : module_info_(module_info), error_message_(error_message) {}
+CompilationUnit::CompilationUnit(Handle<ModuleInfo> module_info)
+    : module_info_(module_info) {}
 
 
 CompilationUnit::CompilationUnit(const CompilationUnit& compilation_unit)
     : root_(compilation_unit.root_),
-      literal_buffer_(compilation_unit.literal_buffer_),
-      error_message_(compilation_unit.error_message_) {}
+      module_info_(compilation_unit.module_info_),
+      literal_buffer_(compilation_unit.literal_buffer_) {}
 
 
 CompilationUnit::CompilationUnit(CompilationUnit&& compilation_unit)
     : root_(std::move(compilation_unit.root_)),
-      literal_buffer_(std::move(compilation_unit.literal_buffer_)),
-      error_message_(std::move(compilation_unit.error_message_)) {}
+      module_info_(std::move(compilation_unit.module_info_)),
+      literal_buffer_(std::move(compilation_unit.literal_buffer_)) {}
 
 }
