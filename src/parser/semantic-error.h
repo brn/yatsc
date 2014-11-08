@@ -50,6 +50,14 @@ class SemanticError {
   const ErrorBuffer& errors() YATSC_NO_SE {return buffer_;}
 
 
+  size_t size() const {return buffer_.size();}
+
+
+  void Pop() {
+    buffer_.pop_back();
+  }
+
+
   ErrorBuffer::iterator begin() {return buffer_.begin();}
 
 

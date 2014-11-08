@@ -1111,14 +1111,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
         Next();
       } else if (Current()->type() == Token::TS_REST) {
         expr = ParseSpreadElement(yield);
-        SKIP_TOKEN_OR(expr, Token::TS_RIGHT_BRACKET) {
-          spread = true;
-        }
+        spread = true;
       } else {
         expr = ParseAssignmentExpression(true, yield);
-        SKIP_TOKEN_IF(expr, Token::TS_RIGHT_BRACKET);
       }
-      array_literal->InsertLast(expr);
+      SKIP_TOKEN_OR(expr, Token::TS_RIGHT_BRACKET) {
+        array_literal->InsertLast(expr);
+      }
       if (Current()->type() == Token::TS_COMMA) {
         if (spread) {
           SYNTAX_ERROR("array spread element must be the end of the array element list",

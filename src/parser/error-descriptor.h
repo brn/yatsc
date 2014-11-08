@@ -47,6 +47,11 @@ class ErrorDescriptor {
   }
 
 
+  String message() const {
+    return std::move(String(error_message_.str()));
+  }
+
+
   YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
     
 

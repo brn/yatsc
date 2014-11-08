@@ -38,6 +38,8 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   StringStream padding;
   StringStream message;
 
+  message << error_descriptor.message() << "\n";
+  
   for (size_t i = 0; i < line.str().size(); i++) {
     padding << ' ';
   }

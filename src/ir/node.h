@@ -293,7 +293,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
-        invalid_lhs_(false) {
+        invalid_lhs_(false),
+        string_value_(nullptr) {
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
     }
@@ -309,7 +310,8 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
         parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
-        invalid_lhs_(false) {
+        invalid_lhs_(false),
+        string_value_(nullptr) {
     if (capacity != 0) {
       node_list_.resize(capacity, nullptr);
     }
@@ -420,7 +422,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
   // Return string value.
   YATSC_INLINE bool has_string_value() YATSC_NO_SE {
-    return string_value_->utf8_length() > 0;
+    return string_value_ != nullptr;
   }
 
 

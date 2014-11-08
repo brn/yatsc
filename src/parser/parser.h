@@ -546,11 +546,13 @@ class Parser: public ParserBase {
     RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp,
                         const TokenInfo& current,
                         const TokenInfo& prev,
-                        Handle<ir::Scope> current_scope)
+                        Handle<ir::Scope> current_scope,
+                        size_t error_count)
         : rcp_(rcp),
           current_(current),
           prev_(prev),
-          scope_(current_scope){}
+          scope_(current_scope),
+          error_count_(error_count) {}
 
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
 
@@ -563,11 +565,14 @@ class Parser: public ParserBase {
 
     YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
 
+    YATSC_CONST_GETTER(size_t, error_count, error_count_);
+
    private:
     typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
     TokenInfo current_;
     TokenInfo prev_;
     Handle<ir::Scope> scope_;
+    size_t error_count_;
   };
 
 
@@ -599,7 +604,7 @@ class Parser: public ParserBase {
       scope = scope_;
     }
     
-    return RecordedParserState(scanner_->char_position(), current, prev, scope);
+    return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->semantic_error()->size());
   }
 
   void RestoreParserState(const RecordedParserState& rps) {
@@ -607,6 +612,16 @@ class Parser: public ParserBase {
     *current_token_info_ = rps.current();
     prev_token_info_ = rps.prev();
     scope_ = rps.scope();
+    Handle<SemanticError> se = module_info_->semantic_error();
+    if (se->size() != rps.error_count()) {
+      size_t diff = rps.error_count() - se->size();
+      if (diff > se->size()) {
+        diff = se->size();
+      }
+      for (size_t i = 0; i < diff; i++) {
+        se->Pop();
+      }
+    }
   }
 
 

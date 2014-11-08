@@ -315,13 +315,18 @@ class TokenInfo {
   YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
 
 #ifdef UNIT_TEST
-  String ToString() const {
+  String ToStringWithValue() const {
     StringStream ss;
     ss << tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)];
     if (literal_ != nullptr && literal_->utf8_length() > 0) {
       ss << "[" << literal_->utf8_value() << "]";
     }
     return std::move(ss.str());
+  }
+
+
+  String ToString() const {
+    return String(tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)]);
   }
 
   static const char* ToString(Token token) {
