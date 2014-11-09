@@ -25,7 +25,6 @@
 
 #include <stdio.h>
 #include "sourcestream.h"
-#include "unicode-iterator-adapter.h"
 
 namespace yatsc {
 
@@ -60,7 +59,6 @@ void SourceStream::Initialize() {
 void SourceStream::ReadBlock(FILE* fp)  {
   if (raw_buffer_.capacity() > size_ + 1) {
     raw_buffer_.reserve(size_ + 1);
-    buffer_.reserve(size_);
   }
   
   char* str = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
@@ -68,11 +66,6 @@ void SourceStream::ReadBlock(FILE* fp)  {
   if (next > 0) {
     str[next] = '\0';
     raw_buffer_ = str;
-  }
-  
-  auto it = UnicodeIteratorAdapter<char*>(str);
-  for (;it != '\0'; ++it) {
-    buffer_.push_back(std::move(*it));
   }
 
   Heap::Delete(str);
@@ -84,10 +77,6 @@ Handle<SourceStream> SourceStream::FromSourceCode(const char* name, const char* 
   ret->size_ = strlen(code);
   ret->filepath_ = name;
   ret->raw_buffer_ = code;
-  auto it = UnicodeIteratorAdapter<char*>(const_cast<char*>(code));
-  for (;it != '\0'; ++it) {
-    ret->buffer_.push_back(std::move(*it));
-  }
   return ret;
 }
 

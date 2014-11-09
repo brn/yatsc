@@ -45,10 +45,10 @@ void Scope::Declare(Handle<Node> var) {
     }
   } else if (var->HasBindingPropListView()) {
     for (auto node: *var) {
-      if (!node->node_list()[1]) {
-        declared_items_.insert(std::make_pair(node->node_list()[1]->symbol()->id(), node->node_list()[1]));
+      if (!node->node_list()[0]) {
+        declared_items_.insert(std::make_pair(node->node_list()[0]->symbol()->id(), node->node_list()[0]));
       } else {
-        Declare(node->node_list()[1]);
+        Declare(node->node_list()[0]);
       }
     }
   } else if (var->HasFunctionView()) {

@@ -97,6 +97,10 @@ class Symbol {
     return symbol->value_->Equals(value_);
   }
 
+  bool Equals(const char* value) YATSC_NO_SE {
+    return value_->Equals(value);
+  }
+
 #define DECLARE_SYMBOL(t)                       \
   bool Is##t() {return SymbolType::k##t == type_;}
 

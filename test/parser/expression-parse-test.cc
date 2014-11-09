@@ -186,8 +186,9 @@ TEST(ExpressionParseTest, ParseExpression_call) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "func()",
             "[CallView]\n"
             "  [NameView][func]\n"
-            "  [CallArgsView]\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]");
 }
 
 
@@ -196,8 +197,9 @@ TEST(ExpressionParseTest, ParseExpression_call_elem) {
             "[GetElemView]\n"
             "  [CallView]\n"
             "    [NameView][func]\n"
-            "    [CallArgsView]\n"
-            "    [Empty]\n"
+            "    [ArgumentsView]\n"
+            "      [Empty]\n"
+            "      [CallArgsView]\n"
             "  [NameView][index]");
 }
 
@@ -210,10 +212,11 @@ TEST(ExpressionParseTest, ParseExpression_property_call) {
             "      [GetPropView]\n"
             "        [NameView][foo]\n"
             "        [NameView][bar]\n"
-            "      [NullView]\n"
+            "      [NameView][null]\n"
             "    [NameView][func]\n"
-            "  [CallArgsView]\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]");
 }
 
 
@@ -227,14 +230,17 @@ TEST(ExpressionParseTest, ParseExpression_property_call_call) {
             "          [GetPropView]\n"
             "            [NameView][foo]\n"
             "            [NameView][func]\n"
-            "          [CallArgsView]\n"
-            "          [Empty]\n"
+            "          [ArgumentsView]\n"
+            "            [Empty]\n"
+            "            [CallArgsView]\n"
             "        [NameView][foo]\n"
             "      [NameView][baz]\n"
-            "    [CallArgsView]\n"
+            "    [ArgumentsView]\n"
+            "      [Empty]\n"
+            "      [CallArgsView]\n"
+            "  [ArgumentsView]\n"
             "    [Empty]\n"
-            "  [CallArgsView]\n"
-            "  [Empty]");
+            "    [CallArgsView]");
 }
 
 
@@ -246,8 +252,9 @@ TEST(ExpressionParseTest, ParseExpression_property_elem_call) {
             "      [NameView][foo]\n"
             "      [StringView]['bar']\n"
             "    [NameView][baz]\n"
-            "  [CallArgsView]\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]");
 }
 
 
@@ -259,11 +266,12 @@ TEST(ExpressionParseTest, ParseExpression_property_call2) {
             "      [NameView][process]\n"
             "      [NameView][stdout]\n"
             "    [NameView][write]\n"
-            "  [CallArgsView]\n"
-            "    [BinaryExprView][TS_PLUS]\n"
-            "      [NameView][str]\n"
-            "      [StringView]['\\n']\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]\n"
+            "      [BinaryExprView][TS_PLUS]\n"
+            "        [NameView][str]\n"
+            "        [StringView]['\\n']");
 }
 
 
@@ -273,32 +281,34 @@ TEST(ExpressionParseTest, ParseExpression_property_call3) {
             "  [GetPropView]\n"
             "    [NameView][fs]\n"
             "    [NameView][readFile]\n"
-            "  [CallArgsView]\n"
-            "    [CallView]\n"
-            "      [GetPropView]\n"
-            "        [NameView][path]\n"
-            "        [NameView][resolve]\n"
-            "      [CallArgsView]\n"
-            "        [NameView][dir]\n"
-            "        [StringView]['META-INF/MANIFEST.MF']\n"
-            "      [Empty]\n"
-            "    [ArrowFunctionView]\n"
-            "      [CallSignatureView]\n"
-            "        [ParamList]\n"
-            "          [ParameterView]\n"
-            "            [NameView][err]\n"
-            "            [Empty]\n"
-            "            [Empty]\n"
-            "            [Empty]\n"
-            "          [ParameterView]\n"
-            "            [NameView][data]\n"
-            "            [Empty]\n"
-            "            [Empty]\n"
-            "            [Empty]\n"
-            "        [Empty]\n"
-            "        [Empty]\n"
-            "      [BlockView]\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]\n"
+            "      [CallView]\n"
+            "        [GetPropView]\n"
+            "          [NameView][path]\n"
+            "          [NameView][resolve]\n"
+            "        [ArgumentsView]\n"
+            "          [Empty]\n"
+            "          [CallArgsView]\n"
+            "            [NameView][dir]\n"
+            "            [StringView]['META-INF/MANIFEST.MF']\n"
+            "      [ArrowFunctionView]\n"
+            "        [CallSignatureView]\n"
+            "          [ParamList]\n"
+            "            [ParameterView]\n"
+            "              [NameView][err]\n"
+            "              [Empty]\n"
+            "              [Empty]\n"
+            "              [Empty]\n"
+            "            [ParameterView]\n"
+            "              [NameView][data]\n"
+            "              [Empty]\n"
+            "              [Empty]\n"
+            "              [Empty]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "        [BlockView]");
 }
 
 
@@ -306,10 +316,11 @@ TEST(ExpressionParseTest, ParseExpression_generic_call) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "func<string>()",
             "[CallView]\n"
             "  [NameView][func]\n"
-            "  [CallArgsView]\n"
-            "  [TypeArgumentsView]\n"
-            "    [SimpleTypeExprView]\n"
-            "      [NameView][string]");
+            "  [ArgumentsView]\n"
+            "    [TypeArgumentsView]\n"
+            "      [SimpleTypeExprView]\n"
+            "        [NameView][string]\n"
+            "    [CallArgsView]");
 }
 
 
@@ -321,13 +332,15 @@ TEST(ExpressionParseTest, ParseExpression_generic_property_call) {
             "      [GetPropView]\n"
             "        [NameView][foo]\n"
             "        [NameView][func]\n"
-            "      [CallArgsView]\n"
-            "      [Empty]\n"
+            "      [ArgumentsView]\n"
+            "        [Empty]\n"
+            "        [CallArgsView]\n"
             "    [NameView][func]\n"
-            "  [CallArgsView]\n"
-            "  [TypeArgumentsView]\n"
-            "    [SimpleTypeExprView]\n"
-            "      [NameView][string]");
+            "  [ArgumentsView]\n"
+            "    [TypeArgumentsView]\n"
+            "      [SimpleTypeExprView]\n"
+            "        [NameView][string]\n"
+            "    [CallArgsView]");
 }
 
 
@@ -379,8 +392,9 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "        [NameView][a]\n"
             "        [CallView]\n"
             "          [NameView][foo]\n"
-            "          [CallArgsView]\n"
-            "          [Empty]\n"
+            "          [ArgumentsView]\n"
+            "            [Empty]\n"
+            "            [CallArgsView]\n"
             "        [SimpleTypeExprView]\n"
             "          [NameView][string]\n"
             "        [Empty]\n"
@@ -521,7 +535,8 @@ TEST(ExpressionParseTest, ParseExpression_constraints_generic_arrow_function) {
             "      [NameView][T]\n"
             "      [TypeConstraintsView]\n"
             "        [NameView][U]\n"
-            "        [NameView][V]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][V]\n"
             "  [BinaryExprView][TS_PLUS]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
@@ -661,18 +676,19 @@ TEST(ExpressionParseTest, ParseExpression_regexp) {
             "  [NameView][x]\n"
             "  [RegularExprView][/\\/abc\\/ddd\\/ee/]");
 
-  EXPR_TEST(yatsc::LanguageMode::ES3, "v = /^(\\/\\/\\/\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/",
+  EXPR_TEST(yatsc::LanguageMode::ES3, "v = /^(\\/\\/\\/\\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/",
             "[AssignmentView][TS_ASSIGN]\n"
             "  [NameView][v]\n"
-            "  [RegularExprView][/^(\\/\\/\\/\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/]");
+            "  [RegularExprView][/^(\\/\\/\\/\\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/]");
   
   
   EXPR_TEST(yatsc::LanguageMode::ES3, "m(/a/)",
             "[CallView]\n"
             "  [NameView][m]\n"
-            "  [CallArgsView]\n"
-            "    [RegularExprView][/a/]\n"
-            "  [Empty]");
+            "  [ArgumentsView]\n"
+            "    [Empty]\n"
+            "    [CallArgsView]\n"
+            "      [RegularExprView][/a/]");
 }
 
 

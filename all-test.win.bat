@@ -22,6 +22,7 @@ call :RUN NodeTest.exe
 call :RUN ExpressionParseTest.exe
 call :RUN DeclarationParseTest.exe
 call :RUN StatementParseTest.exe
+call :RUN CompilerTest.exe
 
 exit
 

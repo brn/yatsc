@@ -55,9 +55,9 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
   template <typename T>
   UnicodeIteratorAdapter(UnicodeIteratorAdapter<T>&& un);
   ~UnicodeIteratorAdapter() = default;
-  YATSC_INLINE UnicodeIteratorAdapter& operator = (InputIterator iter) {begin_ = iter;}
-  YATSC_INLINE UnicodeIteratorAdapter& operator = (const UnicodeIteratorAdapter<InputIterator>& iter) {begin_ = iter.begin_;}
-  YATSC_INLINE UnicodeIteratorAdapter& operator = (UnicodeIteratorAdapter<InputIterator>&& iter) {begin_ = std::move(iter.begin_);}
+  YATSC_INLINE UnicodeIteratorAdapter& operator = (InputIterator iter) {begin_ = iter;return *this;}
+  YATSC_INLINE UnicodeIteratorAdapter& operator = (const UnicodeIteratorAdapter<InputIterator>& iter) {begin_ = iter.begin_;return *this;}
+  YATSC_INLINE UnicodeIteratorAdapter& operator = (UnicodeIteratorAdapter<InputIterator>&& iter) {begin_ = std::move(iter.begin_);return *this;}
 
   template <typename T>
   YATSC_INLINE UnicodeIteratorAdapter& operator = (const UnicodeIteratorAdapter<T>& iter) {begin_ = iter.begin_;}
@@ -75,6 +75,18 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
    * Implementation of equality compare to satisfy forward_iterator concept.
    */
   YATSC_INLINE bool operator != (const InputIterator& iter){return begin_ != iter;}
+
+
+  /**
+   * Implementation of equality compare to satisfy forward_iterator concept.
+   */
+  YATSC_INLINE bool operator == (const UnicodeIteratorAdapter<InputIterator>& iter){return begin_ == iter.begin_;}
+
+
+  /**
+   * Implementation of equality compare to satisfy forward_iterator concept.
+   */
+  YATSC_INLINE bool operator != (const UnicodeIteratorAdapter<InputIterator>& iter){return begin_ != iter.begin_;}
 
 
   /**

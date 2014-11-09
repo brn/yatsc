@@ -28,11 +28,11 @@
 
 #define ENTIRE_PARSER_TEST(name, type, expected_str)                    \
   yatsc::String code = yatsc::testing::ReadFile(name);                  \
-  PARSER_TEST(name, Parse(), type, code.c_str(), expected_str, false, std::exception)
+  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), expected_str, false, std::exception)
 
 #define ENTIRE_PARSER_THROW_TEST(name, type)                      \
   yatsc::String code = yatsc::testing::ReadFile(name);            \
-  PARSER_TEST(name, Parse(), type, code.c_str(), "", true, true)
+  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), "", true, true)
 
 #define ENTIRE_PARSER_TEST_ALL(name, expected_str)                      \
   [&]{ENTIRE_PARSER_TEST(name, yatsc::LanguageMode::ES3, expected_str);}(); \

@@ -26,10 +26,10 @@
 
 
 #define TYPE_PARSER_TEST(type, code, expected_str)                      \
-  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, expected_str, false, false)
+  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, expected_str, false)
 
 #define TYPE_PARSER_THROW_TEST(type, code)                              \
-  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, "", true, true)
+  PARSER_TEST("anonymous", ParseTypeExpression(), type, code, "", true)
 
 #define TYPE_PARSER_TEST_ALL(code, expected_str)                        \
   [&]{TYPE_PARSER_TEST(yatsc::LanguageMode::ES3, code, expected_str);}(); \

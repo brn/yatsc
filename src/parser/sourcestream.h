@@ -28,6 +28,7 @@
 #include <iterator>
 #include <string>
 #include "./uchar.h"
+#include "./unicode-iterator-adapter.h"
 #include "../utils/error-reporter.h"
 #include "../utils/os.h"
 #include "../utils/stat.h"
@@ -51,22 +52,10 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE ~SourceStream() = default;
   
   
-  YATSC_INLINE iterator begin() {return buffer_.begin();}
+  YATSC_INLINE UnicodeIteratorAdapter<String::iterator> begin() {return UnicodeIteratorAdapter<String::iterator>(raw_buffer_.begin());}
   
 
-  YATSC_INLINE iterator end() {return buffer_.end();}
-
-
-  YATSC_INLINE const_iterator cbegin() YATSC_NO_SE {return buffer_.cbegin();}
-  
-
-  YATSC_INLINE const_iterator cend() YATSC_NO_SE {return buffer_.cend();}
-
-
-  YATSC_INLINE const UCharBuffer& buffer() YATSC_NO_SE {return buffer_;}
-
-
-  YATSC_INLINE const UChar* cbuffer() YATSC_NO_SE {return buffer_.data();}
+  YATSC_INLINE UnicodeIteratorAdapter<String::iterator> end() {return UnicodeIteratorAdapter<String::iterator>(raw_buffer_.end());}
 
 
   YATSC_INLINE const String& raw_buffer() YATSC_NO_SE {return raw_buffer_;}
@@ -96,7 +85,6 @@ class SourceStream : public MaybeFail, private Uncopyable {
   size_t size_;
   String filepath_;
   String raw_buffer_;
-  UCharBuffer buffer_;
 };
 }
 #endif

@@ -71,23 +71,23 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   if (!source_stream->success()) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }
-  //printf("BEGIN %s\n", module_info->module_name());
+  printf("BEGIN %s\n", module_info->module_name());
   Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
 
-  Scanner<UCharBuffer::iterator> scanner(
+  Scanner<UnicodeIteratorAdapter<String::iterator>> scanner(
       source_stream->begin(),
       source_stream->end(),
       literal_buffer.Get(),
       compiler_option_);
     
-  Parser<UCharBuffer::iterator> parser(compiler_option_, &scanner, notificator_, module_info);
+  Parser<UnicodeIteratorAdapter<String::iterator>> parser(compiler_option_, &scanner, notificator_, module_info);
   Handle<ir::Node> root = parser.Parse();
   if (!module_info->HasError()) {
     AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer));
   } else {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }
-  //printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
+  printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
 }
 
 

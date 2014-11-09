@@ -123,6 +123,7 @@ namespace yatsc {namespace ir {
   DECLARE(ParamList)                                    \
   DECLARE(CallView)                                     \
   DECLARE(CallSignatureView)                            \
+  DECLARE(ArgumentsView)                                \
   DECLARE(CallArgsView)                                 \
   DECLARE(NewCallView)                                  \
   DECLARE(NameView)                                     \
@@ -1953,17 +1954,14 @@ class ParamList: public Node {
 
 class CallView: public Node {
  public:
-  CallView(Handle<Node> target, Handle<Node> args, Handle<Node> type_expr)
-      : Node(NodeType::kCallView, 3u, {target, args, type_expr}) {}
+  CallView(Handle<Node> target, Handle<Node> arguments)
+      : Node(NodeType::kCallView, 2u, {target, arguments}) {}
 
   
   NODE_PROPERTY(target, 0);
 
 
   NODE_PROPERTY(args, 1);
-
-  
-  NODE_PROPERTY(type_expr, 2);
 };
 
 
@@ -1983,6 +1981,23 @@ class CallSignatureView: public Node {
 };
 
 
+class ArgumentsView: public Node {
+ public:
+  ArgumentsView(Handle<Node> type_parameters, Handle<Node> call_args)
+      : Node(NodeType::kArgumentsView, 2u, {type_parameters, call_args}) {}
+
+
+  ArgumentsView(Handle<Node> call_args)
+      : Node(NodeType::kArgumentsView, 2u, {Node::Null(), call_args}) {}
+
+
+  NODE_PROPERTY(type_parameters, 0);
+
+
+  NODE_PROPERTY(arguments, 1);
+};
+
+
 class CallArgsView: public Node {
  public:
   CallArgsView(std::initializer_list<Handle<Node>> args)
@@ -1996,21 +2011,18 @@ class CallArgsView: public Node {
 
 class NewCallView: public Node {
  public:
-  NewCallView(Handle<Node> target, Handle<Node> args, Handle<Node> type_expr)
-      : Node(NodeType::kNewCallView, 3u, {target, args, type_expr}) {}
+  NewCallView(Handle<Node> target, Handle<Node> args)
+      : Node(NodeType::kNewCallView, 2u, {target, args}) {}
 
 
   NewCallView()
-      : Node(NodeType::kNewCallView, 3u) {}
+      : Node(NodeType::kNewCallView, 2u) {}
 
 
   NODE_PROPERTY(target, 0);
 
 
   NODE_PROPERTY(args, 1);
-
-  
-  NODE_PROPERTY(type_expr, 2);
 };
 
 
