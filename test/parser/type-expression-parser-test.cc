@@ -37,9 +37,9 @@
   [&]{TYPE_PARSER_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
 #define TYPE_PARSER_THROW_TEST_ALL(code)                                \
-  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
-  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
-  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
+  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES3, code);}(); \
+  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code);}(); \
+  [&]{TYPE_PARSER_THROW_TEST(yatsc::LanguageMode::ES6, code);}()
 
 
 TEST(TypeParser, ParseTypeExpression) {

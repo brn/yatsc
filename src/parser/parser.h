@@ -140,6 +140,20 @@ class ParseResult {
 
     
   ~ParseResult() = default;
+
+
+  ParseResult& operator = (const ParseResult& parse_result) {
+    node_ = parse_result.node_;
+    success_ = parse_result.success_;
+    return *this;
+  }
+
+  
+  ParseResult& operator = (ParseResult&& parse_result) {
+    node_ = std::move(parse_result.node_);
+    success_ = parse_result.success_;
+    return *this;
+  }
     
 
   YATSC_GETTER(Handle<ir::Node>, node, node_);

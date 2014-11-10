@@ -61,6 +61,11 @@ class Character : private Static {
   }
 
 
+  YATSC_INLINE static bool IsUtfSignature(const UChar& uchar) {
+    return uchar == unicode::u32(0xFEFF);
+  }
+
+
   YATSC_INLINE static bool IsPuncture(const UChar& uchar) {
     return GetCharType(uchar.uchar()) == CharType::PUNCTURES;
   }

@@ -179,6 +179,7 @@ class Scanner: public SemanticError, private Uncopyable, private Unmovable {
     if (unscaned_) {
       unscaned_ = false;
       Advance();
+      SkipSignature();
       SkipWhiteSpace();
     }
     line_terminator_state_.Clear();
@@ -284,6 +285,9 @@ class Scanner: public SemanticError, private Uncopyable, private Unmovable {
 
 
   bool SkipMultiLineComment();
+
+
+  bool SkipSignature();
   
 
   void UpdateTokenInfo() {

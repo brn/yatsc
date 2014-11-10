@@ -26,20 +26,20 @@
 
 
 #define AMBIENT_TEST(type, code, expected_str)                          \
-  PARSER_TEST("anonymous", ParseDeclarationModule(), type, code, expected_str, false, false)
+  PARSER_TEST("anonymous", ParseDeclarationModule(), type, code, expected_str, false)
 
 #define AMBIENT_THROW_TEST(type, code)                    \
-  PARSER_TEST("anonymous", ParseModule(), type, code, "", true, true)
+  PARSER_TEST("anonymous", ParseModule(), type, code, "", true)
 
 #define AMBIENT_TEST_ALL(code, expected_str)                             \
   [&]{AMBIENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();    \
   [&]{AMBIENT_TEST(yatsc::LanguageMode::ES5_STRICT, code, expected_str);}(); \
   [&]{AMBIENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}()
 
-#define AMBIENT_THROW_TEST_ALL(code, error_type)                         \
-  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES3, code, error_type);}(); \
-  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code, error_type);}(); \
-  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES6, code, error_type);}()
+#define AMBIENT_THROW_TEST_ALL(code)                                  \
+  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES3, code);}();         \
+  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES5_STRICT, code);}();  \
+  [&]{AMBIENT_THROW_TEST(yatsc::LanguageMode::ES6, code);}()
 
 
 

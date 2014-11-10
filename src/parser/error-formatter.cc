@@ -34,6 +34,7 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   Vector<String> line_source_list = GetLineSource(source_position);
   String line_source;
   StringStream line;
+  size_t start_line_number = source_position.start_line_number();
   line << source_position.start_line_number() << ": ";
   StringStream padding;
   StringStream message;
@@ -55,12 +56,22 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   size_t last_line = 2;
   
   if (line_source_list.size() == 3) {
-    message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
-    line_source = std::move(line_source_list[1]);
+    if (start_line_number == 1) {
+      line_source = std::move(line_source_list[0]);
+      last_line = 1;
+    } else {
+      message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
+      line_source = std::move(line_source_list[1]);
+    }
   } else if (line_source_list.size() == 2) {
-    message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
-    line_source = std::move(line_source_list[1]);
-    last_line = 0;
+    if (start_line_number == 1) {
+      line_source = std::move(line_source_list[0]);
+      last_line = 1;
+    } else {
+      message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
+      line_source = std::move(line_source_list[1]);
+      last_line = 0;
+    }
   } else {
     line_source = std::move(line_source_list[0]);
     last_line = 0;
@@ -99,7 +110,7 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   }
 
   if (last_line != 0) {
-    message << '\n' << (source_position.start_line_number() + 1) << ": " << line_source_list[last_line];
+    message << '\n' << (source_position.start_line_number() + last_line) << ": " << line_source_list[last_line];
   }
   message << '\n';
   return std::move(message.str());

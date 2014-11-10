@@ -677,6 +677,17 @@ bool Scanner<UCharInputIterator>::SkipMultiLineComment() {
 
 
 template <typename UCharInputIterator>
+bool Scanner<UCharInputIterator>::SkipSignature() {
+  bool skip = false;
+  if (Character::IsUtfSignature(char_)) {
+    Advance();
+    skip = true;
+  }
+  return skip;
+}
+
+
+template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ConsumeLineBreak() {
   bool is_break = false;
   Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);
@@ -689,6 +700,7 @@ bool Scanner<UCharInputIterator>::ConsumeLineBreak() {
     Advance();
     is_break = true;
   }
+  
   if (is_break) {
     LineFeed();
   }

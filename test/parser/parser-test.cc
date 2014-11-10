@@ -28,11 +28,11 @@
 
 #define ENTIRE_PARSER_TEST(name, type, expected_str)                    \
   yatsc::String code = yatsc::testing::ReadFile(name);                  \
-  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), expected_str, false, std::exception)
+  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), expected_str, false)
 
 #define ENTIRE_PARSER_THROW_TEST(name, type)                      \
   yatsc::String code = yatsc::testing::ReadFile(name);            \
-  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), "", true, true)
+  WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), "", true)
 
 #define ENTIRE_PARSER_TEST_ALL(name, expected_str)                      \
   [&]{ENTIRE_PARSER_TEST(name, yatsc::LanguageMode::ES3, expected_str);}(); \
@@ -40,9 +40,9 @@
   [&]{ENTIRE_PARSER_TEST(name, yatsc::LanguageMode::ES3, expected_str);}()
 
 #define ENTIRE_PARSER_THROW_TEST_ALL(name)                              \
-  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES3, error_type);}(); \
-  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES5_STRICT, error_type);}(); \
-  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES6, error_type);}()
+  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES3);}(); \
+  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES5_STRICT);}(); \
+  [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES6);}()
 
 
 TEST(ParserTest, Parse) {
@@ -54,5 +54,6 @@ TEST(ParserTest, Parse) {
   // yatsc::String code3 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/scanner.ts");
   // ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
   //yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/diagnosticInformationMap.generated.ts");
-  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts", "");
+  //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts", "");
+  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts", "");
 }
