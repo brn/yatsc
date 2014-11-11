@@ -69,8 +69,8 @@ void YatscParserTest(const char* name,
   auto result = fn(&parser);
   
   if (!error) {
-    if (!module_info->HasError() && result.node()) {
-      yatsc::testing::CompareNode(line_num, result.node()->ToStringTree(), yatsc::String(expected_str));
+    if (!module_info->HasError() && result.value()) {
+      yatsc::testing::CompareNode(line_num, result.value()->ToStringTree(), yatsc::String(expected_str));
     } else {
       if (print_stack_trace) {
         parser.PrintStackTrace();

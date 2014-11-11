@@ -40,7 +40,7 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
         Next();
         auto assignment_expr_result = ParseAssignmentExpression(true, false);
         SKIP_TOKEN_OR(assignment_expr_result, success, Token::LINE_TERMINATOR) {
-          ret->InsertLast(CreateExportView(assignment_expr_result.node(), ir::Node::Null(), &info, true));
+          ret->InsertLast(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
         }
         continue;
       } else {
@@ -69,11 +69,11 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
       }
     
       if (export_view) {
-        export_view->set_export_clause(parse_result.node());
+        export_view->set_export_clause(parse_result.value());
         parse_result = Success(export_view);
       }
 
-      ret->InsertLast(parse_result.node());
+      ret->InsertLast(parse_result.value());
     }
     
     if (Current()->type() == Token::END_OF_INPUT) {
@@ -103,7 +103,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientDeclaration(bool module_all
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value()->Equals("module")) {
           if (!module_allowed) {
-            SYNTAX_ERROR("ambient module declaration not allowed here.", Current());
+            SYNTAX_ERROR_AND_SKIP_NEXT("ambient module declaration not allowed here.", Current(), Token::TS_RIGHT_BRACE);
           }
           return ParseAmbientModuleDeclaration(&info);
         }
@@ -128,7 +128,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(TokenIn
         type_annotation_result = ParseTypeExpression();
         CHECK_AST(type_annotation_result);
       }
-      auto ret = New<ir::AmbientVariableView>(identifier_result.node(), type_annotation_result.node());
+      auto ret = New<ir::AmbientVariableView>(identifier_result.value(), type_annotation_result.value());
       ret->SetInformationForNode(info);
       return Success(ret);
     }
@@ -154,7 +154,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(TokenIn
       }
       auto call_sig_result = ParseCallSignature(false, false);
       CHECK_AST(call_sig_result);
-      auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier_result.node(), call_sig_result.node());
+      auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier_result.value(), call_sig_result.value());
       ret->SetInformationForNode(info);
       return Success(ret);
     }
@@ -180,10 +180,10 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(TokenInfo*
     if (Current()->type() == Token::TS_LEFT_BRACE) {
       auto ambient_class_body_result = ParseAmbientClassBody();
       CHECK_AST(ambient_class_body_result);
-      auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.node(),
-                                                      type_parameters_result.node(),
-                                                      class_bases_result.node(),
-                                                      ambient_class_body_result.node());
+      auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.value(),
+                                                      type_parameters_result.value(),
+                                                      class_bases_result.value(),
+                                                      ambient_class_body_result.value());
       ret->SetInformationForNode(info);
       return Success(ret);
     }
@@ -211,7 +211,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
       } else {
         auto ambient_class_element_result = ParseAmbientClassElement();
         SKIP_TOKEN_OR(ambient_class_element_result, success, Token::LINE_TERMINATOR) {
-          body->InsertLast(ambient_class_element_result.node());
+          body->InsertLast(ambient_class_element_result.value());
         }
         if (IsLineTermination()) {
           ConsumeLineTerminator();
@@ -243,22 +243,22 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
   
   if (Current()->type() == Token::TS_IDENTIFIER) {
     if (Current()->value()->Equals("constructor")) {
-      return ParseAmbientConstructor(field_modifiers_result.node());
+      return ParseAmbientConstructor(field_modifiers_result.value());
     } else {
       RecordedParserState rps = parser_state();
       Next();
       if (Current()->type() == Token::TS_LEFT_PAREN ||
           Current()->type() == Token::TS_LESS) {
         RestoreParserState(rps);
-        return ParseAmbientMemberFunction(field_modifiers_result.node(), &at);
+        return ParseAmbientMemberFunction(field_modifiers_result.value(), &at);
       } else {
         RestoreParserState(rps);
-        return ParseAmbientMemberVariable(field_modifiers_result.node());
+        return ParseAmbientMemberVariable(field_modifiers_result.value());
       }
     }
   } else if (Current()->type() == Token::TS_MUL) {
     Next();
-    return ParseAmbientGeneratorMethod(field_modifiers_result.node());
+    return ParseAmbientGeneratorMethod(field_modifiers_result.value());
   }
   SYNTAX_ERROR("unexpected token", Current());
 }
@@ -280,7 +280,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node>
       Next();
       auto call_sig_result = ParseCallSignature(true, false);
       CHECK_AST(call_sig_result);
-      auto ret = New<ir::AmbientConstructorView>(mods, call_sig_result.node());
+      auto ret = New<ir::AmbientConstructorView>(mods, call_sig_result.value());
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
@@ -309,8 +309,8 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::No
                                                     accessor_type->setter,
                                                     false,
                                                     mods,
-                                                    identifier_result.node(),
-                                                    call_sig_result.node());
+                                                    identifier_result.value(),
+                                                    call_sig_result.value());
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
@@ -342,8 +342,8 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::N
       auto call_sig_result = ParseCallSignature(true, false);
       CHECK_AST(call_sig_result);
       auto ret = New<ir::AmbientMemberFunctionView>(false, false, true, mods,
-                                                    identifier_result.node(),
-                                                    call_sig_result.node());
+                                                    identifier_result.value(),
+                                                    call_sig_result.value());
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
@@ -367,7 +367,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<ir::No
       CHECK_AST(type_expr_result);
     }
 
-    auto member_variable = New<ir::AmbientMemberVariableView>(mods, identifier_result.node(), type_expr_result.node());
+    auto member_variable = New<ir::AmbientMemberVariableView>(mods, identifier_result.value(), type_expr_result.value());
     member_variable->SetInformationForNode(mods);
     return Success(member_variable);
   }
@@ -384,7 +384,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumDeclaration(TokenInfo* i
     auto ambient_enum_body_result = ParseAmbientEnumBody();
     CHECK_AST(identifier_result);
     CHECK_AST(ambient_enum_body_result);
-    auto ret = New<ir::AmbientEnumDeclarationView>(identifier_result.node(), ambient_enum_body_result.node());
+    auto ret = New<ir::AmbientEnumDeclarationView>(identifier_result.value(), ambient_enum_body_result.value());
     ret->SetInformationForNode(info);
     return Success(ret);
   }
@@ -410,7 +410,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
     while (1) {
       auto ambient_enum_prop_result = ParseAmbientEnumProperty();
       SKIP_TOKEN_OR(ambient_enum_prop_result, success, Token::TS_RIGHT_BRACE) {
-        ret->InsertLast(ambient_enum_prop_result.node());
+        ret->InsertLast(ambient_enum_prop_result.value());
       }
       if (Current()->type() == Token::TS_COMMA) {
         Next();
@@ -439,9 +439,9 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumProperty() {
     Next();
     auto numeric_literal_result = ParseNumericLiteral();
     CHECK_AST(numeric_literal_result);
-    return Success(CreateAmbientEnumFieldView(prop_result.node(), numeric_literal_result.node()));
+    return Success(CreateAmbientEnumFieldView(prop_result.value(), numeric_literal_result.value()));
   }
-  return Success(CreateAmbientEnumFieldView(prop_result.node(), ir::Node::Null()));
+  return Success(CreateAmbientEnumFieldView(prop_result.value(), ir::Node::Null()));
 }
 
 
@@ -476,7 +476,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(TokenInfo*
     
     auto ambient_module_body_result = ParseAmbientModuleBody(external);
     CHECK_AST(ambient_module_body_result);
-    auto ret = New<ir::AmbientModuleView>(external, identifier_result.node(), ambient_module_body_result.node());
+    auto ret = New<ir::AmbientModuleView>(external, identifier_result.value(), ambient_module_body_result.value());
     ret->SetInformationForNode(info);
     return Success(ret);
   }
@@ -503,7 +503,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
       } else {
         auto ambient_module_element_result = ParseAmbientModuleElement(external);
         SKIP_TOKEN_OR(ambient_module_element_result, success, Token::LINE_TERMINATOR) {
-          body->InsertLast(ambient_module_element_result.node());
+          body->InsertLast(ambient_module_element_result.value());
         }
       }
       if (IsLineTermination()) {
@@ -529,7 +529,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
       Next();
       auto assignment_expr_result = ParseAssignmentExpression(true, false);
       CHECK_AST(assignment_expr_result);
-      return Success(CreateExportView(assignment_expr_result.node(), ir::Node::Null(), &info, true));
+      return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
     } else if (Current()->type() == Token::TS_ASSIGN) {
       SYNTAX_ERROR("export assignment is not allowed here.", Current());
     }
@@ -550,7 +550,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
     case Token::TS_INTERFACE: {
       parse_result = ParseInterfaceDeclaration();
       CHECK_AST(parse_result);
-      parse_result.node()->SetInformationForNode(&info);
+      parse_result.value()->SetInformationForNode(&info);
       break;
     }
     case Token::TS_ENUM:
@@ -560,14 +560,14 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
       parse_result = ParseImportDeclaration();
       CHECK_AST(parse_result);
       if (!external) {
-        Handle<ir::Node> maybe_from = parse_result.node()->ToExportView()->from_clause();
+        Handle<ir::Node> maybe_from = parse_result.value()->ToExportView()->from_clause();
         if (maybe_from) {
           if (maybe_from->HasExternalModuleReference()) {
             SYNTAX_ERROR("'require' not allowed here.", maybe_from);
           }
         }
       }
-      parse_result.node()->SetInformationForNode(&info);
+      parse_result.value()->SetInformationForNode(&info);
       break;
     default:
       if (Current()->type() == Token::TS_IDENTIFIER &&
@@ -581,7 +581,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
   CHECK_AST(parse_result);
 
   if (export_view) {
-    export_view->set_export_clause(parse_result.node());
+    export_view->set_export_clause(parse_result.value());
     return Success(export_view);
   }
   return parse_result;

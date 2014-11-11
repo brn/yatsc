@@ -34,30 +34,30 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
     if (Current()->type() == Token::TS_IMPORT) {
       auto import_decl_result = ParseImportDeclaration();
       SKIP_TOKEN_OR(import_decl_result, success, Token::LINE_TERMINATOR) {
-        file_scope->InsertLast(import_decl_result.node());
+        file_scope->InsertLast(import_decl_result.value());
       }
     } else if (Current()->type() == Token::TS_IDENTIFIER &&
                Current()->value()->Equals("module")) {
       auto module_decl_result = ParseModuleImport();
       SKIP_TOKEN_OR(module_decl_result, success, Token::LINE_TERMINATOR) {
-        file_scope->InsertLast(module_decl_result.node());
+        file_scope->InsertLast(module_decl_result.value());
       }
     } else if (Current()->type() == Token::TS_EXPORT) {
       auto export_decl_result = ParseExportDeclaration();
       SKIP_TOKEN_OR(export_decl_result, success, Token::LINE_TERMINATOR) {
-        file_scope->InsertLast(export_decl_result.node());
+        file_scope->InsertLast(export_decl_result.value());
       }
     } else {
       if (Current()->type() == Token::TS_IDENTIFIER &&
           Current()->value()->Equals("declare")) {
         auto ambient_decl_result = ParseAmbientDeclaration(true);
         SKIP_TOKEN_OR(ambient_decl_result, success, Token::LINE_TERMINATOR) {
-          file_scope->InsertLast(ambient_decl_result.node());
+          file_scope->InsertLast(ambient_decl_result.value());
         }
       } else {
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
         SKIP_TOKEN_OR(stmt_list_result, success, Token::LINE_TERMINATOR) {
-          file_scope->InsertLast(stmt_list_result.node());
+          file_scope->InsertLast(stmt_list_result.value());
         }
       }
     }
@@ -86,19 +86,19 @@ ParseResult Parser<UCharInputIterator>::ParseImportDeclaration() {
         Next();
         auto external_module_ref_result = ParseExternalModuleReference();
         CHECK_AST(external_module_ref_result);
-        auto import_view = New<ir::ImportView>(import_clause_result.node(), external_module_ref_result.node());
+        auto import_view = New<ir::ImportView>(import_clause_result.value(), external_module_ref_result.value());
         import_view->SetInformationForNode(&info);
         return Success(import_view);
       }
       auto from_clause_result = ParseFromClause();
       CHECK_AST(from_clause_result);
-      auto import_view = New<ir::ImportView>(import_clause_result.node(), from_clause_result.node());
+      auto import_view = New<ir::ImportView>(import_clause_result.value(), from_clause_result.value());
       import_view->SetInformationForNode(&info);
       return Success(import_view);
     } else if (Current()->type() == Token::TS_STRING_LITERAL) {
       auto module_specifier_result = ParseStringLiteral();
       CHECK_AST(module_specifier_result);
-      auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier_result.node());
+      auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier_result.value());
       import_view->SetInformationForNode(&info);
       return Success(import_view);
     }
@@ -167,8 +167,8 @@ ParseResult Parser<UCharInputIterator>::ParseImportClause() {
     }
   }
   
-  auto ret = New<ir::ImportClauseView>(first_result.node(), second_result.node());
-  ret->SetInformationForNode(first_result.node());
+  auto ret = New<ir::ImportClauseView>(first_result.value(), second_result.value());
+  ret->SetInformationForNode(first_result.value());
   return Success(ret);
 }
 
@@ -185,17 +185,17 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
     while (1) {
       auto identifier_result = ParseBindingIdentifier(false, false);
       CHECK_AST(identifier_result);
-      if (identifier_result.node()->HasNameView() &&
+      if (identifier_result.value()->HasNameView() &&
           Current()->type() == Token::TS_IDENTIFIER &&
           Current()->value()->Equals("as")) {
         Next();
         auto binding_identifier_result = ParseBindingIdentifier(false, false);
         CHECK_AST(binding_identifier_result);
-        auto named_import = New<ir::NamedImportView>(identifier_result.node(), binding_identifier_result.node());
-        named_import->SetInformationForNode(identifier_result.node());
+        auto named_import = New<ir::NamedImportView>(identifier_result.value(), binding_identifier_result.value());
+        named_import->SetInformationForNode(identifier_result.value());
         named_import_list->InsertLast(named_import);
       } else {
-        named_import_list->InsertLast(identifier_result.node());
+        named_import_list->InsertLast(identifier_result.value());
       }
       
       if (Current()->type() == Token::TS_COMMA) {
@@ -247,7 +247,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     }
     
     if (Current()->type() == Token::TS_LEFT_BRACE) {
-      return ParseTSModule(binding_identifier_result.node(), &info);
+      return ParseTSModule(binding_identifier_result.value(), &info);
     }
 
     if (member) {
@@ -255,7 +255,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     }
     auto module_specifier_result = ParseFromClause();
     CHECK_AST(module_specifier_result);
-    auto ret = New<ir::ModuleImportView>(binding_identifier_result.node(), module_specifier_result.node());
+    auto ret = New<ir::ModuleImportView>(binding_identifier_result.value(), module_specifier_result.value());
     ret->SetInformationForNode(&info);
     return Success(ret);
   }
@@ -269,7 +269,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> identifie
   if (Current()->type() == Token::TS_LEFT_BRACE) {
     auto ts_module_body_result = ParseTSModuleBody();
     CHECK_AST(ts_module_body_result);
-    auto ret = New<ir::ModuleDeclView>(identifier, ts_module_body_result.node());
+    auto ret = New<ir::ModuleDeclView>(identifier, ts_module_body_result.value());
     ret->SetInformationForNode(info);
     return Success(ret);
   }
@@ -297,42 +297,42 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
           case Token::TS_VAR: {
             auto variable_stmt_result = ParseVariableStatement(true, false);
             SKIP_TOKEN_OR(variable_stmt_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(variable_stmt_result.node());
+              block->InsertLast(variable_stmt_result.value());
             }
             break;
           }
           case Token::TS_FUNCTION: {
             auto function_overloads_result = ParseFunctionOverloads(false, false, true, true);
             SKIP_TOKEN_OR(function_overloads_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(function_overloads_result.node());
+              block->InsertLast(function_overloads_result.value());
             }
             break;
           }
           case Token::TS_CLASS: {
             auto class_decl_result = ParseClassDeclaration(false, false);
             SKIP_TOKEN_OR(class_decl_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(class_decl_result.node());
+              block->InsertLast(class_decl_result.value());
             }
             break;
           }
           case Token::TS_INTERFACE: {
             auto interface_decl_result = ParseInterfaceDeclaration();
             SKIP_TOKEN_OR(interface_decl_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(interface_decl_result.node());
+              block->InsertLast(interface_decl_result.value());
             }
             break;
           }
           case Token::TS_ENUM: {
             auto enum_decl_result = ParseEnumDeclaration(false, false);
             SKIP_TOKEN_OR(enum_decl_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(enum_decl_result.node());
+              block->InsertLast(enum_decl_result.value());
             }
             break;
           }
           case Token::TS_IMPORT: {
             auto variable_stmt_result = ParseVariableStatement(true, false);
             SKIP_TOKEN_OR(variable_stmt_result, success, Token::TS_RIGHT_BRACE) {
-              block->InsertLast(variable_stmt_result.node());
+              block->InsertLast(variable_stmt_result.value());
             }
             break;
           }
@@ -341,13 +341,13 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
                 Current()->value()->Equals("module")) {
               auto module_import_result = ParseModuleImport();
               SKIP_TOKEN_OR(module_import_result, success, Token::TS_RIGHT_BRACE) {
-                block->InsertLast(module_import_result.node());
+                block->InsertLast(module_import_result.value());
               }
             } else if (Current()->type() == Token::TS_IDENTIFIER &&
                        Current()->value()->Equals("declare")) {
               auto ambient_decl_result = ParseAmbientDeclaration(false);
               SKIP_TOKEN_OR(ambient_decl_result, success, Token::TS_RIGHT_BRACE) {
-                block->InsertLast(ambient_decl_result.node());
+                block->InsertLast(ambient_decl_result.value());
               }
             } else {
               SYNTAX_ERROR("unexpected token.", Current());
@@ -357,12 +357,12 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
                  Current()->value()->Equals("module")) {
         auto module_import_result = ParseModuleImport();
         SKIP_TOKEN_OR(module_import_result, success, Token::TS_RIGHT_BRACE) {
-          block->InsertLast(module_import_result.node());
+          block->InsertLast(module_import_result.value());
         }
       } else {
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
         SKIP_TOKEN_OR(stmt_list_result, success, Token::TS_RIGHT_BRACE) {
-          block->InsertLast(stmt_list_result.node());
+          block->InsertLast(stmt_list_result.value());
         }
       }
       
@@ -388,7 +388,7 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
       Next();
       auto from_clause_result = ParseFromClause();
       CHECK_AST(from_clause_result);
-      return Success(CreateExportView(ir::Node::Null(), from_clause_result.node(), &info, false));
+      return Success(CreateExportView(ir::Node::Null(), from_clause_result.value(), &info, false));
     }
 
     switch (Current()->type()) {
@@ -399,14 +399,14 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
             Current()->value()->Equals("from")) {
           auto from_clause_result = ParseFromClause();
           CHECK_AST(from_clause_result);
-          return Success(CreateExportView(export_clause_result.node(), from_clause_result.node(), &info, false));
+          return Success(CreateExportView(export_clause_result.value(), from_clause_result.value(), &info, false));
         }
-        return Success(CreateExportView(export_clause_result.node(), ir::Node::Null(), &info, false));
+        return Success(CreateExportView(export_clause_result.value(), ir::Node::Null(), &info, false));
       }
       case Token::TS_VAR: {
         auto variable_stmt_result = ParseVariableStatement(true, false);
         CHECK_AST(variable_stmt_result);
-        return Success(CreateExportView(variable_stmt_result.node(), ir::Node::Null(), &info, false));
+        return Success(CreateExportView(variable_stmt_result.value(), ir::Node::Null(), &info, false));
       }
       case Token::TS_CONST:
       case Token::TS_CLASS:
@@ -416,21 +416,21 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
       case Token::TS_ENUM: {
         auto decl_result = ParseDeclaration(true, true, false);
         CHECK_AST(decl_result);
-        return Success(CreateExportView(decl_result.node(), ir::Node::Null(), &info, false));
+        return Success(CreateExportView(decl_result.value(), ir::Node::Null(), &info, false));
       }
       case Token::TS_DEFAULT:
       case Token::TS_ASSIGN: {
         Next();
         auto assignment_expr_result = ParseAssignmentExpression(true, false);
         CHECK_AST(assignment_expr_result);
-        return Success(CreateExportView(assignment_expr_result.node(), ir::Node::Null(), &info, true));
+        return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
       }
       default:
         if (Current()->type() == Token::TS_IDENTIFIER &&
             Current()->value()->Equals("declare")) {
           auto ambient_decl_result = ParseAmbientDeclaration(true);
           CHECK_AST(ambient_decl_result);
-          return Success(CreateExportView(ambient_decl_result.node(), ir::Node::Null(), &info, true));
+          return Success(CreateExportView(ambient_decl_result.value(), ir::Node::Null(), &info, true));
         }
         SYNTAX_ERROR("unexpected token.", Current());
     }
@@ -470,10 +470,10 @@ ParseResult Parser<UCharInputIterator>::ParseExportClause() {
           Next();
           auto binding_identifier_result = ParseIdentifier();
           SKIP_TOKEN_OR(binding_identifier_result, success, Token::TS_RIGHT_BRACE) {
-            named_export_list->InsertLast(CreateNamedExportView(identifier_result.node(), binding_identifier_result.node()));
+            named_export_list->InsertLast(CreateNamedExportView(identifier_result.value(), binding_identifier_result.value()));
           }
         } else {
-          named_export_list->InsertLast(CreateNamedExportView(identifier_result.node(), ir::Node::Null()));
+          named_export_list->InsertLast(CreateNamedExportView(identifier_result.value(), ir::Node::Null()));
         }
       }
       if (Current()->type() == Token::TS_COMMA) {

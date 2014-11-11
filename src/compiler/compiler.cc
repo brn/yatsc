@@ -87,6 +87,7 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   } else {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }
+
   printf("END %s %d\n", module_info->module_name(), compilation_scheduler_->count());
 }
 

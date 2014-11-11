@@ -30,66 +30,98 @@
 #include "../utils/notificator.h"
 #include "../compiler/module-info.h"
 #include "../utils/path.h"
+#include "../utils/maybe.h"
 
 namespace yatsc {
 
 
-// Generate SyntaxError and throw it.
+// Generate SyntaxError and push it to buffer.
+// This macro return Failed() result.
 // Usage. SYNTAX_ERROR("test " << message, Current())
 #define SYNTAX_ERROR(message, item)             \
   SYNTAX_ERROR_INTERNAL(message, item)
 
 
-// Generate SyntaxError and throw it.
+// Generate SyntaxError and push it to buffer.
+// This method do not return.
 // Usage. SYNTAX_ERROR("test " << message, Current())
-#define SYNTAX_ERROR_NO_RETURN(message, item)   \
+#define SYNTAX_ERROR_NO_RETURN(message, item)     \
   SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item)
 
 
-// Generate SyntaxError and throw it.
+// Generate SyntaxError and push it to buffer.
+// This method execute given expr.
 // Usage. SYNTAX_ERROR("test " << message, Current())
 #define SYNTAX_ERROR_AND(message, item, expr)     \
-  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item);  \
+  SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item); \
   expr
 
 
-#define CHECK_AST(result)                         \
-  if (!result.success()) {return Failed(result.node());}
+// Generate SyntaxError and skip token until given token found.
+// This method return Failed() result.
+#define SYNTAX_ERROR_AND_SKIP(message, item, token) \
+  SYNTAX_ERROR_NO_RETURN(message, item);            \
+  SkipTokensIfErrorOccured(token);                  \
+  return Failed()
 
 
-#define SKIP_TOKEN_OR(result, flag, token)       \
-  if (!result.success()) {flag = false;SkipTokensIfErrorOccured(token);} else
+// Generate SyntaxError and skip token until given token found.
+// This method return Failed() result.
+#define SYNTAX_ERROR_AND_SKIP_NEXT(message, item, token)  \
+  SYNTAX_ERROR_NO_RETURN(message, item);                  \
+  SkipTokensIfErrorOccured(token);                        \
+  Next();                                                 \
+  return Failed()
 
 
-#define SKIP_TOKEN_IF(result, flag, token)                   \
+// Check prase result, if parse has failed, return Failed(ir::Node).
+#define CHECK_AST(result) if (!result) {return Failed();}
+
+
+// Skip token until given token found if parse has failed, and if parse has not failed, goto next block.
+// Usage. SKIP_TOKEN_OR(result, flag, Token::LINE_TERMINATOR) {...}
+#define SKIP_TOKEN_OR(result, flag, token)                          \
+  if (!result) {flag = false;SkipTokensIfErrorOccured(token);} else
+
+
+// Skip token until given token found if parse has failed.
+// Usage. SKIP_TOKEN_IF(result, flag, Token::LINE_TERMINATOR).
+#define SKIP_TOKEN_IF(result, flag, token)          \
   SKIP_TOKEN_OR(result, flag, token) {flag = true;}
 
 
-#define SKIP_TOKEN_IF_AND(result, flag, token, expr) \
-  if (!result.success()) {                        \
-    flag = false;                                 \
-    SkipTokensIfErrorOccured(token);              \
-    expr;                                         \
+// Skip token until given token found if parse has failed.
+// This method execute given expr.
+// Usage. SKIP_TOKEN_AND(result, flag, Token::LINE_TERMINATOR, return Failed()).
+#define SKIP_TOKEN_IF_AND(result, flag, token, expr)  \
+  if (!result) {                                      \
+    flag = false;                                     \
+    SkipTokensIfErrorOccured(token);                  \
+    expr;                                             \
   } else {flag = true;}
 
 
-// Throw error and return nullptr.
+// Push error to the buffer and return Failed() result.
 #define SYNTAX_ERROR_INTERNAL(message, item)    \
   REPORT_SYNTAX_ERROR_INTERNAL(message, item);  \
   return Failed()
 
 
+// Push error to the buffer.
 #define SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item)  \
   REPORT_SYNTAX_ERROR_INTERNAL(message, item)
 
 
 #ifndef DEBUG
 
+// Push error to the buffer.
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item) \
   module_info_->semantic_error()->SyntaxError(item) << message;
 
 #else
 
+// Push error to the buffer.
+// This method debug only.
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item)               \
   module_info_->semantic_error()->SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
 #endif
@@ -118,63 +150,14 @@ namespace yatsc {
 #endif
 
 
-class ParseResult {
- public:
-  ParseResult()
-      : success_(false) {}
-
-  
-  ParseResult(Handle<ir::Node> node, bool success)
-      : node_(node),
-        success_(success) {}
-
-    
-  ParseResult(const ParseResult& rs)
-      : node_(rs.node_),
-        success_(rs.success_) {}
-
-
-  ParseResult(ParseResult&& rs)
-      : node_(std::move(rs.node_)),
-        success_(rs.success_) {}
-
-    
-  ~ParseResult() = default;
-
-
-  ParseResult& operator = (const ParseResult& parse_result) {
-    node_ = parse_result.node_;
-    success_ = parse_result.success_;
-    return *this;
-  }
-
-  
-  ParseResult& operator = (ParseResult&& parse_result) {
-    node_ = std::move(parse_result.node_);
-    success_ = parse_result.success_;
-    return *this;
-  }
-    
-
-  YATSC_GETTER(Handle<ir::Node>, node, node_);
-
-    
-  YATSC_GETTER(bool, success, success_);
-
-
-  YATSC_INLINE operator bool() const {return success_;}
-    
-    
- private:
-  Handle<ir::Node> node_;
-  bool success_;
-};
+typedef Maybe<Handle<ir::Node>> ParseResult;
 
 
 template <typename UCharInputSourceIterator>
 class Parser: public ParserBase {
   
  public:
+  
   Parser(const CompilerOption& co,
          Scanner<UCharInputSourceIterator>* scanner,
          const Notificator<void(const String&)>& notificator,
@@ -185,9 +168,9 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> Parse() {
     if (module_info_->IsDefinitionFile()) {
-      return ParseDeclarationModule().node();
+      return ParseDeclarationModule().value();
     } else {
-      return ParseModule().node();
+      return ParseModule().value();
     }
   };
 
@@ -695,16 +678,10 @@ class Parser: public ParserBase {
   void SkipTokensIfErrorOccured(Token token);
 
 
-  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return ParseResult(result, true);}
+  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
+  
 
-
-  YATSC_INLINE ParseResult Failed(Handle<ir::Node> result) YATSC_NO_SE {return ParseResult(result, false);}
-
-
-  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return ParseResult(ir::Node::Null(), false);}
-
-
-  YATSC_INLINE ParseResult Result(Handle<ir::Node> node, bool success) {return success? Success(node): Failed(node);}
+  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
   
 #if defined(DEBUG) || defined(UNIT_TEST)
   StringStream phase_buffer_;
