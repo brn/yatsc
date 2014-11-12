@@ -366,7 +366,6 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
   if (Current()->type() == Token::TS_LEFT_PAREN ||
       Current()->type() == Token::TS_LESS) {
     // First try parse as arrow function.
-    bool failed = false;
     // parsae an arrow_function_parameters.
     auto arrow_param_result = ParseArrowFunctionParameters(yield, ir::Node::Null());
     // if node is exists, arrow function parameter parse is succeeded.
@@ -495,6 +494,7 @@ ParseResult Parser<UCharInputIterator>::ParseConciseBody(bool in, Handle<ir::Nod
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool yield) {
   LOG_PHASE(ParseConditionalExpression);
+  
   auto logical_or_expr_result = ParseLogicalORExpression(in, yield);
   CHECK_AST(logical_or_expr_result);
   
@@ -1068,53 +1068,68 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
   } else {
     token_info = Current();
   }
+  TokenInfo info = *token_info;
+  
+  ParseResult parse_result;
+  
+  Parsed* parsed = GetMemoizedRecord(token_info->source_position());
+  if (parsed != nullptr) {
+    RestoreParserState(parsed->parser_state());
+    return parsed->parse_result();
+  }
+
+
+  YATSC_SCOPED([&] {
+    Memoize(info.source_position(), parse_result);
+  });
+  
   
   switch (token_info->type()) {
     case Token::TS_IDENTIFIER: {
-      return ParseIdentifierReference(yield);
+      return parse_result = ParseIdentifierReference(yield);
     }
     case Token::TS_THIS: {
       // parse a this.
       Handle<ir::Node> this_view = New<ir::ThisView>();
       this_view->SetInformationForNode(token_info);
       Next();
-      return Success(this_view);
+      return parse_result = Success(this_view);
     }
     case Token::TS_LEFT_BRACE:
       // parse an object literal.
-      return ParseObjectLiteral(yield);
+      return parse_result = ParseObjectLiteral(yield);
     case Token::TS_LEFT_BRACKET:
       // parse an array literal.
-      return ParseArrayInitializer(yield);
+      return parse_result = ParseArrayInitializer(yield);
     case Token::TS_LEFT_PAREN: {
       RecordedParserState rps = parser_state();
       Next();
       if (Current()->type() == Token::TS_FOR) {
         RestoreParserState(rps);
-        return ParseGeneratorComprehension(yield);
+        return parse_result = ParseGeneratorComprehension(yield);
       } else {
-        auto node = ParseExpression(true, false);
+        auto node = parse_result = ParseExpression(true, false);
         CHECK_AST(node);
         if (Current()->type() == Token::TS_RIGHT_PAREN) {
           Next();
-          return node;
+          return parse_result = node;
         }
       }
-      SYNTAX_ERROR("')' expected", Current());
+      SYNTAX_ERROR_AND("')' expected", Current(), return parse_result = ParseResult());
     }
     case Token::TS_REGULAR_EXPR: {
-      return ParseRegularExpression();
+      return parse_result = ParseRegularExpression();
     }
     case Token::TS_TEMPLATE_LITERAL: {
-      return ParseTemplateLiteral();
+      return parse_result = ParseTemplateLiteral();
     }
     case Token::TS_FUNCTION:
-      return ParseFunctionOverloadOrImplementation(ir::Node::Null(), yield, false, false);
+      return parse_result = ParseFunctionOverloadOrImplementation(ir::Node::Null(), yield, false, false);
     case Token::TS_CLASS:
-      return ParseClassDeclaration(yield, false);
+      return parse_result = ParseClassDeclaration(yield, false);
     default:
       // parse a literal.
-      return ParseLiteral();
+      return parse_result = ParseLiteral();
   }
 }
 

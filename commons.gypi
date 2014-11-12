@@ -179,7 +179,8 @@
           'OTHER_CPLUSPLUSFLAGS': [
             '-fno-operator-names',
             '-std=c++11',
-            '-stdlib=libc++'
+            '-stdlib=libc++',
+            '-ferror-limit=100'
           ],
           'OTHER_LDFLAGS': ['-Wl,-search_paths_first'],
           'MACOSX_DEPLOYMENT_TARGET': '10.7',

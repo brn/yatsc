@@ -29,6 +29,8 @@
 namespace yatsc {
 class SourcePosition: private Unmovable {
  public:
+  typedef long Id;
+  
   SourcePosition()
       : start_col_(0),
         end_col_(0),
@@ -50,11 +52,51 @@ class SourcePosition: private Unmovable {
         end_line_number_(source_position.end_line_number_){}
 
 
-  void operator = (const SourcePosition& source_position) {
+  inline void operator = (const SourcePosition& source_position) {
     start_col_ = source_position.start_col_;
     end_col_ = source_position.end_col_;
     start_line_number_ = source_position.start_line_number_;
     end_line_number_ = source_position.end_line_number_;
+  }
+
+
+  inline bool operator > (const SourcePosition& source_position) YATSC_NO_SE {
+    if (start_line_number_ == source_position.start_line_number_) {
+      return start_col_ > source_position.start_col_;
+    }
+    return start_line_number_ > source_position.start_line_number_;
+  }
+
+
+  inline bool operator < (const SourcePosition& source_position) YATSC_NO_SE  {
+    if (start_line_number_ == source_position.start_line_number_) {
+      return start_col_ < source_position.start_col_;
+    }
+    return start_line_number_ < source_position.start_line_number_;
+  }
+
+
+  inline bool operator >= (const SourcePosition& source_position) YATSC_NO_SE  {
+    if (start_line_number_ == source_position.start_line_number_) {
+      return start_col_ >= source_position.start_col_;
+    }
+    return start_line_number_ >= source_position.start_line_number_;
+  }
+
+
+  inline bool operator <= (const SourcePosition& source_position) YATSC_NO_SE  {
+    if (start_line_number_ == source_position.start_line_number_) {
+      return start_col_ <= source_position.start_col_;
+    }
+    return start_line_number_ <= source_position.start_line_number_;
+  }
+
+
+  inline bool operator == (const SourcePosition& source_position) YATSC_NO_SE  {
+    return start_line_number_ == source_position.start_line_number_ &&
+      start_col_ == source_position.start_col_ &&
+      end_line_number_ == source_position.end_line_number_ &&
+      end_col_ == source_position.end_col_;
   }
 
 

@@ -116,4 +116,28 @@ Handle<T>& Handle<T>::operator = (Handle<U>&& hh) {
   hh.ref_count_ = nullptr;
   return *this;
 }
+
+
+YATSC_INLINE void* UnsafeZoneAllocator::NewPtr(size_t size) {
+  if (!zone_->HasEnoughSize(size)) {
+    Grow();
+  }
+  return reinterpret_cast<void*>(zone_->GetHeap(size));
+}
+
+
+template <typename T, typename ... Args>
+YATSC_INLINE T* UnsafeZoneAllocator::New(Args ... args) {
+  void* ret = NewPtr(sizeof(T));
+  return new (ret) T(args...);
+}
+
+
+YATSC_INLINE void UnsafeZoneAllocator::Grow() {
+  void* ret = Heap::NewPtr(sizeof(Zone) + size_);
+  Zone* head = new (ret) Zone(reinterpret_cast<Byte*>(ret) + sizeof(Zone), size_);
+  head->set_next(zone_);
+  zone_ = head;
+}
+
 }

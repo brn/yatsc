@@ -51,6 +51,15 @@ using HashMap = std::unordered_map<Key,
                                    std::equal_to<Key>,
                                    StandardAllocator<std::pair<const Key, Value>>>;
 
+
+template<typename Key, typename Value>
+using UnsafeHashMap = std::unordered_map<Key,
+                                         Value,
+                                         std::hash<Key>,
+                                         std::equal_to<Key>,
+                                         UnsafeZoneStdAllocator<std::pair<const Key, Value>>>;
+
+
 template<typename Key>
 using HashSet = std::unordered_set<Key,
                                    std::hash<Key>,

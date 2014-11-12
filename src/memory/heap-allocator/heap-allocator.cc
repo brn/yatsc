@@ -26,4 +26,14 @@
 
 namespace yatsc {
 heap::CentralArena Heap::central_arena_;
+
+
+UnsafeZoneAllocator::~UnsafeZoneAllocator() {
+  Zone* zone = zone_;
+  while (zone) {
+    Zone* tmp = zone->next();
+    Heap::Destruct(zone);
+    zone = tmp;
+  }
+}
 }

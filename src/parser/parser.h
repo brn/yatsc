@@ -571,6 +571,7 @@ class Parser: public ParserBase {
 
   void ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
   
+  
 #if defined(UNIT_TEST) || defined(DEBUG)
   void PrintStackTrace() {
     Printf("%s\n", phase_buffer_.str().c_str());
@@ -613,7 +614,27 @@ class Parser: public ParserBase {
   };
 
 
+  class Parsed: public RbTreeNode<SourcePosition, Parsed*> {
+   public:
+    explicit Parsed(ParseResult parse_result, RecordedParserState rps)
+        : RbTreeNode<SourcePosition, Parsed*>(),
+          parse_result_(parse_result),
+          parser_state_(rps) {}
+
+    YATSC_GETTER(ParseResult, parse_result, parse_result_);
+
+
+    YATSC_GETTER(RecordedParserState, parser_state, parser_state_);
+    
+   private:
+    ParseResult parse_result_;
+    RecordedParserState parser_state_;
+  };
+
+
   void Initialize() {
+    unsafe_zone_allocator_(sizeof(Parsed) * 10);
+    
     scanner_->SetReferencePathCallback([&](const Literal* path){
       String dir = Path::Dirname(module_info_->module_name());
       Notify("Parser::ModuleFound", Path::Join(dir, path->utf8_value()));
@@ -662,6 +683,18 @@ class Parser: public ParserBase {
       }
     }
   }
+  
+
+  ParseResult& Memoize(const SourcePosition& sp, ParseResult& result) {
+    auto record = this->unsafe_zone_allocator_->template New<Parsed>(result, parser_state());
+    memo_.Insert(sp, record);
+    return result;
+  }
+
+
+  Parsed* GetMemoizedRecord(const SourcePosition& sp) {
+    return memo_.Find(sp);
+  }
 
 
   YATSC_INLINE void Declare(Handle<ir::Node> node) {
@@ -689,6 +722,8 @@ class Parser: public ParserBase {
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;
   Handle<ir::Scope> scope_;
+  LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
+  IntrusiveRbTree<SourcePosition, Parsed*> memo_;
 };
 } // yatsc
 

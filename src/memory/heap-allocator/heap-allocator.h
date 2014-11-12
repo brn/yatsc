@@ -349,6 +349,70 @@ class Heap: private Static {
 };
 
 
+class UnsafeZoneAllocator {
+ public:
+  UnsafeZoneAllocator(size_t size = 1 KB)
+      : size_(size),
+        zone_(nullptr) {Grow();}
+
+  ~UnsafeZoneAllocator();
+
+
+  YATSC_INLINE void* NewPtr(size_t size);
+
+
+  template <typename T, typename ... Args>
+  YATSC_INLINE T* New(Args ... args);
+
+
+ private:
+  class Zone {
+   public:
+    Zone(Byte* heap, size_t size)
+        : heap_(heap),
+          size_(size),
+          used_(0),
+          next_(nullptr) {}
+
+    ~Zone() = default;
+
+
+    YATSC_GETTER(Byte*, heap, heap_);
+
+
+    YATSC_CONST_GETTER(size_t, size, size_);
+
+
+    YATSC_PROPERTY(Zone*, next, next_);
+
+
+    YATSC_INLINE bool HasEnoughSize(size_t size) const {
+      return (size_ - size) > used_;
+    }
+
+
+    YATSC_INLINE void* GetHeap(size_t size) {
+      auto ret = heap_ + used_;
+      used_ += size;
+      return ret;
+    }
+
+   private:
+    Byte* heap_;
+    size_t size_;
+    size_t used_;
+    Zone* next_;
+  };
+
+  
+  void Grow();
+  
+
+  size_t size_;
+  Zone* zone_;
+};
+
+
 // std::allocator implementation of the yatsc::Heap.
 template <typename T>
 class StandardAllocator: public std::allocator<T> {
@@ -424,6 +488,94 @@ class StandardAllocator: public std::allocator<T> {
   size_type max_size() YATSC_NO_SE {
     return std::numeric_limits<size_t>::max() / sizeof(T);
   }
+};
+
+
+template <typename T>
+class UnsafeZoneStdAllocator: public std::allocator<T> {
+  template <typename U>
+  friend class UnsafeZoneStdAllocator;
+ public:
+  typedef size_t  size_type;
+  typedef ptrdiff_t difference_type;
+  typedef T* pointer;
+  typedef const T* const_pointer;
+  typedef T& reference;
+  typedef const T& const_reference;
+  typedef T value_type;
+
+  template <class U>
+  struct rebind { 
+    typedef UnsafeZoneStdAllocator<U> other;
+  };
+
+
+  UnsafeZoneStdAllocator(UnsafeZoneAllocator* unsafe_zone_allocator)
+      : unsafe_zone_allocator_(unsafe_zone_allocator) {}
+
+
+  UnsafeZoneStdAllocator(size_t size)
+      : unsafe_zone_allocator_(Heap::New<UnsafeZoneAllocator>(size)) {}
+
+  
+  UnsafeZoneStdAllocator(const UnsafeZoneStdAllocator& allocator)
+      : unsafe_zone_allocator_(allocator.unsafe_zone_allocator_) {}
+
+
+  template <typename U>
+  UnsafeZoneStdAllocator(const UnsafeZoneStdAllocator<U>& allocator)
+      : unsafe_zone_allocator_(allocator.unsafe_zone_allocator_) {}
+    
+
+
+  // Allocate new memory.
+  pointer allocate(size_type num, const void*) YATSC_NO_SE {
+    return allocate(num);
+  }
+
+  
+  pointer allocate(size_type num) YATSC_NO_SE {
+    return reinterpret_cast<pointer>(unsafe_zone_allocator_->NewPtr(sizeof(T) * num));
+  }
+
+  
+  // Initialize already allocated block.  
+  void construct(pointer p, const T& value) YATSC_NOEXCEPT {
+    new (static_cast<void*>(p)) T(value);
+  }
+
+  
+  // Return object address.  
+  pointer address(reference value) YATSC_NO_SE { 
+    return &value;
+  }
+
+  
+  // Return const object address.
+  const_pointer address(const_reference value) YATSC_NO_SE { 
+    return &value;
+  }
+
+  
+  // Remove pointer.  
+  void destroy(pointer ptr) YATSC_NO_SE {
+    (void)ptr;
+    ptr->~T();
+  }
+
+  
+  // Do nothing.  
+  void deallocate(pointer p, size_type) YATSC_NO_SE {}
+
+  
+  // Return the max size of allocatable.
+  size_type max_size() YATSC_NO_SE {
+    return std::numeric_limits<size_t>::max() / sizeof(T);
+  }
+
+
+ private:
+  UnsafeZoneAllocator* unsafe_zone_allocator_;
 };
 
 }
