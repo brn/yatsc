@@ -208,7 +208,7 @@ static const char* kNodeTypeStringList[] = {
 #define NODE_SETTER(name, pos)                            \
   YATSC_INLINE void set_##name(Handle<Node> name) {       \
     node_list_[pos] = name;                               \
-    if (name) name->set_parent_node(Handle<Node>(this));  \
+    if (name) name->set_parent_node(this);  \
   }
 
 
@@ -333,7 +333,10 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Getter and setter for parent_node_.
-  YATSC_PROPERTY(Handle<Node>, parent_node, parent_node_);
+  YATSC_SETTER(Node*, parent_node, parent_node_);
+
+
+  YATSC_GETTER(Handle<Node>, parent_node, Handle<Node>(parent_node_));
 
 
   // Getter for children list.
@@ -641,7 +644,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   SourceInformation source_information_;
   NodeType node_type_;
   size_t capacity_;
-  Handle<Node> parent_node_;
+  Node* parent_node_;
   Token operand_;
   double double_value_;
   bool invalid_lhs_;
