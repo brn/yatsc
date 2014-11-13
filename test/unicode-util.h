@@ -35,9 +35,10 @@
 
 namespace yatsc {
 namespace testing {
-inline yatsc::Vector<UChar> AsciiToUCharVector(const yatsc::String& code) {
+template <typename CharBuffer>
+inline yatsc::Vector<UChar> AsciiToUCharVector(const CharBuffer& code) {
   yatsc::UCharBuffer v;
-  yatsc::UnicodeIteratorAdapter<yatsc::String::const_iterator> uia(code.cbegin());
+  yatsc::UnicodeIteratorAdapter<typename CharBuffer::const_iterator> uia(code.cbegin());
   for (;uia != code.end(); ++uia) {
     v.push_back(std::move(*uia));
   }

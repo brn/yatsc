@@ -174,15 +174,7 @@ class Parser: public ParserBase {
     }
   };
 
- private:
-  struct AccessorType {
-    AccessorType(bool setter, bool getter, const TokenInfo& info)
-        : setter(setter), getter(getter), token_info(info) {}
-    bool setter;
-    bool getter;
-    TokenInfo token_info;
-  };
-  
+ private:  
   
   /**
    * Return a next TokenInfo.
@@ -199,6 +191,118 @@ class Parser: public ParserBase {
 
 
   YATSC_INLINE TokenInfo* Prev() YATSC_NOEXCEPT;
+
+
+  struct AccessorType {
+    AccessorType(bool setter, bool getter, const TokenInfo& info)
+        : setter(setter), getter(getter), token_info(info) {}
+    bool setter;
+    bool getter;
+    TokenInfo token_info;
+  };
+  
+
+  class RecordedParserState {
+   public:
+    RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp,
+                        const TokenInfo& current,
+                        const TokenInfo& prev,
+                        Handle<ir::Scope> current_scope,
+                        size_t error_count)
+        : rcp_(rcp),
+          current_(current),
+          prev_(prev),
+          scope_(current_scope),
+          error_count_(error_count) {}
+
+    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
+
+
+    YATSC_CONST_GETTER(const TokenInfo&, current, current_);
+
+
+    YATSC_CONST_GETTER(const TokenInfo&, prev, prev_);
+
+
+    YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
+
+    YATSC_CONST_GETTER(size_t, error_count, error_count_);
+
+   private:
+    typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
+    TokenInfo current_;
+    TokenInfo prev_;
+    Handle<ir::Scope> scope_;
+    size_t error_count_;
+  };
+
+
+  class Parsed: public RbTreeNode<SourcePosition, Parsed*> {
+   public:
+    explicit Parsed(ParseResult parse_result, RecordedParserState rps)
+        : RbTreeNode<SourcePosition, Parsed*>(),
+          parse_result_(parse_result),
+          parser_state_(rps) {}
+
+    YATSC_GETTER(ParseResult, parse_result, parse_result_);
+
+
+    YATSC_GETTER(RecordedParserState, parser_state, parser_state_);
+    
+   private:
+    ParseResult parse_result_;
+    RecordedParserState parser_state_;
+  };
+
+
+  void Initialize() YATSC_NOEXCEPT;
+  
+
+  RecordedParserState parser_state() YATSC_NOEXCEPT;
+
+  
+  void RestoreParserState(const RecordedParserState& rps) YATSC_NOEXCEPT;
+  
+
+  ParseResult& Memoize(const SourcePosition& sp, ParseResult& result) YATSC_NOEXCEPT {
+    auto record = this->unsafe_zone_allocator_->template New<Parsed>(result, parser_state());
+    memo_.Insert(sp, record);
+    return result;
+  }
+
+
+  Parsed* GetMemoizedRecord(const SourcePosition& sp) YATSC_NOEXCEPT {
+    return memo_.Find(sp);
+  }
+
+
+  YATSC_INLINE void Declare(Handle<ir::Node> node) {
+    scope_->Declare(node);
+  }
+
+
+  YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_);
+
+
+  Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope());}
+
+  
+  void SkipTokensIfErrorOccured(Token token) YATSC_NOEXCEPT;
+
+
+  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
+  
+
+  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
+  
+#if defined(DEBUG) || defined(UNIT_TEST)
+  StringStream phase_buffer_;
+#endif
+  Scanner<UCharInputSourceIterator>* scanner_;
+  Handle<ModuleInfo> module_info_;
+  Handle<ir::Scope> scope_;
+  LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
+  IntrusiveRbTree<SourcePosition, Parsed*> memo_;
   
 
  VISIBLE_FOR_TESTING:
@@ -559,13 +663,13 @@ class Parser: public ParserBase {
   ParseResult ParseAmbientModuleElement(bool external);
   
 
-  bool IsLineTermination();
+  bool IsLineTermination() YATSC_NOEXCEPT;
 
-  void ConsumeLineTerminator();
+  void ConsumeLineTerminator() YATSC_NOEXCEPT;
 
-  void EnableNestedGenericTypeScanMode() {scanner_->EnableNestedGenericTypeScanMode();}
+  void EnableNestedGenericTypeScanMode() YATSC_NOEXCEPT {scanner_->EnableNestedGenericTypeScanMode();}
 
-  void DisableNestedGenericTypeScanMode() {scanner_->DisableNestedGenericTypeScanMode();}
+  void DisableNestedGenericTypeScanMode() YATSC_NOEXCEPT {scanner_->DisableNestedGenericTypeScanMode();}
 
   AccessorType ParseAccessor();
 
@@ -577,153 +681,6 @@ class Parser: public ParserBase {
     Printf("%s\n", phase_buffer_.str().c_str());
   }
 #endif
-
- private:
-  class RecordedParserState {
-   public:
-    RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp,
-                        const TokenInfo& current,
-                        const TokenInfo& prev,
-                        Handle<ir::Scope> current_scope,
-                        size_t error_count)
-        : rcp_(rcp),
-          current_(current),
-          prev_(prev),
-          scope_(current_scope),
-          error_count_(error_count) {}
-
-    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
-
-
-    YATSC_CONST_GETTER(const TokenInfo&, current, current_);
-
-
-    YATSC_CONST_GETTER(const TokenInfo&, prev, prev_);
-
-
-    YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
-
-    YATSC_CONST_GETTER(size_t, error_count, error_count_);
-
-   private:
-    typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
-    TokenInfo current_;
-    TokenInfo prev_;
-    Handle<ir::Scope> scope_;
-    size_t error_count_;
-  };
-
-
-  class Parsed: public RbTreeNode<SourcePosition, Parsed*> {
-   public:
-    explicit Parsed(ParseResult parse_result, RecordedParserState rps)
-        : RbTreeNode<SourcePosition, Parsed*>(),
-          parse_result_(parse_result),
-          parser_state_(rps) {}
-
-    YATSC_GETTER(ParseResult, parse_result, parse_result_);
-
-
-    YATSC_GETTER(RecordedParserState, parser_state, parser_state_);
-    
-   private:
-    ParseResult parse_result_;
-    RecordedParserState parser_state_;
-  };
-
-
-  void Initialize() {
-    unsafe_zone_allocator_(sizeof(Parsed) * 10);
-    
-    scanner_->SetReferencePathCallback([&](const Literal* path){
-      String dir = Path::Dirname(module_info_->module_name());
-      Notify("Parser::ModuleFound", Path::Join(dir, path->utf8_value()));
-    });
-
-    scanner_->SetErrorCallback([&](const char* message, const SourcePosition& source_position) {
-      module_info_->semantic_error()->SyntaxError(source_position) << message;
-    });
-
-    set_current_scope(NewScope());
-    
-    Next();
-  }
-  
-
-  RecordedParserState parser_state() YATSC_NOEXCEPT {
-    TokenInfo prev;
-    TokenInfo current;
-    Handle<ir::Scope> scope;
-    if (Prev() != nullptr) {
-      prev = *Prev();
-    }
-    if (Current() != nullptr) {
-      current = *Current();
-    }
-    if (scope_) {
-      scope = scope_;
-    }
-    
-    return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->semantic_error()->size());
-  }
-
-  void RestoreParserState(const RecordedParserState& rps) {
-    scanner_->RestoreScannerPosition(rps.rcp());
-    *current_token_info_ = rps.current();
-    prev_token_info_ = rps.prev();
-    scope_ = rps.scope();
-    Handle<SemanticError> se = module_info_->semantic_error();
-    if (se->size() != rps.error_count()) {
-      size_t diff = rps.error_count() - se->size();
-      if (diff > se->size()) {
-        diff = se->size();
-      }
-      for (size_t i = 0; i < diff; i++) {
-        se->Pop();
-      }
-    }
-  }
-  
-
-  ParseResult& Memoize(const SourcePosition& sp, ParseResult& result) {
-    auto record = this->unsafe_zone_allocator_->template New<Parsed>(result, parser_state());
-    memo_.Insert(sp, record);
-    return result;
-  }
-
-
-  Parsed* GetMemoizedRecord(const SourcePosition& sp) {
-    return memo_.Find(sp);
-  }
-
-
-  YATSC_INLINE void Declare(Handle<ir::Node> node) {
-    scope_->Declare(node);
-  }
-
-
-  YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_);
-
-
-  Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope());}
-
-  
-  void SkipTokensIfErrorOccured(Token token);
-
-
-  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
-  
-
-  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
-  
-#if defined(DEBUG) || defined(UNIT_TEST)
-  StringStream phase_buffer_;
-#endif
-  Scanner<UCharInputSourceIterator>* scanner_;
-  Handle<ModuleInfo> module_info_;
-  Handle<ir::Scope> scope_;
-  LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
-  IntrusiveRbTree<SourcePosition, Parsed*> memo_;
 };
 } // yatsc
 

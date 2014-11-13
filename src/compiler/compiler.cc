@@ -36,7 +36,7 @@ namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
     : compiler_option_(compiler_option) {
-  thread_pool_(SystemInfo::GetOnlineProcessorCount());
+  thread_pool_(SystemInfo::GetOnlineProcessorCount() + 2);
   compilation_scheduler_(thread_pool_.Get());
   notificator_.AddListener("Parser::ModuleFound", [&](const String& module_name) {
     Schedule(module_name);
@@ -74,13 +74,13 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   printf("BEGIN %s\n", module_info->module_name());
   Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
 
-  Scanner<UnicodeIteratorAdapter<String::iterator>> scanner(
+  Scanner<SourceStream::iterator> scanner(
       source_stream->begin(),
       source_stream->end(),
       literal_buffer.Get(),
       compiler_option_);
     
-  Parser<UnicodeIteratorAdapter<String::iterator>> parser(compiler_option_, &scanner, notificator_, module_info);
+  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info);
   Handle<ir::Node> root = parser.Parse();
   if (!module_info->HasError()) {
     AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer));

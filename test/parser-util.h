@@ -56,7 +56,7 @@ void YatscParserTest(const char* name,
   using namespace yatsc;
   typedef std::vector<yatsc::UChar>::iterator Iterator;
   auto module_info = Heap::NewHandle<ModuleInfo>(String(name), String(code), true);
-  UCharBuffer uchar_buffer = yatsc::testing::AsciiToUCharVector(module_info->source_stream()->raw_buffer());
+  UCharBuffer uchar_buffer = yatsc::testing::AsciiToUCharVector(String(module_info->source_stream()->raw_buffer()));
   CompilerOption compiler_option;
   compiler_option.set_language_mode(type);
   LiteralBuffer lb;

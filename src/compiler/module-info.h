@@ -66,7 +66,7 @@ class ModuleInfo {
   bool HasError() const {return semantic_error_->HasError();}
 
 
-  const String& raw_source_code() const {return source_stream_->raw_buffer();}
+  const char* raw_source_code() const {return source_stream_->raw_buffer();}
 
 
   static Handle<ModuleInfo> Create(const String& module_name) {return Create(module_name.c_str());}

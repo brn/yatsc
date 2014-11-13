@@ -33,7 +33,7 @@ const char filename[] = "test/parser/sourcestream-test-cases/jquery.js";
 TEST(SourceStream, read_all_ok) {
   yatsc::SourceStream st(filename);
   yatsc::String expected = yatsc::testing::ReadFile(filename);
-  yatsc::testing::CompareBuffer(st.raw_cbuffer(), expected.c_str());
+  yatsc::testing::CompareBuffer(st.raw_buffer(), expected.c_str());
 }
 
 

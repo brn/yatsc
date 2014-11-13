@@ -121,7 +121,7 @@ Vector<String> ErrorFormatter::GetLineSource(const SourcePosition& source_positi
   size_t count = 0;
   String::size_type start = 0;
   Vector<String> line_source;
-  const String& raw_source_code = module_info_->raw_source_code();
+  String raw_source_code(module_info_->raw_source_code());
   
   while (1) {
     String::size_type end = raw_source_code.find('\n', start);

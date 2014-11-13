@@ -50,7 +50,7 @@ TokenInfo* Parser<UCharInputIterator>::Prev() YATSC_NOEXCEPT {
 
 
 template <typename UCharInputIterator>
-bool Parser<UCharInputIterator>::IsLineTermination() {
+bool Parser<UCharInputIterator>::IsLineTermination() YATSC_NOEXCEPT {
   return Current()->type() == Token::LINE_TERMINATOR ||
     Current()->type() == Token::END_OF_INPUT ||
     (Prev() != nullptr &&
@@ -59,7 +59,7 @@ bool Parser<UCharInputIterator>::IsLineTermination() {
 
 
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::ConsumeLineTerminator() {
+void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
   if (Current()->type() == Token::LINE_TERMINATOR) {
     Next();
   }
@@ -68,7 +68,7 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() {
 
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) {
+void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) YATSC_NOEXCEPT {
   if (token == Token::LINE_TERMINATOR) {
     while (Current()->type() != Token::LINE_TERMINATOR) {
       if (Current()->has_line_break_before_next() ||
@@ -82,6 +82,64 @@ void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) {
     while (Current()->type() != Token::END_OF_INPUT &&
            Current()->type() != token) {
       Next();
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::Initialize() YATSC_NOEXCEPT {
+  unsafe_zone_allocator_(sizeof(Parsed) * 10);
+    
+  scanner_->SetReferencePathCallback([&](const Literal* path){
+    String dir = Path::Dirname(module_info_->module_name());
+    Notify("Parser::ModuleFound", Path::Join(dir, path->utf8_value()));
+  });
+
+  scanner_->SetErrorCallback([&](const char* message, const SourcePosition& source_position) {
+    module_info_->semantic_error()->SyntaxError(source_position) << message;
+  });
+
+  set_current_scope(NewScope());
+    
+  Next();
+}
+
+
+template <typename UCharInputIterator>
+typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterator>::parser_state() YATSC_NOEXCEPT {
+  TokenInfo prev;
+  TokenInfo current;
+  Handle<ir::Scope> scope;
+  if (Prev() != nullptr) {
+    prev = *Prev();
+  }
+  if (Current() != nullptr) {
+    current = *Current();
+  }
+  if (scope_) {
+    scope = scope_;
+  }
+    
+  return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->semantic_error()->size());
+}
+
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& rps) YATSC_NOEXCEPT {
+  scanner_->RestoreScannerPosition(rps.rcp());
+  *current_token_info_ = rps.current();
+  prev_token_info_ = rps.prev();
+  scope_ = rps.scope();
+  Handle<SemanticError> se = module_info_->semantic_error();
+  if (se->size() != rps.error_count()) {
+    size_t diff = rps.error_count() - se->size();
+    if (diff > se->size()) {
+      diff = se->size();
+    }
+    for (size_t i = 0; i < diff; i++) {
+      se->Pop();
     }
   }
 }

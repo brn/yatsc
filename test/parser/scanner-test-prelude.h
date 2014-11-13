@@ -67,7 +67,7 @@
   typedef yatsc::Vector<yatsc::UChar>::iterator Iterator;               \
   yatsc::String n = "anonymous";                                        \
   yatsc::Handle<yatsc::ModuleInfo> module_info = yatsc::Heap::NewHandle<yatsc::ModuleInfo>(n, yatsc::String(str), true); \
-  yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(module_info->raw_source_code()); \
+  yatsc::Vector<yatsc::UChar> v__ = yatsc::testing::AsciiToUCharVector(yatsc::String(module_info->raw_source_code())); \
   yatsc::CompilerOption compiler_option;                                \
   compiler_option.set_language_mode(type);                              \
   SCAN(var)

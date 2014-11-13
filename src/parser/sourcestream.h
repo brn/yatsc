@@ -42,8 +42,8 @@ namespace yatsc {
 
 class SourceStream : public MaybeFail, private Uncopyable {
  public:
-  typedef UCharBuffer::iterator iterator;
-  typedef UCharBuffer::const_iterator const_iterator;
+  typedef UnicodeIteratorAdapter<char*> iterator;
+
   SourceStream(const char* filepath);
 
   SourceStream() = default;
@@ -52,16 +52,13 @@ class SourceStream : public MaybeFail, private Uncopyable {
   YATSC_INLINE ~SourceStream() = default;
   
   
-  YATSC_INLINE UnicodeIteratorAdapter<String::iterator> begin() {return UnicodeIteratorAdapter<String::iterator>(raw_buffer_.begin());}
+  YATSC_INLINE UnicodeIteratorAdapter<char*> begin() {return UnicodeIteratorAdapter<char*>(raw_buffer_);}
   
 
-  YATSC_INLINE UnicodeIteratorAdapter<String::iterator> end() {return UnicodeIteratorAdapter<String::iterator>(raw_buffer_.end());}
+  YATSC_INLINE UnicodeIteratorAdapter<char*> end() {return UnicodeIteratorAdapter<char*>(raw_buffer_ + size_);}
 
 
-  YATSC_INLINE const String& raw_buffer() YATSC_NO_SE {return raw_buffer_;}
-
-
-  YATSC_INLINE const char* raw_cbuffer() YATSC_NO_SE {return raw_buffer_.c_str();}
+  YATSC_INLINE const char* raw_buffer() YATSC_NO_SE {return raw_buffer_;}
 
 
   YATSC_INLINE size_t size() YATSC_NO_SE {return size_;}
@@ -84,7 +81,7 @@ class SourceStream : public MaybeFail, private Uncopyable {
   
   size_t size_;
   String filepath_;
-  String raw_buffer_;
+  char* raw_buffer_;
 };
 }
 #endif

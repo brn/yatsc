@@ -42,8 +42,11 @@ void SourceStream::Initialize() {
     size_ = stat.Size();
     try {
       FILE* fp = FOpen(filepath_.c_str(), "r");
+      char* heap = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
+      setvbuf(fp, heap, _IOFBF, size_ + 1);
       ReadBlock(fp);
       FClose(fp);
+      Heap::Delete(heap);
     } catch (const FileIOException& e) {
       Fail() << kCantOpenInput << filepath_
              << "\nbecause: " << e.what();
@@ -57,18 +60,11 @@ void SourceStream::Initialize() {
 
 
 void SourceStream::ReadBlock(FILE* fp)  {
-  if (raw_buffer_.capacity() > size_ + 1) {
-    raw_buffer_.reserve(size_ + 1);
-  }
-  
-  char* str = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
-  size_t next = FRead(str, size_, sizeof(UC8), size_, fp);
+  raw_buffer_ = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
+  size_t next = FRead(raw_buffer_, size_, sizeof(UC8), size_, fp);
   if (next > 0) {
-    str[next] = '\0';
-    raw_buffer_ = str;
+    raw_buffer_[size_] = '\0';
   }
-
-  Heap::Delete(str);
 }
   
 
@@ -76,7 +72,7 @@ Handle<SourceStream> SourceStream::FromSourceCode(const char* name, const char* 
   auto ret = Heap::NewHandle<SourceStream>();
   ret->size_ = strlen(code);
   ret->filepath_ = name;
-  ret->raw_buffer_ = code;
+  strcpy(ret->raw_buffer_, code);
   return ret;
 }
 
