@@ -49,7 +49,7 @@ class SourceStream : public MaybeFail, private Uncopyable {
   SourceStream() = default;
   
 
-  YATSC_INLINE ~SourceStream() = default;
+  YATSC_INLINE ~SourceStream() {Heap::Delete(raw_buffer_);}
   
   
   YATSC_INLINE UnicodeIteratorAdapter<char*> begin() {return UnicodeIteratorAdapter<char*>(raw_buffer_);}

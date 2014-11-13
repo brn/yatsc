@@ -36,7 +36,7 @@ namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
     : compiler_option_(compiler_option) {
-  thread_pool_(SystemInfo::GetOnlineProcessorCount() + 2);
+  thread_pool_(SystemInfo::GetOnlineProcessorCount() * 2);
   compilation_scheduler_(thread_pool_.Get());
   notificator_.AddListener("Parser::ModuleFound", [&](const String& module_name) {
     Schedule(module_name);
