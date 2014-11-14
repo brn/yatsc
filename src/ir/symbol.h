@@ -34,6 +34,7 @@ namespace yatsc { namespace ir {
 
 #define SYMBOL_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST) \
   DECLARE_FIRST(VariableName)                           \
+  DECLARE(BuiltinTypeName)                              \
   DECLARE(FunctionName)                                 \
   DECLARE(PropertyName)                                 \
   DECLARE(ClassName)                                    \

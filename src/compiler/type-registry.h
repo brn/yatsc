@@ -23,37 +23,77 @@
 #ifndef YATSC_COMPILER_TYPE_REGISTRY
 #define YATSC_COMPILER_TYPE_REGISTRY
 
-#include "../ir/type.h"
 #include "../memory/heap.h"
 #include "../utils/stl.h"
 
 namespace yatsc {
 
+// Forward declarations.
+
+class LiteralBuffer;
+
+namespace ir {
+class Symbol;
+class ModuleInfo;
+class Node;
+class StringType;
+class NumberType;
+class BooleanType;
+class VoidType;
+class AnyType;
+class Type;
+}
+
+
+class GlobalTypeRegistry {
+ public:
+  GlobalTypeRegistry() {Initialize();}
+
+
+  Handle<ir::Type> FindType(Handle<ir::Symbol> symbol) const;
+  
+  
+ private:
+  void Initialize();
+
+  Handle<Type> DeclareBuiltin(const char* name, Handle<Type> type);
+  
+  LazyInitializer<UnsafeHashMap<UtfString, Handle<Type>>> type_map_;
+  LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
+
+  static Handle<ir::StringType> kStringType;
+  static Handle<ir::NumberType> kNumberType;
+  static Handle<ir::BooleanType> kBooleanType;
+  static Handle<ir::VoidType> kVoidType;
+  static Handle<ir::AnyType> kAnyType;
+};
+
+
+// Type registry for all declared types and built-in types.
 class TypeRegistry {
  public:
-  TypeRegistry();
+  TypeRegistry(const GlobalTypeRegistry& global_type_registry, Handle<ModuleInfo> module_info);
 
 
   ~TypeRegistry();
 
 
-  void Register(Handle<ir::Node> type);
+  void Register(Handle<ir::Symbol> symbol, Handle<ir::Type> type);
 
 
-  void RegisterExernalPhaiType(Handle<ir::Node> node);
+  void RegisterExernalPhaiType(Handle<ir::Symbol> symbol);
 
 
-  Handle<ir::Node> FindType(const UtfString& type_name);
+  Handle<ir::Type> FindType(Handle<ir::Symbol> symbol) const;
 
-
-  static ir::Types* CreateType(Handle<ir::Node> node);
-
-
- private:
-  static ir::Type* CreateClassType(Handle<ir::Node> node);
   
-  HashMap<Utf16String, Type*> type_map_;
-  Vector<Handle<ir::Type>> type_holder_;
+  Handle<ir::Type> FindPropertyType(Handle<ir::Node> prop) const;
+  
+
+ private:  
+  HashMap<Unique::Id, Handle<Type>> type_map_;
+  const GlobalTypeRegistry& global_type_registry_;
+  Handle<ModuleInfo> module_info_;
 };
 
 }

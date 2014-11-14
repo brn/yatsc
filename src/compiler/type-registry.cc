@@ -21,65 +21,105 @@
 // THE SOFTWARE.
 
 
+#include "../ir/node.h"
+#include "../ir/type.h"
+
+
 namespace yatsc {
 
-TypeRegistry::TypeRegistry() {}
+Handle<ir::Type> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symbol) const {
+  auto it = type_map_->find(symbol->utf16_string());
+  if (it == type_map_->end()) {
+    return Handle<ir::Type>();
+  }
+  return it->second;
+}
+
+
+void GlobalTypeRegistry::Initialize() {
+  unsafe_zone_allocator_(sizeof(ir::Type) * 5);
+  type_map_(*unsafe_zone_allocator_);
+  
+  kStringType  = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
+  kNumberType  = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
+  kBooleanType = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
+  kVoidType    = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
+  kAnyType     = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
+}
+
+
+void GlobalTypeRegistry::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
+  UtfString str(name);
+  type_map_->insert(std::make_pair(str, type));
+  return type;
+}
+
+
+Handle<ir::StringType> GlobalTypeRegistry::kStringType;
+Handle<ir::NumberType> GlobalTypeRegistry::kNumberType;
+Handle<ir::BooleanType> GlobalTypeRegistry::kBooleanType;
+Handle<ir::VoidType> GlobalTypeRegistry::kVoidType;
+Handle<ir::AnyType> GlobalTypeRegistry::kAnyType;
+
+
+TypeRegistry::TypeRegistry(const GlobalTypeRegistry& global_type_registry,
+                           Handle<ModuleInfo> module_info)
+    : global_type_registry_(global_type_registry),
+      module_info_(module_info) {}
 
 
 TypeRegistry::~TypeRegistry() {}
 
 
-void TypeRegistry::Register(Handle<ir::Node> node) {
-  if (node->HasClassDeclView() ||
-      node->HasInterfaceView() ||
-      node->HasEnumDeclView() ||
-      node->HasModuleDeclView() ||
-      node->HasAmbientClassDeclarationView() ||
-      node->HasAmbientEnumDeclarationView() ||
-      node->HasAmbientModuleView()) {
-    Handle<ir::Node> name = node->first_child();
-    type_map_.insert(std::make_pair(name->string_value()->utf16_value(), node));
+void TypeRegistry::Register(Handle<Symbol> symbol, Handle<ir::Type> type) {
+  if (type_map_.find(symbol->id()) == type_map_.end()) {
+    type_map_.insert(std::make_pair(symbol->id(), type));
   }
 }
 
 
-void TypeRegistry::RegisterExernalPhaiType(Handle<ir::Node> external_type) {
+void TypeRegistry::RegisterExernalPhaiType(Handle<ir::Symbol> symbol) {
   if (external_type->HasNameView()) {
-    type_map_.insert(std::make_pair(external_type->string_value()->utf16_value(), external_type));
+    type_map_.insert(std::make_pair(symbol->id(), kPhaiType));
   }
 }
 
 
-Handle<ir::Node> TypeRegistry::FindType(const Utf16String& name) {
-  return type_map_.find(name)->second;
-}
-
-
-ir::Type* TypeRegistry::CreateType(Handle<ir::Node> node) {
-  if (node->HasClassDeclView()) {
-    Handle<ir::Node> name = node->first_child();
-    const Utf16String& name = name->string_value()->utf16_value();
-    
+Handle<ir::Type> TypeRegistry::FindType(Handle<Symbol> name) const {
+  auto it = type_map_.find(name->id());
+  if (it == type_map_.end()) {
+    return global_type_registry_->FindType(name);
   }
+  return it->second;
 }
 
 
-ir::Type* TypeRegistry::CreateClassType(Handle<ir::Node> node) {
-  static const Utf16String empty();
-  auto class_type = Heap::NewHandle<ir::ClassType>();
-  ir::Node::List node_list = node->node_list();
-  if (node_list[1]) {
-    for (auto t: node_list[1]) {
-      if (t->HasTypeConstraintsView()) {
-        Handle<ir::Node> derived = t->first_child();
-        Handle<ir::Node> base = t->last_child();
-        class_type->AddTypeParameters(Heap::NewHandle<TypeParameterDescriptor>(
-            derived->string_value()->utf16_string()));
-      } else if (t->HasNameView()) {
-        class_type->AddTypeParameters(Heap::NewHandle<TypeParameterDescriptor>(t->string_value()->utf16_string(), empty));
-      }
+Handle<ir::Type> TypeRegistry::FindPropertyType(Handle<ir::Node> prop) const {
+  if (prop->HasGetPropView()) {
+    Handle<GetPropView> get_prop(prop);
+    Handle<ir::Type> prop_type;
+    if (!get_prop->prop()->HasNameView()) {
+      // ERROR!
+      module_info->errors()->SemanticError("Type expected.", get_prop->prop()->source_position());
+      return Handle<ir::Type>();
     }
+    if (get_prop->target()->HasGetPropView()) {
+      prop_type = FindPropertyType(get_prop->target());
+    } else if (get_prop->target()->HasNameView()) {
+      prop_type = FindType(get_prop->target()->symbol());
+    } else {
+      return kPhaiType;
+    }
+    
+    if (prop_type->IsVoidType()) {
+      // ERROR!
+      module_info->errors()->SemanticError("The void type is not contains data member.", prop->source_position());
+      return Handle<ir::Type>();
+    } else if (prop_type->IsAnyType()) {
+      return kAnyType;
+    }
+
+    return prop_type->FindDeclaredType(get_prop->prop()->symbol());
   }
 }
-
 }
