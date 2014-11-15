@@ -31,6 +31,7 @@
 #include "../memory/heap.h"
 #include "../parser/token.h"
 #include "./symbol.h"
+#include "./node.h"
 
 
 namespace yatsc { namespace ir {
@@ -374,9 +375,9 @@ template <typename Placeholder>
 class InstanceType: public PropertyType {
   typedef HashMap<Unique::Id, Handle<Type>> Map;
  public:
-  InstanceType(Handle<Placeholder> class_type)
+  InstanceType(Handle<Placeholder> generic_type)
       : PropertyType(TypeId::kInstance),
-        class_type_(class_type) {}
+        generic_type_(generic_type) {}
 
   
   void add_type_parameter(Handle<Symbol> symbol, Handle<Type> type) {
@@ -392,10 +393,10 @@ class InstanceType: public PropertyType {
     return it->second;
   }
 
-  YATSC_GETTER(Handle<Placeholder>, generic_type, generic_type_);
+  YATSC_CONST_GETTER(Handle<GenericType>, generic_type, generic_type_);
 
  private:
-  Handle<GenericType> generic_type_;
+  Handle<Placeholder> generic_type_;
   Map parameterized_type_map_;
 };
 

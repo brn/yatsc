@@ -52,7 +52,7 @@ class HeapReferenceCounter {
 
   // Release reference.
   template <typename T>
-  YATSC_INLINE void ReleaseReference() YATSC_NO_SE;
+  YATSC_INLINE bool ReleaseReference() YATSC_NO_SE;
 
   // Return internal
   template <typename T>
@@ -387,7 +387,7 @@ class UnsafeZoneAllocator {
 
 
     YATSC_INLINE bool HasEnoughSize(size_t size) const {
-      return (size_ - size) > used_;
+      return used_ + size < size_;
     }
 
 
@@ -479,8 +479,10 @@ class StandardAllocator: public std::allocator<T> {
 
   
   // Do nothing.  
-  void deallocate(pointer p, size_type) YATSC_NO_SE {
-    Heap::Delete(p);
+  void deallocate(pointer p, size_type s) YATSC_NO_SE {
+    if (s > 0) {
+      Heap::Delete(p);
+    }
   }
 
   
@@ -565,7 +567,7 @@ class UnsafeZoneStdAllocator: public std::allocator<T> {
 
   
   // Do nothing.  
-  void deallocate(pointer p, size_type) YATSC_NO_SE {}
+  void deallocate(pointer, size_type) YATSC_NO_SE {}
 
   
   // Return the max size of allocatable.

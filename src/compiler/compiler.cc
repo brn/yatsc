@@ -45,7 +45,7 @@ Compiler::Compiler(CompilerOption compiler_option)
 
 
 Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
-  Schedule(String(filename));
+  Schedule(Path::Resolve(filename));
   thread_pool_->Wait();
   return result_list_;
 }

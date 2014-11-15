@@ -68,9 +68,10 @@ class GlobalTypeRegistry {
   void Initialize();
 
   Handle<ir::Type> DeclareBuiltin(const char* name, Handle<ir::Type> type);
-  
-  LazyInitializer<UnsafeHashMap<Utf16String, Maybe<ir::GatheredTypeInfo>>> type_map_;
-  LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
+
+  // LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
+  // LazyInitializer<UnsafeHashMap<Utf16String, Maybe<ir::GatheredTypeInfo>>> type_map_;
+  HashMap<Utf16String, Maybe<ir::GatheredTypeInfo>> type_map_;
 
   Handle<ir::StringType> string_type_;
   Handle<ir::NumberType> number_type_;

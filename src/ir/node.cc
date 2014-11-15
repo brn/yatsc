@@ -106,6 +106,7 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
       if (node->double_equals(double_value_)) {
         return true;
       }
+      return false;
     }
     default: {
       if (node->operand() != Token::ILLEGAL &&

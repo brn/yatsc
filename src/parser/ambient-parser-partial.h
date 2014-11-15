@@ -201,7 +201,6 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
     body->SetInformationForNode(Current());
     Next();
 
-    bool constructor_parsed = false;
     bool success = true;
 
     while (1) {

@@ -33,7 +33,7 @@ inline ::testing::AssertionResult CheckCompilationResult(const yatsc::Vector<yat
       ss << "Compile failed in module \"" << i->module_name() << "\"\n"
          << "Because\n";
       yatsc::ErrorFormatter ef(i->module_info());
-      for (auto c: i->semantic_error()->errors()) {
+      for (auto c: i->error_reporter()->errors()) {
         ss << ef.Format(c);
       }
     }

@@ -25,11 +25,13 @@
 namespace yatsc {namespace heap {
 
 template <typename T>
-YATSC_INLINE void HeapReferenceCounter::ReleaseReference() YATSC_NO_SE {
+YATSC_INLINE bool HeapReferenceCounter::ReleaseReference() YATSC_NO_SE {
   if (std::atomic_fetch_sub_explicit(&ref_, 1u, std::memory_order_release) == 1) {
     std::atomic_thread_fence(std::memory_order_acquire);
     Heap::Destruct(reinterpret_cast<T*>(ptr_));
+    return true;
   }
+  return false;
 }
 
 
@@ -42,7 +44,9 @@ YATSC_INLINE void HeapReferenceCounter::AddReference() YATSC_NO_SE {
 template <typename T>
 Handle<T>::~Handle() {
   if (ref_count_ == nullptr) {return;}
-  ref_count_->ReleaseReference<T>();
+  if (ref_count_->ReleaseReference<T>()) {
+    ref_count_ = nullptr;
+  }
 }
 
 
@@ -119,6 +123,8 @@ Handle<T>& Handle<T>::operator = (Handle<U>&& hh) {
 
 
 YATSC_INLINE void* UnsafeZoneAllocator::NewPtr(size_t size) {
+  size = YATSC_ALIGN_OFFSET(size, kAlignment);
+  YATSC_CHECK(true, size_ > size);
   if (!zone_->HasEnoughSize(size)) {
     Grow();
   }

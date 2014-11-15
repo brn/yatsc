@@ -30,8 +30,8 @@
 namespace yatsc {
 
 Maybe<ir::GatheredTypeInfo> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symbol) const {
-  auto it = type_map_->find(symbol->utf16_string());
-  if (it == type_map_->end()) {
+  auto it = type_map_.find(symbol->utf16_string());
+  if (it == type_map_.end()) {
     return Nothing<ir::GatheredTypeInfo>();
   }
   return it->second;
@@ -39,8 +39,8 @@ Maybe<ir::GatheredTypeInfo> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symb
 
 
 void GlobalTypeRegistry::Initialize() {
-  unsafe_zone_allocator_(sizeof(ir::Type) * 5);
-  type_map_(UnsafeZoneStdAllocator<Maybe<ir::GatheredTypeInfo>>(unsafe_zone_allocator_.Get()));
+  // unsafe_zone_allocator_(sizeof(Maybe<ir::GatheredTypeInfo>) * 5);
+  // type_map_(UnsafeZoneStdAllocator<Maybe<ir::GatheredTypeInfo>>(unsafe_zone_allocator_.Get()));
   
   string_type_  = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
   number_type_  = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
@@ -54,7 +54,7 @@ void GlobalTypeRegistry::Initialize() {
 Handle<ir::Type> GlobalTypeRegistry::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
   UtfString str(name);
   auto maybe = Just(ir::GatheredTypeInfo(type, ir::Node::Null(), ir::Type::Modifier::kPublic));
-  type_map_->insert(std::make_pair(str.utf16_string(), maybe));
+  type_map_.insert(std::make_pair(str.utf16_string(), maybe));
   return type;
 }
 

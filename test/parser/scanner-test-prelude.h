@@ -28,7 +28,7 @@
 #include "../gtest-header.h"
 #include "../../src/parser/error-formatter.h"
 #include "../../src/parser/error-descriptor.h"
-#include "../../src/parser/semantic-error.h"
+#include "../../src/parser/error-reporter.h"
 #include "../../src/parser/literalbuffer.h"
 #include "../../src/compiler-option.h"
 #include "../../src/parser/scanner.h"
@@ -39,28 +39,28 @@
 
 #define SCAN__(var)                                                     \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::SemanticError se;                                              \
+  yatsc::ErrorReporter er;                                              \
   yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &lb, compiler_option); \
   scanner.SetErrorCallback([&] (const char* message, const yatsc::SourcePosition& source_position){ \
-    se.SyntaxError(source_position) << message;                         \
+    er.SyntaxError(source_position) << message;                         \
   });                                                                   \
   auto var = scanner.Scan();                                            \
-  if (se.HasError()) {                                                  \
+  if (er.HasError()) {                                                  \
     yatsc::ErrorFormatter error_formatter(module_info);                 \
-    error_formatter.Print(stderr, se);                                  \
-    ASSERT_FALSE(se.HasError());                                        \
+    error_formatter.Print(stderr, er);                                  \
+    ASSERT_FALSE(er.HasError());                                        \
   }                                                                     \
 
 
 #define SCAN_ERROR__(var)                                               \
   yatsc::LiteralBuffer lb;                                              \
-  yatsc::SemanticError se;                                              \
+  yatsc::ErrorReporter er;                                              \
   yatsc::Scanner<Iterator> scanner(v__.begin(), v__.end(), &lb, compiler_option); \
   scanner.SetErrorCallback([&] (const char* message, const yatsc::SourcePosition& source_position){ \
-    se.SyntaxError(source_position) << message;                         \
+    er.SyntaxError(source_position) << message;                         \
   });                                                                   \
   scanner.Scan();                                                       \
-  ASSERT_TRUE(se.HasError());
+  ASSERT_TRUE(er.HasError());
 
 
 #define INIT__(SCAN, var, str, type)                                    \

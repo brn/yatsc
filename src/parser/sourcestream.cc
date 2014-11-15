@@ -30,7 +30,8 @@ namespace yatsc {
 
 SourceStream::SourceStream(const char* filepath)
     : MaybeFail(),
-      filepath_(filepath) {
+      filepath_(filepath),
+      raw_buffer_(nullptr) {
   Initialize();
 }
 
@@ -42,11 +43,11 @@ void SourceStream::Initialize() {
     size_ = stat.Size();
     try {
       FILE* fp = FOpen(filepath_.c_str(), "r");
-      char* heap = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
-      setvbuf(fp, heap, _IOFBF, size_ + 1);
+      // char* heap = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
+      // setvbuf(fp, heap, _IOFBF, size_ + 1);
       ReadBlock(fp);
       FClose(fp);
-      Heap::Delete(heap);
+      // Heap::Delete(heap);
     } catch (const FileIOException& e) {
       Fail() << kCantOpenInput << filepath_
              << "\nbecause: " << e.what();
@@ -72,6 +73,7 @@ Handle<SourceStream> SourceStream::FromSourceCode(const char* name, const char* 
   auto ret = Heap::NewHandle<SourceStream>();
   ret->size_ = strlen(code);
   ret->filepath_ = name;
+  ret->raw_buffer_ = reinterpret_cast<char*>(Heap::NewPtr(strlen(code) + 1));
   strcpy(ret->raw_buffer_, code);
   return ret;
 }

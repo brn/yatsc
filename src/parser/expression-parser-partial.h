@@ -590,7 +590,7 @@ PARSE_BINARY_EXPRESSION(ParseBitwiseANDExpression, ParseEqualityExpression, TS_B
 //   EqualityExpression[?In, ?Yield] ===RelationalExpression[?In, ?Yield]
 //   EqualityExpression[?In, ?Yield] !==RelationalExpression[?In, ?Yield]
 //
-PARSE_BINARY_EXPRESSION_WITH_COND((Current()->type() == Token::TS_EQ || Current()->type() == Token::TS_NOT_EQ || Current()->type() == Token::TS_EQUAL || Current()->type() == Token::TS_NOT_EQUAL), ParseEqualityExpression, ParseRelationalExpression);
+PARSE_BINARY_EXPRESSION_WITH_COND((Current()->type() == Token::TS_EQ || Current()->type() == Token::TS_NOT_EQ || Current()->type() == Token::TS_EQUAL || Current()->type() == Token::TS_NOT_EQUAL), ParseEqualityExpression, ParseRelationalExpression)
 
 #define RELATIONAL_COND                             \
   Current()->type() == Token::TS_LESS ||            \
@@ -1215,7 +1215,7 @@ ParseResult Parser<UCharInputIterator>::ParseComprehension(bool generator, bool 
   auto expr = New<ir::ComprehensionExprView>(generator, comp_for_result.value(), comp_tail_result.value());
   expr->SetInformationForNode(comp_for_result.value());
   return Success(expr);
-};
+}
 
 
 template<typename UCharInputIterator>
