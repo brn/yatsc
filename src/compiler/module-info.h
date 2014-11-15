@@ -25,7 +25,7 @@
 
 #include "../parser/sourcestream.h"
 #include "../utils/stl.h"
-#include "../parser/semantic-error.h"
+#include "../parser/error-reporter.h"
 
 namespace yatsc {
 
@@ -34,21 +34,21 @@ class ModuleInfo {
   ModuleInfo(const String& module_name, bool typescript)
       : source_stream_(Heap::NewHandle<SourceStream>(module_name.c_str())),
         module_name_(module_name),
-        semantic_error_(Heap::NewHandle<SemanticError>()),
+        error_reporter_(Heap::NewHandle<ErrorReporter>()),
         typescript_(typescript) {}
 
 
   ModuleInfo(const String& module_name, const String& source_code, bool typescript)
       : source_stream_(SourceStream::FromSourceCode(module_name, source_code)),
         module_name_(module_name),
-        semantic_error_(Heap::NewHandle<SemanticError>()),
+        error_reporter_(Heap::NewHandle<ErrorReporter>()),
         typescript_(typescript) {}
 
 
   YATSC_GETTER(Handle<SourceStream>, source_stream, source_stream_);
 
 
-  YATSC_GETTER(Handle<SemanticError>, semantic_error, semantic_error_);
+  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, error_reporter_);
     
   
   YATSC_CONST_GETTER(const char*, module_name, module_name_.c_str());
@@ -63,7 +63,7 @@ class ModuleInfo {
   bool IsDefinitionFile() const;
 
 
-  bool HasError() const {return semantic_error_->HasError();}
+  bool HasError() const {return error_reporter_->HasError();}
 
 
   const char* raw_source_code() const {return source_stream_->raw_buffer();}
@@ -77,7 +77,7 @@ class ModuleInfo {
  private:
   Handle<SourceStream> source_stream_;
   String module_name_;
-  Handle<SemanticError> semantic_error_;
+  Handle<ErrorReporter> error_reporter_;
   bool typescript_;
 };
 

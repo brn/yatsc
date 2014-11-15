@@ -49,7 +49,7 @@
 namespace yatsc {
 
 template <typename UCharInputIterator>
-class Scanner: public SemanticError, private Uncopyable, private Unmovable {
+class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
  public:
   /**
    * @param source The source file content.

@@ -26,7 +26,7 @@
 #include "../src/ir/node.h"
 #include "../src/parser/parser.h"
 #include "../src/parser/literalbuffer.h"
-#include "../src/parser/semantic-error.h"
+#include "../src/parser/error-reporter.h"
 #include "../src/parser/error-formatter.h"
 #include "../src/parser/error-descriptor.h"
 #include "../src/utils/stl.h"
@@ -56,6 +56,8 @@ void YatscParserTest(const char* name,
   using namespace yatsc;
   typedef std::vector<yatsc::UChar>::iterator Iterator;
   auto module_info = Heap::NewHandle<ModuleInfo>(String(name), String(code), true);
+  yatsc::GlobalTypeRegistry global_type_registry;
+  Handle<yatsc::TypeRegistry> type_registry = yatsc::Heap::NewHandle<yatsc::TypeRegistry>(global_type_registry, module_info->error_reporter());
   UCharBuffer uchar_buffer = yatsc::testing::AsciiToUCharVector(String(module_info->source_stream()->raw_buffer()));
   CompilerOption compiler_option;
   compiler_option.set_language_mode(type);
@@ -63,7 +65,7 @@ void YatscParserTest(const char* name,
   
   Scanner<Iterator> scanner(uchar_buffer.begin(), uchar_buffer.end(), &lb, compiler_option);
   Notificator<void(const yatsc::String&)> notificator;
-  Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info);
+  Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, type_registry);
   ErrorFormatter error_formatter(module_info);
   
   auto result = fn(&parser);
@@ -75,10 +77,10 @@ void YatscParserTest(const char* name,
       if (print_stack_trace) {
         parser.PrintStackTrace();
       }
-      error_formatter.Print(stderr, module_info->semantic_error());
+      error_formatter.Print(stderr, module_info->error_reporter());
     }
   } else {
-    ASSERT_TRUE(module_info->semantic_error()->HasError());
+    ASSERT_TRUE(module_info->error_reporter()->HasError());
   }
   print_stack_trace = true;
 }

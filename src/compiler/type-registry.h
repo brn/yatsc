@@ -25,23 +25,26 @@
 
 #include "../memory/heap.h"
 #include "../utils/stl.h"
+#include "../parser/utfstring.h"
+#include "../ir/node.h"
+#include "../ir/types.h"
 
 namespace yatsc {
 
 // Forward declarations.
 
 class LiteralBuffer;
+class ErrorReporter;
 
 namespace ir {
 class Symbol;
 class ModuleInfo;
-class Node;
 class StringType;
 class NumberType;
 class BooleanType;
 class VoidType;
 class AnyType;
-class Type;
+class PhaiType;
 }
 
 
@@ -50,50 +53,64 @@ class GlobalTypeRegistry {
   GlobalTypeRegistry() {Initialize();}
 
 
-  Handle<ir::Type> FindType(Handle<ir::Symbol> symbol) const;
+  Maybe<ir::GatheredTypeInfo> FindType(Handle<ir::Symbol> symbol) const;
+
+
+  YATSC_CONST_GETTER(Handle<ir::StringType>, string_type, string_type_);
+  YATSC_CONST_GETTER(Handle<ir::NumberType>, number_type, number_type_);
+  YATSC_CONST_GETTER(Handle<ir::BooleanType>, boolean_type, boolean_type_);
+  YATSC_CONST_GETTER(Handle<ir::VoidType>, void_type, void_type_);
+  YATSC_CONST_GETTER(Handle<ir::AnyType>, any_type, any_type_);
+  YATSC_CONST_GETTER(Handle<ir::AnyType>, phai_type, phai_type_);
   
   
  private:
   void Initialize();
 
-  Handle<Type> DeclareBuiltin(const char* name, Handle<Type> type);
+  Handle<ir::Type> DeclareBuiltin(const char* name, Handle<ir::Type> type);
   
-  LazyInitializer<UnsafeHashMap<UtfString, Handle<Type>>> type_map_;
+  LazyInitializer<UnsafeHashMap<Utf16String, Maybe<ir::GatheredTypeInfo>>> type_map_;
   LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
 
-  static Handle<ir::StringType> kStringType;
-  static Handle<ir::NumberType> kNumberType;
-  static Handle<ir::BooleanType> kBooleanType;
-  static Handle<ir::VoidType> kVoidType;
-  static Handle<ir::AnyType> kAnyType;
+  Handle<ir::StringType> string_type_;
+  Handle<ir::NumberType> number_type_;
+  Handle<ir::BooleanType> boolean_type_;
+  Handle<ir::VoidType> void_type_;
+  Handle<ir::AnyType> any_type_;
+  Handle<ir::PhaiType> phai_type_;
 };
 
 
 // Type registry for all declared types and built-in types.
 class TypeRegistry {
  public:
-  TypeRegistry(const GlobalTypeRegistry& global_type_registry, Handle<ModuleInfo> module_info);
+  TypeRegistry(const GlobalTypeRegistry& global_type_registry,
+               Handle<ErrorReporter> error_reporter);
 
 
   ~TypeRegistry();
 
 
-  void Register(Handle<ir::Symbol> symbol, Handle<ir::Type> type);
+  void Register(Handle<ir::Symbol> symbol,
+                Handle<ir::Type> type,
+                Handle<ir::Node> node,
+                ir::Type::Modifier mod);
 
 
   void RegisterExernalPhaiType(Handle<ir::Symbol> symbol);
 
 
-  Handle<ir::Type> FindType(Handle<ir::Symbol> symbol) const;
+  Maybe<ir::GatheredTypeInfo> FindType(Handle<ir::Symbol> symbol) const;
 
   
-  Handle<ir::Type> FindPropertyType(Handle<ir::Node> prop) const;
+  Maybe<ir::GatheredTypeInfo> FindPropertyType(Handle<ir::Node> prop);
   
 
  private:  
-  HashMap<Unique::Id, Handle<Type>> type_map_;
+  HashMap<Unique::Id, Maybe<ir::GatheredTypeInfo>> type_map_;
+  HashMap<Unique::Id, Handle<ir::Type>> phai_map_;
   const GlobalTypeRegistry& global_type_registry_;
-  Handle<ModuleInfo> module_info_;
+  Handle<ErrorReporter> error_reporter_;
 };
 
 }

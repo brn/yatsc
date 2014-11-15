@@ -32,6 +32,7 @@
 #include "../utils/stl.h"
 #include "./thread-pool.h"
 #include "./module-info.h"
+#include "./type-registry.h"
 
 namespace yatsc {
 
@@ -95,6 +96,7 @@ class Compiler {
   Vector<Handle<CompilationUnit>> result_list_;
   SpinLock lock_;
   Notificator<void(const String&)> notificator_;
+  GlobalTypeRegistry global_type_registry_;
 };
 
 }

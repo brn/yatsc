@@ -20,6 +20,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef YATSC_UTILS_MAYBE_H
+#define YATSC_UTILS_MAYBE_H
 
 namespace yatsc {
 
@@ -99,7 +101,7 @@ class Maybe {
 
 
   template <typename Result, typename Fn>
-  YATSC_INLINE Maybe<Result> Map(Fn fn) {
+  YATSC_INLINE Maybe<Result> operator >>=(Fn fn) {
     if (valid_) {
       return Maybe<Result>(fn(value_));
     }
@@ -131,3 +133,5 @@ Maybe<T> Nothing(T value) {
 }
 
 }
+
+#endif

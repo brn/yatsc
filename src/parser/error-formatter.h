@@ -26,7 +26,7 @@
 #include "../utils/utils.h"
 #include "../utils/stl.h"
 #include "../memory/heap.h"
-#include "./semantic-error.h"
+#include "./error-reporter.h"
 
 namespace yatsc {
 
@@ -56,13 +56,13 @@ class ErrorFormatter {
   }
 
 
-  void Print(FILE* fp, Handle<SemanticError> semantic_error) const {
-    Print(fp, *semantic_error);
+  void Print(FILE* fp, Handle<ErrorReporter> error_reporter) const {
+    Print(fp, *error_reporter);
   }
   
   
-  void Print(FILE* fp, const SemanticError& semantic_error) const {
-    for (auto c: semantic_error.errors()) {
+  void Print(FILE* fp, const ErrorReporter& error_reporter) const {
+    for (auto c: error_reporter.errors()) {
       Print(fp, *c);
     }
   }

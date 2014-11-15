@@ -53,6 +53,7 @@ Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
 
 void Compiler::Schedule(const String& filename) {
   auto module_info = ModuleInfo::Create(filename);
+  
   if (!compilation_scheduler_->ShouldCompile(module_info)) {
     return;
   }
@@ -73,14 +74,15 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
   }
   printf("BEGIN %s\n", module_info->module_name());
   Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
+  Handle<TypeRegistry> type_registry = Heap::NewHandle<TypeRegistry>(global_type_registry_, module_info->error_reporter());
 
   Scanner<SourceStream::iterator> scanner(
       source_stream->begin(),
       source_stream->end(),
       literal_buffer.Get(),
       compiler_option_);
-    
-  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info);
+
+  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info, type_registry);
   Handle<ir::Node> root = parser.Parse();
   if (!module_info->HasError()) {
     AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer));

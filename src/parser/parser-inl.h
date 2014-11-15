@@ -97,7 +97,7 @@ void Parser<UCharInputIterator>::Initialize() YATSC_NOEXCEPT {
   });
 
   scanner_->SetErrorCallback([&](const char* message, const SourcePosition& source_position) {
-    module_info_->semantic_error()->SyntaxError(source_position) << message;
+    module_info_->error_reporter()->SyntaxError(source_position) << message;
   });
 
   set_current_scope(NewScope());
@@ -121,7 +121,7 @@ typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterat
     scope = scope_;
   }
     
-  return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->semantic_error()->size());
+  return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->error_reporter()->size());
 }
 
 
@@ -132,7 +132,7 @@ void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& r
   *current_token_info_ = rps.current();
   prev_token_info_ = rps.prev();
   scope_ = rps.scope();
-  Handle<SemanticError> se = module_info_->semantic_error();
+  Handle<ErrorReporter> se = module_info_->error_reporter();
   if (se->size() != rps.error_count()) {
     size_t diff = rps.error_count() - se->size();
     if (diff > se->size()) {

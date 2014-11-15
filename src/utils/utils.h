@@ -295,7 +295,7 @@ class LazyInitializer {
 
 
   const T* operator -> () const {
-    return reinterpret_cast<T*>(heap_);
+    return reinterpret_cast<const T*>(heap_);
   }
   
 

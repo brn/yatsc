@@ -33,7 +33,7 @@
 #include "../utils/notificator.h"
 #include "../compiler/module-info.h"
 #include "./error-descriptor.h"
-#include "./semantic-error.h"
+#include "./error-reporter.h"
 
 
 namespace yatsc {

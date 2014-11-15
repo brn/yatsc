@@ -21,16 +21,18 @@
 // THE SOFTWARE.
 
 
+#include "./type-registry.h"
+#include "../parser/error-reporter.h"
 #include "../ir/node.h"
-#include "../ir/type.h"
+#include "../ir/types.h"
 
 
 namespace yatsc {
 
-Handle<ir::Type> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symbol) const {
+Maybe<ir::GatheredTypeInfo> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symbol) const {
   auto it = type_map_->find(symbol->utf16_string());
   if (it == type_map_->end()) {
-    return Handle<ir::Type>();
+    return Nothing<ir::GatheredTypeInfo>();
   }
   return it->second;
 }
@@ -38,88 +40,95 @@ Handle<ir::Type> GlobalTypeRegistry::FindType(Handle<ir::Symbol> symbol) const {
 
 void GlobalTypeRegistry::Initialize() {
   unsafe_zone_allocator_(sizeof(ir::Type) * 5);
-  type_map_(*unsafe_zone_allocator_);
+  type_map_(UnsafeZoneStdAllocator<Maybe<ir::GatheredTypeInfo>>(unsafe_zone_allocator_.Get()));
   
-  kStringType  = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
-  kNumberType  = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
-  kBooleanType = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
-  kVoidType    = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
-  kAnyType     = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
+  string_type_  = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
+  number_type_  = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
+  boolean_type_ = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
+  void_type_    = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
+  any_type_     = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
+  phai_type_ = Heap::NewHandle<ir::PhaiType>();
 }
 
 
-void GlobalTypeRegistry::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
+Handle<ir::Type> GlobalTypeRegistry::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
   UtfString str(name);
-  type_map_->insert(std::make_pair(str, type));
+  auto maybe = Just(ir::GatheredTypeInfo(type, ir::Node::Null(), ir::Type::Modifier::kPublic));
+  type_map_->insert(std::make_pair(str.utf16_string(), maybe));
   return type;
 }
 
 
-Handle<ir::StringType> GlobalTypeRegistry::kStringType;
-Handle<ir::NumberType> GlobalTypeRegistry::kNumberType;
-Handle<ir::BooleanType> GlobalTypeRegistry::kBooleanType;
-Handle<ir::VoidType> GlobalTypeRegistry::kVoidType;
-Handle<ir::AnyType> GlobalTypeRegistry::kAnyType;
-
-
-TypeRegistry::TypeRegistry(const GlobalTypeRegistry& global_type_registry,
-                           Handle<ModuleInfo> module_info)
+TypeRegistry::TypeRegistry(const GlobalTypeRegistry& global_type_registry, Handle<ErrorReporter> error_reporter)
     : global_type_registry_(global_type_registry),
-      module_info_(module_info) {}
+      error_reporter_(error_reporter) {}
 
 
 TypeRegistry::~TypeRegistry() {}
 
 
-void TypeRegistry::Register(Handle<Symbol> symbol, Handle<ir::Type> type) {
+void TypeRegistry::Register(Handle<ir::Symbol> symbol, Handle<ir::Type> type, Handle<ir::Node> node, ir::Type::Modifier mod) {
   if (type_map_.find(symbol->id()) == type_map_.end()) {
-    type_map_.insert(std::make_pair(symbol->id(), type));
+    auto just = Just(ir::GatheredTypeInfo(type, node, mod));
+    type_map_.insert(std::make_pair(symbol->id(), just));
   }
 }
 
 
 void TypeRegistry::RegisterExernalPhaiType(Handle<ir::Symbol> symbol) {
-  if (external_type->HasNameView()) {
-    type_map_.insert(std::make_pair(symbol->id(), kPhaiType));
+  if (phai_map_.find(symbol->id()) == phai_map_.end()) {
+    phai_map_.insert(std::make_pair(symbol->id(), global_type_registry_.phai_type()));
   }
 }
 
 
-Handle<ir::Type> TypeRegistry::FindType(Handle<Symbol> name) const {
+Maybe<ir::GatheredTypeInfo> TypeRegistry::FindType(Handle<ir::Symbol> name) const {
   auto it = type_map_.find(name->id());
   if (it == type_map_.end()) {
-    return global_type_registry_->FindType(name);
+    return global_type_registry_.FindType(name);
   }
   return it->second;
 }
 
 
-Handle<ir::Type> TypeRegistry::FindPropertyType(Handle<ir::Node> prop) const {
-  if (prop->HasGetPropView()) {
-    Handle<GetPropView> get_prop(prop);
-    Handle<ir::Type> prop_type;
-    if (!get_prop->prop()->HasNameView()) {
-      // ERROR!
-      module_info->errors()->SemanticError("Type expected.", get_prop->prop()->source_position());
-      return Handle<ir::Type>();
-    }
-    if (get_prop->target()->HasGetPropView()) {
-      prop_type = FindPropertyType(get_prop->target());
-    } else if (get_prop->target()->HasNameView()) {
-      prop_type = FindType(get_prop->target()->symbol());
-    } else {
-      return kPhaiType;
-    }
+Maybe<ir::GatheredTypeInfo> TypeRegistry::FindPropertyType(Handle<ir::Node> prop) {
+  // if (prop->HasGetPropView()) {
+  //   Handle<ir::GetPropView> get_prop(prop);
+  //   Maybe<ir::GatheredTypeInfo> gathered_type_info;
+  //   if (!get_prop->prop()->HasNameView()) {
+  //     // ERROR!
+  //     error_reporter_->SemanticError(get_prop->prop()->source_position()) << "type expected.";
+  //     return Nothing<ir::GatheredTypeInfo>();
+  //   }
+  //   if (get_prop->target()->HasGetPropView()) {
+  //     gathered_type_info = FindPropertyType(get_prop->target());
+  //   } else if (get_prop->target()->HasNameView()) {
+  //     gathered_type_info = FindType(get_prop->target()->symbol());
+  //   } else {
+  //     return Just(GatheredTypeInfo(global_type_registry_.phai_type(), prop, ir::Type::Modifier::kPublic));
+  //   }
     
-    if (prop_type->IsVoidType()) {
-      // ERROR!
-      module_info->errors()->SemanticError("The void type is not contains data member.", prop->source_position());
-      return Handle<ir::Type>();
-    } else if (prop_type->IsAnyType()) {
-      return kAnyType;
-    }
+  //   if (gathered_type_info) {
+  //     Handle<ir::Type> type = gathered_type_info->value().type();
+  //     if (type->IsVoid()) {
+  //       // ERROR!
+  //       error_reporter_->SemanticError(prop->source_position()) << "the void type is not contains data member.";
+  //       return Nothing<ir::GatheredTypeInfo>();
+  //     } else if (type->IsAny()) {
+  //       return gathered_type_info;
+  //     }
 
-    return prop_type->FindDeclaredType(get_prop->prop()->symbol());
-  }
+  //     if (type->IsComplexDataType()) {
+  //       Handle<ir::PropertyType> property = type;
+  //       return property->FindDeclaredType(get_prop->prop()->symbol());
+  //     }
+
+  //     error_reporter_->SemanticError(prop->source_position()) << "simple data type is not containts data member.";
+  //     return Nothing<ir::GatheredTypeInfo>();
+  //   }
+
+  //   return 
+  // }
+  return Nothing<ir::GatheredTypeInfo>();
 }
 }

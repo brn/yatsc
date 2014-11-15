@@ -31,6 +31,7 @@
 #include "../compiler/module-info.h"
 #include "../utils/path.h"
 #include "../utils/maybe.h"
+#include "../compiler/type-registry.h"
 
 namespace yatsc {
 
@@ -116,14 +117,14 @@ namespace yatsc {
 
 // Push error to the buffer.
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item) \
-  module_info_->semantic_error()->SyntaxError(item) << message;
+  module_info_->error_reporter()->SyntaxError(item) << message;
 
 #else
 
 // Push error to the buffer.
 // This method debug only.
 #define REPORT_SYNTAX_ERROR_INTERNAL(message, item)               \
-  module_info_->semantic_error()->SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
+  module_info_->error_reporter()->SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
 #endif
 
 
@@ -161,10 +162,12 @@ class Parser: public ParserBase {
   Parser(const CompilerOption& co,
          Scanner<UCharInputSourceIterator>* scanner,
          const Notificator<void(const String&)>& notificator,
-         Handle<ModuleInfo> module_info)
+         Handle<ModuleInfo> module_info,
+         Handle<TypeRegistry> type_registry)
       : ParserBase(co, notificator),
         scanner_(scanner),
-        module_info_(module_info) {Initialize();}
+        module_info_(module_info),
+        type_registry_(type_registry) {Initialize();}
 
   Handle<ir::Node> Parse() {
     if (module_info_->IsDefinitionFile()) {
@@ -303,6 +306,7 @@ class Parser: public ParserBase {
   Handle<ir::Scope> scope_;
   LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
   IntrusiveRbTree<SourcePosition, Parsed*> memo_;
+  Handle<TypeRegistry> type_registry_;
   
 
  VISIBLE_FOR_TESTING:

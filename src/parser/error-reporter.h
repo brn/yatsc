@@ -21,8 +21,8 @@
 // THE SOFTWARE.
 
 
-#ifndef YATSC_PARSER_SEMANTIC_ERROR_H
-#define YATSC_PARSER_SEMANTIC_ERROR_H
+#ifndef YATSC_PARSER_ERROR_REPORTER_H
+#define YATSC_PARSER_ERROR_REPORTER_H
 
 #include "./error-descriptor.h"
 #include "../memory/heap.h"
@@ -33,15 +33,15 @@
 
 namespace yatsc {
 
-class SemanticError {
+class ErrorReporter {
  public:
   typedef Vector<Handle<ErrorDescriptor>> ErrorBuffer;
 
   
-  SemanticError() = default;
+  ErrorReporter() = default;
 
 
-  ~SemanticError() = default;
+  ~ErrorReporter() = default;
 
 
   bool HasError() const {return !buffer_.empty();}
@@ -94,6 +94,33 @@ class SemanticError {
   template <typename T>
   Handle<ErrorDescriptor> SyntaxError(Handle<T> node) {
     return SyntaxError(node->source_position());
+  }
+
+
+  Handle<ErrorDescriptor> SemanticError(Handle<ErrorDescriptor> errd) {
+    buffer_.push_back(errd);
+    return errd << "SemanticError ";
+  }
+
+
+  Handle<ErrorDescriptor> SemanticError(const SourcePosition& source_position) {
+    return SemanticError(Heap::NewHandle<ErrorDescriptor>(source_position));
+  }
+
+
+  Handle<ErrorDescriptor> SemanticError(TokenInfo* info) {
+    return SemanticError(info->source_position());
+  }
+
+
+  Handle<ErrorDescriptor> SemanticError(const TokenInfo& info) {
+    return SemanticError(info.source_position());
+  }
+
+
+  template <typename T>
+  Handle<ErrorDescriptor> SemanticError(Handle<T> node) {
+    return SemanticError(node->source_position());
   }
 
  private:

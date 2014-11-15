@@ -27,7 +27,10 @@
 
 #include "../utils/utils.h"
 #include "../utils/stl.h"
+#include "../utils/maybe.h"
 #include "../memory/heap.h"
+#include "../parser/token.h"
+#include "./symbol.h"
 
 
 namespace yatsc { namespace ir {
@@ -36,17 +39,18 @@ class Node;
 #define TYPE_LIST(DEC, DEC_FIRST, DEC_LAST)     \
   DEC_FIRST(Phai)                               \
   DEC(TypeConstraints)                          \
-  DEC(PlaceHolderType)                          \
+  DEC(PlaceHolder)                              \
   DEC(String)                                   \
   DEC(Number)                                   \
   DEC(Boolean)                                  \
   DEC(Void)                                     \
   DEC(Any)                                      \
-  DEC(StructType)                               \
+  DEC(Struct)                                   \
   DEC(Class)                                    \
   DEC(Interface)                                \
   DEC(CallSignature)                            \
-      DEC_LAST(Enum)
+  DEC(Instance)                                 \
+  DEC_LAST(Enum)
 
 
 enum class TypeId : uint8_t {
@@ -74,23 +78,29 @@ class Type {
 
   
   bool IsBuiltInType() {
-    return type_id_ == TypeId::kBooleanType() ||
-      type_id_ == TypeId::kStringType ||
-      type_id_ == TypeId::kNumberType ||
-      type_id_ == TypeId::kVoidType ||
-      type_id_ == TypeId::kAnyType;
+    return type_id_ == TypeId::kBoolean ||
+      type_id_ == TypeId::kString ||
+      type_id_ == TypeId::kNumber ||
+      type_id_ == TypeId::kVoid ||
+      type_id_ == TypeId::kAny;
+  }
+
+
+  bool IsComplexDataType() {
+    return type_id_ == TypeId::kInstance ||
+      type_id_ == TypeId::kStruct ||
+      type_id_ == TypeId::kClass ||
+      type_id_ == TypeId::kInterface ||
+      type_id_ == TypeId::kEnum;
   }
   
 
-  typedef uint8_t Modifier;
-
-  class Modifiers: private Static {
-   public:
-    static Modifier kPublic = 0x1;
-    static Modifier kPrivate = 0x2;
-    static Modifier kProtected = 0x4;
-    static Modifier kStatic = 0x8;
-    static Modifier kExport = 0x16;
+  enum class Modifier: uint8_t {
+    kPublic = 0x1,
+    kPrivate = 0x2,
+    kProtected = 0x4,
+    kStatic = 0x8,
+    kExport = 0x16
   };
   
   static Modifier ModifierFromToken(Token token) {
@@ -100,19 +110,51 @@ class Type {
       token == Token::TS_STATIC? Modifier::kStatic:
       token == Token::TS_EXPORT? Modifier::kExport: Modifier::kPublic;
   }
+
+ private:
+  TypeId type_id_;
 };
 
 
-
-class TypedPropertyDescriptor {
+class GatheredTypeInfo {
  public:
-  TypedPropertyDescriptor(Handle<Type> type, Handle<Node> prop, Type::Modifier modifier)
+  GatheredTypeInfo(Handle<Type> type, Handle<Node> prop, Type::Modifier modifier)
       : type_(type),
         node_(prop),
         modifier_(modifier) {}
 
   
-  TypedPropertyDescriptor() = default;
+  GatheredTypeInfo() = default;
+
+
+  GatheredTypeInfo(const GatheredTypeInfo& tp)
+      : type_(tp.type_),
+        node_(tp.node_),
+        modifier_(tp.modifier_) {}
+
+
+  GatheredTypeInfo(GatheredTypeInfo&& tp)
+      : type_(std::move(tp.type_)),
+        node_(std::move(tp.node_)),
+        modifier_(tp.modifier_) {}
+
+
+  GatheredTypeInfo& operator = (const GatheredTypeInfo& tp) {
+    GatheredTypeInfo ret(tp);
+    type_ = ret.type_;
+    node_ = ret.node_;
+    modifier_ = ret.modifier_;
+    return *this;
+  }
+
+
+  GatheredTypeInfo& operator = (GatheredTypeInfo&& tp) {
+    GatheredTypeInfo ret(tp);
+    type_ = ret.type_;
+    node_ = ret.node_;
+    modifier_ = ret.modifier_;
+    return *this;
+  }
 
 
   YATSC_GETTER(Handle<Type>, type, type_);
@@ -130,7 +172,7 @@ class TypedPropertyDescriptor {
 class PlaceHolderType: public Type {
  public:
   PlaceHolderType(Handle<Symbol> symbol)
-      : Type(TypeId::kPlaceHolderType) {}
+      : Type(TypeId::kPlaceHolder) {}
 
 
   YATSC_GETTER(Handle<Symbol>, symbol, symbol_);
@@ -143,8 +185,8 @@ class PlaceHolderType: public Type {
 
 class TypeConstraintsType: public Type {
  public:
-  TypeConstraintsView(Handle<PlaceHolderType> derived, Handle<Type> base_type)
-      : Type(TypeId::kTypeConstraintsType),
+  TypeConstraintsType(Handle<PlaceHolderType> derived, Handle<Type> base_type)
+      : Type(TypeId::kTypeConstraints),
         derived_type_(derived),
         base_type_(base_type){}
 
@@ -161,34 +203,34 @@ class TypeConstraintsType: public Type {
 };
 
 
-typedef HashMap<Unique::Id, Maybe<TypedPropertyDescriptor>> TypePropertyMap;
-typedef std::pair<Unique::Id, Maybe<TypedPropertyDescriptor>> TypeDescriptor;
+typedef HashMap<Unique::Id, Maybe<GatheredTypeInfo>> TypePropertyMap;
+typedef std::pair<Unique::Id, Maybe<GatheredTypeInfo>> TypeDescriptor;
 typedef IteratorRange<TypePropertyMap::iterator, TypePropertyMap::iterator> TypePropertyRange;
 
 
 class GenericType: public Type {
-  typedef HashMap<Unique::Id, Maybe<TypedPropertyDescriptor>> Map;
+  typedef HashMap<Unique::Id, Maybe<GatheredTypeInfo>> Map;
  public:
   GenericType(TypeId id)
       : Type(id) {}
 
   
-  void AddTypeParameter(Handle<Type> type, Handle<Node> node) {
-    type_param_map_.insert(std::make_pair(type->symbol()->id(), Just(TypedPropertyDescriptor(type, node))));
+  void AddTypeParameter(Handle<Symbol> symbol, Handle<Type> type, Handle<Node> node) {
+    type_param_map_.insert(std::make_pair(symbol->id(), Just(GatheredTypeInfo(type, node, Type::Modifier::kPublic))));
   }
 
 
-  Maybe<TypedPropertyDescriptor> FindTypeParameter(Handle<Symbol> symbol) {
+  Maybe<GatheredTypeInfo> FindTypeParameter(Handle<Symbol> symbol) {
     auto it = type_param_map_.find(symbol->id());
     if (it == type_param_map_.end()) {
-      return Nothing<TypedPropertyDescriptor>();
+      return Nothing<GatheredTypeInfo>();
     }
     return it->second;
   }
 
  private:
-  Mpa type_param_map_;
-}
+  Map type_param_map_;
+};
 
 
 class PropertyType: public GenericType {
@@ -199,14 +241,14 @@ class PropertyType: public GenericType {
   
 
   void DeclareType(Handle<Symbol> symbol, Handle<Type> type, Handle<Node> prop, Type::Modifier modifier = Type::Modifier::kPublic) {
-    properties_.insert(std::make_pair(symbol, Just(TypedPropertyDescriptor(type, prop, modifier))));
+    properties_.insert(std::make_pair(symbol, Just(GatheredTypeInfo(type, prop, modifier))));
   }
 
 
-  YATSC_INLINE Maybe<TypedPropertyDescriptor> FindDeclaredType(Handle<Symbol> symbol) {
+  YATSC_INLINE Maybe<GatheredTypeInfo> FindDeclaredType(Handle<Symbol> symbol) {
     TypePropertyMap::iterator it = properties_.find(symbol);
     if (it == properties_.end()) {
-      return Nothing<TypedPropertyDescriptor>();
+      return Nothing<GatheredTypeInfo>();
     }
     return it->second;
   };
@@ -222,7 +264,7 @@ class PropertyType: public GenericType {
 class PhaiType: public Type {
  public:
   PhaiType()
-      : Type(TypeId::kPhaiType) {}
+      : Type(TypeId::kPhai) {}
 };
 
 
@@ -253,7 +295,7 @@ class NumberType: public Type {
 
 class BooleanType: public Type {
  public:
-  NumberType()
+  BooleanType()
       : Type(TypeId::kBoolean) {}
 
   YATSC_PROPERTY(Handle<Type>, box_type, box_type_);
@@ -285,21 +327,21 @@ class StructType: public PropertyType {
 
 
 class CallSignatureType: public GenericType {
-  typedef HashMap<Unique::Id, Maybe<TypedPropertyDescriptor>> Map;
+  typedef HashMap<Unique::Id, Maybe<GatheredTypeInfo>> Map;
  public:
   CallSignatureType()
-      : Type(TypeId::kCallSignature) {}
+      : GenericType(TypeId::kCallSignature) {}
 
 
   void AddParamType(Handle<Symbol> symbol, Handle<Node> node, Handle<Type> type) {
-    param_map_.insert(std::make_pair(symbol->id(), Just(TypedPropertyDescriptor(type, node))));
+    param_map_.insert(std::make_pair(symbol->id(), Just(GatheredTypeInfo(type, node, Type::Modifier::kPublic))));
   }
 
   
-  Maybe<TypedPropertyDescriptor> FindParameterType(Handle<Symbol> symbol) {
+  Maybe<GatheredTypeInfo> FindParameterType(Handle<Symbol> symbol) {
     auto it = param_map_.find(symbol->id());
     if (it == param_map_.end()) {
-      return Nothing<TypedPropertyDescriptor>();
+      return Nothing<GatheredTypeInfo>();
     }
     return it->second;
   }
@@ -315,7 +357,6 @@ class CallSignatureType: public GenericType {
 
 
 class ClassType: public PropertyType {
-  typedef HashMap<Unique::Id, Maybe<TypedPropertyDescriptor>> Map;
  public:
   ClassType()
       : PropertyType(TypeId::kClass) {}
@@ -325,7 +366,7 @@ class ClassType: public PropertyType {
 class InterfaceType: public PropertyType {
  public:
   InterfaceType()
-      : PropertyType(TypeId::kInterfaceType) {}
+      : PropertyType(TypeId::kInterface) {}
 };
 
 
@@ -367,7 +408,7 @@ typedef InstanceType<CallSignatureType> CallSignatureInstanceType;
 class EnumType: public PropertyType {
  public:
   EnumType()
-      : PropertyType(TypeId::kEnumType) {}
+      : PropertyType(TypeId::kEnum) {}
 };
 
 }} // end yatsc::ir

@@ -26,7 +26,7 @@
 
 #include "../memory/heap.h"
 #include "../parser/literalbuffer.h"
-#include "../parser/semantic-error.h"
+#include "../parser/error-reporter.h"
 #include "../parser/sourcestream.h"
 #include "../utils/stl.h"
 #include "../ir/node.h"
@@ -55,7 +55,7 @@ class CompilationUnit {
   YATSC_CONST_GETTER(const char*, module_name, module_info_->module_name());
 
 
-  YATSC_GETTER(Handle<SemanticError>, semantic_error, module_info_->semantic_error());
+  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, module_info_->error_reporter());
 
 
   YATSC_GETTER(Handle<ModuleInfo>, module_info, module_info_);
