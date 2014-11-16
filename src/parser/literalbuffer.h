@@ -101,7 +101,7 @@ class Literal {
 
 
 class LiteralBuffer: private Unmovable, private Uncopyable {
-  typedef HashMap<String, Literal> UtfStringBuffer;
+  typedef HashMap<Utf16String, Literal> UtfStringBuffer;
  public:
   LiteralBuffer() {}
 
@@ -115,11 +115,11 @@ class LiteralBuffer: private Unmovable, private Uncopyable {
   
 
   Literal* InsertValue(const UtfString& utf_string) {
-    UtfStringBuffer::iterator found = buffer_.find(utf_string.utf8_value());
+    UtfStringBuffer::iterator found = buffer_.find(utf_string.utf16_string());
     if (found != buffer_.end()) {
       return &(found->second);
     }
-    auto ret = buffer_.insert(std::make_pair(utf_string.utf8_value(), Literal(utf_string)));
+    auto ret = buffer_.insert(std::make_pair(utf_string.utf16_string(), Literal(utf_string)));
     return &(ret.first->second);
   }
   
