@@ -36,44 +36,57 @@ class Heap;
 
 namespace heap {
 
-// Reference counter for yatsc::Handle.
-class HeapReferenceCounter {
+class HeapReferenceCounterBase {
  public:
-  HeapReferenceCounter(void* ptr)
-      : ptr_(ptr) {
+  HeapReferenceCounterBase(void* ptr)
+      : ptr_(ptr),
+        delete_timing_(1) {
     ref_.store(1, std::memory_order_relaxed);
   }
 
-  
-  virtual ~HeapReferenceCounter() {};
+
+  virtual ~HeapReferenceCounterBase() {};
 
   // Add reference.
   YATSC_INLINE void AddReference() YATSC_NO_SE;
+  
+  
+  YATSC_INLINE virtual bool ReleaseReference() YATSC_NO_SE = 0;
 
-  // Release reference.
-  template <typename T>
-  YATSC_INLINE bool ReleaseReference() YATSC_NO_SE;
-
-  // Return internal
-  template <typename T>
-  YATSC_INLINE T* Get() YATSC_NOEXCEPT {return reinterpret_cast<T*>(ptr_);}
-
+  
+  void set_delete_timing(uint8_t delete_timing) {delete_timing_ = delete_timing;}
+  
 
   // Return internal
-  template <typename T>
-  YATSC_INLINE const T* Get() YATSC_NO_SE {return reinterpret_cast<T*>(ptr_);}
+  YATSC_INLINE void* Get() YATSC_NOEXCEPT {return ptr_;}
 
 
-  template <typename T>
-  bool operator == (T t) YATSC_NO_SE {return t == ptr_;}
-
- private:
+  // Return internal
+  YATSC_INLINE const void* Get() YATSC_NO_SE {return ptr_;}
+  
+ protected:
   void* ptr_;
   mutable std::atomic<uint32_t> ref_;
+  uint8_t delete_timing_;
+};
+
+// Reference counter for yatsc::Handle.
+template <typename T>
+class HeapReferenceCounter: public HeapReferenceCounterBase {
+ public:
+  HeapReferenceCounter(void* ptr)
+      : HeapReferenceCounterBase(ptr) {}
+
+  
+  virtual ~HeapReferenceCounter() {};
+  
+
+  // Release reference.
+  YATSC_INLINE bool ReleaseReference() YATSC_NO_SE;
 };
 
 
-class HeapReference: public HeapReferenceCounter {
+class HeapReference: public HeapReferenceCounter<HeapReference> {
  public:
   HeapReference()
       : HeapReferenceCounter(this) {}
@@ -100,7 +113,8 @@ class Handle {
       : ref_count_(nullptr) {}
 
 
-  Handle(heap::HeapReferenceCounter* ref_count)
+  template <typename U>
+  explicit Handle(heap::HeapReferenceCounter<U>* ref_count)
       : ref_count_(ref_count) {}
 
 
@@ -149,26 +163,26 @@ class Handle {
   // Equality comparator of Handle<U>.
   template <typename U>
   YATSC_INLINE bool operator == (const Handle<U>& heap_handle) YATSC_NO_SE {
-    return heap_handle.ref_count_ == ref_count_;
+    return heap_handle.ref_count_->Get() == ref_count_->Get();
   }
 
 
   // Equality comparator of Handle<T>.
   YATSC_INLINE bool operator == (const Handle<T>& heap_handle) YATSC_NO_SE {
-    return heap_handle.ref_count_ == ref_count_;
+    return heap_handle.ref_count_->Get() == ref_count_->Get();
   }
 
 
   // Equality comparator of Handle<U>.
   template <typename U>
   YATSC_INLINE bool operator == (const U* ptr) YATSC_NO_SE {
-    return *ref_count_ == ptr;
+    return ref_count_->Get() == ptr;
   }
 
 
   // Equality comparator of Handle<T>.
   YATSC_INLINE bool operator == (const T* ptr) YATSC_NO_SE {
-    return *ref_count_ == ptr;
+    return ref_count_->Get() == ptr;
   }
   
 
@@ -176,37 +190,37 @@ class Handle {
   YATSC_INLINE operator bool() YATSC_NO_SE {return ref_count_ != nullptr;}
 
 
-  YATSC_INLINE T* Get() YATSC_NOEXCEPT {return ref_count_->Get<T>();}
+  YATSC_INLINE T* Get() YATSC_NOEXCEPT {return reinterpret_cast<T*>(ref_count_->Get());}
 
 
-  YATSC_INLINE const T* Get() YATSC_NO_SE {return ref_count_->Get<T>();}
+  YATSC_INLINE const T* Get() YATSC_NO_SE {return reinterpret_cast<T*>(ref_count_->Get());}
   
 
   // Access to the internal pointer.
   YATSC_INLINE T* operator ->() YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>();
+    return reinterpret_cast<T*>(ref_count_->Get());
   }
 
 
   // Access to the internal pointer.
   YATSC_INLINE const T* operator ->() YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>();
+    return reinterpret_cast<T*>(ref_count_->Get());
   }
 
 
   // Get reference type of the T.
   YATSC_INLINE T& operator *() YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
-    return *(ref_count_->Get<T>());
+    return *reinterpret_cast<T*>((ref_count_->Get()));
   }
 
 
   // Get reference type of the T.
   YATSC_INLINE const T& operator *() YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
-    return *(ref_count_->Get<T>());
+    return *reinterpret_cast<T*>((ref_count_->Get()));
   }
 
 
@@ -214,7 +228,7 @@ class Handle {
   template <typename U>
   YATSC_INLINE T* operator[] (U index) YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>()[index];
+    return reinterpret_cast<T*>(ref_count_->Get())[index];
   }
 
 
@@ -222,21 +236,21 @@ class Handle {
   template <typename U>
   YATSC_INLINE const T* operator[] (U index) YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>()[index];
+    return reinterpret_cast<T*>(ref_count_->Get())[index];
   }
 
 
   // Call operator++ of reference type of T.
   YATSC_INLINE T* operator ++ () {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>()++;
+    return reinterpret_cast<T*>(ref_count_->Get())++;
   }
 
 
   // Call operator-- of reference type of T.
   YATSC_INLINE T* operator -- () {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>()--;
+    return reinterpret_cast<T*>(ref_count_->Get())--;
   }
 
 
@@ -244,14 +258,14 @@ class Handle {
   template <typename U>
   YATSC_INLINE T* operator + (U x) YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>() + x;
+    return reinterpret_cast<T*>(ref_count_->Get()) + x;
   }
 
 
   template <typename U>
   YATSC_INLINE const T* operator + (U x) YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>() + x;
+    return reinterpret_cast<T*>(ref_count_->Get()) + x;
   }
 
 
@@ -259,7 +273,7 @@ class Handle {
   template <typename U>
   YATSC_INLINE T* operator - (U x) YATSC_NOEXCEPT {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>() - x;
+    return reinterpret_cast<T*>(ref_count_->Get()) - x;
   }
 
 
@@ -267,7 +281,7 @@ class Handle {
   template <typename U>
   YATSC_INLINE const T* operator - (U x) YATSC_NO_SE {
     ASSERT(true, ref_count_ != nullptr);
-    return ref_count_->Get<T>() - x;
+    return reinterpret_cast<T*>(ref_count_->Get()) - x;
   }
 
   
@@ -280,12 +294,37 @@ class Handle {
 
   template <typename U>
   YATSC_INLINE Handle<T>& operator << (U&& v) {
-    *(ref_count_->Get<T>()) << v;
+    (*reinterpret_cast<T*>((ref_count_->Get()))) << v;
     return *this;
   }
   
- private:
-  heap::HeapReferenceCounter* ref_count_;
+  
+ protected:
+  void set_delete_timing(uint8_t delete_timing) {ref_count_->set_delete_timing(delete_timing);}
+
+  
+  heap::HeapReferenceCounterBase* ref_count_;
+};
+
+
+template <typename T>
+class WeakHandle: public Handle<T> {
+ public:
+  WeakHandle(Handle<T> handle)
+      : Handle<T>(handle) {
+    handle->set_delete_timing(2);
+  }
+
+
+  template <typename U>
+  WeakHandle(Handle<U> handle)
+      : Handle<T>(handle) {
+    handle->set_delete_timing(2);
+  }
+
+
+  WeakHandle()
+      : Handle<T>() {}
 };
 
 
@@ -303,10 +342,16 @@ class Heap: private Static {
   // and instantiate T and return Handle<T>.
   template <typename T, typename ... Args>
   static Handle<T> NewHandle(Args ... args) {
-    void* ptr = NewPtr(sizeof(T) + sizeof(heap::HeapReferenceCounter));
-    auto ref_count = new (reinterpret_cast<Byte*>(ptr) + sizeof(T)) heap::HeapReferenceCounter(
+    void* ptr = NewPtr(sizeof(T) + sizeof(heap::HeapReferenceCounter<T>));
+    auto ref_count = new (reinterpret_cast<Byte*>(ptr) + sizeof(T)) heap::HeapReferenceCounter<T>(
         new (ptr) T(args...));
     return Handle<T>(ref_count);
+  }
+
+
+  template <typename T, typename ... Args>
+  static Handle<T> NewWeakHandle(Args ... args) {
+    return WeakHandle<T>(NewHandle<T>(std::forward<Args>(args)...));
   }
 
 

@@ -291,13 +291,12 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
       : heap::HeapReference(),
         node_type_(node_type),
         capacity_(capacity),
-        parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
         invalid_lhs_(false),
         string_value_(nullptr) {
     if (capacity != 0) {
-      node_list_.resize(capacity, nullptr);
+      node_list_.resize(capacity);
     }
   }
 
@@ -308,13 +307,12 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
         node_list_(node_list),
         node_type_(node_type),
         capacity_(capacity),
-        parent_node_(nullptr),
         operand_(Token::ILLEGAL),
         double_value_(0l),
         invalid_lhs_(false),
         string_value_(nullptr) {
     if (capacity != 0) {
-      node_list_.resize(capacity, nullptr);
+      node_list_.resize(capacity);
     }
   }
 
@@ -414,7 +412,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   Handle<Node> at(size_t index) YATSC_NOEXCEPT {
-    return node_list_.size() > index? node_list_[index]: nullptr;
+    return node_list_.size() > index? node_list_[index]: Handle<Node>();
   }
 
 

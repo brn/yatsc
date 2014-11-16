@@ -31,7 +31,6 @@
 #include "../memory/heap.h"
 #include "../parser/token.h"
 #include "./symbol.h"
-#include "./node.h"
 
 
 namespace yatsc { namespace ir {
@@ -59,9 +58,9 @@ enum class TypeId : uint8_t {
 #define DECLARE_FIRST(type) k##type = 1,
 #define DECLARE_LAST(type) k##type
   TYPE_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST)
-#undef DECLARE(type)
-#undef DECLARE_FIRST(type)
-#undef DECLARE_LAST(type)
+#undef DECLARE
+#undef DECLARE_FIRST
+#undef DECLARE_LAST
 };
 
 

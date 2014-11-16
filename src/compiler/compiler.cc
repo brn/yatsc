@@ -35,7 +35,9 @@
 namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
-    : compiler_option_(compiler_option) {
+    : compiler_option_(compiler_option),
+      literal_buffer_(Heap::NewHandle<LiteralBuffer>()) {
+  global_scope_ = Heap::NewHandle<ir::GlobalScope>(literal_buffer_);
   thread_pool_(SystemInfo::GetOnlineProcessorCount() * 2);
   compilation_scheduler_(thread_pool_.Get());
   notificator_.AddListener("Parser::ModuleFound", [&](const String& module_name) {
@@ -73,19 +75,17 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }
   printf("BEGIN %s\n", module_info->module_name());
-  Handle<LiteralBuffer> literal_buffer = Heap::NewHandle<LiteralBuffer>();
-  Handle<TypeRegistry> type_registry = Heap::NewHandle<TypeRegistry>(global_type_registry_, module_info->error_reporter());
 
   Scanner<SourceStream::iterator> scanner(
       source_stream->begin(),
       source_stream->end(),
-      literal_buffer.Get(),
+      literal_buffer_.Get(),
       compiler_option_);
-
-  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info, type_registry);
+  
+  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info, global_scope_);
   Handle<ir::Node> root = parser.Parse();
   if (!module_info->HasError()) {
-    AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer));
+    AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer_));
   } else {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }

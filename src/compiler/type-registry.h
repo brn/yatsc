@@ -48,48 +48,13 @@ class PhaiType;
 }
 
 
-class GlobalTypeRegistry {
- public:
-  GlobalTypeRegistry() {Initialize();}
-
-
-  Maybe<ir::GatheredTypeInfo> FindType(Handle<ir::Symbol> symbol) const;
-
-
-  YATSC_CONST_GETTER(Handle<ir::StringType>, string_type, string_type_);
-  YATSC_CONST_GETTER(Handle<ir::NumberType>, number_type, number_type_);
-  YATSC_CONST_GETTER(Handle<ir::BooleanType>, boolean_type, boolean_type_);
-  YATSC_CONST_GETTER(Handle<ir::VoidType>, void_type, void_type_);
-  YATSC_CONST_GETTER(Handle<ir::AnyType>, any_type, any_type_);
-  YATSC_CONST_GETTER(Handle<ir::AnyType>, phai_type, phai_type_);
-  
-  
- private:
-  void Initialize();
-
-  Handle<ir::Type> DeclareBuiltin(const char* name, Handle<ir::Type> type);
-
-  // LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
-  // LazyInitializer<UnsafeHashMap<Utf16String, Maybe<ir::GatheredTypeInfo>>> type_map_;
-  HashMap<Utf16String, Maybe<ir::GatheredTypeInfo>> type_map_;
-
-  Handle<ir::StringType> string_type_;
-  Handle<ir::NumberType> number_type_;
-  Handle<ir::BooleanType> boolean_type_;
-  Handle<ir::VoidType> void_type_;
-  Handle<ir::AnyType> any_type_;
-  Handle<ir::PhaiType> phai_type_;
-};
-
-
 // Type registry for all declared types and built-in types.
 class TypeRegistry {
  public:
-  TypeRegistry(const GlobalTypeRegistry& global_type_registry,
-               Handle<ErrorReporter> error_reporter);
+  TypeRegistry() = default;
 
 
-  ~TypeRegistry();
+  ~TypeRegistry() = default;
 
 
   void Register(Handle<ir::Symbol> symbol,
@@ -110,8 +75,34 @@ class TypeRegistry {
  private:  
   HashMap<Unique::Id, Maybe<ir::GatheredTypeInfo>> type_map_;
   HashMap<Unique::Id, Handle<ir::Type>> phai_map_;
-  const GlobalTypeRegistry& global_type_registry_;
-  Handle<ErrorReporter> error_reporter_;
+};
+
+
+class GlobalTypeRegistry: public TypeRegistry {
+ public:
+  GlobalTypeRegistry()
+      : TypeRegistry() {Initialize();}
+
+
+  YATSC_CONST_GETTER(Handle<ir::StringType>, string_type, string_type_);
+  YATSC_CONST_GETTER(Handle<ir::NumberType>, number_type, number_type_);
+  YATSC_CONST_GETTER(Handle<ir::BooleanType>, boolean_type, boolean_type_);
+  YATSC_CONST_GETTER(Handle<ir::VoidType>, void_type, void_type_);
+  YATSC_CONST_GETTER(Handle<ir::AnyType>, any_type, any_type_);
+  YATSC_CONST_GETTER(Handle<ir::AnyType>, phai_type, phai_type_);
+  
+  
+ private:
+  void Initialize();
+
+  Handle<ir::Type> DeclareBuiltin(const char* name, Handle<ir::Type> type);
+
+  Handle<ir::StringType> string_type_;
+  Handle<ir::NumberType> number_type_;
+  Handle<ir::BooleanType> boolean_type_;
+  Handle<ir::VoidType> void_type_;
+  Handle<ir::AnyType> any_type_;
+  Handle<ir::PhaiType> phai_type_;
 };
 
 }

@@ -28,21 +28,29 @@
 #include "../utils/stl.h"
 #include "../utils/unicode.h"
 #include "./symbol.h"
+#include "./types.h"
 
-namespace yatsc {namespace ir {
+
+namespace yatsc {
+class LiteralBuffer;
+
+namespace ir {
 
 class Node;
 class Scope;
+class GlobalScope;
+
 
 
 typedef Vector<Handle<Scope>> Scopes;
-typedef MultiHashMap<unsigned long long, Handle<Node>> DeclaredMap;
+typedef MultiHashMap<Unique::Id, GatheredTypeInfo> DeclaredMap;
 typedef IteratorRange<DeclaredMap::const_iterator, DeclaredMap::const_iterator> DeclaredRange;
 typedef IteratorRange<Scopes::iterator, Scopes::iterator> ScopeRange;
 
+
 class Scope: private Uncopyable {
  public:
-  Scope(Handle<Scope> parent_scope);
+  Scope(Handle<Scope> parent_scope, Handle<GlobalScope> global_scope);
 
 
   Scope();
@@ -52,6 +60,9 @@ class Scope: private Uncopyable {
 
 
   void Declare(Handle<Node> variable);
+
+
+  void Declare(Handle<Node> variable, Handle<ir::Type> type);
 
 
   YATSC_INLINE DeclaredRange FindDeclaredItem(Handle<Symbol> name) {
@@ -69,11 +80,43 @@ class Scope: private Uncopyable {
 
   YATSC_PROPERTY(Handle<Scope>, parent_scope, parent_scope_);
 
-
  private:
   DeclaredMap declared_items_;
   Handle<Scope> parent_scope_;
+  Handle<GlobalScope> global_scope_;
   Scopes child_scope_list_;
+};
+
+
+class GlobalScope: public Scope {
+ public:
+  GlobalScope(Handle<LiteralBuffer> literal_buffer)
+      : Scope(),
+        literal_buffer_(literal_buffer) {Initialize();}
+
+
+  YATSC_CONST_GETTER(Handle<StringType>, string_type, string_type_);
+  YATSC_CONST_GETTER(Handle<NumberType>, number_type, number_type_);
+  YATSC_CONST_GETTER(Handle<BooleanType>, boolean_type, boolean_type_);
+  YATSC_CONST_GETTER(Handle<VoidType>, void_type, void_type_);
+  YATSC_CONST_GETTER(Handle<AnyType>, any_type, any_type_);
+  YATSC_CONST_GETTER(Handle<PhaiType>, phai_type, phai_type_);
+
+  
+ private:
+  void Initialize();
+
+  Handle<ir::Type> DeclareBuiltin(const char* name, Handle<ir::Type> type);
+
+  Handle<LiteralBuffer> literal_buffer_;
+
+
+  Handle<StringType> string_type_;
+  Handle<NumberType> number_type_;
+  Handle<BooleanType> boolean_type_;
+  Handle<VoidType> void_type_;
+  Handle<AnyType> any_type_;
+  Handle<PhaiType> phai_type_;
 };
 
 }}

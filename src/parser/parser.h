@@ -31,7 +31,7 @@
 #include "../compiler/module-info.h"
 #include "../utils/path.h"
 #include "../utils/maybe.h"
-#include "../compiler/type-registry.h"
+
 
 namespace yatsc {
 
@@ -163,11 +163,11 @@ class Parser: public ParserBase {
          Scanner<UCharInputSourceIterator>* scanner,
          const Notificator<void(const String&)>& notificator,
          Handle<ModuleInfo> module_info,
-         Handle<TypeRegistry> type_registry)
+         Handle<ir::GlobalScope> global_scope)
       : ParserBase(co, notificator),
         scanner_(scanner),
         module_info_(module_info),
-        type_registry_(type_registry) {Initialize();}
+        global_scope_(global_scope) {Initialize();}
 
   Handle<ir::Node> Parse() {
     if (module_info_->IsDefinitionFile()) {
@@ -287,7 +287,7 @@ class Parser: public ParserBase {
   YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_);
 
 
-  Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope());}
+  Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
 
   
   void SkipTokensIfErrorOccured(Token token) YATSC_NOEXCEPT;
@@ -306,7 +306,7 @@ class Parser: public ParserBase {
   Handle<ir::Scope> scope_;
   LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
   IntrusiveRbTree<SourcePosition, Parsed*> memo_;
-  Handle<TypeRegistry> type_registry_;
+  Handle<ir::GlobalScope> global_scope_;
   
 
  VISIBLE_FOR_TESTING:

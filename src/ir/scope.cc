@@ -23,11 +23,15 @@
 
 #include "./scope.h"
 #include "./node.h"
+#include "./types.h"
+#include "../parser/literalbuffer.h"
+#include "../parser/utfstring.h"
 
 namespace yatsc {namespace ir {
 
-Scope::Scope(Handle<Scope> parent_scope)
-    : parent_scope_(parent_scope) {}
+Scope::Scope(Handle<Scope> parent_scope, Handle<GlobalScope> global_scope)
+    : parent_scope_(parent_scope),
+      global_scope_(global_scope) {}
 
 
 Scope::Scope() {}
@@ -36,17 +40,19 @@ Scope::Scope() {}
 Scope::~Scope() {}
 
 
-void Scope::Declare(Handle<Node> var) {
+void Scope::Declare(Handle<Node> var, Handle<Type> type) {
   if (var->HasVariableView()) {
     if (var->first_child()->HasNameView()) {
-      declared_items_.insert(std::make_pair(var->first_child()->symbol()->id(), var));
+      auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
+      declared_items_.insert(std::make_pair(var->first_child()->symbol()->id(), info));
     } else if (var->first_child()->HasBindingPropListView()) {
       Declare(var->first_child());
     }
   } else if (var->HasBindingPropListView()) {
     for (auto node: *var) {
       if (!node->node_list()[0]) {
-        declared_items_.insert(std::make_pair(node->node_list()[0]->symbol()->id(), node->node_list()[0]));
+        auto info = GatheredTypeInfo(type, node->node_list()[0], ir::Type::Modifier::kPublic);
+        declared_items_.insert(std::make_pair(node->node_list()[0]->symbol()->id(), info));
       } else {
         Declare(node->node_list()[0]);
       }
@@ -54,9 +60,38 @@ void Scope::Declare(Handle<Node> var) {
   } else if (var->HasFunctionView()) {
     Handle<ir::Node> name = var->node_list()[1];
     if (name && name->HasNameView()) {
-      declared_items_.insert(std::make_pair(name->symbol()->id(), var));
+      auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
+      declared_items_.insert(std::make_pair(name->symbol()->id(), info));
     }
   }
+}
+
+
+void Scope::Declare(Handle<Node> var) {
+  Declare(var, global_scope_->phai_type());
+}
+
+
+void GlobalScope::Initialize() {
+  string_type_ = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
+  number_type_ = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
+  boolean_type_ = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
+  void_type_ = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
+  any_type_ = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
+  phai_type_ = Heap::NewHandle<ir::PhaiType>();
+}
+
+
+Handle<ir::Type> GlobalScope::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
+  // UtfString utf_string(name);
+  // Literal* literal = literal_buffer_->InsertValue(utf_string);
+  // auto iv = Heap::NewIntrusive<ir::InterfaceView>(
+  //     Heap::NewIntrusive<ir::NameView>(Heap::NewHandle<ir::Symbol>(ir::SymbolType::kInterfaceName, literal)),
+  //     ir::Node::Null(),
+  //     Heap::NewIntrusive<ir::InterfaceExtendsView>(),
+  //     Heap::NewIntrusive<ir::ObjectTypeExprView>());
+  // Declare(iv, type);
+  return type;
 }
 
 

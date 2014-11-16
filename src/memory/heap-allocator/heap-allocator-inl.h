@@ -24,19 +24,19 @@
 
 namespace yatsc {namespace heap {
 
+YATSC_INLINE void HeapReferenceCounterBase::AddReference() YATSC_NO_SE {
+  std::atomic_fetch_add_explicit(&ref_, 1u, std::memory_order_relaxed);
+}
+
+
 template <typename T>
-YATSC_INLINE bool HeapReferenceCounter::ReleaseReference() YATSC_NO_SE {
-  if (std::atomic_fetch_sub_explicit(&ref_, 1u, std::memory_order_release) == 1) {
+bool HeapReferenceCounter<T>::ReleaseReference() YATSC_NO_SE {
+  if (std::atomic_fetch_sub_explicit(&ref_, 1u, std::memory_order_release) == delete_timing_) {
     std::atomic_thread_fence(std::memory_order_acquire);
     Heap::Destruct(reinterpret_cast<T*>(ptr_));
     return true;
   }
   return false;
-}
-
-
-YATSC_INLINE void HeapReferenceCounter::AddReference() YATSC_NO_SE {
-  std::atomic_fetch_add_explicit(&ref_, 1u, std::memory_order_relaxed);
 }
 } // end heap
 
@@ -44,7 +44,7 @@ YATSC_INLINE void HeapReferenceCounter::AddReference() YATSC_NO_SE {
 template <typename T>
 Handle<T>::~Handle() {
   if (ref_count_ == nullptr) {return;}
-  if (ref_count_->ReleaseReference<T>()) {
+  if (ref_count_->ReleaseReference()) {
     ref_count_ = nullptr;
   }
 }

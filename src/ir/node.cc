@@ -135,7 +135,7 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
 
 // Clone node and node's children.
 Handle<Node> Node::Clone() YATSC_NOEXCEPT {
-  Handle<Node> cloned = Heap::New<Node>(node_type_, capacity_);
+  Handle<Node> cloned = Heap::NewHandle<Node>(node_type_, capacity_);
   cloned->double_value_ = double_value_;
   cloned->string_value_ = string_value_;
   cloned->operand_ = operand_;

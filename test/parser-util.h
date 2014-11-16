@@ -56,16 +56,15 @@ void YatscParserTest(const char* name,
   using namespace yatsc;
   typedef std::vector<yatsc::UChar>::iterator Iterator;
   auto module_info = Heap::NewHandle<ModuleInfo>(String(name), String(code), true);
-  yatsc::GlobalTypeRegistry global_type_registry;
-  Handle<yatsc::TypeRegistry> type_registry = yatsc::Heap::NewHandle<yatsc::TypeRegistry>(global_type_registry, module_info->error_reporter());
   UCharBuffer uchar_buffer = yatsc::testing::AsciiToUCharVector(String(module_info->source_stream()->raw_buffer()));
   CompilerOption compiler_option;
   compiler_option.set_language_mode(type);
-  LiteralBuffer lb;
+  auto lb = Heap::NewHandle<yatsc::LiteralBuffer>();
+  auto global_scope = Heap::NewHandle<yatsc::ir::GlobalScope>(lb);
   
-  Scanner<Iterator> scanner(uchar_buffer.begin(), uchar_buffer.end(), &lb, compiler_option);
+  Scanner<Iterator> scanner(uchar_buffer.begin(), uchar_buffer.end(), lb.Get(), compiler_option);
   Notificator<void(const yatsc::String&)> notificator;
-  Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, type_registry);
+  Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, global_scope);
   ErrorFormatter error_formatter(module_info);
   
   auto result = fn(&parser);
