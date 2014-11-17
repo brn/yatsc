@@ -342,6 +342,8 @@ class Heap: private Static {
   // and instantiate T and return Handle<T>.
   template <typename T, typename ... Args>
   static Handle<T> NewHandle(Args ... args) {
+    static_assert(std::is_constructible<T, Args...>::value, "Heap::NewHandle must be given constructible type.");
+    static_assert(std::is_destructible<T>::value, "Heap::NewHandle must be given destructible type.");
     void* ptr = NewPtr(sizeof(T) + sizeof(heap::HeapReferenceCounter<T>));
     auto ref_count = new (reinterpret_cast<Byte*>(ptr) + sizeof(T)) heap::HeapReferenceCounter<T>(
         new (ptr) T(args...));
@@ -351,6 +353,8 @@ class Heap: private Static {
 
   template <typename T, typename ... Args>
   static Handle<T> NewWeakHandle(Args ... args) {
+    static_assert(std::is_constructible<T, Args...>::value, "Heap::NewWeakHandle must be given constructible type.");
+    static_assert(std::is_destructible<T>::value, "Heap::NewWeakHandle must be given destructible type.");
     return WeakHandle<T>(NewHandle<T>(std::forward<Args>(args)...));
   }
 
@@ -358,6 +362,7 @@ class Heap: private Static {
   // Allocate and instantiate T that must be derived type of HeapReference.
   template <typename T, typename ... Args>
   static Handle<T> NewIntrusive(Args ... args) {
+    static_assert(std::is_base_of<heap::HeapReference, T>::value, "Heap::NewIntrusive must be given derived type of the yatsc::HeapReference.");
     return Handle<T>(New<T>(std::forward<Args>(args)...));
   }
 
@@ -365,6 +370,7 @@ class Heap: private Static {
   // Allocate and instantiate T.
   template <typename T, typename ... Args>
   static T* New(Args ... args) {
+    static_assert(std::is_constructible<T, Args...>::value, "Heap::New must be given constructible type.");
     return new (central_arena_.Allocate(sizeof(T))) T(args...);
   }
 
@@ -372,6 +378,7 @@ class Heap: private Static {
   // Call destructor of T and free pointer.
   template <typename T>
   static void Destruct(T* ptr) {
+    static_assert(std::is_destructible<T>::value, "Heap::Destruct must be given destructible type.");
     ptr->~T();
     Delete(ptr);
   }

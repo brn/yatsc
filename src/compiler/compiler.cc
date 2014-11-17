@@ -35,9 +35,7 @@
 namespace yatsc {
 
 Compiler::Compiler(CompilerOption compiler_option)
-    : compiler_option_(compiler_option),
-      literal_buffer_(Heap::NewHandle<LiteralBuffer>()) {
-  global_scope_ = Heap::NewHandle<ir::GlobalScope>(literal_buffer_);
+    : compiler_option_(compiler_option) {
   thread_pool_(SystemInfo::GetOnlineProcessorCount() * 2);
   compilation_scheduler_(thread_pool_.Get());
   notificator_.AddListener("Parser::ModuleFound", [&](const String& module_name) {
@@ -47,6 +45,9 @@ Compiler::Compiler(CompilerOption compiler_option)
 
 
 Vector<Handle<CompilationUnit>> Compiler::Compile(const char* filename) {
+  literal_buffer_  = Heap::NewHandle<LiteralBuffer>();
+  global_scope_ = Heap::NewHandle<ir::GlobalScope>(literal_buffer_);
+  
   Schedule(Path::Resolve(filename));
   thread_pool_->Wait();
   return result_list_;

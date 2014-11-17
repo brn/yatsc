@@ -58,6 +58,9 @@ YATSC_INLINE void* ChunkHeader::Distribute() {
 // The given block must be a return value of the Distribute().
 // This method is thread safe.
 YATSC_INLINE void ChunkHeader::Dealloc(void* block) {
+#ifdef DEBUG
+  memset(block, 0, size_class_);
+#endif
   // Simply cast block to FreeHeader,
   // because this memory block is unused until detached from free list.
   FreeHeader* free_header = reinterpret_cast<FreeHeader*>(block);

@@ -115,6 +115,7 @@ class LiteralBuffer: private Unmovable, private Uncopyable {
   
 
   Literal* InsertValue(const UtfString& utf_string) {
+    ScopedSpinLock lock(lock_);
     UtfStringBuffer::iterator found = buffer_.find(utf_string.utf16_string());
     if (found != buffer_.end()) {
       return &(found->second);
@@ -124,6 +125,7 @@ class LiteralBuffer: private Unmovable, private Uncopyable {
   }
   
  private:
+  SpinLock lock_;
   UtfStringBuffer buffer_;
 };
 }

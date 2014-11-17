@@ -83,14 +83,14 @@ void GlobalScope::Initialize() {
 
 
 Handle<ir::Type> GlobalScope::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
-  // UtfString utf_string(name);
-  // Literal* literal = literal_buffer_->InsertValue(utf_string);
-  // auto iv = Heap::NewIntrusive<ir::InterfaceView>(
-  //     Heap::NewIntrusive<ir::NameView>(Heap::NewHandle<ir::Symbol>(ir::SymbolType::kInterfaceName, literal)),
-  //     ir::Node::Null(),
-  //     Heap::NewIntrusive<ir::InterfaceExtendsView>(),
-  //     Heap::NewIntrusive<ir::ObjectTypeExprView>());
-  // Declare(iv, type);
+  UtfString utf_string(name);
+  Literal* literal = literal_buffer_->InsertValue(utf_string);
+  auto iv = Heap::NewIntrusive<ir::InterfaceView>(
+      Heap::NewIntrusive<ir::NameView>(Heap::NewHandle<ir::Symbol>(ir::SymbolType::kInterfaceName, literal)),
+      ir::Node::Null(),
+      Heap::NewIntrusive<ir::InterfaceExtendsView>(),
+      Heap::NewIntrusive<ir::ObjectTypeExprView>());
+  Declare(iv, type);
   return type;
 }
 
