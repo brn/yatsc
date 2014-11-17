@@ -22,39 +22,41 @@
 
 
 #include "./typebuilder.h"
+#include "./scope.h"
 
 namespace yatsc {namespace ir {
 
 
-class InternalTypeBuilder: private Static {
+class InternalTypeBuilder {
  public:
-  static Handle<Type> Create(Handle<SimpleTypeExprView> type_expr, TypeRegistry* type_registry) {
+
+  InternalTypeBuilder(Handle<GlobalScope> global_scope, Handle<Scope> scope)
+      : global_scope_(global_scope),
+        scope_(scope) {}
+
+  
+  Handle<Type> Create(Handle<SimpleTypeExprView> type_expr) {
     Handle<Node> node = type_expr->type_name();
+    bool array = false;
+    if (node->HasArrayTypeExprView()) {
+      array = true;
+    }
+    
     if (node->HasNameView()) {
-      if (node->symbol()->Equals("string")) {
-        return TypeRegistry::kStringType;
-      } else if (node->symbol()->Equals("number")) {
-        return TypeRegistry::kNumberType;
-      } else if (node->symbol()->Equals("boolean")) {
-        return TypeRegistry::kBooleanType;
-      } else if (node->symbol()->Equals("void")) {
-        return TypeRegistry::kVoidType;
-      } else if (node->symbol()->Equals("any")) {
-        return TypeRegistry::kAnyType;
-      } else {
-        Handle<Type> result = type_registry->FindType(node->symbol());
-        if (result) {
-          type_registry->Register(node->symbol(), result);
-        } else {
-          type_registry->RegisterExernalPhaiType(node->symbol(), node);
-        }
-        return result;
+      Handle<Type> result;
+      auto range = scope_->FindDeclaredItem(node->symbol());
+      if (range) {
+        result = *(range.first);
       }
+      result = global_scope_->phai_type();
+    }
+    if (result) {
+      return array? Heap::NewHandle<ArrayType>(result): result;
     }
   }
   
 
-  static Handle<Type> Create(Handle<ClassDeclView> type_expr, TypeRegistry* type_registry, Handle<Node> node) {
+  Handle<Type> Create(Handle<ClassDeclView> type_expr, Handle<GlobalScope> global_scope) {
     ir::Node::List node_list = node->node_list();
     auto result = Heap::NewHandle<ClassType>();
     if (node_list[1]) {
@@ -107,20 +109,25 @@ class InternalTypeBuilder: private Static {
   }
 
 
-  static Handle<Type> Create(Handle<InterfaceView> type_expr, TypeRegistry* type_registry, Handle<Node> node) {
-    
+  Handle<Type> Create(Handle<InterfaceView> inf) {
+    return Handle<InterfaceType>();
   }
-}
+
+ private:
+  Handle<GlobalScope> global_scope_;
+  Handle<Scope> scope_;
+};
 
 
-Handle<Type> TypeBuilder::Create(Handle<Node> node) {
+Handle<Type> TypeBuilder::Create(Handle<Node> node, Handle<Scope> scope) {
+  InternalTypeBuilder type_builder(global_scope_, scope);
   switch (node->type()) {
     case NodeType::kSimpleTypeExprView:
-      return InternalTypeBuilder::Create(Handle<SimpleTypeExprView>(node), type_registry_);
+      return type_builder.Create(Handle<SimpleTypeExprView>(node));
     case NodeType::kClassDeclView:
-      return InternalTypeBuilder::Create(Handle<ClassDeclView>(node), type_registry_, node);
+      return type_builder.Create(Handle<ClassDeclView>(node));
     case NodeType::kInterfaceType:
-      return InternalTypeBuilder::Create(Handle<InterfaceType>(node), type_registry_, node);
+      return type_builder.Create(Handle<InterfaceType>(node));
   }
 }
 

@@ -38,6 +38,7 @@ class Node;
 
 #define TYPE_LIST(DEC, DEC_FIRST, DEC_LAST)     \
   DEC_FIRST(Phai)                               \
+  DEC(Array)                                    \
   DEC(TypeConstraints)                          \
   DEC(PlaceHolder)                              \
   DEC(String)                                   \
@@ -230,6 +231,19 @@ class GenericType: public Type {
 
  private:
   Map type_param_map_;
+};
+
+
+class ArrayType: public Type {
+ public:
+  ArrayType(Handle<Type> type)
+      : Type(TypeId::kArray),
+        type_(type) {}
+
+  YATSC_CONST_PROPERTY(Handle<Type>, type, type_);
+  
+ private:
+  Handle<Type> type_;
 };
 
 

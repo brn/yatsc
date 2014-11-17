@@ -24,22 +24,24 @@
 #ifndef YATSC_IR_TYPE_BUILDER_H
 #define YATSC_IR_TYPE_BUILDER_H
 
-#include "../compiler/type-registry.h"
+#include "../memory/heap.h"
 
 namespace yatsc { namespace ir {
+
+class GlobalScope;
 
 
 class TypeBuilder {
  public:
-  TypeBuilder(TypeRegistry* type_registry)
-      : type_registry_(type_registry) {}
+  TypeBuilder(Handle<GlobalScope> global_scope)
+      : global_scope_(global_scope) {}
 
   
-  Handle<Type> Create(Handle<Node> node);
+  Handle<Type> Create(Handle<Node> node, Handle<Scope> scope);
 
 
  private:
-  TypeRegistry type_registry_;
+  Handle<GlobalScope> global_scope_;
 };
 
 
