@@ -65,18 +65,7 @@ class Scope: private Uncopyable {
   void Declare(Handle<Node> variable, Handle<ir::Type> type);
 
 
-  YATSC_INLINE Maybe<DeclaredRange> FindDeclaredItem(Handle<Symbol> name) {
-    DeclaredRange range = declared_items_.equal_range(name->id());
-    if (range.first == declared_items_.end()) {
-      if (parent_scope_) {
-        return parent_scope_->FindDeclaredItem(name);
-      } else if (global_scope_) {
-        return global_scope_->FindDeclaredItem(name);
-      }
-      return Nothing<DeclaredRange>();
-    }
-    return Just(range);
-  };
+  YATSC_INLINE Maybe<DeclaredRange> FindDeclaredItem(Handle<Symbol> name);
 
 
   void AddChild(Handle<Scope> child) {
@@ -84,7 +73,7 @@ class Scope: private Uncopyable {
   };
 
 
-  YATSC_INLINE ScopeRange Children() {return MakeRange(child_scope_list_.begin(), child_scope_list_.end());}
+  YATSC_INLINE ScopeRange children() {return MakeRange(child_scope_list_.begin(), child_scope_list_.end());}
 
 
   YATSC_PROPERTY(Handle<Scope>, parent_scope, parent_scope_);
@@ -129,5 +118,7 @@ class GlobalScope: public Scope {
 };
 
 }}
+
+#include "./scope-inl.h"
 
 #endif

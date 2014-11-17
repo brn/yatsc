@@ -103,17 +103,9 @@ class Literal {
 class LiteralBuffer: private Unmovable, private Uncopyable {
   typedef HashMap<Utf16String, Literal> UtfStringBuffer;
  public:
-  LiteralBuffer() {}
+  LiteralBuffer() = default;
 
   
-  LiteralBuffer(const LiteralBuffer& literal_buffer)
-      : buffer_(literal_buffer.buffer_) {}
-
-
-  LiteralBuffer(LiteralBuffer&& literal_buffer)
-      : buffer_(std::move(literal_buffer.buffer_)) {}
-  
-
   Literal* InsertValue(const UtfString& utf_string) {
     ScopedSpinLock lock(lock_);
     UtfStringBuffer::iterator found = buffer_.find(utf_string.utf16_string());

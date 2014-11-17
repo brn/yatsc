@@ -42,7 +42,7 @@ void SourceStream::Initialize() {
   if (exists && stat.IsReg()) {
     size_ = stat.Size();
     try {
-      FILE* fp = FOpen(filepath_.c_str(), "r");
+      FILE* fp = FOpen(filepath_.c_str(), "rb");
       // char* heap = reinterpret_cast<char*>(Heap::NewPtr(size_ + 1));
       // setvbuf(fp, heap, _IOFBF, size_ + 1);
       ReadBlock(fp);

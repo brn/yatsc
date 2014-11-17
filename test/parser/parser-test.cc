@@ -55,5 +55,6 @@ TEST(ParserTest, Parse) {
   // ENTIRE_PARSER_TEST_ALL(code3.c_str(), "");
   //yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/diagnosticInformationMap.generated.ts");
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts", "");
-  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts", "");
+  // ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts", "");
+  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/src/compiler/checker.ts", "");
 }

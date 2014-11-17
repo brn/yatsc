@@ -417,7 +417,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Set string value.
-  YATSC_INLINE void set_string_value(Literal* value) YATSC_NOEXCEPT {
+  YATSC_INLINE void set_string_value(const Literal* value) YATSC_NOEXCEPT {
     string_value_ = value;
   }
 
@@ -646,7 +646,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   Token operand_;
   double double_value_;
   bool invalid_lhs_;
-  Literal* string_value_;
+  const Literal* string_value_;
   Handle<Symbol> symbol_;
 };
 
@@ -2228,7 +2228,7 @@ class ThisView: public Node {
 
 class NumberView: public Node {
  public:
-  NumberView(Literal* value)
+  NumberView(const Literal* value)
       : Node(NodeType::kNumberView, 0) {
     const char* val = value->utf8_value();
     set_string_value(value);
@@ -2255,7 +2255,7 @@ class NaNView: public Node {
 
 class StringView: public Node {
  public:
-  StringView(Literal* str)
+  StringView(const Literal* str)
       : Node(NodeType::kStringView, 0) {
     set_string_value(str);
   }
@@ -2264,7 +2264,7 @@ class StringView: public Node {
 
 class RegularExprView: public Node {
  public:
-  RegularExprView(Literal* str)
+  RegularExprView(const Literal* str)
       : Node(NodeType::kRegularExprView, 0) {
     set_string_value(str);
   }
@@ -2316,7 +2316,7 @@ class UndefinedView: public Node {
 
 class TemplateLiteralView: public Node {
  public:
-  TemplateLiteralView(Literal* expr):
+  TemplateLiteralView(const Literal* expr):
       Node(NodeType::kUndefinedView, 0) {
     set_string_value(expr);
   }

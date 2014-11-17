@@ -42,7 +42,7 @@ inline yatsc::Vector<UChar> AsciiToUCharVector(const CharBuffer& code) {
   for (;uia != code.end(); ++uia) {
     v.push_back(std::move(*uia));
   }
-  return v;
+  return std::move(v);
 }
 }} //namespace yatsc::testing
 

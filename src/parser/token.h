@@ -237,7 +237,7 @@ class TokenInfo {
    * Set token value.
    * @param utf_string The token value that is unicode encoded string.
    */
-  YATSC_INLINE void set_value(Literal* literal) {
+  YATSC_INLINE void set_value(const Literal* literal) {
     literal_ = literal;
   }
 
@@ -267,7 +267,7 @@ class TokenInfo {
    * Return token value.
    * @returns The token value that is unicode encoded string.
    */
-  YATSC_INLINE Literal* value() YATSC_NO_SE {
+  YATSC_INLINE const Literal* value() YATSC_NO_SE {
     return literal_;
   }
 
@@ -358,7 +358,7 @@ class TokenInfo {
   static bool IsKeyword(Token type);
   
  private:  
-  Literal* literal_;
+  const Literal* literal_;
   Handle<UtfString> multi_line_comment_;
   Token type_;
   LineTerminatorState line_terminator_state_;

@@ -323,7 +323,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
 
   void BuildToken(Token type, const UtfString& utf_string) {
     UpdateTokenInfo();
-    Literal* literal = literal_buffer_->InsertValue(utf_string);
+    auto literal = literal_buffer_->InsertValue(utf_string);
     token_info_.set_value(literal);
     token_info_.set_type(type);
   }
