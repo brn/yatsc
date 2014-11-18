@@ -31,216 +31,216 @@ namespace yatsc {
 
 // Ascii range puncture list.
 // For fast lookup.
-static const Token kPunctures[] = {
-  Token::ILLEGAL,          // 0
-  Token::ILLEGAL,          // 1
-  Token::ILLEGAL,          // 2
-  Token::ILLEGAL,          // 3
-  Token::ILLEGAL,          // 4
-  Token::ILLEGAL,          // 5
-  Token::ILLEGAL,          // 6
-  Token::ILLEGAL,          // 7
-  Token::ILLEGAL,          // 8
-  Token::ILLEGAL,          // 9
-  Token::ILLEGAL,          // 10
-  Token::ILLEGAL,          // 11
-  Token::ILLEGAL,          // 12
-  Token::ILLEGAL,          // 13
-  Token::ILLEGAL,          // 14
-  Token::ILLEGAL,          // 15
-  Token::ILLEGAL,          // 16
-  Token::ILLEGAL,          // 17
-  Token::ILLEGAL,          // 18
-  Token::ILLEGAL,          // 19
-  Token::ILLEGAL,          // 20
-  Token::ILLEGAL,          // 21
-  Token::ILLEGAL,          // 22
-  Token::ILLEGAL,          // 23
-  Token::ILLEGAL,          // 24
-  Token::ILLEGAL,          // 25
-  Token::ILLEGAL,          // 26
-  Token::ILLEGAL,          // 27
-  Token::ILLEGAL,          // 28
-  Token::ILLEGAL,          // 29
-  Token::ILLEGAL,          // 30
-  Token::ILLEGAL,          // 31
-  Token::ILLEGAL,          // 32
-  Token::ILLEGAL,          // 33 !
-  Token::ILLEGAL,          // 34 '
-  Token::ILLEGAL,          // 35 #
-  Token::ILLEGAL,          // 36 $
-  Token::ILLEGAL,          // 37 %
-  Token::ILLEGAL,          // 38 &
-  Token::ILLEGAL,          // 39 '
-  Token::TS_LEFT_PAREN,    // 40 (
-  Token::TS_RIGHT_PAREN,   // 41 )
-  Token::ILLEGAL,          // 42 *
-  Token::ILLEGAL,          // 43 +
-  Token::ILLEGAL,          // 44 ,
-  Token::ILLEGAL,          // 45 -
-  Token::ILLEGAL,          // 46 .
-  Token::ILLEGAL,          // 47 /
-  Token::ILLEGAL,          // 48 0
-  Token::ILLEGAL,          // 49 1
-  Token::ILLEGAL,          // 50 2
-  Token::ILLEGAL,          // 51 3
-  Token::ILLEGAL,          // 52 4
-  Token::ILLEGAL,          // 53 5
-  Token::ILLEGAL,          // 54 6
-  Token::ILLEGAL,          // 55 7
-  Token::ILLEGAL,          // 56 8
-  Token::ILLEGAL,          // 57 9
-  Token::TS_COLON,         // 58 :
-  Token::ILLEGAL,          // 59 ;
-  Token::ILLEGAL,          // 60 <
-  Token::ILLEGAL,          // 61 =
-  Token::ILLEGAL,          // 62 >
-  Token::TS_QUESTION_MARK, // 63 ?
-  Token::ILLEGAL,          // 64 @
-  Token::ILLEGAL,          // 65 A
-  Token::ILLEGAL,          // 66 B
-  Token::ILLEGAL,          // 67 C
-  Token::ILLEGAL,          // 68 D
-  Token::ILLEGAL,          // 69 E
-  Token::ILLEGAL,          // 70 F
-  Token::ILLEGAL,          // 71 G
-  Token::ILLEGAL,          // 72 H
-  Token::ILLEGAL,          // 73 I
-  Token::ILLEGAL,          // 74 J
-  Token::ILLEGAL,          // 75 K
-  Token::ILLEGAL,          // 76 L
-  Token::ILLEGAL,          // 77 M
-  Token::ILLEGAL,          // 78 N
-  Token::ILLEGAL,          // 79 O
-  Token::ILLEGAL,          // 80 P
-  Token::ILLEGAL,          // 81 Q
-  Token::ILLEGAL,          // 82 R
-  Token::ILLEGAL,          // 83 S
-  Token::ILLEGAL,          // 84 T
-  Token::ILLEGAL,          // 85 U
-  Token::ILLEGAL,          // 86 V
-  Token::ILLEGAL,          // 87 W
-  Token::ILLEGAL,          // 88 X
-  Token::ILLEGAL,          // 89 Y
-  Token::ILLEGAL,          // 90 Z
-  Token::TS_LEFT_BRACKET,  // 91 [
-  Token::ILLEGAL,          // 92 BACK_SLASH
-  Token::TS_RIGHT_BRACKET, // 93 ]
-  Token::ILLEGAL,          // 94 ^
-  Token::ILLEGAL,          // 95 _
-  Token::ILLEGAL,          // 96 `
-  Token::ILLEGAL,          // 97 a
-  Token::ILLEGAL,          // 98 b
-  Token::ILLEGAL,          // 99 c
-  Token::ILLEGAL,          // 100 d
-  Token::ILLEGAL,          // 101 e
-  Token::ILLEGAL,          // 102 f
-  Token::ILLEGAL,          // 103 g
-  Token::ILLEGAL,          // 104 h
-  Token::ILLEGAL,          // 105 i
-  Token::ILLEGAL,          // 106 j
-  Token::ILLEGAL,          // 107 k
-  Token::ILLEGAL,          // 108 l
-  Token::ILLEGAL,          // 109 m
-  Token::ILLEGAL,          // 110 n
-  Token::ILLEGAL,          // 111 o
-  Token::ILLEGAL,          // 112 p
-  Token::ILLEGAL,          // 113 q
-  Token::ILLEGAL,          // 114 r
-  Token::ILLEGAL,          // 115 s
-  Token::ILLEGAL,          // 116 t
-  Token::ILLEGAL,          // 117 u
-  Token::ILLEGAL,          // 118 v
-  Token::ILLEGAL,          // 119 w
-  Token::ILLEGAL,          // 120 x
-  Token::ILLEGAL,          // 121 y
-  Token::ILLEGAL,          // 122 z
-  Token::TS_LEFT_BRACE,    // 123 {
-  Token::ILLEGAL,          // 124 |
-  Token::TS_RIGHT_BRACE,   // 125 }
-  Token::ILLEGAL,          // 126 ~
-  Token::ILLEGAL           // 127 DEL
+static const TokenKind kPunctures[] = {
+  TokenKind::kIllegal,          // 0
+  TokenKind::kIllegal,          // 1
+  TokenKind::kIllegal,          // 2
+  TokenKind::kIllegal,          // 3
+  TokenKind::kIllegal,          // 4
+  TokenKind::kIllegal,          // 5
+  TokenKind::kIllegal,          // 6
+  TokenKind::kIllegal,          // 7
+  TokenKind::kIllegal,          // 8
+  TokenKind::kIllegal,          // 9
+  TokenKind::kIllegal,          // 10
+  TokenKind::kIllegal,          // 11
+  TokenKind::kIllegal,          // 12
+  TokenKind::kIllegal,          // 13
+  TokenKind::kIllegal,          // 14
+  TokenKind::kIllegal,          // 15
+  TokenKind::kIllegal,          // 16
+  TokenKind::kIllegal,          // 17
+  TokenKind::kIllegal,          // 18
+  TokenKind::kIllegal,          // 19
+  TokenKind::kIllegal,          // 20
+  TokenKind::kIllegal,          // 21
+  TokenKind::kIllegal,          // 22
+  TokenKind::kIllegal,          // 23
+  TokenKind::kIllegal,          // 24
+  TokenKind::kIllegal,          // 25
+  TokenKind::kIllegal,          // 26
+  TokenKind::kIllegal,          // 27
+  TokenKind::kIllegal,          // 28
+  TokenKind::kIllegal,          // 29
+  TokenKind::kIllegal,          // 30
+  TokenKind::kIllegal,          // 31
+  TokenKind::kIllegal,          // 32
+  TokenKind::kIllegal,          // 33 !
+  TokenKind::kIllegal,          // 34 '
+  TokenKind::kIllegal,          // 35 #
+  TokenKind::kIllegal,          // 36 $
+  TokenKind::kIllegal,          // 37 %
+  TokenKind::kIllegal,          // 38 &
+  TokenKind::kIllegal,          // 39 '
+  TokenKind::kLeftParen,        // 40 (
+  TokenKind::kRightParen,       // 41 )
+  TokenKind::kIllegal,          // 42 *
+  TokenKind::kIllegal,          // 43 +
+  TokenKind::kIllegal,          // 44 ,
+  TokenKind::kIllegal,          // 45 -
+  TokenKind::kIllegal,          // 46 .
+  TokenKind::kIllegal,          // 47 /
+  TokenKind::kIllegal,          // 48 0
+  TokenKind::kIllegal,          // 49 1
+  TokenKind::kIllegal,          // 50 2
+  TokenKind::kIllegal,          // 51 3
+  TokenKind::kIllegal,          // 52 4
+  TokenKind::kIllegal,          // 53 5
+  TokenKind::kIllegal,          // 54 6
+  TokenKind::kIllegal,          // 55 7
+  TokenKind::kIllegal,          // 56 8
+  TokenKind::kIllegal,          // 57 9
+  TokenKind::kColon,            // 58 :
+  TokenKind::kIllegal,          // 59 ;
+  TokenKind::kIllegal,          // 60 <
+  TokenKind::kIllegal,          // 61 =
+  TokenKind::kIllegal,          // 62 >
+  TokenKind::kQuestionMark,     // 63 ?
+  TokenKind::kIllegal,          // 64 @
+  TokenKind::kIllegal,          // 65 A
+  TokenKind::kIllegal,          // 66 B
+  TokenKind::kIllegal,          // 67 C
+  TokenKind::kIllegal,          // 68 D
+  TokenKind::kIllegal,          // 69 E
+  TokenKind::kIllegal,          // 70 F
+  TokenKind::kIllegal,          // 71 G
+  TokenKind::kIllegal,          // 72 H
+  TokenKind::kIllegal,          // 73 I
+  TokenKind::kIllegal,          // 74 J
+  TokenKind::kIllegal,          // 75 K
+  TokenKind::kIllegal,          // 76 L
+  TokenKind::kIllegal,          // 77 M
+  TokenKind::kIllegal,          // 78 N
+  TokenKind::kIllegal,          // 79 O
+  TokenKind::kIllegal,          // 80 P
+  TokenKind::kIllegal,          // 81 Q
+  TokenKind::kIllegal,          // 82 R
+  TokenKind::kIllegal,          // 83 S
+  TokenKind::kIllegal,          // 84 T
+  TokenKind::kIllegal,          // 85 U
+  TokenKind::kIllegal,          // 86 V
+  TokenKind::kIllegal,          // 87 W
+  TokenKind::kIllegal,          // 88 X
+  TokenKind::kIllegal,          // 89 Y
+  TokenKind::kIllegal,          // 90 Z
+  TokenKind::kLeftBracket,      // 91 [
+  TokenKind::kIllegal,          // 92 BACK_SLASH
+  TokenKind::kRightBracket,     // 93 ]
+  TokenKind::kIllegal,          // 94 ^
+  TokenKind::kIllegal,          // 95 _
+  TokenKind::kIllegal,          // 96 `
+  TokenKind::kIllegal,          // 97 a
+  TokenKind::kIllegal,          // 98 b
+  TokenKind::kIllegal,          // 99 c
+  TokenKind::kIllegal,          // 100 d
+  TokenKind::kIllegal,          // 101 e
+  TokenKind::kIllegal,          // 102 f
+  TokenKind::kIllegal,          // 103 g
+  TokenKind::kIllegal,          // 104 h
+  TokenKind::kIllegal,          // 105 i
+  TokenKind::kIllegal,          // 106 j
+  TokenKind::kIllegal,          // 107 k
+  TokenKind::kIllegal,          // 108 l
+  TokenKind::kIllegal,          // 109 m
+  TokenKind::kIllegal,          // 110 n
+  TokenKind::kIllegal,          // 111 o
+  TokenKind::kIllegal,          // 112 p
+  TokenKind::kIllegal,          // 113 q
+  TokenKind::kIllegal,          // 114 r
+  TokenKind::kIllegal,          // 115 s
+  TokenKind::kIllegal,          // 116 t
+  TokenKind::kIllegal,          // 117 u
+  TokenKind::kIllegal,          // 118 v
+  TokenKind::kIllegal,          // 119 w
+  TokenKind::kIllegal,          // 120 x
+  TokenKind::kIllegal,          // 121 y
+  TokenKind::kIllegal,          // 122 z
+  TokenKind::kLeftBrace,        // 123 {
+  TokenKind::kIllegal,          // 124 |
+  TokenKind::kRightBrace,       // 125 }
+  TokenKind::kIllegal,          // 126 ~
+  TokenKind::kIllegal           // 127 DEL
 };
 
 
 // Borrowed from v8 javascript engine.
 #define KEYWORDS(KEYWORD_GROUP, KEYWORD)                                \
   KEYWORD_GROUP('b')                                                    \
-  KEYWORD("break", Token::TS_BREAK)                                     \
+  KEYWORD("break", TokenKind::kBreak)                                   \
   KEYWORD_GROUP('c')                                                    \
-  KEYWORD("case", Token::TS_CASE)                                       \
-  KEYWORD("catch", Token::TS_CATCH)                                     \
-  KEYWORD("class", Token::TS_CLASS)                                     \
-  KEYWORD("const", LanguageModeUtil::IsES6(co)? Token::TS_CONST: Token::FUTURE_RESERVED_WORD) \
-  KEYWORD("continue", Token::TS_CONTINUE)                               \
+  KEYWORD("case", TokenKind::kCase)                                     \
+  KEYWORD("catch", TokenKind::kCatch)                                   \
+  KEYWORD("class", TokenKind::kClass)                                   \
+  KEYWORD("const", LanguageModeUtil::IsES6(co)? TokenKind::kConst: TokenKind::kFutureReservedWord) \
+  KEYWORD("continue", TokenKind::kContinue)                             \
   KEYWORD_GROUP('d')                                                    \
-  KEYWORD("debugger", Token::TS_DEBUGGER)                               \
-  KEYWORD("default", Token::TS_DEFAULT)                                 \
-  KEYWORD("delete", Token::TS_DELETE)                                   \
-  KEYWORD("do", Token::TS_DO)                                           \
+  KEYWORD("debugger", TokenKind::kDebugger)                             \
+  KEYWORD("default", TokenKind::kDefault)                               \
+  KEYWORD("delete", TokenKind::kDelete)                                 \
+  KEYWORD("do", TokenKind::kDo)                                         \
   KEYWORD_GROUP('e')                                                    \
-  KEYWORD("else", Token::TS_ELSE)                                       \
-  KEYWORD("enum", Token::TS_ENUM)                                       \
-  KEYWORD("export", Token::TS_EXPORT)                                   \
-  KEYWORD("extends", Token::TS_EXTENDS)                                 \
+  KEYWORD("else", TokenKind::kElse)                                     \
+  KEYWORD("enum", TokenKind::kEnum)                                     \
+  KEYWORD("export", TokenKind::kExport)                                 \
+  KEYWORD("extends", TokenKind::kExtends)                               \
   KEYWORD_GROUP('f')                                                    \
-  KEYWORD("false", Token::TS_FALSE)                                     \
-  KEYWORD("finally", Token::TS_FINALLY)                                 \
-  KEYWORD("for", Token::TS_FOR)                                         \
-  KEYWORD("function", Token::TS_FUNCTION)                               \
+  KEYWORD("false", TokenKind::kFalse)                                   \
+  KEYWORD("finally", TokenKind::kFinally)                               \
+  KEYWORD("for", TokenKind::kFor)                                       \
+  KEYWORD("function", TokenKind::kFunction)                             \
   KEYWORD_GROUP('i')                                                    \
-  KEYWORD("if", Token::TS_IF)                                           \
-  KEYWORD("implements", Token::TS_IMPLEMENTS)                           \
-  KEYWORD("import", Token::TS_IMPORT)                                   \
-  KEYWORD("in", Token::TS_IN)                                           \
-  KEYWORD("instanceof", Token::TS_INSTANCEOF)                           \
-  KEYWORD("interface", Token::TS_INTERFACE)                             \
+  KEYWORD("if", TokenKind::kIf)                                         \
+  KEYWORD("implements", TokenKind::kImplements)                         \
+  KEYWORD("import", TokenKind::kImport)                                 \
+  KEYWORD("in", TokenKind::kIn)                                         \
+  KEYWORD("instanceof", TokenKind::kInstanceof)                         \
+  KEYWORD("interface", TokenKind::kInterface)                           \
   KEYWORD_GROUP('l')                                                    \
-  KEYWORD("let", LanguageModeUtil::IsES6(co)? Token::TS_LET: Token::TS_IDENTIFIER) \
+  KEYWORD("let", LanguageModeUtil::IsES6(co)? TokenKind::kLet: TokenKind::kIdentifier) \
   KEYWORD_GROUP('m')                                                    \
-  KEYWORD("module", ModuleTypeUtil::IsModuleKeywordAllowed(co)? Token::TS_MODULE: Token::TS_IDENTIFIER) \
+  KEYWORD("module", ModuleTypeUtil::IsModuleKeywordAllowed(co)? TokenKind::kModule: TokenKind::kIdentifier) \
   KEYWORD_GROUP('n')                                                    \
-  KEYWORD("new", Token::TS_NEW)                                         \
-  KEYWORD("null", Token::TS_NULL)                                       \
+  KEYWORD("new", TokenKind::kNew)                                       \
+  KEYWORD("null", TokenKind::kNull)                                     \
   KEYWORD_GROUP('N')                                                    \
-  KEYWORD("NaN", Token::TS_NAN)                                         \
+  KEYWORD("NaN", TokenKind::kNan)                                       \
   KEYWORD_GROUP('p')                                                    \
   KEYWORD("package", LanguageModeUtil::IsFutureReservedWord(co)?        \
-          Token::FUTURE_STRICT_RESERVED_WORD: Token::TS_IDENTIFIER)     \
-  KEYWORD("private", Token::TS_PRIVATE)                                 \
-  KEYWORD("protected", Token::TS_PROTECTED)                             \
-  KEYWORD("public", Token::TS_PUBLIC)                                   \
+          TokenKind::kFutureStrictReservedWord: TokenKind::kIdentifier) \
+  KEYWORD("private", TokenKind::kPrivate)                               \
+  KEYWORD("protected", TokenKind::kProtected)                           \
+  KEYWORD("public", TokenKind::kPublic)                                 \
   KEYWORD_GROUP('r')                                                    \
-  KEYWORD("return", Token::TS_RETURN)                                   \
+  KEYWORD("return", TokenKind::kReturn)                                 \
   KEYWORD_GROUP('s')                                                    \
-  KEYWORD("static", Token::TS_STATIC)                                   \
-  KEYWORD("super", Token::TS_SUPER)                                     \
-  KEYWORD("switch", Token::TS_SWITCH)                                   \
+  KEYWORD("static", TokenKind::kStatic)                                 \
+  KEYWORD("super", TokenKind::kSuper)                                   \
+  KEYWORD("switch", TokenKind::kSwitch)                                 \
   KEYWORD_GROUP('t')                                                    \
-  KEYWORD("this", Token::TS_THIS)                                       \
-  KEYWORD("throw", Token::TS_THROW)                                     \
-  KEYWORD("true", Token::TS_TRUE)                                       \
-  KEYWORD("try", Token::TS_TRY)                                         \
-  KEYWORD("typeof", Token::TS_TYPEOF)                                   \
+  KEYWORD("this", TokenKind::kThis)                                     \
+  KEYWORD("throw", TokenKind::kThrow)                                   \
+  KEYWORD("true", TokenKind::kTrue)                                     \
+  KEYWORD("try", TokenKind::kTry)                                       \
+  KEYWORD("typeof", TokenKind::kTypeof)                                 \
   KEYWORD_GROUP('u')                                                    \
-  KEYWORD("undefined", Token::TS_UNDEFINED)                             \
+  KEYWORD("undefined", TokenKind::kUndefined)                           \
   KEYWORD_GROUP('v')                                                    \
-  KEYWORD("var", Token::TS_VAR)                                         \
-  KEYWORD("void", Token::TS_VOID)                                       \
+  KEYWORD("var", TokenKind::kVar)                                       \
+  KEYWORD("void", TokenKind::kVoid)                                     \
   KEYWORD_GROUP('w')                                                    \
-  KEYWORD("while", Token::TS_WHILE)                                     \
-  KEYWORD("with", Token::TS_WITH)                                       \
+  KEYWORD("while", TokenKind::kWhile)                                   \
+  KEYWORD("with", TokenKind::kWith)                                     \
   KEYWORD_GROUP('y')                                                    \
-  KEYWORD("yield", LanguageModeUtil::IsES6(co)? Token::TS_YIELD: Token::TS_IDENTIFIER)
+  KEYWORD("yield", LanguageModeUtil::IsES6(co)? TokenKind::kYield: TokenKind::kIdentifier)
 
 
 // Get Identifier type from string.
-Token TokenInfo::GetIdentifierType(const char* maybe_keyword, const CompilerOption& co) {
+TokenKind Token::GetIdentifierType(const char* maybe_keyword, const CompilerOption& co) {
   const size_t input_length = Strlen(maybe_keyword);
   const int min_length = 2;
   const int max_length = 10;
   if (input_length < min_length || input_length > max_length) {
-    return Token::TS_IDENTIFIER;
+    return TokenKind::kIdentifier;
   }
   
   // Borrowed from v8 javascript engine.
@@ -269,107 +269,107 @@ Token TokenInfo::GetIdentifierType(const char* maybe_keyword, const CompilerOpti
       }
       KEYWORDS(KEYWORD_GROUP_CASE, KEYWORD)
         }
-  return Token::TS_IDENTIFIER;
+  return TokenKind::kIdentifier;
 }
 
 
 // Get puncture type from char.
-Token TokenInfo::GetPunctureType(const UChar& uchar) {
+TokenKind Token::GetPunctureType(const UChar& uchar) {
   return kPunctures[uchar.ToUC8Ascii()];
 }
 
 
-uint8_t GetOperandPriority(Token t) {
-  switch (t) {
-    case Token::TS_MOD:
-    case Token::TS_DIV:
-    case Token::TS_MUL:
+uint8_t GetOperandPriority(TokenKind kind) {
+  switch (kind) {
+    case TokenKind::kMod:
+    case TokenKind::kDiv:
+    case TokenKind::kMul:
       return 1;
-    case Token::TS_PLUS:
-    case Token::TS_MINUS:
+    case TokenKind::kPlus:
+    case TokenKind::kMinus:
       return 2;
-    case Token::TS_SHIFT_RIGHT:
-    case Token::TS_U_SHIFT_RIGHT:
-    case Token::TS_SHIFT_LEFT:
+    case TokenKind::kShiftRight:
+    case TokenKind::kUShiftRight:
+    case TokenKind::kShiftLeft:
       return 3;
-    case Token::TS_LESS:
-    case Token::TS_GREATER:
-    case Token::TS_GREATER_EQUAL:
-    case Token::TS_LESS_EQUAL:
-    case Token::TS_IN:
-    case Token::TS_INSTANCEOF:
+    case TokenKind::kLess:
+    case TokenKind::kGreater:
+    case TokenKind::kGreaterEqual:
+    case TokenKind::kLessEqual:
+    case TokenKind::kIn:
+    case TokenKind::kInstanceof:
       return 4;
-    case Token::TS_EQ:
-    case Token::TS_EQUAL:
-    case Token::TS_NOT_EQ:
-    case Token::TS_NOT_EQUAL:
+    case TokenKind::kEq:
+    case TokenKind::kEqual:
+    case TokenKind::kNotEq:
+    case TokenKind::kNotEqual:
       return 5;
-    case Token::TS_BIT_AND:
+    case TokenKind::kBitAnd:
       return 6;
-    case Token::TS_BIT_XOR:
+    case TokenKind::kBitXor:
       return 7;
-    case Token::TS_BIT_OR:
+    case TokenKind::kBitOr:
       return 8;
-    case Token::TS_LOGICAL_AND:
+    case TokenKind::kLogicalAnd:
       return 9;
-    case Token::TS_LOGICAL_OR:
+    case TokenKind::kLogicalOr:
       return 10;
     default:
       return 0;
   }
 }
 
-bool TokenInfo::IsKeyword(Token type) {
-  return type == Token::TS_BREAK ||
-    type == Token::TS_CASE ||
-    type == Token::TS_CATCH ||
-    type == Token::TS_CLASS ||
-    type == Token::TS_CONST ||
-    type == Token::TS_CONTINUE ||
-    type == Token::TS_DEBUGGER ||
-    type == Token::TS_DEFAULT ||
-    type == Token::TS_DELETE ||
-    type == Token::TS_DO ||
-    type == Token::TS_ELSE ||
-    type == Token::TS_ENUM ||
-    type == Token::TS_EXPORT ||
-    type == Token::TS_EXTENDS ||
-    type == Token::TS_FALSE ||
-    type == Token::TS_FINALLY ||
-    type == Token::TS_FOR ||
-    type == Token::TS_FUNCTION ||
-    type == Token::TS_IF ||
-    type == Token::TS_IMPLEMENTS ||
-    type == Token::TS_IMPORT ||
-    type == Token::TS_IN ||
-    type == Token::TS_INSTANCEOF ||
-    type == Token::TS_INTERFACE ||
-    type == Token::TS_LET ||
-    type == Token::TS_MODULE ||
-    type == Token::TS_NEW ||
-    type == Token::TS_NULL ||
-    type == Token::TS_NAN ||
-    type == Token::TS_PACKAGE ||
-    type == Token::TS_PRIVATE ||
-    type == Token::TS_PROTECTED ||
-    type == Token::TS_PUBLIC ||
-    type == Token::TS_RETURN ||
-    type == Token::TS_STATIC ||
-    type == Token::TS_SUPER ||
-    type == Token::TS_SWITCH ||
-    type == Token::TS_THIS ||
-    type == Token::TS_THROW ||
-    type == Token::TS_TRUE ||
-    type == Token::TS_TRY ||
-    type == Token::TS_TYPEOF ||
-    type == Token::TS_UNDEFINED ||
-    type == Token::TS_VAR ||
-    type == Token::TS_VOID ||
-    type == Token::TS_WHILE ||
-    type == Token::TS_WITH ||
-    type == Token::TS_YIELD;
+bool Token::IsKeyword(TokenKind kind) {
+  return kind == TokenKind::kBreak ||
+    kind == TokenKind::kCase ||
+    kind == TokenKind::kCatch ||
+    kind == TokenKind::kClass ||
+    kind == TokenKind::kConst ||
+    kind == TokenKind::kContinue ||
+    kind == TokenKind::kDebugger ||
+    kind == TokenKind::kDefault ||
+    kind == TokenKind::kDelete ||
+    kind == TokenKind::kDo ||
+    kind == TokenKind::kElse ||
+    kind == TokenKind::kEnum ||
+    kind == TokenKind::kExport ||
+    kind == TokenKind::kExtends ||
+    kind == TokenKind::kFalse ||
+    kind == TokenKind::kFinally ||
+    kind == TokenKind::kFor ||
+    kind == TokenKind::kFunction ||
+    kind == TokenKind::kIf ||
+    kind == TokenKind::kImplements ||
+    kind == TokenKind::kImport ||
+    kind == TokenKind::kIn ||
+    kind == TokenKind::kInstanceof ||
+    kind == TokenKind::kInterface ||
+    kind == TokenKind::kLet ||
+    kind == TokenKind::kModule ||
+    kind == TokenKind::kNew ||
+    kind == TokenKind::kNull ||
+    kind == TokenKind::kNan ||
+    kind == TokenKind::kPackage ||
+    kind == TokenKind::kPrivate ||
+    kind == TokenKind::kProtected ||
+    kind == TokenKind::kPublic ||
+    kind == TokenKind::kReturn ||
+    kind == TokenKind::kStatic ||
+    kind == TokenKind::kSuper ||
+    kind == TokenKind::kSwitch ||
+    kind == TokenKind::kThis ||
+    kind == TokenKind::kThrow ||
+    kind == TokenKind::kTrue ||
+    kind == TokenKind::kTry ||
+    kind == TokenKind::kTypeof ||
+    kind == TokenKind::kUndefined ||
+    kind == TokenKind::kVar ||
+    kind == TokenKind::kVoid ||
+    kind == TokenKind::kWhile ||
+    kind == TokenKind::kWith ||
+    kind == TokenKind::kYield;
 }
 
 
-TokenInfo TokenInfo::kNullToken;
+Token Token::kNullToken;
 }

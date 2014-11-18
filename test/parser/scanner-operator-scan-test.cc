@@ -29,61 +29,61 @@
   TEST(ScannerTest, ScanOperator_##name)              \
   {                                                   \
    INIT(token, operator);                             \
-   ASSERT_EQ(token->type(), yatsc::Token::token_type);  \
+   ASSERT_EQ(token->type(), yatsc::TokenKind::token_type);  \
   }
 
 
-OPERATOR_TEST(",", comma, TS_COMMA)
-OPERATOR_TEST(".", dot, TS_DOT)
+OPERATOR_TEST(",", comma, kComma)
+OPERATOR_TEST(".", dot, kDot)
 
-OPERATOR_TEST("+", arithmetic_plus, TS_PLUS)
-OPERATOR_TEST("+=", arithmetic_add_let, TS_ADD_LET)
-OPERATOR_TEST("++", arithmetic_increment, TS_INCREMENT)
+OPERATOR_TEST("+", arithmetic_plus, kPlus)
+OPERATOR_TEST("+=", arithmetic_add_let, kAddLet)
+OPERATOR_TEST("++", arithmetic_increment, kIncrement)
 
-OPERATOR_TEST("-", arithmetic_minus, TS_MINUS)
-OPERATOR_TEST("-=", arithmetic_sub_let, TS_SUB_LET)
-OPERATOR_TEST("--", arithmetic_decrement, TS_DECREMENT)
+OPERATOR_TEST("-", arithmetic_minus, kMinus)
+OPERATOR_TEST("-=", arithmetic_sub_let, kSubLet)
+OPERATOR_TEST("--", arithmetic_decrement, kDecrement)
 
-OPERATOR_TEST("*", arithmetic_mul, TS_MUL)
-OPERATOR_TEST("*=", arithmetic_mul_let, TS_MUL_LET)
+OPERATOR_TEST("*", arithmetic_mul, kMul)
+OPERATOR_TEST("*=", arithmetic_mul_let, kMulLet)
 
-OPERATOR_TEST("/", arithmetic_div, TS_DIV)
-OPERATOR_TEST("/=", arithmetic_div_let, TS_DIV_LET)
+OPERATOR_TEST("/", arithmetic_div, kDiv)
+OPERATOR_TEST("/=", arithmetic_div_let, kDivLet)
 
-OPERATOR_TEST("%", arithmetic_mod, TS_MOD)
-OPERATOR_TEST("%=", arithmetic_mod_let, TS_MOD_LET)
+OPERATOR_TEST("%", arithmetic_mod, kMod)
+OPERATOR_TEST("%=", arithmetic_mod_let, kModLet)
 
-OPERATOR_TEST("~", arithmetic_nor, TS_BIT_NOR)
-OPERATOR_TEST("~=", arithmetic_nor_let, TS_NOR_LET)
+OPERATOR_TEST("~", arithmetic_nor, kBitNor)
+OPERATOR_TEST("~=", arithmetic_nor_let, kNorLet)
 
-OPERATOR_TEST("^", arithmetic_xor, TS_BIT_XOR)
-OPERATOR_TEST("^=", arithmetic_xor_let, TS_XOR_LET)
+OPERATOR_TEST("^", arithmetic_xor, kBitXor)
+OPERATOR_TEST("^=", arithmetic_xor_let, kXorLet)
 
-OPERATOR_TEST("&", bit_and, TS_BIT_AND)
-OPERATOR_TEST("&=", bit_and_let, TS_AND_LET)
-OPERATOR_TEST("&&", logical_and, TS_LOGICAL_AND)
+OPERATOR_TEST("&", bit_and, kBitAnd)
+OPERATOR_TEST("&=", bit_and_let, kAndLet)
+OPERATOR_TEST("&&", logical_and, kLogicalAnd)
 
-OPERATOR_TEST("|", bit_or, TS_BIT_OR)
-OPERATOR_TEST("|=", bit_or_let, TS_OR_LET)
-OPERATOR_TEST("||", logical_or, TS_LOGICAL_OR)
+OPERATOR_TEST("|", bit_or, kBitOr)
+OPERATOR_TEST("|=", bit_or_let, kOrLet)
+OPERATOR_TEST("||", logical_or, kLogicalOr)
 
-OPERATOR_TEST("=", assign, TS_ASSIGN)
-OPERATOR_TEST("==", equal, TS_EQUAL)
-OPERATOR_TEST("===", strict_equal, TS_EQ)
+OPERATOR_TEST("=", assign, kAssign)
+OPERATOR_TEST("==", equal, kEqual)
+OPERATOR_TEST("===", strict_equal, kEq)
 
-OPERATOR_TEST("=>", arrow_glyph, TS_ARROW_GLYPH)
+OPERATOR_TEST("=>", arrow_glyph, kArrowGlyph)
 
-OPERATOR_TEST("!", not, TS_NOT)
-OPERATOR_TEST("!=", not_equal, TS_NOT_EQUAL)
-OPERATOR_TEST("!==", strict_not_equal, TS_NOT_EQ)
+OPERATOR_TEST("!", not, kNot)
+OPERATOR_TEST("!=", not_equal, kNotEqual)
+OPERATOR_TEST("!==", strict_not_equal, kNotEq)
 
-OPERATOR_TEST("<", less, TS_LESS)
-OPERATOR_TEST("<=", less_equal, TS_LESS_EQUAL)
-OPERATOR_TEST("<<", shift_left, TS_SHIFT_LEFT)
-OPERATOR_TEST("<<=", shift_left_let, TS_SHIFT_LEFT_LET)
+OPERATOR_TEST("<", less, kLess)
+OPERATOR_TEST("<=", less_equal, kLessEqual)
+OPERATOR_TEST("<<", shift_left, kShiftLeft)
+OPERATOR_TEST("<<=", shift_left_let, kShiftLeftLet)
 
-OPERATOR_TEST(">", greater, TS_GREATER)
-OPERATOR_TEST(">=", greater_equal, TS_GREATER_EQUAL)
-OPERATOR_TEST(">>", shift_right, TS_SHIFT_RIGHT)
-OPERATOR_TEST(">>>", u_shift_right, TS_U_SHIFT_RIGHT)
-OPERATOR_TEST(">>=", shift_right_let, TS_SHIFT_RIGHT_LET)
+OPERATOR_TEST(">", greater, kGreater)
+OPERATOR_TEST(">=", greater_equal, kGreaterEqual)
+OPERATOR_TEST(">>", shift_right, kShiftRight)
+OPERATOR_TEST(">>>", u_shift_right, kUShiftRight)
+OPERATOR_TEST(">>=", shift_right_let, kShiftRightLet)

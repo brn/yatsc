@@ -104,12 +104,12 @@ class Type {
     kExport = 0x16
   };
   
-  static Modifier ModifierFromToken(Token token) {
-    return token == Token::TS_PUBLIC? Modifier::kPublic:
-      token == Token::TS_PROTECTED? Modifier::kProtected:
-      token == Token::TS_PRIVATE? Modifier::kPrivate:
-      token == Token::TS_STATIC? Modifier::kStatic:
-      token == Token::TS_EXPORT? Modifier::kExport: Modifier::kPublic;
+  static Modifier ModifierFromToken(TokenKind token) {
+    return token == TokenKind::kPublic? Modifier::kPublic:
+      token == TokenKind::kProtected? Modifier::kProtected:
+      token == TokenKind::kPrivate? Modifier::kPrivate:
+      token == TokenKind::kStatic? Modifier::kStatic:
+      token == TokenKind::kExport? Modifier::kExport: Modifier::kPublic;
   }
 
  private:

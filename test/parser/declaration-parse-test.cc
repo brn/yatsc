@@ -44,14 +44,14 @@
 
 TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100;",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [NameView][x]\n"
                    "    [NumberView][100]\n"
                    "    [Empty]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100, y = 200, z = 300",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [NameView][x]\n"
                    "    [NumberView][100]\n"
@@ -66,7 +66,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [Empty]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x: string = 100;",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [NameView][x]\n"
                    "    [NumberView][100]\n"
@@ -74,7 +74,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "      [NameView][string]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c] = [1,2,3];",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingArrayView]\n"
                    "      [BindingElementView]\n"
@@ -96,7 +96,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [Empty]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c} = {a:100,b:200,c:300};",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingPropListView]\n"
                    "      [BindingElementView]\n"
@@ -124,7 +124,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [Empty]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {foo:a,b:{c:[x,y,z]},c:[{bar}]} = {a:100,b:{c:[1,2,3]},c:[{bar:100}]};",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingPropListView]\n"
                    "      [BindingElementView]\n"
@@ -187,7 +187,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
 
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c]: number[] = [1,2,3];",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingArrayView]\n"
                    "      [BindingElementView]\n"
@@ -211,7 +211,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "        [NameView][number]");
 
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c}: Object = {a:100,b:200,c:300};",
-                   "[LexicalDeclView][TS_LET]\n"
+                   "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingPropListView]\n"
                    "      [BindingElementView]\n"
@@ -243,7 +243,7 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
 
 TEST(DeclarationParseTest, ParseLexicalDeclaration_const) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "const x = 100;",
-                   "[LexicalDeclView][TS_CONST]\n"
+                   "[LexicalDeclView][Const]\n"
                    "  [VariableView]\n"
                    "    [NameView][x]\n"
                    "    [NumberView][100]\n"
@@ -400,7 +400,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][constructor]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -424,7 +424,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][constructor]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -438,7 +438,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [MemberFunctionOverloadsView]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -446,7 +446,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -474,7 +474,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][constructor]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -488,7 +488,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [MemberFunctionOverloadsView]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -496,7 +496,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -510,7 +510,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [BlockView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][member]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -540,7 +540,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][constructor]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -554,7 +554,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [MemberFunctionOverloadsView]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -562,7 +562,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][constructor]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -576,8 +576,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [BlockView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Static]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][member]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -586,8 +586,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [MemberFunctionOverloadsView]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Static]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][member]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -600,8 +600,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Static]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][member]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -615,8 +615,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [BlockView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Static]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][gmember]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -625,8 +625,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [MemberFunctionOverloadsView]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Static]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][gmember]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -639,8 +639,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "        [MemberFunctionOverloadView]\n"
                        "          [ClassFieldModifiersView]\n"
-                       "            [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "            [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "            [ClassFieldAccessLevelView][Static]\n"
+                       "            [ClassFieldAccessLevelView][Public]\n"
                        "          [NameView][gmember]\n"
                        "          [CallSignatureView]\n"
                        "            [ParamList]\n"
@@ -669,7 +669,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberVariableView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][member]\n"
                        "      [Empty]\n"
                        "      [NumberView][1]");
@@ -685,8 +685,8 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberVariableView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_STATIC]\n"
-                       "        [ClassFieldAccessLevelView][TS_PRIVATE]\n"
+                       "        [ClassFieldAccessLevelView][Static]\n"
+                       "        [ClassFieldAccessLevelView][Private]\n"
                        "      [NameView][member]\n"
                        "      [Empty]\n"
                        "      [NumberView][1]");
@@ -758,7 +758,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][bar]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -779,7 +779,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
-                       "        [ClassFieldAccessLevelView][TS_PUBLIC]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
                        "      [NameView][bar]\n"
                        "      [CallSignatureView]\n"
                        "        [ParamList]\n"
@@ -1070,7 +1070,7 @@ TEST(DeclarationParseTest, ParseEnumDeclaration) {
                        "      [Empty]\n"
                        "    [EnumFieldView]\n"
                        "      [NameView][QUX]\n"
-                       "      [BinaryExprView][TS_PLUS]\n"
+                       "      [BinaryExprView][Plus]\n"
                        "        [NumberView][1]\n"
                        "        [NumberView][2]");
 

@@ -29,7 +29,7 @@
 
 TEST(ScannerTest, ScanStringLiteralTest_normal) {
   INIT(token, "'test string'")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "test string");
   END_SCAN;
 }
@@ -37,7 +37,7 @@ TEST(ScannerTest, ScanStringLiteralTest_normal) {
 
 TEST(ScannerTest, ScanStringLiteralTest_escaped_string) {
   INIT(token, "'test \\'string'")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "test \\'string");
   END_SCAN;
 }
@@ -45,7 +45,7 @@ TEST(ScannerTest, ScanStringLiteralTest_escaped_string) {
 
 TEST(ScannerTest, ScanStringLiteralTest_double_escaped_string) {
   INIT(token, "'test \\\\'string'")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "test \\\\");
 }
 
@@ -57,14 +57,14 @@ TEST(ScannerTest, ScanStringLiteralTest_unterminated_string) {
 
 TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string) {
   INIT(token, "'\\u0061_foo_\\u0062_bar_\\u0063_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
 }
 
 
 TEST(ScannerTest, ScanStringLiteralTest_unicode_escaped_string2) {
   INIT(token, "'\\uFEFF'");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "\xEF\xBB\xBF");
 }
 
@@ -86,7 +86,7 @@ TEST(ScannerTest, ScanStringLiteralTest_invalid_unicode_escaped_string3) {
 
 TEST(ScannerTest, ScanStringLiteralTest_ascii_escaped_string) {
   INIT(token, "'\\x61_foo_\\x62_bar_\\x63_baz'")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_STRING_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kStringLiteral);
   ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
 }
 
@@ -108,7 +108,7 @@ TEST(ScannerTest, ScanStringLiteralTest_invalid_ascii_escaped_string3) {
 
 TEST(ScannerTest, ScanDigit_double) {
   INIT(token, ".3032")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), ".3032");
   END_SCAN;
 }
@@ -121,7 +121,7 @@ TEST(ScannerTest, ScanDigit_double_illegal) {
 
 TEST(ScannerTest, ScanDigit_hex) {
   INIT(token, "0xFFCC33")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), "0xFFCC33");
   END_SCAN;
 }
@@ -129,7 +129,7 @@ TEST(ScannerTest, ScanDigit_hex) {
 
 TEST(ScannerTest, ScanDigit_int) {
   INIT(token, "1349075")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), "1349075");
   END_SCAN;
 }
@@ -137,7 +137,7 @@ TEST(ScannerTest, ScanDigit_int) {
 
 TEST(ScannerTest, ScanDigit_double2) {
   INIT(token, "1349.075")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), "1349.075");
   END_SCAN;
 }
@@ -150,7 +150,7 @@ TEST(ScannerTest, ScanDigit_double2_illegal) {
 
 TEST(ScannerTest, ScanDigit_exponent) {
   INIT(token, "1349e+2")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), "1349e+2");
   END_SCAN;
 }
@@ -158,7 +158,7 @@ TEST(ScannerTest, ScanDigit_exponent) {
 
 TEST(ScannerTest, ScanDigit_exponent2) {
   INIT(token, "1.3e+1")
-  ASSERT_EQ(token->type(), yatsc::Token::TS_NUMERIC_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kNumericLiteral);
   ASSERT_STREQ(token->utf8_value(), "1.3e+1");
   END_SCAN;
 }
@@ -176,7 +176,7 @@ TEST(ScannerTest, ScanDigit_exponent_illegal2) {
 
 TEST(ScannerTest, ScanOcatalLiteral_valid) {
   INIT(token, "07771");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_OCTAL_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kOctalLiteral);
   ASSERT_STREQ(token->utf8_value(), "07771");
   END_SCAN;
 }
@@ -190,7 +190,7 @@ TEST(ScannerTest, ScanOcatalLiteral_invalid) {
 TEST(ScannerTest, ScanBinaryLiteral_valid1) {
   const char* binary = "0o01111001";
   INIT_ES6(token, binary);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kBinaryLiteral);
   ASSERT_STREQ(token->utf8_value(), binary);
   ASSERT_EQ(token->value()->utf8_length(), strlen(binary));
 }
@@ -199,7 +199,7 @@ TEST(ScannerTest, ScanBinaryLiteral_valid1) {
 TEST(ScannerTest, ScanBinaryLiteral_valid2) {
   const char* binary = "0O01111001";
   INIT_ES6(token, binary);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_BINARY_LITERAL);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kBinaryLiteral);
   ASSERT_STREQ(token->utf8_value(), binary);
   ASSERT_EQ(token->value()->utf8_length(), strlen(binary));
 }
@@ -232,7 +232,7 @@ TEST(ScannerTest, ScanBinaryLiteral_invalid5) {
 
 TEST(ScannerTest, ScanIdentifier_identifier) {
   INIT(token, "fooBarBaz");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "fooBarBaz");
   END_SCAN;
 }
@@ -240,7 +240,7 @@ TEST(ScannerTest, ScanIdentifier_identifier) {
 
 TEST(ScannerTest, ScanIdentifier_identifier2) {
   INIT(token, "$_$_foobar");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "$_$_foobar");
   END_SCAN;
 }
@@ -248,7 +248,7 @@ TEST(ScannerTest, ScanIdentifier_identifier2) {
 
 TEST(ScannerTest, ScanIdentifier_identifier3) {
   INIT(token, "$_$_foobar333_4");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "$_$_foobar333_4");
   END_SCAN;
 }
@@ -257,7 +257,7 @@ TEST(ScannerTest, ScanIdentifier_identifier3) {
 TEST(ScannerTest, ScanIdentifier_long_long_identifier) {
   const char* id = "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephallioki";
   INIT(token, id);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), id);
   END_SCAN;
 }
@@ -265,7 +265,7 @@ TEST(ScannerTest, ScanIdentifier_long_long_identifier) {
 
 TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape) {
   INIT(token, "\\u0061\\u0062\\u0063");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "abc");
   END_SCAN;
 }
@@ -273,7 +273,7 @@ TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape) {
 
 TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape_with_ascii) {
   INIT(token, "\\u0061_foo_\\u0062_bar_\\u0063_baz");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "a_foo_b_bar_c_baz");
   END_SCAN;
 }
@@ -281,16 +281,16 @@ TEST(ScannerTest, ScanIdentifier_identifier_unicode_escape_with_ascii) {
 
 TEST(ScannerTest, ScanLineTerminator_line_terminator) {
   INIT(token, "aaa;");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_TRUE(token->has_line_terminator_before_next());
-  ASSERT_EQ(scanner.Scan()->type(), yatsc::Token::LINE_TERMINATOR);
+  ASSERT_EQ(scanner.Scan()->type(), yatsc::TokenKind::kLineTerminator);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanLineTerminator_line_break) {
   INIT(token, "aaa\n");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_TRUE(token->has_line_break_before_next());
   END_SCAN;
 }
@@ -298,16 +298,16 @@ TEST(ScannerTest, ScanLineTerminator_line_break) {
 
 TEST(ScannerTest, ScanLineTerminator_line_terminator_with_space) {
   INIT(token, "aaa  ;");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_TRUE(token->has_line_terminator_before_next());
-  ASSERT_EQ(scanner.Scan()->type(), yatsc::Token::LINE_TERMINATOR);
+  ASSERT_EQ(scanner.Scan()->type(), yatsc::TokenKind::kLineTerminator);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanLineTerminator_line_break_with_space) {
   INIT(token, "aaa  \n");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_TRUE(token->has_line_break_before_next());
   END_SCAN;
 }
@@ -315,56 +315,56 @@ TEST(ScannerTest, ScanLineTerminator_line_break_with_space) {
 
 TEST(ScannerTest, ScanPuncture_left_paren) {
   INIT(token, "(");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_LEFT_PAREN);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kLeftParen);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_right_paren) {
   INIT(token, ")");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_RIGHT_PAREN);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kRightParen);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_left_brace) {
   INIT(token, "{");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_LEFT_BRACE);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kLeftBrace);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_right_brace) {
   INIT(token, "}");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_RIGHT_BRACE);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kRightBrace);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_left_bracket) {
   INIT(token, "[");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_LEFT_BRACKET);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kLeftBracket);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_right_bracket) {
   INIT(token, "]");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_RIGHT_BRACKET);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kRightBracket);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_colon) {
   INIT(token, ":");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_COLON);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kColon);
   END_SCAN;
 }
 
 
 TEST(ScannerTest, ScanPuncture_question_mark) {
   INIT(token, "?");
-  ASSERT_EQ(token->type(), yatsc::Token::TS_QUESTION_MARK);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kQuestionMark);
   END_SCAN;
 }
 
@@ -372,7 +372,7 @@ TEST(ScannerTest, ScanPuncture_question_mark) {
 TEST(ScannerTest, SkipSingleLineComment) {
   const char* comment = "//abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()-_|\\`~{}[]\"\':;/?.<>,";
   INIT(token, comment);
-  ASSERT_STREQ("END_OF_INPUT", token->ToString().c_str());
+  ASSERT_STREQ("Eof", token->ToString().c_str());
   END_SCAN;
 }
 
@@ -380,7 +380,7 @@ TEST(ScannerTest, SkipSingleLineComment) {
 TEST(ScannerTest, SkipSingleLineComment_with_line_feed) {
   const char* comment = "foo//abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()-_|\\`~{}[]\"\':;/?.<>,\naaa";
   INIT(token, comment);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ(token->utf8_value(), "foo");
   token = scanner.Scan();
   ASSERT_STREQ(token->utf8_value(), "aaa");
@@ -392,7 +392,7 @@ TEST(ScannerTest, SkipMultiLineComment) {
   const char* comment = "foo/*aaaaaaaa\nbbbbbbbbbb\ncccccccccccc\nddddddddddddd*/aaa";
   const char* comment_part = "/*aaaaaaaa\nbbbbbbbbbb\ncccccccccccc\nddddddddddddd*/";
   INIT(token, comment);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());
@@ -407,7 +407,7 @@ TEST(ScannerTest, SkipMultiLineComment_2) {
   const char* comment = "foo/*aaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccccc\r\nddddddddddddd*/aaa";
   const char* comment_part = "/*aaaaaaaa\r\nbbbbbbbbbb\r\ncccccccccccc\r\nddddddddddddd*/";
   INIT(token, comment);
-  ASSERT_EQ(token->type(), yatsc::Token::TS_IDENTIFIER);
+  ASSERT_EQ(token->type(), yatsc::TokenKind::kIdentifier);
   ASSERT_STREQ("foo", token->utf8_value());
   token = scanner.Scan();
   ASSERT_STREQ("aaa", token->utf8_value());

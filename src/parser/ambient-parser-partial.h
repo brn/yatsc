@@ -27,19 +27,19 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
   LOG_PHASE(ParseDeclarationModule);
   auto ret = New<ir::FileScopeView>(current_scope());
-  ret->SetInformationForNode(Current());
+  ret->SetInformationForNode(cur_token());
 
   bool success = true;
   
   while (1) {
     Handle<ir::ExportView> export_view;
-    if (Current()->type() == Token::TS_EXPORT) {
-      TokenInfo info = *Current();
+    if (cur_token()->type() == TokenKind::kExport) {
+      Token info = *cur_token();
       Next();
-      if (Current()->type() == Token::TS_ASSIGN) {
+      if (cur_token()->type() == TokenKind::kAssign) {
         Next();
         auto assignment_expr_result = ParseAssignmentExpression(true, false);
-        SKIP_TOKEN_OR(assignment_expr_result, success, Token::LINE_TERMINATOR) {
+        SKIP_TOKEN_OR(assignment_expr_result, success, TokenKind::kLineTerminator) {
           ret->InsertLast(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
         }
         continue;
@@ -51,11 +51,11 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
     
     ParseResult parse_result;
     
-    switch (Current()->type()) {
-      case Token::TS_INTERFACE:
+    switch (cur_token()->type()) {
+      case TokenKind::kInterface:
         parse_result = ParseInterfaceDeclaration();
         break;
-      case Token::TS_IMPORT:
+      case TokenKind::kImport:
         parse_result = ParseImportDeclaration();
         break;
       default:
@@ -63,7 +63,7 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
         break;
     }
     
-    SKIP_TOKEN_OR(parse_result, success, Token::LINE_TERMINATOR) {
+    SKIP_TOKEN_OR(parse_result, success, TokenKind::kLineTerminator) {
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       }
@@ -76,7 +76,7 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
       ret->InsertLast(parse_result.value());
     }
     
-    if (Current()->type() == Token::END_OF_INPUT) {
+    if (cur_token()->type() == TokenKind::kEof) {
       break;
     }
   }
@@ -86,44 +86,44 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
 template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientDeclaration(bool module_allowed) {
   LOG_PHASE(ParseAmbientDeclaration);
-  if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value()->Equals("declare")) {
-    TokenInfo info = *Current();
+  if (cur_token()->type() == TokenKind::kIdentifier &&
+      cur_token()->value()->Equals("declare")) {
+    Token info = *cur_token();
     Next();
-    switch (Current()->type()) {
-      case Token::TS_VAR:
+    switch (cur_token()->type()) {
+      case TokenKind::kVar:
         return ParseAmbientVariableDeclaration(&info);
-      case Token::TS_FUNCTION:
+      case TokenKind::kFunction:
         return ParseAmbientFunctionDeclaration(&info);
-      case Token::TS_CLASS:
+      case TokenKind::kClass:
         return ParseAmbientClassDeclaration(&info);
-      case Token::TS_ENUM:
+      case TokenKind::kEnum:
         return ParseAmbientEnumDeclaration(&info);
       default:
-        if (Current()->type() == Token::TS_IDENTIFIER &&
-            Current()->value()->Equals("module")) {
+        if (cur_token()->type() == TokenKind::kIdentifier &&
+            cur_token()->value()->Equals("module")) {
           if (!module_allowed) {
-            SYNTAX_ERROR_AND_SKIP_NEXT("ambient module declaration not allowed here.", Current(), Token::TS_RIGHT_BRACE);
+            SYNTAX_ERROR_AND_SKIP_NEXT("ambient module declaration not allowed here.", cur_token(), TokenKind::kRightBrace);
           }
           return ParseAmbientModuleDeclaration(&info);
         }
-        SYNTAX_ERROR("unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", cur_token());
     }
   }
-  SYNTAX_ERROR("'declare' expected.", Current());
+  SYNTAX_ERROR("'declare' expected.", cur_token());
 }
 
 
 template <typename UCharInputInterator>
-ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(TokenInfo* info) {
+ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientVariableDeclaration);
-  if (Current()->type() == Token::TS_VAR) {
+  if (cur_token()->type() == TokenKind::kVar) {
     Next();
-    if (Current()->type() == Token::TS_IDENTIFIER) {
+    if (cur_token()->type() == TokenKind::kIdentifier) {
       auto identifier_result = ParseIdentifier();
       CHECK_AST(identifier_result);
       ParseResult type_annotation_result;
-      if (Current()->type() == Token::TS_COLON) {
+      if (cur_token()->type() == TokenKind::kColon) {
         Next();
         type_annotation_result = ParseTypeExpression();
         CHECK_AST(type_annotation_result);
@@ -132,23 +132,23 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(TokenIn
       ret->SetInformationForNode(info);
       return Success(ret);
     }
-    SYNTAX_ERROR("'identifier' expected.", Current());
+    SYNTAX_ERROR("'identifier' expected.", cur_token());
   }
-  SYNTAX_ERROR("'var' expected.", Current());
+  SYNTAX_ERROR("'var' expected.", cur_token());
 }
 
 
 template <typename UCharInputInterator>
-ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(TokenInfo* info) {
+ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientFunctionDeclaration);
   bool generator = false;
 
-  if (Current()->type() == Token::TS_FUNCTION) {
+  if (cur_token()->type() == TokenKind::kFunction) {
     Next();
-    if (Current()->type() == Token::TS_IDENTIFIER) {
+    if (cur_token()->type() == TokenKind::kIdentifier) {
       auto identifier_result = ParseIdentifier();
       CHECK_AST(identifier_result);
-      if (Current()->type() == Token::TS_MUL) {
+      if (cur_token()->type() == TokenKind::kMul) {
         generator = true;
         Next();
       }
@@ -159,25 +159,25 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(TokenIn
       return Success(ret);
     }
   }
-  SYNTAX_ERROR("'function' expected.", Current());
+  SYNTAX_ERROR("'function' expected.", cur_token());
 }
 
 
 template <typename UCharInputInterator>
-ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(TokenInfo* info) {
+ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientClassDeclaration);
-  if (Current()->type() == Token::TS_CLASS) {
+  if (cur_token()->type() == TokenKind::kClass) {
     Next();
     auto identifier_result = ParseIdentifier();
     CHECK_AST(identifier_result);
     ParseResult type_parameters_result;
-    if (Current()->type() == Token::TS_LESS) {
+    if (cur_token()->type() == TokenKind::kLess) {
      type_parameters_result = ParseTypeParameters();
      CHECK_AST(type_parameters_result);
     }
     auto class_bases_result = ParseClassBases();
     CHECK_AST(class_bases_result);
-    if (Current()->type() == Token::TS_LEFT_BRACE) {
+    if (cur_token()->type() == TokenKind::kLeftBrace) {
       auto ambient_class_body_result = ParseAmbientClassBody();
       CHECK_AST(ambient_class_body_result);
       auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.value(),
@@ -187,48 +187,48 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(TokenInfo*
       ret->SetInformationForNode(info);
       return Success(ret);
     }
-    SYNTAX_ERROR("'{' expected.", Current());
+    SYNTAX_ERROR("'{' expected.", cur_token());
   }
-  SYNTAX_ERROR("'class' expected.", Current());
+  SYNTAX_ERROR("'class' expected.", cur_token());
 }
 
 
 template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
   LOG_PHASE(ParseAmbientClassBody);
-  if (Current()->type() == Token::TS_LEFT_BRACE) {
+  if (cur_token()->type() == TokenKind::kLeftBrace) {
     auto body = New<ir::AmbientClassFieldsView>();
-    body->SetInformationForNode(Current());
+    body->SetInformationForNode(cur_token());
     Next();
 
     bool success = true;
 
     while (1) {
-      if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      if (cur_token()->type() == TokenKind::kRightBrace) {
         Next();
         return Success(body);
       } else {
         auto ambient_class_element_result = ParseAmbientClassElement();
-        SKIP_TOKEN_OR(ambient_class_element_result, success, Token::LINE_TERMINATOR) {
+        SKIP_TOKEN_OR(ambient_class_element_result, success, TokenKind::kLineTerminator) {
           body->InsertLast(ambient_class_element_result.value());
         }
         if (IsLineTermination()) {
           ConsumeLineTerminator();
-        } else if (Current()->type() != Token::TS_RIGHT_BRACE &&
-                   Prev()->type() != Token::TS_RIGHT_BRACE) {
-          SYNTAX_ERROR("';' expected", Prev());
+        } else if (cur_token()->type() != TokenKind::kRightBrace &&
+                   prev_token()->type() != TokenKind::kRightBrace) {
+          SYNTAX_ERROR("';' expected", prev_token());
         }
       }
     }
   }
-  SYNTAX_ERROR("'{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", cur_token());
 }
 
 
 template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
   LOG_PHASE(ParseAmbientClassElement);
-  if (Current()->type() == Token::TS_LEFT_BRACKET) {
+  if (cur_token()->type() == TokenKind::kLeftBracket) {
     return ParseIndexSignature();
   }
 
@@ -236,18 +236,18 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
   CHECK_AST(field_modifiers_result);
   AccessorType at = ParseAccessor();
 
-  if (TokenInfo::IsKeyword(Current()->type())) {
-    Current()->set_type(Token::TS_IDENTIFIER);
+  if (Token::IsKeyword(cur_token()->type())) {
+    cur_token()->set_type(TokenKind::kIdentifier);
   }
   
-  if (Current()->type() == Token::TS_IDENTIFIER) {
-    if (Current()->value()->Equals("constructor")) {
+  if (cur_token()->type() == TokenKind::kIdentifier) {
+    if (cur_token()->value()->Equals("constructor")) {
       return ParseAmbientConstructor(field_modifiers_result.value());
     } else {
       RecordedParserState rps = parser_state();
       Next();
-      if (Current()->type() == Token::TS_LEFT_PAREN ||
-          Current()->type() == Token::TS_LESS) {
+      if (cur_token()->type() == TokenKind::kLeftParen ||
+          cur_token()->type() == TokenKind::kLess) {
         RestoreParserState(rps);
         return ParseAmbientMemberFunction(field_modifiers_result.value(), &at);
       } else {
@@ -255,11 +255,11 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
         return ParseAmbientMemberVariable(field_modifiers_result.value());
       }
     }
-  } else if (Current()->type() == Token::TS_MUL) {
+  } else if (cur_token()->type() == TokenKind::kMul) {
     Next();
     return ParseAmbientGeneratorMethod(field_modifiers_result.value());
   }
-  SYNTAX_ERROR("unexpected token", Current());
+  SYNTAX_ERROR("unexpected token", cur_token());
 }
 
 
@@ -267,15 +267,15 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node> mods) {
   LOG_PHASE(ParseAmbientConstructor);
   
-  if ((Current()->type() == Token::TS_IDENTIFIER &&
-       Current()->value()->Equals("constructor")) ||
-      Current()->type() == Token::TS_PUBLIC ||
-      Current()->type() == Token::TS_PRIVATE ||
-      Current()->type() == Token::TS_PROTECTED) {
+  if ((cur_token()->type() == TokenKind::kIdentifier &&
+       cur_token()->value()->Equals("constructor")) ||
+      cur_token()->type() == TokenKind::kPublic ||
+      cur_token()->type() == TokenKind::kPrivate ||
+      cur_token()->type() == TokenKind::kProtected) {
     
-    if (Current()->type() == Token::TS_IDENTIFIER &&
-        Current()->value()->Equals("constructor")) {
-      TokenInfo info = *Current();
+    if (cur_token()->type() == TokenKind::kIdentifier &&
+        cur_token()->value()->Equals("constructor")) {
+      Token info = *cur_token();
       Next();
       auto call_sig_result = ParseCallSignature(true, false);
       CHECK_AST(call_sig_result);
@@ -283,9 +283,9 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node>
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
-    SYNTAX_ERROR("'constructor' expected", Current());
+    SYNTAX_ERROR("'constructor' expected", cur_token());
   }
-  SYNTAX_ERROR("unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", cur_token());
 }
 
 
@@ -293,13 +293,13 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* accessor_type) {
   LOG_PHASE(ParseAmbientMemberFunction);
   
-  if (Current()->type() == Token::TS_IDENTIFIER ||
-      Current()->type() == Token::TS_PUBLIC ||
-      Current()->type() == Token::TS_PRIVATE ||
-      Current()->type() == Token::TS_PROTECTED) {   
+  if (cur_token()->type() == TokenKind::kIdentifier ||
+      cur_token()->type() == TokenKind::kPublic ||
+      cur_token()->type() == TokenKind::kPrivate ||
+      cur_token()->type() == TokenKind::kProtected) {   
     
-    if (Current()->type() == Token::TS_IDENTIFIER) {
-      TokenInfo info = *Current();
+    if (cur_token()->type() == TokenKind::kIdentifier) {
+      Token info = *cur_token();
       auto identifier_result = ParseIdentifier();
       CHECK_AST(identifier_result);
       auto call_sig_result = ParseCallSignature(true, false);
@@ -313,9 +313,9 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::No
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
-    SYNTAX_ERROR("'identifier' expected", Current());
+    SYNTAX_ERROR("'identifier' expected", cur_token());
   }
-  SYNTAX_ERROR("unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", cur_token());
 }
 
 
@@ -323,19 +323,19 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::Node> mods) {
   LOG_PHASE(ParseAmbientGeneratorMethod);
 
-  if (Current()->type() == Token::TS_MUL) {
+  if (cur_token()->type() == TokenKind::kMul) {
     Next();
   } else {
-    SYNTAX_ERROR("'*' expected", Current());
+    SYNTAX_ERROR("'*' expected", cur_token());
   }
   
-  if (Current()->type() == Token::TS_IDENTIFIER ||
-      Current()->type() == Token::TS_PUBLIC ||
-      Current()->type() == Token::TS_PRIVATE ||
-      Current()->type() == Token::TS_PROTECTED) {
+  if (cur_token()->type() == TokenKind::kIdentifier ||
+      cur_token()->type() == TokenKind::kPublic ||
+      cur_token()->type() == TokenKind::kPrivate ||
+      cur_token()->type() == TokenKind::kProtected) {
     
-    if (Current()->type() == Token::TS_IDENTIFIER) {
-      TokenInfo info = *Current();
+    if (cur_token()->type() == TokenKind::kIdentifier) {
+      Token info = *cur_token();
       auto identifier_result = ParseIdentifier();
       CHECK_AST(identifier_result);
       auto call_sig_result = ParseCallSignature(true, false);
@@ -346,21 +346,21 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::N
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
-    SYNTAX_ERROR("'identifier' expected", Current());
+    SYNTAX_ERROR("'identifier' expected", cur_token());
   }
-  SYNTAX_ERROR("unexpected token.", Current());
+  SYNTAX_ERROR("unexpected token.", cur_token());
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<ir::Node> mods) {
   LOG_PHASE(ParseAmbientMemberVariable);
-  if (Current()->type() == Token::TS_IDENTIFIER) {
+  if (cur_token()->type() == TokenKind::kIdentifier) {
     auto identifier_result = ParseIdentifier();
     CHECK_AST(identifier_result);
     ParseResult type_expr_result;
     
-    if (Current()->type() == Token::TS_COLON) {
+    if (cur_token()->type() == TokenKind::kColon) {
       Next();
       type_expr_result = ParseTypeExpression();
       CHECK_AST(type_expr_result);
@@ -370,14 +370,14 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<ir::No
     member_variable->SetInformationForNode(mods);
     return Success(member_variable);
   }
-  SYNTAX_ERROR("'identifier' expected", Current());
+  SYNTAX_ERROR("'identifier' expected", cur_token());
 }
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientEnumDeclaration(TokenInfo* info) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientEnumDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientEnumDeclaration);
-  if (Current()->type() == Token::TS_ENUM) {
+  if (cur_token()->type() == TokenKind::kEnum) {
     Next();
     auto identifier_result = ParseIdentifier();
     auto ambient_enum_body_result = ParseAmbientEnumBody();
@@ -387,19 +387,19 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumDeclaration(TokenInfo* i
     ret->SetInformationForNode(info);
     return Success(ret);
   }
-  SYNTAX_ERROR("'enum' expected.", Current());
+  SYNTAX_ERROR("'enum' expected.", cur_token());
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
   LOG_PHASE(ParseAmbientEnumBody);
-  if (Current()->type() == Token::TS_LEFT_BRACE) {
+  if (cur_token()->type() == TokenKind::kLeftBrace) {
     auto ret = New<ir::AmbientEnumBodyView>();
-    ret->SetInformationForNode(Current());
+    ret->SetInformationForNode(cur_token());
     Next();
 
-    if (Current()->type() == Token::TS_RIGHT_BRACE) {
+    if (cur_token()->type() == TokenKind::kRightBrace) {
       Next();
       return Success(ret);
     }
@@ -408,24 +408,24 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
     
     while (1) {
       auto ambient_enum_prop_result = ParseAmbientEnumProperty();
-      SKIP_TOKEN_OR(ambient_enum_prop_result, success, Token::TS_RIGHT_BRACE) {
+      SKIP_TOKEN_OR(ambient_enum_prop_result, success, TokenKind::kRightBrace) {
         ret->InsertLast(ambient_enum_prop_result.value());
       }
-      if (Current()->type() == Token::TS_COMMA) {
+      if (cur_token()->type() == TokenKind::kComma) {
         Next();
-        if (Current()->type() == Token::TS_RIGHT_BRACE) {
+        if (cur_token()->type() == TokenKind::kRightBrace) {
           Next();
           return Success(ret);
         }
-      } else if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      } else if (cur_token()->type() == TokenKind::kRightBrace) {
         Next();
         return Success(ret);
       } else {
-        SYNTAX_ERROR("',' or '}' expected.", Current());
+        SYNTAX_ERROR("',' or '}' expected.", cur_token());
       }
     }
   }
-  SYNTAX_ERROR("'{' exepected.", Current());
+  SYNTAX_ERROR("'{' exepected.", cur_token());
 }
 
 
@@ -434,7 +434,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumProperty() {
   LOG_PHASE(ParseAmbientEnumProperty);
   auto prop_result = ParsePropertyName(false, false);
   CHECK_AST(prop_result);
-  if (Current()->type() == Token::TS_ASSIGN) {
+  if (cur_token()->type() == TokenKind::kAssign) {
     Next();
     auto numeric_literal_result = ParseNumericLiteral();
     CHECK_AST(numeric_literal_result);
@@ -456,16 +456,16 @@ Handle<ir::Node> Parser<UCharInputIterator>::CreateAmbientEnumFieldView(
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(TokenInfo* info) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientModuleDeclaration);
 
-  if (Current()->type() == Token::TS_IDENTIFIER &&
-      Current()->value()->Equals("module")) {
+  if (cur_token()->type() == TokenKind::kIdentifier &&
+      cur_token()->value()->Equals("module")) {
     Next();
 
     ParseResult identifier_result;
     bool external = false;
-    if (Current()->type() == Token::TS_STRING_LITERAL) {
+    if (cur_token()->type() == TokenKind::kStringLiteral) {
       identifier_result = ParseStringLiteral();
       external = true;
     } else {
@@ -479,29 +479,29 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(TokenInfo*
     ret->SetInformationForNode(info);
     return Success(ret);
   }
-  SYNTAX_ERROR("'module' expected.", Current());
+  SYNTAX_ERROR("'module' expected.", cur_token());
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
   LOG_PHASE(ParseAmbientModuleBody);
-  if (Current()->type() == Token::TS_LEFT_BRACE) {
+  if (cur_token()->type() == TokenKind::kLeftBrace) {
     Handle<ir::Node> body = New<ir::AmbientModuleBody>();
-    body->SetInformationForNode(Current());
+    body->SetInformationForNode(cur_token());
     Next();
     
     bool success = true;
     
     while (1) {
-      if (Current()->type() == Token::TS_RIGHT_BRACE) {
+      if (cur_token()->type() == TokenKind::kRightBrace) {
         Next();
         return Success(body);
-      } else if (Current()->type() == Token::END_OF_INPUT) {
-        SYNTAX_ERROR("unexpected end of input.", Current());
+      } else if (cur_token()->type() == TokenKind::kEof) {
+        SYNTAX_ERROR("unexpected end of input.", cur_token());
       } else {
         auto ambient_module_element_result = ParseAmbientModuleElement(external);
-        SKIP_TOKEN_OR(ambient_module_element_result, success, Token::LINE_TERMINATOR) {
+        SKIP_TOKEN_OR(ambient_module_element_result, success, TokenKind::kLineTerminator) {
           body->InsertLast(ambient_module_element_result.value());
         }
       }
@@ -510,7 +510,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
       }
     }
   }
-  SYNTAX_ERROR("'{' expected.", Current());
+  SYNTAX_ERROR("'{' expected.", cur_token());
 }
 
 
@@ -519,43 +519,43 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
   LOG_PHASE(ParseAmbientModuleElement);
   Handle<ir::ExportView> export_view;
   
-  if (Current()->type() == Token::TS_EXPORT) {
-    TokenInfo info = *Current();
+  if (cur_token()->type() == TokenKind::kExport) {
+    Token info = *cur_token();
     export_view = New<ir::ExportView>();
-    export_view->SetInformationForNode(Current());
+    export_view->SetInformationForNode(cur_token());
     Next();
-    if (external && Current()->type() == Token::TS_ASSIGN) {
+    if (external && cur_token()->type() == TokenKind::kAssign) {
       Next();
       auto assignment_expr_result = ParseAssignmentExpression(true, false);
       CHECK_AST(assignment_expr_result);
       return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
-    } else if (Current()->type() == Token::TS_ASSIGN) {
-      SYNTAX_ERROR("export assignment is not allowed here.", Current());
+    } else if (cur_token()->type() == TokenKind::kAssign) {
+      SYNTAX_ERROR("export assignment is not allowed here.", cur_token());
     }
   }
 
-  TokenInfo info = *Current();
+  Token info = *cur_token();
   ParseResult parse_result;
-  switch (Current()->type()) {
-    case Token::TS_VAR:
+  switch (cur_token()->type()) {
+    case TokenKind::kVar:
       parse_result = ParseAmbientVariableDeclaration(&info);
       break;
-    case Token::TS_FUNCTION:
+    case TokenKind::kFunction:
       parse_result = ParseAmbientFunctionDeclaration(&info);
       break;
-    case Token::TS_CLASS:
+    case TokenKind::kClass:
       parse_result = ParseAmbientClassDeclaration(&info);
       break;
-    case Token::TS_INTERFACE: {
+    case TokenKind::kInterface: {
       parse_result = ParseInterfaceDeclaration();
       CHECK_AST(parse_result);
       parse_result.value()->SetInformationForNode(&info);
       break;
     }
-    case Token::TS_ENUM:
+    case TokenKind::kEnum:
       parse_result = ParseAmbientEnumDeclaration(&info);
       break;
-    case Token::TS_IMPORT:
+    case TokenKind::kImport:
       parse_result = ParseImportDeclaration();
       CHECK_AST(parse_result);
       if (!external) {
@@ -569,11 +569,11 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
       parse_result.value()->SetInformationForNode(&info);
       break;
     default:
-      if (Current()->type() == Token::TS_IDENTIFIER &&
-          Current()->value()->Equals("module")) {
+      if (cur_token()->type() == TokenKind::kIdentifier &&
+          cur_token()->value()->Equals("module")) {
         parse_result = ParseAmbientModuleDeclaration(&info);
       } else {
-        SYNTAX_ERROR("unexpected token.", Current());
+        SYNTAX_ERROR("unexpected token.", cur_token());
       }
   }
   

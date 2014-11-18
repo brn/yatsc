@@ -39,129 +39,128 @@
 namespace yatsc {
 
 #define TOKEN_LIST(DECLARE, DECLARE_FIRST, DECLARE_LAST)  \
-  DECLARE_FIRST(TS_BACKQUOTE)                             \
-  DECLARE(TS_BREAK)                                       \
-  DECLARE(TS_CASE)                                        \
-  DECLARE(TS_CATCH)                                       \
-  DECLARE(TS_CLASS)                                       \
-  DECLARE(TS_COMMA)                                       \
-  DECLARE(TS_CONST)                                       \
-  DECLARE(TS_CONTINUE)                                    \
-  DECLARE(TS_DEBUGGER)                                    \
-  DECLARE(TS_DEFAULT)                                     \
-  DECLARE(TS_DELETE)                                      \
-  DECLARE(TS_DO)                                          \
-  DECLARE(TS_DOT)                                         \
-  DECLARE(TS_ELSE)                                        \
-  DECLARE(TS_ENUM)                                        \
-  DECLARE(TS_EXPORT)                                      \
-  DECLARE(TS_EXTENDS)                                     \
-  DECLARE(TS_FALSE)                                       \
-  DECLARE(TS_FINALLY)                                     \
-  DECLARE(TS_FOR)                                         \
-  DECLARE(TS_FUNCTION)                                    \
-  DECLARE(TS_IF)                                          \
-  DECLARE(TS_IMPLEMENTS)                                  \
-  DECLARE(TS_IMPORT)                                      \
-  DECLARE(TS_IN)                                          \
-  DECLARE(TS_INSTANCEOF)                                  \
-  DECLARE(TS_INTERFACE)                                   \
-  DECLARE(TS_LET)                                         \
-  DECLARE(TS_MODULE)                                      \
-  DECLARE(TS_NAN)                                         \
-  DECLARE(TS_NEW)                                         \
-  DECLARE(TS_NULL)                                        \
-  DECLARE(TS_PACKAGE)                                     \
-  DECLARE(TS_PRIVATE)                                     \
-  DECLARE(TS_PROTECTED)                                   \
-  DECLARE(TS_PUBLIC)                                      \
-  DECLARE(TS_REGULAR_EXPR)                                \
-  DECLARE(TS_REST)                                        \
-  DECLARE(TS_RETURN)                                      \
-  DECLARE(TS_STATIC)                                      \
-  DECLARE(TS_SUPER)                                       \
-  DECLARE(TS_SWITCH)                                      \
-  DECLARE(TS_THIS)                                        \
-  DECLARE(TS_THROW)                                       \
-  DECLARE(TS_TRUE)                                        \
-  DECLARE(TS_TRY)                                         \
-  DECLARE(TS_TYPEOF)                                      \
-  DECLARE(TS_UNDEFINED)                                   \
-  DECLARE(TS_VAR)                                         \
-  DECLARE(TS_VOID)                                        \
-  DECLARE(TS_WHILE)                                       \
-  DECLARE(TS_WITH)                                        \
-  DECLARE(TS_YIELD)                                       \
-  DECLARE(TS_INCREMENT)                                   \
-  DECLARE(TS_DECREMENT)                                   \
-  DECLARE(TS_EQUAL)                                       \
-  DECLARE(TS_SHIFT_LEFT)                                  \
-  DECLARE(TS_SHIFT_RIGHT)                                 \
-  DECLARE(TS_LESS_EQUAL)                                  \
-  DECLARE(TS_GREATER_EQUAL)                               \
-  DECLARE(TS_EQ)                                          \
-  DECLARE(TS_NOT_EQUAL)                                   \
-  DECLARE(TS_NOT_EQ)                                      \
-  DECLARE(TS_U_SHIFT_RIGHT)                               \
-  DECLARE(TS_PLUS)                                        \
-  DECLARE(TS_MINUS)                                       \
-  DECLARE(TS_MUL)                                         \
-  DECLARE(TS_DIV)                                         \
-  DECLARE(TS_MOD)                                         \
-  DECLARE(TS_GREATER)                                     \
-  DECLARE(TS_LESS)                                        \
-  DECLARE(TS_BIT_OR)                                      \
-  DECLARE(TS_BIT_AND)                                     \
-  DECLARE(TS_BIT_NOR)                                     \
-  DECLARE(TS_BIT_XOR)                                     \
-  DECLARE(TS_ASSIGN)                                      \
-  DECLARE(TS_NOT)                                         \
-  DECLARE(TS_ADD_LET)                                     \
-  DECLARE(TS_SUB_LET)                                     \
-  DECLARE(TS_DIV_LET)                                     \
-  DECLARE(TS_MOD_LET)                                     \
-  DECLARE(TS_MUL_LET)                                     \
-  DECLARE(TS_LOGICAL_AND)                                 \
-  DECLARE(TS_LOGICAL_OR)                                  \
-  DECLARE(TS_SHIFT_LEFT_LET)                              \
-  DECLARE(TS_SHIFT_RIGHT_LET)                             \
-  DECLARE(TS_U_SHIFT_RIGHT_LET)                           \
-  DECLARE(TS_NOR_LET)                                     \
-  DECLARE(TS_AND_LET)                                     \
-  DECLARE(TS_OR_LET)                                      \
-  DECLARE(TS_XOR_LET)                                     \
-  DECLARE(TS_IDENTIFIER)                                  \
-  DECLARE(TS_NUMERIC_LITERAL)                             \
-  DECLARE(TS_OCTAL_LITERAL)                               \
-  DECLARE(TS_BINARY_LITERAL)                              \
-  DECLARE(TS_STRING_LITERAL)                              \
-  DECLARE(TS_REGEXP_LITERAL)                              \
-  DECLARE(TS_LINE_BREAK)                                  \
-  DECLARE(TS_SET)                                         \
-  DECLARE(TS_GET)                                         \
-  DECLARE(TS_REST_PARAMETER)                              \
-  DECLARE(TS_LEFT_PAREN)                                  \
-  DECLARE(TS_RIGHT_PAREN)                                 \
-  DECLARE(TS_COLON)                                       \
-  DECLARE(TS_QUESTION_MARK)                               \
-  DECLARE(TS_LEFT_BRACKET)                                \
-  DECLARE(TS_RIGHT_BRACKET)                               \
-  DECLARE(TS_LEFT_BRACE)                                  \
-  DECLARE(TS_RIGHT_BRACE)                                 \
-  DECLARE(TS_ARROW_GLYPH)                                 \
-  DECLARE(TS_TEMPLATE_LITERAL)                            \
-  DECLARE(LINE_TERMINATOR)                                \
-  DECLARE(FUTURE_STRICT_RESERVED_WORD)                    \
-  DECLARE(FUTURE_RESERVED_WORD)                           \
-  DECLARE(END_OF_INPUT)                                   \
-  DECLARE(NULL_TOKEN)                                     \
-  DECLARE_LAST(ILLEGAL)
+  DECLARE_FIRST(Backquote)                                \
+  DECLARE(Break)                                          \
+  DECLARE(Case)                                           \
+  DECLARE(Catch)                                          \
+  DECLARE(Class)                                          \
+  DECLARE(Comma)                                          \
+  DECLARE(Const)                                          \
+  DECLARE(Continue)                                       \
+  DECLARE(Debugger)                                       \
+  DECLARE(Default)                                        \
+  DECLARE(Delete)                                         \
+  DECLARE(Do)                                             \
+  DECLARE(Dot)                                            \
+  DECLARE(Else)                                           \
+  DECLARE(Enum)                                           \
+  DECLARE(Export)                                         \
+  DECLARE(Extends)                                        \
+  DECLARE(False)                                          \
+  DECLARE(Finally)                                        \
+  DECLARE(For)                                            \
+  DECLARE(Function)                                       \
+  DECLARE(If)                                             \
+  DECLARE(Implements)                                     \
+  DECLARE(Import)                                         \
+  DECLARE(In)                                             \
+  DECLARE(Instanceof)                                     \
+  DECLARE(Interface)                                      \
+  DECLARE(Let)                                            \
+  DECLARE(Module)                                         \
+  DECLARE(Nan)                                            \
+  DECLARE(New)                                            \
+  DECLARE(Null)                                           \
+  DECLARE(Package)                                        \
+  DECLARE(Private)                                        \
+  DECLARE(Protected)                                      \
+  DECLARE(Public)                                         \
+  DECLARE(RegularExpr)                                    \
+  DECLARE(Rest)                                           \
+  DECLARE(Return)                                         \
+  DECLARE(Static)                                         \
+  DECLARE(Super)                                          \
+  DECLARE(Switch)                                         \
+  DECLARE(This)                                           \
+  DECLARE(Throw)                                          \
+  DECLARE(True)                                           \
+  DECLARE(Try)                                            \
+  DECLARE(Typeof)                                         \
+  DECLARE(Undefined)                                      \
+  DECLARE(Var)                                            \
+  DECLARE(Void)                                           \
+  DECLARE(While)                                          \
+  DECLARE(With)                                           \
+  DECLARE(Yield)                                          \
+  DECLARE(Increment)                                      \
+  DECLARE(Decrement)                                      \
+  DECLARE(Equal)                                          \
+  DECLARE(ShiftLeft)                                      \
+  DECLARE(ShiftRight)                                     \
+  DECLARE(LessEqual)                                      \
+  DECLARE(GreaterEqual)                                   \
+  DECLARE(Eq)                                             \
+  DECLARE(NotEqual)                                       \
+  DECLARE(NotEq)                                          \
+  DECLARE(UShiftRight)                                    \
+  DECLARE(Plus)                                           \
+  DECLARE(Minus)                                          \
+  DECLARE(Mul)                                            \
+  DECLARE(Div)                                            \
+  DECLARE(Mod)                                            \
+  DECLARE(Greater)                                        \
+  DECLARE(Less)                                           \
+  DECLARE(BitOr)                                          \
+  DECLARE(BitAnd)                                         \
+  DECLARE(BitNor)                                         \
+  DECLARE(BitXor)                                         \
+  DECLARE(Assign)                                         \
+  DECLARE(Not)                                            \
+  DECLARE(AddLet)                                         \
+  DECLARE(SubLet)                                         \
+  DECLARE(DivLet)                                         \
+  DECLARE(ModLet)                                         \
+  DECLARE(MulLet)                                         \
+  DECLARE(LogicalAnd)                                     \
+  DECLARE(LogicalOr)                                      \
+  DECLARE(ShiftLeftLet)                                   \
+  DECLARE(ShiftRightLet)                                  \
+  DECLARE(UShiftRightLet)                                 \
+  DECLARE(NorLet)                                         \
+  DECLARE(AndLet)                                         \
+  DECLARE(OrLet)                                          \
+  DECLARE(XorLet)                                         \
+  DECLARE(Identifier)                                     \
+  DECLARE(NumericLiteral)                                 \
+  DECLARE(OctalLiteral)                                   \
+  DECLARE(BinaryLiteral)                                  \
+  DECLARE(StringLiteral)                                  \
+  DECLARE(RegexpLiteral)                                  \
+  DECLARE(LineBreak)                                      \
+  DECLARE(Set)                                            \
+  DECLARE(Get)                                            \
+  DECLARE(RestParameter)                                  \
+  DECLARE(LeftParen)                                      \
+  DECLARE(RightParen)                                     \
+  DECLARE(Colon)                                          \
+  DECLARE(QuestionMark)                                   \
+  DECLARE(LeftBracket)                                    \
+  DECLARE(RightBracket)                                   \
+  DECLARE(LeftBrace)                                      \
+  DECLARE(RightBrace)                                     \
+  DECLARE(ArrowGlyph)                                     \
+  DECLARE(TemplateLiteral)                                \
+  DECLARE(LineTerminator)                                 \
+  DECLARE(FutureStrictReservedWord)                       \
+  DECLARE(FutureReservedWord)                             \
+  DECLARE(Eof)                                            \
+  DECLARE_LAST(Illegal)
 
 
-enum class Token: uint16_t {
-#define DECLARE_ENUM(TokenName) TokenName,
-#define DECLARE_FIRST(TokenName) TokenName = 0,
-#define DECLARE_LAST(TokenName) TokenName
+enum class TokenKind: uint16_t {
+#define DECLARE_ENUM(TokenName) k##TokenName,
+#define DECLARE_FIRST(TokenName) k##TokenName = 0,
+#define DECLARE_LAST(TokenName) k##TokenName
   TOKEN_LIST(DECLARE_ENUM, DECLARE_FIRST, DECLARE_LAST)
 #undef DECLARE_ENUM
 #undef DECLARE_FIRST
@@ -183,17 +182,17 @@ static const char* kTokenStringList[] = {
 
 
 
-class TokenInfo {
+class Token {
  public:
 
   // Default constructor.
-  TokenInfo() :
+  Token() :
       literal_(nullptr),
-      type_(Token::END_OF_INPUT) {}
+      type_(TokenKind::kEof) {}
   
 
   // Copy constructor
-  TokenInfo(const TokenInfo& token_info)
+  Token(const Token& token_info)
       : literal_(token_info.literal_),
         multi_line_comment_(token_info.multi_line_comment_),
         type_(token_info.type_),
@@ -201,7 +200,7 @@ class TokenInfo {
         source_position_(token_info.source_position_) {}
 
 
-  TokenInfo(TokenInfo&& token_info)
+  Token(Token&& token_info)
       : literal_(std::move(token_info.literal_)),
         multi_line_comment_(std::move(token_info.multi_line_comment_)),
         type_(token_info.type_),
@@ -209,7 +208,7 @@ class TokenInfo {
         source_position_(token_info.source_position_) {}
 
 
-  TokenInfo& operator = (const TokenInfo& token_info) {
+  Token& operator = (const Token& token_info) {
     literal_ = token_info.literal_;
     multi_line_comment_ = token_info.multi_line_comment_;
     type_ = token_info.type_;
@@ -219,7 +218,7 @@ class TokenInfo {
   }
 
 
-  TokenInfo& operator = (TokenInfo&& token_info) {
+  Token& operator = (Token&& token_info) {
     literal_ = std::move(token_info.literal_);
     multi_line_comment_ = std::move(token_info.multi_line_comment_);
     type_ = token_info.type_;
@@ -230,7 +229,7 @@ class TokenInfo {
       
   
   
-  ~TokenInfo() = default;
+  ~Token() = default;
   
 
   /**
@@ -294,8 +293,11 @@ class TokenInfo {
   }
 
 
+  YATSC_INLINE bool Is(const TokenKind kind) YATSC_NO_SE {return kind == type_;}
+
+
   // Getter and setter for type_.
-  YATSC_CONST_PROPERTY(Token, type, type_);
+  YATSC_CONST_PROPERTY(TokenKind, type, type_);
 
 
   // Setter for source_position_.
@@ -329,38 +331,38 @@ class TokenInfo {
     return String(tokenhelper::kTokenStringList[static_cast<uint16_t>(type_)]);
   }
 
-  static const char* ToString(Token token) {
-    return tokenhelper::kTokenStringList[static_cast<uint16_t>(token)];
+  static const char* ToString(TokenKind token_kind) {
+    return tokenhelper::kTokenStringList[static_cast<uint16_t>(token_kind)];
   }
 #endif
   
   /**
-   * Get a type of the identifier like TS_VAR
+   * Get a type of the identifier like Var
    * @param maybe_keyword An identifier value.
    * @param es_harmony Harmony option.
    */
-  static Token GetIdentifierType(const char* maybe_keyword, const CompilerOption& co);
+  static TokenKind GetIdentifierType(const char* maybe_keyword, const CompilerOption& co);
 
 
   /**
-   * Get a type of the puncture like TS_LEFT_BRACE.
+   * Get a type of the puncture like LeftBrace.
    * @param uchar The unicode char.
    */
-  static Token GetPunctureType(const UChar& uchar);
+  static TokenKind GetPunctureType(const UChar& uchar);
 
   
-  static TokenInfo kNullToken;
+  static Token kNullToken;
 
 
   static uint8_t GetOperandPriority(Token t);
 
   
-  static bool IsKeyword(Token type);
+  static bool IsKeyword(TokenKind type);
   
  private:  
   const Literal* literal_;
   Handle<UtfString> multi_line_comment_;
-  Token type_;
+  TokenKind type_;
   LineTerminatorState line_terminator_state_;
   SourcePosition source_position_;
 };

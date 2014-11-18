@@ -63,7 +63,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   /**
    * Scan the source file from the current position to the next token position.
    */
-  TokenInfo* Scan();
+  Token* Scan();
 
 
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
@@ -72,7 +72,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   // Check whether current token is regular expression or not.
   // If current token is regular expression return TS_REGULAR_EXPR,
   // if not regular expr return nullptr.
-  TokenInfo* CheckRegularExpression(TokenInfo* token_info);
+  Token* CheckRegularExpression(Token* token_info);
 
 
   void EnableNestedGenericTypeScanMode() {
@@ -219,7 +219,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   void ScanOperator();
 
   
-  void ScanArithmeticOperator(Token type1, Token type2, Token normal, bool has_let = true);
+  void ScanArithmeticOperator(TokenKind type1, TokenKind type2, TokenKind normal, bool has_let = true);
 
 
   void ScanOctalLiteral();
@@ -240,7 +240,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   UC16 ScanHexEscape(const UChar& uchar, int len, bool* success);
   
 
-  void ScanLogicalOperator(Token type1, Token type2, Token type3) {
+  void ScanLogicalOperator(TokenKind type1, TokenKind type2, TokenKind type3) {
     if (lookahead1_ == char_) {
       Advance();
       return BuildToken(type1);
@@ -254,7 +254,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   
 
   void ScanBitwiseOrComparationOperator(
-      Token type1, Token type2, Token type3, Token normal, Token equal_comparator, bool has_u = false);
+      TokenKind type1, TokenKind type2, TokenKind type3, TokenKind normal, TokenKind equal_comparator, bool has_u = false);
 
   
   void ScanEqualityComparatorOrArrowGlyph(bool not = false);
@@ -290,7 +290,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   bool SkipSignature();
   
 
-  void UpdateTokenInfo() {
+  void UpdateToken() {
     if (last_multi_line_comment_.utf8_length() > 0) {
       token_info_.set_multi_line_comment(Heap::NewHandle<UtfString>(last_multi_line_comment_));
     }
@@ -321,16 +321,16 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   }
   
 
-  void BuildToken(Token type, const UtfString& utf_string) {
-    UpdateTokenInfo();
+  void BuildToken(TokenKind type, const UtfString& utf_string) {
+    UpdateToken();
     auto literal = literal_buffer_->InsertValue(utf_string);
     token_info_.set_value(literal);
     token_info_.set_type(type);
   }
 
 
-  void BuildToken(Token type) {
-    UpdateTokenInfo();
+  void BuildToken(TokenKind type) {
+    UpdateToken();
     token_info_.set_type(type);
   }
   
@@ -344,7 +344,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   LineTerminatorState line_terminator_state_;
   UCharInputIterator it_;
   UCharInputIterator end_;
-  TokenInfo token_info_;
+  Token token_info_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

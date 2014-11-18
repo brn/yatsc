@@ -73,13 +73,13 @@ class ParserBase: private Uncopyable, private Unmovable {
   }
 
 
-  bool CheckLineTermination(TokenInfo* info = nullptr);
+  bool CheckLineTermination(Token* info = nullptr);
   
   
   const CompilerOption& compiler_option_;
   const Notificator<void(const String&)>& notificator_;
-  TokenInfo* current_token_info_;
-  TokenInfo prev_token_info_;
+  Token* current_token_info_;
+  Token prev_token_info_;
   ir::IRFactory irfactory_;
 
 #ifdef DEBUG

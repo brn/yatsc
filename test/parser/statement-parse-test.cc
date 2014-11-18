@@ -55,10 +55,10 @@ TEST(StatementParseTest, ParseForStatement) {
                      "      [NameView][i]\n"
                      "      [NumberView][0]\n"
                      "      [Empty]\n"
-                     "  [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][Less]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][10]\n"
-                     "  [PostfixView][TS_INCREMENT]\n"
+                     "  [PostfixView][Increment]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]");
 
@@ -69,10 +69,10 @@ TEST(StatementParseTest, ParseForStatement) {
                      "      [NameView][i]\n"
                      "      [NumberView][0]\n"
                      "      [Empty]\n"
-                     "  [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][Less]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][10]\n"
-                     "  [PostfixView][TS_INCREMENT]\n"
+                     "  [PostfixView][Increment]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]\n"
                      "    [BreakStatementView]\n"
@@ -81,22 +81,22 @@ TEST(StatementParseTest, ParseForStatement) {
 
   STATEMENT_TEST_ALL("for (i = 0; i < 10; i++) {}",
                      "[ForStatementView]\n"
-                     "  [AssignmentView][TS_ASSIGN]\n"
+                     "  [AssignmentView][Assign]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][0]\n"
-                     "  [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][Less]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][10]\n"
-                     "  [PostfixView][TS_INCREMENT]\n"
+                     "  [PostfixView][Increment]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]");
 
   STATEMENT_TEST_ALL("for (i = 0; i < 10;) {}",
                      "[ForStatementView]\n"
-                     "  [AssignmentView][TS_ASSIGN]\n"
+                     "  [AssignmentView][Assign]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][0]\n"
-                     "  [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][Less]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][10]\n"
                      "  [Empty]\n"
@@ -105,11 +105,11 @@ TEST(StatementParseTest, ParseForStatement) {
 
   STATEMENT_TEST_ALL("for (i = 0;;i++) {}",
                      "[ForStatementView]\n"
-                     "  [AssignmentView][TS_ASSIGN]\n"
+                     "  [AssignmentView][Assign]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][0]\n"
                      "  [Empty]\n"
-                     "  [PostfixView][TS_INCREMENT]\n"
+                     "  [PostfixView][Increment]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]");
 
@@ -125,10 +125,10 @@ TEST(StatementParseTest, ParseForStatement) {
                      "      [NameView][x]\n"
                      "      [NumberView][20]\n"
                      "      [Empty]\n"
-                     "  [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][Less]\n"
                      "    [NameView][i]\n"
                      "    [NumberView][10]\n"
-                     "  [PostfixView][TS_INCREMENT]\n"
+                     "  [PostfixView][Increment]\n"
                      "    [NameView][i]\n"
                      "  [BlockView]");
 
@@ -186,11 +186,11 @@ TEST(StatementParseTest, ParseWhileStatement) {
 
   STATEMENT_TEST_ALL("while (i < 10 && x > 10) {}",
                      "[WhileStatementView]\n"
-                     "  [BinaryExprView][TS_LOGICAL_AND]\n"
-                     "    [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][LogicalAnd]\n"
+                     "    [BinaryExprView][Less]\n"
                      "      [NameView][i]\n"
                      "      [NumberView][10]\n"
-                     "    [BinaryExprView][TS_GREATER]\n"
+                     "    [BinaryExprView][Greater]\n"
                      "      [NameView][x]\n"
                      "      [NumberView][10]\n"
                      "  [BlockView]");
@@ -206,11 +206,11 @@ TEST(StatementParseTest, ParseDoWhileStatement) {
 
   STATEMENT_TEST_ALL("do {} while (i < 10 && x > 10);",
                      "[DoWhileStatementView]\n"
-                     "  [BinaryExprView][TS_LOGICAL_AND]\n"
-                     "    [BinaryExprView][TS_LESS]\n"
+                     "  [BinaryExprView][LogicalAnd]\n"
+                     "    [BinaryExprView][Less]\n"
                      "      [NameView][i]\n"
                      "      [NumberView][10]\n"
-                     "    [BinaryExprView][TS_GREATER]\n"
+                     "    [BinaryExprView][Greater]\n"
                      "      [NameView][x]\n"
                      "      [NumberView][10]\n"
                      "  [BlockView]");

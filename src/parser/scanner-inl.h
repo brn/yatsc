@@ -67,7 +67,7 @@ void Scanner<UCharInputIterator>::Advance()  {
 
 
 template<typename UCharInputIterator>
-TokenInfo* Scanner<UCharInputIterator>::Scan() {
+Token* Scanner<UCharInputIterator>::Scan() {
   BeforeScan();
   
   if (!char_.IsAscii()) {
@@ -75,12 +75,12 @@ TokenInfo* Scanner<UCharInputIterator>::Scan() {
   }
   
   if (char_ == unicode::u32('\0')) {
-    BuildToken(Token::END_OF_INPUT);
+    BuildToken(TokenKind::kEof);
   } else if (char_ == unicode::u32(';')) {
-    BuildToken(Token::LINE_TERMINATOR);
+    BuildToken(TokenKind::kLineTerminator);
     Advance();
   } else if (Character::IsPuncture(char_)) {
-    BuildToken(TokenInfo::GetPunctureType(char_));
+    BuildToken(Token::GetPunctureType(char_));
     Advance();
   } else if (Character::IsIdentifierStart(char_) ||
              Character::IsUnicodeEscapeSequenceStart(char_, lookahead1_)) {
@@ -159,7 +159,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
     v += char_;
   }
 
-  BuildToken(Token::TS_STRING_LITERAL, v);
+  BuildToken(TokenKind::kStringLiteral, v);
 }
 
 
@@ -203,7 +203,7 @@ void Scanner<UCharInputIterator>::ScanHex() {
     v += char_;
     Advance();
   }
-  BuildToken(Token::TS_NUMERIC_LITERAL, v);
+  BuildToken(TokenKind::kNumericLiteral, v);
 }
 
 
@@ -214,7 +214,7 @@ void Scanner<UCharInputIterator>::ScanOctalLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::TS_OCTAL_LITERAL, str);
+  BuildToken(TokenKind::kOctalLiteral, str);
 }
 
 
@@ -232,7 +232,7 @@ void Scanner<UCharInputIterator>::ScanBinaryLiteral() {
     str += char_;
     Advance();
   }
-  BuildToken(Token::TS_BINARY_LITERAL, str);
+  BuildToken(TokenKind::kBinaryLiteral, str);
 }
 
 
@@ -279,7 +279,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
     return ILLEGAL_TOKEN();
   }
   
-  BuildToken(Token::TS_NUMERIC_LITERAL, v);
+  BuildToken(TokenKind::kNumericLiteral, v);
 }
 
 
@@ -297,7 +297,7 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
       Advance();
     }
   }
-  Token type = TokenInfo::GetIdentifierType(v.utf8_value(), compiler_option_);
+  TokenKind type = Token::GetIdentifierType(v.utf8_value(), compiler_option_);
   BuildToken(type, v);
 }
 
@@ -306,37 +306,37 @@ template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanOperator() {
   switch (char_.ToAscii()) {
     case '+':
-      return ScanArithmeticOperator(Token::TS_INCREMENT, Token::TS_ADD_LET, Token::TS_PLUS);
+      return ScanArithmeticOperator(TokenKind::kIncrement, TokenKind::kAddLet, TokenKind::kPlus);
     case '-':
-      return ScanArithmeticOperator(Token::TS_DECREMENT, Token::TS_SUB_LET, Token::TS_MINUS);
+      return ScanArithmeticOperator(TokenKind::kDecrement, TokenKind::kSubLet, TokenKind::kMinus);
     case '*':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MUL_LET, Token::TS_MUL, false);
+      return ScanArithmeticOperator(TokenKind::kIllegal, TokenKind::kMulLet, TokenKind::kMul, false);
     case '/':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_DIV_LET, Token::TS_DIV, false);
+      return ScanArithmeticOperator(TokenKind::kIllegal, TokenKind::kDivLet, TokenKind::kDiv, false);
     case '%':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_MOD_LET, Token::TS_MOD, false);
+      return ScanArithmeticOperator(TokenKind::kIllegal, TokenKind::kModLet, TokenKind::kMod, false);
     case '~':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_NOR_LET, Token::TS_BIT_NOR, false);
+      return ScanArithmeticOperator(TokenKind::kIllegal, TokenKind::kNorLet, TokenKind::kBitNor, false);
     case '^':
-      return ScanArithmeticOperator(Token::ILLEGAL, Token::TS_XOR_LET, Token::TS_BIT_XOR, true);
+      return ScanArithmeticOperator(TokenKind::kIllegal, TokenKind::kXorLet, TokenKind::kBitXor, true);
     case '&':
-      return ScanLogicalOperator(Token::TS_LOGICAL_AND, Token::TS_AND_LET, Token::TS_BIT_AND);
+      return ScanLogicalOperator(TokenKind::kLogicalAnd, TokenKind::kAndLet, TokenKind::kBitAnd);
     case '|':
-      return ScanLogicalOperator(Token::TS_LOGICAL_OR, Token::TS_OR_LET, Token::TS_BIT_OR);
+      return ScanLogicalOperator(TokenKind::kLogicalOr, TokenKind::kOrLet, TokenKind::kBitOr);
     case ',':
-      return BuildToken(Token::TS_COMMA);
+      return BuildToken(TokenKind::kComma);
     case '`':
-      return BuildToken(Token::TS_BACKQUOTE);
+      return BuildToken(TokenKind::kBackquote);
     case '.':
       if (lookahead1_ == char_) {
         Advance();
         if (lookahead1_ == char_) {
           Advance();
-          return BuildToken(Token::TS_REST);
+          return BuildToken(TokenKind::kRest);
         }
         ILLEGAL_TOKEN();
       }
-      return BuildToken(Token::TS_DOT);
+      return BuildToken(TokenKind::kDot);
     case '=':
       return ScanEqualityComparatorOrArrowGlyph();
     case '!':
@@ -344,17 +344,17 @@ void Scanner<UCharInputIterator>::ScanOperator() {
         Advance();
         return ScanEqualityComparatorOrArrowGlyph(true);
       }
-      return BuildToken(Token::TS_NOT);
+      return BuildToken(TokenKind::kNot);
     case '<':
       return ScanBitwiseOrComparationOperator(
-          Token::TS_SHIFT_LEFT, Token::TS_SHIFT_LEFT_LET, Token::ILLEGAL, Token::TS_LESS, Token::TS_LESS_EQUAL);
+          TokenKind::kShiftLeft, TokenKind::kShiftLeftLet, TokenKind::kIllegal, TokenKind::kLess, TokenKind::kLessEqual);
     case '>':
       if (IsGenericMode()) {
-        return BuildToken(Token::TS_GREATER);
+        return BuildToken(TokenKind::kGreater);
       }
       return ScanBitwiseOrComparationOperator(
-          Token::TS_SHIFT_RIGHT, Token::TS_SHIFT_RIGHT_LET,
-          Token::TS_U_SHIFT_RIGHT, Token::TS_GREATER, Token::TS_GREATER_EQUAL, true);
+          TokenKind::kShiftRight, TokenKind::kShiftRightLet,
+          TokenKind::kUShiftRight, TokenKind::kGreater, TokenKind::kGreaterEqual, true);
     default:
       ILLEGAL_TOKEN();
   }
@@ -362,7 +362,7 @@ void Scanner<UCharInputIterator>::ScanOperator() {
 
 
 template<typename UCharInputIterator>
-void Scanner<UCharInputIterator>::ScanArithmeticOperator(Token type1, Token type2, Token normal, bool has_let) {
+void Scanner<UCharInputIterator>::ScanArithmeticOperator(TokenKind type1, TokenKind type2, TokenKind normal, bool has_let) {
   if (has_let && lookahead1_ == char_) {
     BuildToken(type1);
     return Advance();
@@ -377,7 +377,7 @@ void Scanner<UCharInputIterator>::ScanArithmeticOperator(Token type1, Token type
 
 template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
-    Token type1, Token type2, Token type3, Token normal, Token equal_comparator, bool has_u) {
+    TokenKind type1, TokenKind type2, TokenKind type3, TokenKind normal, TokenKind equal_comparator, bool has_u) {
   if (lookahead1_ == char_) {
     Advance();
     if (lookahead1_ == unicode::u32('=')) {
@@ -387,7 +387,7 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
       Advance();
       if (lookahead1_ == unicode::u32('=')) {
         Advance();
-        return BuildToken(Token::TS_U_SHIFT_RIGHT_LET);
+        return BuildToken(TokenKind::kUShiftRightLet);
       } else {
         return BuildToken(type3);
       }
@@ -403,13 +403,13 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
 
 // Check regular expression.
 template<typename UCharInputIterator>
-TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_info) {  
+Token* Scanner<UCharInputIterator>::CheckRegularExpression(Token* token_info) {  
   
   // Prepare for scanning.
   BeforeScan();
   UtfString expr;
 
-  if (token_info->type() == Token::TS_DIV) {
+  if (token_info->type() == TokenKind::kDiv) {
   
     // In this method, char_ point next token of TS_DIV,
     // so we now assign a '/'.
@@ -431,7 +431,7 @@ TokenInfo* Scanner<UCharInputIterator>::CheckRegularExpression(TokenInfo* token_
             expr += char_;
             Advance();
           }
-          BuildToken(Token::TS_REGULAR_EXPR, expr);
+          BuildToken(TokenKind::kRegularExpr, expr);
           break;
         }
       } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
@@ -466,14 +466,14 @@ void Scanner<UCharInputIterator>::ScanEqualityComparatorOrArrowGlyph(bool not) {
     Advance();
     if (!not && lookahead1_ == char_) {
       Advance();
-      return BuildToken(Token::TS_EQ);
+      return BuildToken(TokenKind::kEq);
     }
-    return BuildToken(not? Token::TS_NOT_EQ: Token::TS_EQUAL);
+    return BuildToken(not? TokenKind::kNotEq: TokenKind::kEqual);
   } else if (!not && lookahead1_ == unicode::u32('>')) {
     Advance();
-    return BuildToken(Token::TS_ARROW_GLYPH);
+    return BuildToken(TokenKind::kArrowGlyph);
   }
-  BuildToken(not? Token::TS_NOT_EQUAL: Token::TS_ASSIGN);
+  BuildToken(not? TokenKind::kNotEqual: TokenKind::kAssign);
 }
 
 
@@ -603,7 +603,7 @@ bool Scanner<UCharInputIterator>::SkipSingleLineComment() {
 template <typename UCharInputIterator>
 void Scanner<UCharInputIterator>::SkipTripleSlashComment() {
   SkipWhiteSpaceOnly();
-  TokenInfo info = token_info_;
+  Token info = token_info_;
   if (char_ == unicode::u32('<')) {
     Advance();
     if (char_ == unicode::u32('r') &&

@@ -101,7 +101,7 @@ class Maybe {
 
 
   template <typename Result, typename Fn>
-  YATSC_INLINE Maybe<Result> operator >>=(Fn fn) {
+  YATSC_INLINE Maybe<Result> fmap(Fn fn) {
     if (valid_) {
       return Maybe<Result>(fn(value_));
     }

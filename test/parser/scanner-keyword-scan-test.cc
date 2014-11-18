@@ -63,73 +63,73 @@
   str += #keyword;                                            \
   str += "]";                                                 \
   ASSERT_STREQ(str.c_str(), token->ToStringWithValue().c_str());  \
-  ASSERT_EQ(yatsc::Token::token_type, token->type());         \
+  ASSERT_EQ(yatsc::TokenKind::token_type, token->type());         \
   ASSERT_STREQ(token->utf8_value(), #keyword);                \
   ASSERT_EQ(token->value()->utf8_length(), strlen(#keyword));  \
   END_SCAN;                                                   \
 
 
 #define RESERVED_KW_TEST(keyword)               \
-  KEYWORD_TEST(keyword, FUTURE_RESERVED_WORD)
+  KEYWORD_TEST(keyword, kFutureReservedWord)
 
 
 #define STRICT_RESERVED_KW_TEST(keyword)                    \
-  KEYWORD_TEST_STRICT(keyword, FUTURE_STRICT_RESERVED_WORD)
+  KEYWORD_TEST_STRICT(keyword, kFutureStrictReservedWord)
 
 #define ES6_RESERVED_KW_TEST(keyword)                       \
-  KEYWORD_TEST_ES6(keyword, FUTURE_STRICT_RESERVED_WORD)
+  KEYWORD_TEST_ES6(keyword, kFutureStrictReservedWord)
 
 
-KEYWORD_TEST_ALL(break, TS_BREAK);
-KEYWORD_TEST_ALL(case, TS_CASE);
-KEYWORD_TEST_ALL(catch, TS_CATCH);
-KEYWORD_TEST_ALL(class, TS_CLASS);
-KEYWORD_TEST(const, FUTURE_RESERVED_WORD);
-KEYWORD_TEST_STRICT(const, FUTURE_RESERVED_WORD);
-KEYWORD_TEST_ES6(const, TS_CONST);
-KEYWORD_TEST_ALL(continue, TS_CONTINUE);
-KEYWORD_TEST_ALL(debugger, TS_DEBUGGER);
-KEYWORD_TEST_ALL(default, TS_DEFAULT);
-KEYWORD_TEST_ALL(delete, TS_DELETE);
-KEYWORD_TEST_ALL(do, TS_DO);
-KEYWORD_TEST_ALL(else, TS_ELSE);
-KEYWORD_TEST_ALL(enum, TS_ENUM);
-KEYWORD_TEST_ALL(export, TS_EXPORT);
-KEYWORD_TEST_ALL(extends, TS_EXTENDS);
-KEYWORD_TEST_ALL(false, TS_FALSE);
-KEYWORD_TEST_ALL(finally, TS_FINALLY);
-KEYWORD_TEST_ALL(for, TS_FOR);
-KEYWORD_TEST_ALL(function, TS_FUNCTION);
-KEYWORD_TEST_ALL(if, TS_IF);
-KEYWORD_TEST_ALL(implements, TS_IMPLEMENTS);
-KEYWORD_TEST_ALL(import, TS_IMPORT);
-KEYWORD_TEST_ALL(in, TS_IN);
-KEYWORD_TEST_ALL(instanceof, TS_INSTANCEOF);
-KEYWORD_TEST_ALL(interface, TS_INTERFACE);
-KEYWORD_TEST(let, TS_IDENTIFIER);
-KEYWORD_TEST_STRICT(let, TS_IDENTIFIER);
-KEYWORD_TEST_ES6(let, TS_LET);
-KEYWORD_TEST_ALL(NaN, TS_NAN);
-KEYWORD_TEST_ALL(new, TS_NEW);
-KEYWORD_TEST_ALL(null, TS_NULL);
+KEYWORD_TEST_ALL(break, kBreak);
+KEYWORD_TEST_ALL(case, kCase);
+KEYWORD_TEST_ALL(catch, kCatch);
+KEYWORD_TEST_ALL(class, kClass);
+KEYWORD_TEST(const, kFutureReservedWord);
+KEYWORD_TEST_STRICT(const, kFutureReservedWord);
+KEYWORD_TEST_ES6(const, kConst);
+KEYWORD_TEST_ALL(continue, kContinue);
+KEYWORD_TEST_ALL(debugger, kDebugger);
+KEYWORD_TEST_ALL(default, kDefault);
+KEYWORD_TEST_ALL(delete, kDelete);
+KEYWORD_TEST_ALL(do, kDo);
+KEYWORD_TEST_ALL(else, kElse);
+KEYWORD_TEST_ALL(enum, kEnum);
+KEYWORD_TEST_ALL(export, kExport);
+KEYWORD_TEST_ALL(extends, kExtends);
+KEYWORD_TEST_ALL(false, kFalse);
+KEYWORD_TEST_ALL(finally, kFinally);
+KEYWORD_TEST_ALL(for, kFor);
+KEYWORD_TEST_ALL(function, kFunction);
+KEYWORD_TEST_ALL(if, kIf);
+KEYWORD_TEST_ALL(implements, kImplements);
+KEYWORD_TEST_ALL(import, kImport);
+KEYWORD_TEST_ALL(in, kIn);
+KEYWORD_TEST_ALL(instanceof, kInstanceof);
+KEYWORD_TEST_ALL(interface, kInterface);
+KEYWORD_TEST(let, kIdentifier);
+KEYWORD_TEST_STRICT(let, kIdentifier);
+KEYWORD_TEST_ES6(let, kLet);
+KEYWORD_TEST_ALL(NaN, kNan);
+KEYWORD_TEST_ALL(new, kNew);
+KEYWORD_TEST_ALL(null, kNull);
 STRICT_RESERVED_KW_TEST(package);
 ES6_RESERVED_KW_TEST(package);
-KEYWORD_TEST_ALL(private, TS_PRIVATE);
-KEYWORD_TEST_ALL(protected, TS_PROTECTED);
-KEYWORD_TEST_ALL(public, TS_PUBLIC);
-KEYWORD_TEST_ALL(return, TS_RETURN);
-KEYWORD_TEST_ALL(static, TS_STATIC);
-KEYWORD_TEST_ALL(super, TS_SUPER);
-KEYWORD_TEST_ALL(switch, TS_SWITCH);
-KEYWORD_TEST_ALL(this, TS_THIS);
-KEYWORD_TEST_ALL(throw, TS_THROW);
-KEYWORD_TEST_ALL(true, TS_TRUE);
-KEYWORD_TEST_ALL(try, TS_TRY);
-KEYWORD_TEST_ALL(typeof, TS_TYPEOF);
-KEYWORD_TEST_ALL(undefined, TS_UNDEFINED);
-KEYWORD_TEST_ALL(var, TS_VAR);
-KEYWORD_TEST_ALL(void, TS_VOID);
-KEYWORD_TEST_ALL(while, TS_WHILE);
-KEYWORD_TEST_ALL(with, TS_WITH);
-KEYWORD_TEST_ES6(yield, TS_YIELD);
+KEYWORD_TEST_ALL(private, kPrivate);
+KEYWORD_TEST_ALL(protected, kProtected);
+KEYWORD_TEST_ALL(public, kPublic);
+KEYWORD_TEST_ALL(return, kReturn);
+KEYWORD_TEST_ALL(static, kStatic);
+KEYWORD_TEST_ALL(super, kSuper);
+KEYWORD_TEST_ALL(switch, kSwitch);
+KEYWORD_TEST_ALL(this, kThis);
+KEYWORD_TEST_ALL(throw, kThrow);
+KEYWORD_TEST_ALL(true, kTrue);
+KEYWORD_TEST_ALL(try, kTry);
+KEYWORD_TEST_ALL(typeof, kTypeof);
+KEYWORD_TEST_ALL(undefined, kUndefined);
+KEYWORD_TEST_ALL(var, kVar);
+KEYWORD_TEST_ALL(void, kVoid);
+KEYWORD_TEST_ALL(while, kWhile);
+KEYWORD_TEST_ALL(with, kWith);
+KEYWORD_TEST_ES6(yield, kYield);
 

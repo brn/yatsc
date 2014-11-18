@@ -146,8 +146,8 @@ TEST(ExpressionParseTest, ParseExpression_array_comprehension) {
             "      [NameView][m]\n"
             "      [Empty]\n"
             "    [IfStatementView]\n"
-            "      [BinaryExprView][TS_EQ]\n"
-            "        [BinaryExprView][TS_MOD]\n"
+            "      [BinaryExprView][Eq]\n"
+            "        [BinaryExprView][Mod]\n"
             "          [NameView][x]\n"
             "          [NumberView][2]\n"
             "        [NumberView][0]\n"
@@ -172,8 +172,8 @@ TEST(ExpressionParseTest, ParseGeneratorComprehension) {
             "    [NameView][m]\n"
             "    [Empty]\n"
             "  [IfStatementView]\n"
-            "    [BinaryExprView][TS_EQ]\n"
-            "      [BinaryExprView][TS_MOD]\n"
+            "    [BinaryExprView][Eq]\n"
+            "      [BinaryExprView][Mod]\n"
             "        [NameView][x]\n"
             "        [NumberView][2]\n"
             "      [NumberView][0]\n"
@@ -269,7 +269,7 @@ TEST(ExpressionParseTest, ParseExpression_property_call2) {
             "  [ArgumentsView]\n"
             "    [Empty]\n"
             "    [CallArgsView]\n"
-            "      [BinaryExprView][TS_PLUS]\n"
+            "      [BinaryExprView][Plus]\n"
             "        [NameView][str]\n"
             "        [StringView]['\\n']");
 }
@@ -363,7 +363,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "        [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 
@@ -380,7 +380,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "        [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 
@@ -400,7 +400,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "        [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 
@@ -423,7 +423,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "          [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 
@@ -439,7 +439,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "          [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
   
@@ -469,7 +469,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "          [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
   
@@ -480,7 +480,7 @@ TEST(ExpressionParseTest, ParseExpression_arrow_function) {
             "    [NameView][x]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][x]\n"
             "    [NumberView][10]");
 }
@@ -507,7 +507,7 @@ TEST(ExpressionParseTest, ParseExpression_generic_arrow_function) {
             "    [TypeParametersView]\n"
             "      [NameView][T]\n"
             "      [NameView][U]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 }
@@ -537,7 +537,7 @@ TEST(ExpressionParseTest, ParseExpression_constraints_generic_arrow_function) {
             "        [NameView][U]\n"
             "        [SimpleTypeExprView]\n"
             "          [NameView][V]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 }
@@ -567,7 +567,7 @@ TEST(ExpressionParseTest, ParseExpression_generic_instance_arrow_function) {
             "        [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [GetPropView]\n"
             "      [NameView][foo]\n"
@@ -607,7 +607,7 @@ TEST(ExpressionParseTest, ParseExpression_parenthesized_expression_like_arrow_fu
             "        [Empty]\n"
             "    [Empty]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][a]\n"
             "    [NameView][b]");
 }
@@ -649,7 +649,7 @@ TEST(ExpressionParseTest, ParseExpression_function_type) {
             "    [SimpleTypeExprView]\n"
             "      [NameView][string]\n"
             "    [Empty]\n"
-            "  [BinaryExprView][TS_PLUS]\n"
+            "  [BinaryExprView][Plus]\n"
             "    [NameView][param1]\n"
             "    [NameView][param2]");
 }
@@ -657,27 +657,27 @@ TEST(ExpressionParseTest, ParseExpression_function_type) {
 
 TEST(ExpressionParseTest, ParseExpression_regexp) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = /a/",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
             "  [RegularExprView][/a/]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = /**//a/",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
             "  [RegularExprView][/a/]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = //\n/a/",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
             "  [RegularExprView][/a/]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = /\\/abc\\/ddd\\/ee/",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
             "  [RegularExprView][/\\/abc\\/ddd\\/ee/]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "v = /^(\\/\\/\\/\\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][v]\n"
             "  [RegularExprView][/^(\\/\\/\\/\\s*<reference\\s+path\\s*=\\s*)('|\")(.+?)\\2.*?\\/>/]");
   
@@ -695,97 +695,97 @@ TEST(ExpressionParseTest, ParseExpression_regexp) {
 
 TEST(ExpressionParseTest, ParseExpression_assignment_expr) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = 100",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x = y = z = 100",
-            "[AssignmentView][TS_ASSIGN]\n"
+            "[AssignmentView][Assign]\n"
             "  [NameView][x]\n"
-            "  [AssignmentView][TS_ASSIGN]\n"
+            "  [AssignmentView][Assign]\n"
             "    [NameView][y]\n"
-            "    [AssignmentView][TS_ASSIGN]\n"
+            "    [AssignmentView][Assign]\n"
             "      [NameView][z]\n"
             "      [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x *= 100",
-            "[AssignmentView][TS_MUL_LET]\n"
+            "[AssignmentView][MulLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x /= 100",
-            "[AssignmentView][TS_DIV_LET]\n"
+            "[AssignmentView][DivLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x %= 100",
-            "[AssignmentView][TS_MOD_LET]\n"
+            "[AssignmentView][ModLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x += 100",
-            "[AssignmentView][TS_ADD_LET]\n"
+            "[AssignmentView][AddLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x -= 100",
-            "[AssignmentView][TS_SUB_LET]\n"
+            "[AssignmentView][SubLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x <<= 100",
-            "[AssignmentView][TS_SHIFT_LEFT_LET]\n"
+            "[AssignmentView][ShiftLeftLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x >>= 100",
-            "[AssignmentView][TS_SHIFT_RIGHT_LET]\n"
+            "[AssignmentView][ShiftRightLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x >>>= 100",
-            "[AssignmentView][TS_U_SHIFT_RIGHT_LET]\n"
+            "[AssignmentView][UShiftRightLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x &= 100",
-            "[AssignmentView][TS_AND_LET]\n"
+            "[AssignmentView][AndLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x ^= 100",
-            "[AssignmentView][TS_XOR_LET]\n"
+            "[AssignmentView][XorLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x |= 100",
-            "[AssignmentView][TS_OR_LET]\n"
+            "[AssignmentView][OrLet]\n"
             "  [NameView][x]\n"
             "  [NumberView][100]");
 
   EXPR_TEST_ALL("(x + 100) / 3",
-                "[BinaryExprView][TS_DIV]\n"
-                "  [BinaryExprView][TS_PLUS]\n"
+                "[BinaryExprView][Div]\n"
+                "  [BinaryExprView][Plus]\n"
                 "    [NameView][x]\n"
                 "    [NumberView][100]\n"
                 "  [NumberView][3]");
 
   EXPR_TEST_ALL("x + 100 / 3",
-                "[BinaryExprView][TS_PLUS]\n"
+                "[BinaryExprView][Plus]\n"
                 "  [NameView][x]\n"
-                "  [BinaryExprView][TS_DIV]\n"
+                "  [BinaryExprView][Div]\n"
                 "    [NumberView][100]\n"
                 "    [NumberView][3]");
 }
@@ -801,7 +801,7 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "x === 100? (a,b) => a + b + x: (a,b) => a - b + x / 2",
             "[TemaryExprView]\n"
-            "  [BinaryExprView][TS_EQ]\n"
+            "  [BinaryExprView][Eq]\n"
             "    [NameView][x]\n"
             "    [NumberView][100]\n"
             "  [ArrowFunctionView]\n"
@@ -819,8 +819,8 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
             "          [Empty]\n"
             "      [Empty]\n"
             "      [Empty]\n"
-            "    [BinaryExprView][TS_PLUS]\n"
-            "      [BinaryExprView][TS_PLUS]\n"
+            "    [BinaryExprView][Plus]\n"
+            "      [BinaryExprView][Plus]\n"
             "        [NameView][a]\n"
             "        [NameView][b]\n"
             "      [NameView][x]\n"
@@ -839,11 +839,11 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
             "          [Empty]\n"
             "      [Empty]\n"
             "      [Empty]\n"
-            "    [BinaryExprView][TS_PLUS]\n"
-            "      [BinaryExprView][TS_MINUS]\n"
+            "    [BinaryExprView][Plus]\n"
+            "      [BinaryExprView][Minus]\n"
             "        [NameView][a]\n"
             "        [NameView][b]\n"
-            "      [BinaryExprView][TS_DIV]\n"
+            "      [BinaryExprView][Div]\n"
             "        [NameView][x]\n"
             "        [NumberView][2]");
 }
@@ -851,26 +851,26 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
 
 TEST(ExpressionParseTest, ParseExpression_binary_expr) {
   EXPR_TEST_ALL("1 + 1",
-                "[BinaryExprView][TS_PLUS]\n"
+                "[BinaryExprView][Plus]\n"
                 "  [NumberView][1]\n"
                 "  [NumberView][1]");
   
   EXPR_TEST_ALL("2 + (3 - 1)",
-                "[BinaryExprView][TS_PLUS]\n"
+                "[BinaryExprView][Plus]\n"
                 "  [NumberView][2]\n"
-                "  [BinaryExprView][TS_MINUS]\n"
+                "  [BinaryExprView][Minus]\n"
                 "    [NumberView][3]\n"
                 "    [NumberView][1]");
 
 
   EXPR_TEST_ALL("1 > 1",
-                "[BinaryExprView][TS_GREATER]\n"
+                "[BinaryExprView][Greater]\n"
                 "  [NumberView][1]\n"
                 "  [NumberView][1]");
 
 
   EXPR_TEST_ALL("1 < 1",
-                "[BinaryExprView][TS_LESS]\n"
+                "[BinaryExprView][Less]\n"
                 "  [NumberView][1]\n"
                 "  [NumberView][1]");
 }
@@ -878,50 +878,50 @@ TEST(ExpressionParseTest, ParseExpression_binary_expr) {
 
 TEST(ExpressionParseTest, ParseExpression_unary_expr) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "++i",
-            "[UnaryExprView][TS_INCREMENT]\n"
+            "[UnaryExprView][Increment]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "--i",
-            "[UnaryExprView][TS_DECREMENT]\n"
+            "[UnaryExprView][Decrement]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "delete i",
-            "[UnaryExprView][TS_DELETE]\n"
+            "[UnaryExprView][Delete]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "void i",
-            "[UnaryExprView][TS_VOID]\n"
+            "[UnaryExprView][Void]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "typeof i",
-            "[UnaryExprView][TS_TYPEOF]\n"
+            "[UnaryExprView][Typeof]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "+i",
-            "[UnaryExprView][TS_PLUS]\n"
+            "[UnaryExprView][Plus]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "-i",
-            "[UnaryExprView][TS_MINUS]\n"
+            "[UnaryExprView][Minus]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "~i",
-            "[UnaryExprView][TS_BIT_NOR]\n"
+            "[UnaryExprView][BitNor]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "!i",
-            "[UnaryExprView][TS_NOT]\n"
+            "[UnaryExprView][Not]\n"
             "  [NameView][i]");
 }
 
 
 TEST(ExpressionParseTest, ParseExpression_postfix_expr) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "i++",
-            "[PostfixView][TS_INCREMENT]\n"
+            "[PostfixView][Increment]\n"
             "  [NameView][i]");
 
   EXPR_TEST(yatsc::LanguageMode::ES3, "i--",
-            "[PostfixView][TS_DECREMENT]\n"
+            "[PostfixView][Decrement]\n"
             "  [NameView][i]");
 }
 

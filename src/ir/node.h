@@ -291,7 +291,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
       : heap::HeapReference(),
         node_type_(node_type),
         capacity_(capacity),
-        operand_(Token::ILLEGAL),
+        operand_(TokenKind::kIllegal),
         double_value_(0l),
         invalid_lhs_(false),
         string_value_(nullptr) {
@@ -307,7 +307,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
         node_list_(node_list),
         node_type_(node_type),
         capacity_(capacity),
-        operand_(Token::ILLEGAL),
+        operand_(TokenKind::kIllegal),
         double_value_(0l),
         invalid_lhs_(false),
         string_value_(nullptr) {
@@ -510,7 +510,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Set an operand.
-  YATSC_INLINE void set_operand(Token op) YATSC_NOEXCEPT {
+  YATSC_INLINE void set_operand(TokenKind op) YATSC_NOEXCEPT {
     operand_ = op;
   }
 
@@ -543,7 +543,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Return an operand.
-  YATSC_INLINE Token operand() YATSC_NO_SE {
+  YATSC_INLINE TokenKind operand() YATSC_NO_SE {
     return operand_;
   }
 
@@ -567,19 +567,19 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   
 
   // Set source information to this node.
-  void SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT;
+  void SetInformationForNode(const Token& token) YATSC_NOEXCEPT;
   
 
   // Set source information to this node and children.
-  void SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT;
+  void SetInformationForTree(const Token& token) YATSC_NOEXCEPT;
 
 
   // Set source information to this node.
-  void SetInformationForNode(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForNode(*token_info);}
+  void SetInformationForNode(const Token* token) YATSC_NOEXCEPT {SetInformationForNode(*token);}
   
 
   // Set source information to this node and children.
-  void SetInformationForTree(const TokenInfo* token_info) YATSC_NOEXCEPT {SetInformationForTree(*token_info);}
+  void SetInformationForTree(const Token* token) YATSC_NOEXCEPT {SetInformationForTree(*token);}
 
   
   // Set source information to this node.
@@ -643,7 +643,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   NodeType node_type_;
   size_t capacity_;
   Node* parent_node_;
-  Token operand_;
+  TokenKind operand_;
   double double_value_;
   bool invalid_lhs_;
   const Literal* string_value_;
@@ -750,13 +750,13 @@ class VariableDeclView: public Node {
 // Represent variable declarations.
 class LexicalDeclView: public Node {
  public:
-  LexicalDeclView(Token op):
+  LexicalDeclView(TokenKind op):
       Node(NodeType::kLexicalDeclView, 0) {
     set_operand(op);
   }
 
   
-  LexicalDeclView(Token op, std::initializer_list<Handle<Node>> vars):
+  LexicalDeclView(TokenKind op, std::initializer_list<Handle<Node>> vars):
       Node(NodeType::kLexicalDeclView, 0, vars) {
     set_operand(op);
   }
@@ -1435,7 +1435,7 @@ class ClassFieldModifiersView: public Node {
 
 class ClassFieldAccessLevelView: public Node {
  public:
-  ClassFieldAccessLevelView(Token op)
+  ClassFieldAccessLevelView(TokenKind op)
       : Node(NodeType::kClassFieldAccessLevelView, 0u) {
     set_operand(op);
   }
@@ -2099,7 +2099,7 @@ class SuperView: public Node {
 
 class PostfixView: public Node {
  public:
-  PostfixView(Handle<Node> target, Token op)
+  PostfixView(Handle<Node> target, TokenKind op)
       : Node(NodeType::kPostfixView, 1u, {target}) {
     set_operand(op);
   }
@@ -2143,7 +2143,7 @@ class GetElemView: public Node {
 
 class AssignmentView: public Node {
  public:
-  AssignmentView(Token op, Handle<Node> target, Handle<Node> expr)
+  AssignmentView(TokenKind op, Handle<Node> target, Handle<Node> expr)
       : Node(NodeType::kAssignmentView, 2u, {target, expr}) {
     set_operand(op);
   }
@@ -2179,7 +2179,7 @@ class TemaryExprView: public Node {
 
 class BinaryExprView: public Node {
  public:
-  BinaryExprView(Token op, Handle<Node> first, Handle<Node> second)
+  BinaryExprView(TokenKind op, Handle<Node> first, Handle<Node> second)
       : Node(NodeType::kBinaryExprView, 2u, {first, second}) {
     set_operand(op);
   }
@@ -2209,7 +2209,7 @@ class CastView: public Node {
 
 class UnaryExprView: public Node {
  public:
-  UnaryExprView(Token op, Handle<Node> expr)
+  UnaryExprView(TokenKind op, Handle<Node> expr)
       : Node(NodeType::kUnaryExprView, 1u, {expr}) {
     set_operand(op);
   }

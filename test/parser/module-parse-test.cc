@@ -212,7 +212,7 @@ TEST(ModuleParser, ParseExport) {
               "export let x = 0",
               "[FileScopeView]\n"
               "  [ExportView]\n"
-              "    [LexicalDeclView][TS_LET]\n"
+              "    [LexicalDeclView][Let]\n"
               "      [VariableView]\n"
               "        [NameView][x]\n"
               "        [NumberView][0]\n"
@@ -224,7 +224,7 @@ TEST(ModuleParser, ParseExport) {
               "export const x = 0",
               "[FileScopeView]\n"
               "  [ExportView]\n"
-              "    [LexicalDeclView][TS_CONST]\n"
+              "    [LexicalDeclView][Const]\n"
               "      [VariableView]\n"
               "        [NameView][x]\n"
               "        [NumberView][0]\n"

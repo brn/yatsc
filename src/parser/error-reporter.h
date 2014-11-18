@@ -81,12 +81,12 @@ class ErrorReporter {
   }
 
 
-  Handle<ErrorDescriptor> SyntaxError(TokenInfo* info) {
+  Handle<ErrorDescriptor> SyntaxError(Token* info) {
     return SyntaxError(info->source_position());
   }
 
 
-  Handle<ErrorDescriptor> SyntaxError(const TokenInfo& info) {
+  Handle<ErrorDescriptor> SyntaxError(const Token& info) {
     return SyntaxError(info.source_position());
   }
 
@@ -108,12 +108,12 @@ class ErrorReporter {
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(TokenInfo* info) {
+  Handle<ErrorDescriptor> SemanticError(Token* info) {
     return SemanticError(info->source_position());
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(const TokenInfo& info) {
+  Handle<ErrorDescriptor> SemanticError(const Token& info) {
     return SemanticError(info.source_position());
   }
 

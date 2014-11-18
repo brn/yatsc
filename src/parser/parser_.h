@@ -94,7 +94,7 @@ class Parser {
 
   ir::Node* ParseForStatement(bool has_yield);
 
-  ir::Node* ParseForIterationStatement(ir::Node* reciever, TokenInfo* info, bool has_yield);
+  ir::Node* ParseForIterationStatement(ir::Node* reciever, Token* info, bool has_yield);
 
   ir::Node* ParseContinueStatement();
 
@@ -211,7 +211,7 @@ class Parser {
     TokenBuffer()
         : cursor_(0) {
       // Initialize std::vector for mmap allocator.
-      buffer_ = buffer_init_once_(Mmap::MmapStandardAllocator<TokenInfo>(&mmap_));
+      buffer_ = buffer_init_once_(Mmap::MmapStandardAllocator<Token>(&mmap_));
     }
 
 
@@ -219,7 +219,7 @@ class Parser {
      * Append a token to the buffer.
      * @param token_info A new token.
      */
-    YATSC_INLINE void PushBack(TokenInfo* token_info) {
+    YATSC_INLINE void PushBack(Token* token_info) {
       buffer_->emplace_back(*token_info);
     }
 
@@ -237,7 +237,7 @@ class Parser {
      * Return current token and advance cursor.
      * @returns Current token.
      */
-    YATSC_INLINE TokenInfo* Next() {
+    YATSC_INLINE Token* Next() {
       if (cursor_ >= (buffer_->size() - 1)) {return &null_token_info_;}
       return &((*buffer_)[cursor_++]);
     }
@@ -247,7 +247,7 @@ class Parser {
      * Retrun current token.
      * @returns Current token.
      */
-    YATSC_INLINE TokenInfo* Current() {
+    YATSC_INLINE Token* cur_token() {
       if (cursor_ >= buffer_->size()) {return &null_token_info_;}
       return &((*buffer_)[cursor_]);
     }
@@ -257,7 +257,7 @@ class Parser {
      * Peek next token.
      * @returns Next token.
      */
-    YATSC_INLINE TokenInfo* Peek() {
+    YATSC_INLINE Token* Peek() {
       return Peek(cursor_ + 1);
     }
 
@@ -266,7 +266,7 @@ class Parser {
      * Rewind cursor with passed number.
      * @returns Next token.
      */
-    YATSC_INLINE TokenInfo* Rewind(size_t num) {
+    YATSC_INLINE Token* Rewind(size_t num) {
       return Peek(cursor_ - num);
     }
 
@@ -275,7 +275,7 @@ class Parser {
      * Peek specified index token.
      * @param pos The position.
      */
-    YATSC_INLINE TokenInfo* Peek(size_t pos) {
+    YATSC_INLINE Token* Peek(size_t pos) {
       if (pos < 0 || pos >= buffer_->size()) {return &null_token_info_;}
       return &((*buffer_)[pos]);
     }
@@ -313,12 +313,12 @@ class Parser {
 
    private:
     
-    typedef std::vector<TokenInfo, Mmap::MmapStandardAllocator<TokenInfo>> Vector;
+    typedef std::vector<Token, Mmap::MmapStandardAllocator<Token>> Vector;
     Mmap mmap_;
     TokenCursor cursor_;
     Vector* buffer_;
     LazyInitializer<Vector> buffer_init_once_;
-    TokenInfo null_token_info_;
+    Token null_token_info_;
   };
 
 
@@ -342,7 +342,7 @@ class Parser {
    * Return a next token if token buffer's cursor is in the end of input,
    * otherwise return a current token from the token buffer and advance token buffer cursor.
    */
-  YATSC_INLINE TokenInfo* Next() {
+  YATSC_INLINE Token* Next() {
     if (!token_buffer_.CursorUpdated()) {
       return token_buffer_.Next();
     }
@@ -356,9 +356,9 @@ class Parser {
    * Return current token if token buffer's cursor is in the end of input,
    * otherwise return current token from token buffer.
    */
-  YATSC_INLINE TokenInfo* Current() {
+  YATSC_INLINE Token* cur_token() {
     if (!token_buffer_.CursorUpdated()) {
-      return token_buffer_.Current();
+      return token_buffer_.cur_token();
     }
     return current_token_info_;
   }
@@ -376,13 +376,13 @@ class Parser {
   }
 
 
-  bool CheckLineTermination(TokenInfo* info = nullptr);
+  bool CheckLineTermination(Token* info = nullptr);
   
 
   bool print_parser_phase_;
   Scanner<UCharInputSourceIterator>* scanner_;
-  TokenInfo* current_token_info_;
-  TokenInfo* next_token_info_;
+  Token* current_token_info_;
+  Token* next_token_info_;
   ir::IRFactory irfactory_;
   ErrorReporter* error_reporter_;
   TokenBuffer token_buffer_;

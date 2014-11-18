@@ -26,7 +26,7 @@ namespace yatsc {
 
 // Return next token and replace previous token and current token.
 template <typename UCharInputIterator>
-TokenInfo* Parser<UCharInputIterator>::Next() {
+Token* Parser<UCharInputIterator>::Next() {
   if (current_token_info_ != nullptr) {
     prev_token_info_ = *current_token_info_;
   }
@@ -36,7 +36,7 @@ TokenInfo* Parser<UCharInputIterator>::Next() {
 
 // Return current token.
 template <typename UCharInputIterator>
-TokenInfo* Parser<UCharInputIterator>::Current() YATSC_NOEXCEPT {
+Token* Parser<UCharInputIterator>::cur_token() YATSC_NOEXCEPT {
   return current_token_info_;
 }
 
@@ -44,23 +44,23 @@ TokenInfo* Parser<UCharInputIterator>::Current() YATSC_NOEXCEPT {
 
 // Return previous token.
 template <typename UCharInputIterator>
-TokenInfo* Parser<UCharInputIterator>::Prev() YATSC_NOEXCEPT {
+Token* Parser<UCharInputIterator>::prev_token() YATSC_NOEXCEPT {
   return &prev_token_info_;
 }
 
 
 template <typename UCharInputIterator>
 bool Parser<UCharInputIterator>::IsLineTermination() YATSC_NOEXCEPT {
-  return Current()->type() == Token::LINE_TERMINATOR ||
-    Current()->type() == Token::END_OF_INPUT ||
-    (Prev() != nullptr &&
-     Prev()->has_line_break_before_next());
+  return cur_token()->type() == TokenKind::kLineTerminator ||
+    cur_token()->type() == TokenKind::kEof ||
+    (prev_token() != nullptr &&
+     prev_token()->has_line_break_before_next());
 }
 
 
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
-  if (Current()->type() == Token::LINE_TERMINATOR) {
+  if (cur_token()->type() == TokenKind::kLineTerminator) {
     Next();
   }
 }
@@ -68,19 +68,44 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
 
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(Token token) YATSC_NOEXCEPT {
-  if (token == Token::LINE_TERMINATOR) {
-    while (Current()->type() != Token::LINE_TERMINATOR) {
-      if (Current()->has_line_break_before_next() ||
-          Current()->type() == Token::TS_RIGHT_BRACE) {
+void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT {
+  if (token->Is(TokenKind::kLineTerminator)) {
+    while (!cur_token()->Is(TokenKind::kLineTerminator) &&
+           !cur_token()->Is(TokenKind::kEof)) {
+      if (cur_token()->has_line_break_before_next() ||
+          cur_token()->Is(TokenKind::kRightBrace)) {
+        Next();
+        return;
+      }
+      Next();
+    }
+  } else {
+    while (cur_token()->type() != TokenKind::kEof &&
+           cur_token()->type() != token) {
+      Next();
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEPT {
+  if (token->Is(TokenKind::kLineTerminator)) {
+    while (!cur_token()->Is(TokenKind::kLineTerminator) &&
+           !cur_token()->Is(TokenKind::kComma) &&
+           !cur_token()->Is(TokenKind::kEof)) {
+      
+      if (cur_token()->has_line_break_before_next() ||
+          cur_token()->Is(TokenKind::kRightBrace)) {
         Next();
         break;
       }
       Next();
     }
   } else {
-    while (Current()->type() != Token::END_OF_INPUT &&
-           Current()->type() != token) {
+    while (!cur_token()->Is(TokenKind::kEof) &&
+           !cur_token()->Is(TokenKind::kComma) &&
+           !cur_token()->Is(token)) {
       Next();
     }
   }
@@ -108,14 +133,14 @@ void Parser<UCharInputIterator>::Initialize() YATSC_NOEXCEPT {
 
 template <typename UCharInputIterator>
 typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterator>::parser_state() YATSC_NOEXCEPT {
-  TokenInfo prev;
-  TokenInfo current;
+  Token prev;
+  Token current;
   Handle<ir::Scope> scope;
-  if (Prev() != nullptr) {
-    prev = *Prev();
+  if (prev_token() != nullptr) {
+    prev = *prev_token();
   }
-  if (Current() != nullptr) {
-    current = *Current();
+  if (cur_token() != nullptr) {
+    current = *cur_token();
   }
   if (scope_) {
     scope = scope_;

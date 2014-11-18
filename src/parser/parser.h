@@ -38,21 +38,21 @@ namespace yatsc {
 
 // Generate SyntaxError and push it to buffer.
 // This macro return Failed() result.
-// Usage. SYNTAX_ERROR("test " << message, Current())
+// Usage. SYNTAX_ERROR("test " << message, cur_token())
 #define SYNTAX_ERROR(message, item)             \
   SYNTAX_ERROR_INTERNAL(message, item)
 
 
 // Generate SyntaxError and push it to buffer.
 // This method do not return.
-// Usage. SYNTAX_ERROR("test " << message, Current())
+// Usage. SYNTAX_ERROR("test " << message, cur_token())
 #define SYNTAX_ERROR_NO_RETURN(message, item)     \
   SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item)
 
 
 // Generate SyntaxError and push it to buffer.
 // This method execute given expr.
-// Usage. SYNTAX_ERROR("test " << message, Current())
+// Usage. SYNTAX_ERROR("test " << message, cur_token())
 #define SYNTAX_ERROR_AND(message, item, expr)     \
   SYNTAX_ERROR_INTERNAL_NO_RETURN(message, item); \
   expr
@@ -80,20 +80,20 @@ namespace yatsc {
 
 
 // Skip token until given token found if parse has failed, and if parse has not failed, goto next block.
-// Usage. SKIP_TOKEN_OR(result, flag, Token::LINE_TERMINATOR) {...}
+// Usage. SKIP_TOKEN_OR(result, flag, TokenKind::kLineTerminator) {...}
 #define SKIP_TOKEN_OR(result, flag, token)                          \
   if (!result) {flag = false;SkipTokensIfErrorOccured(token);} else
 
 
 // Skip token until given token found if parse has failed.
-// Usage. SKIP_TOKEN_IF(result, flag, Token::LINE_TERMINATOR).
+// Usage. SKIP_TOKEN_IF(result, flag, TokenKind::kLineTerminator).
 #define SKIP_TOKEN_IF(result, flag, token)          \
   SKIP_TOKEN_OR(result, flag, token) {flag = true;}
 
 
 // Skip token until given token found if parse has failed.
 // This method execute given expr.
-// Usage. SKIP_TOKEN_AND(result, flag, Token::LINE_TERMINATOR, return Failed()).
+// Usage. SKIP_TOKEN_AND(result, flag, TokenKind::kLineTerminator, return Failed()).
 #define SKIP_TOKEN_IF_AND(result, flag, token, expr)  \
   if (!result) {                                      \
     flag = false;                                     \
@@ -131,16 +131,16 @@ namespace yatsc {
 #ifdef DEBUG
 // Logging current parse phase.
 #define LOG_PHASE(name)                                          \
-  if (Current() != nullptr) {                                           \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << Current()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
+  if (cur_token() != nullptr) {                                           \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
   } else {                                                              \
     phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
   }                                                                     \
   indent_ += "  ";                                                      \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
-    if (this->Current() != nullptr) {                                   \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << Current()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
+    if (this->cur_token() != nullptr) {                                   \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
     } else {                                                            \
       phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
     }                                                                   \
@@ -180,36 +180,36 @@ class Parser: public ParserBase {
  private:  
   
   /**
-   * Return a next TokenInfo.
-   * @return Next TokenInfo.
+   * Return a next Token.
+   * @return Next Token.
    */
-  YATSC_INLINE TokenInfo* Next();
+  YATSC_INLINE Token* Next();
 
 
   /**
-   * Return current TokenInfo.
-   * @return Current TokenInfo.
+   * Return current Token.
+   * @return Current Token.
    */
-  YATSC_INLINE TokenInfo* Current() YATSC_NOEXCEPT;
+  YATSC_INLINE Token* cur_token() YATSC_NOEXCEPT;
 
 
-  YATSC_INLINE TokenInfo* Prev() YATSC_NOEXCEPT;
+  YATSC_INLINE Token* prev_token() YATSC_NOEXCEPT;
 
 
   struct AccessorType {
-    AccessorType(bool setter, bool getter, const TokenInfo& info)
+    AccessorType(bool setter, bool getter, const Token& info)
         : setter(setter), getter(getter), token_info(info) {}
     bool setter;
     bool getter;
-    TokenInfo token_info;
+    Token token_info;
   };
   
 
   class RecordedParserState {
    public:
     RecordedParserState(const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp,
-                        const TokenInfo& current,
-                        const TokenInfo& prev,
+                        const Token& current,
+                        const Token& prev,
                         Handle<ir::Scope> current_scope,
                         size_t error_count)
         : rcp_(rcp),
@@ -221,10 +221,10 @@ class Parser: public ParserBase {
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
 
 
-    YATSC_CONST_GETTER(const TokenInfo&, current, current_);
+    YATSC_CONST_GETTER(const Token&, current, current_);
 
 
-    YATSC_CONST_GETTER(const TokenInfo&, prev, prev_);
+    YATSC_CONST_GETTER(const Token&, prev, prev_);
 
 
     YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
@@ -233,8 +233,8 @@ class Parser: public ParserBase {
 
    private:
     typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
-    TokenInfo current_;
-    TokenInfo prev_;
+    Token current_;
+    Token prev_;
     Handle<ir::Scope> scope_;
     size_t error_count_;
   };
@@ -290,7 +290,10 @@ class Parser: public ParserBase {
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
 
   
-  void SkipTokensIfErrorOccured(Token token) YATSC_NOEXCEPT;
+  void SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT;
+
+
+  void SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEPT;
 
 
   YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
@@ -357,7 +360,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseForStatement(bool yield, bool has_return);
 
-  ParseResult ParseForIteration(Handle<ir::Node> reciever, TokenInfo*, bool yield, bool has_return);
+  ParseResult ParseForIteration(Handle<ir::Node> reciever, Token*, bool yield, bool has_return);
 
   ParseResult ParseIterationBody(bool yield, bool has_return);
 
@@ -411,7 +414,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
 
-  bool IsMemberFunctionOverloadsBegin(TokenInfo* info);
+  bool IsMemberFunctionOverloadsBegin(Token* info);
   
   ParseResult ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at);
 
@@ -610,7 +613,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseModuleImport();
 
-  ParseResult ParseTSModule(Handle<ir::Node> identifier, TokenInfo* token_info);
+  ParseResult ParseTSModule(Handle<ir::Node> identifier, Token* token_info);
 
   ParseResult ParseTSModuleBody();
 
@@ -619,7 +622,7 @@ class Parser: public ParserBase {
   Handle<ir::Node> CreateExportView(
       Handle<ir::Node> export_clause,
       Handle<ir::Node> from_clause,
-      TokenInfo* token_info,
+      Token* token_info,
       bool default_export);
 
   ParseResult ParseExportClause();
@@ -634,11 +637,11 @@ class Parser: public ParserBase {
   
   ParseResult ParseAmbientDeclaration(bool module_allowed);
 
-  ParseResult ParseAmbientVariableDeclaration(TokenInfo* info);
+  ParseResult ParseAmbientVariableDeclaration(Token* info);
 
-  ParseResult ParseAmbientFunctionDeclaration(TokenInfo* info);
+  ParseResult ParseAmbientFunctionDeclaration(Token* info);
 
-  ParseResult ParseAmbientClassDeclaration(TokenInfo* info);
+  ParseResult ParseAmbientClassDeclaration(Token* info);
 
   ParseResult ParseAmbientClassBody();
 
@@ -652,7 +655,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseAmbientMemberVariable(Handle<ir::Node> mods);
 
-  ParseResult ParseAmbientEnumDeclaration(TokenInfo* info);
+  ParseResult ParseAmbientEnumDeclaration(Token* info);
 
   ParseResult ParseAmbientEnumBody();
 
@@ -660,7 +663,7 @@ class Parser: public ParserBase {
 
   Handle<ir::Node> CreateAmbientEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
 
-  ParseResult ParseAmbientModuleDeclaration(TokenInfo* info);
+  ParseResult ParseAmbientModuleDeclaration(Token* info);
 
   ParseResult ParseAmbientModuleBody(bool external);
 

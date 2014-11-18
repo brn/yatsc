@@ -109,8 +109,8 @@ bool Node::Equals(const Handle<Node>& node) YATSC_NO_SE {
       return false;
     }
     default: {
-      if (node->operand() != Token::ILLEGAL &&
-          operand_ != Token::ILLEGAL &&
+      if (node->operand() != TokenKind::kIllegal &&
+          operand_ != TokenKind::kIllegal &&
           operand_ != node->operand_) {
         return false;
       }
@@ -154,13 +154,13 @@ Handle<Node> Node::Clone() YATSC_NOEXCEPT {
 
 
 // Attach source information to this node.
-void Node::SetInformationForNode(const TokenInfo& token_info) YATSC_NOEXCEPT {
+void Node::SetInformationForNode(const Token& token_info) YATSC_NOEXCEPT {
   source_information_.source_position_ = token_info.source_position();
 }
 
 
 // Attach source information to this node and children.
-void Node::SetInformationForTree(const TokenInfo& token_info) YATSC_NOEXCEPT  {
+void Node::SetInformationForTree(const Token& token_info) YATSC_NOEXCEPT  {
   for (size_t i = 0u; i < node_list_.size(); i++) {
     Handle<Node> node = node_list_[i];
     if (node) {
@@ -242,8 +242,8 @@ void Node::ToStringSelf(const Node* target, String& indent, StringStream& ss) co
   if (target->HasNumberView()) {
     ss << '[' << target->double_value() << ']';
   }
-  if (target->operand() != Token::ILLEGAL) {
-    ss << '[' << TokenInfo::ToString(target->operand()) << ']';
+  if (target->operand() != TokenKind::kIllegal) {
+    ss << '[' << Token::ToString(target->operand()) << ']';
   }
   ss << '\n';
 }
