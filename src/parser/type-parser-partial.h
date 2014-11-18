@@ -398,7 +398,6 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
     ret->SetInformationForNode(key_result.value());
     return Success(ret);
   }
-  SYNTAX_ERROR("SyntaxError unexpected token", cur_token());
 }
 
 

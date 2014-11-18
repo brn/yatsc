@@ -245,7 +245,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield) {
   // Check whether property name is identifier reference or not.
   bool identifier = false;
   
-  if (cur_token()->Is(TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     identifier = true;
     property_name = ParseIdentifierReference(yield);
   } else if (cur_token()->Is(TokenKind::kStringLiteral) ||
@@ -310,11 +310,11 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentRestElement(bool yield) {
   Token info = *cur_token();
   Next();
   
-  return ParseDestructuringAssignmentTarget(yield).fmap([&](target) {
-    auto rest = New<ir::RestParamView>(target.value());
+  return ParseDestructuringAssignmentTarget(yield) >>= [&](Handle<ir::Node> target) {
+    auto rest = New<ir::RestParamView>(target);
     rest->SetInformationForNode(&info);
-    return rest;
-  });
+    return Success(rest);
+  };
 }
 
 
@@ -327,22 +327,18 @@ ParseResult Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool 
   
   RecordedParserState rps = parser_state();
   
-  auto lhs_result = ParseLeftHandSideExpression(yield);
-  CHECK_AST(lhs_result);
-  
-  auto node = lhs_result.value();
-  
-  // Check whether DestructuringAssignmentTarget is IsValidAssignmentTarget or not.
-  if (!node->IsValidLhs()) {
-    if (node->HasObjectLiteralView() || node->HasArrayLiteralView()) {
-      RestoreParserState(rps);
-      lhs_result = ParseAssignmentPattern(yield);
-      CHECK_AST(lhs_result);
-    } else {
-      SYNTAX_ERROR("invalid Left-Hand-Side expression", lhs_result.value());
+  return ParseLeftHandSideExpression(yield) >>= [&](Handle<ir::Node> lhs) {  
+    // Check whether DestructuringAssignmentTarget is IsValidAssignmentTarget or not.
+    if (!lhs->IsValidLhs()) {
+      if (lhs->HasObjectLiteralView() || lhs->HasArrayLiteralView()) {
+        RestoreParserState(rps);
+        return ParseAssignmentPattern(yield);
+      }
+    
+      SYNTAX_ERROR("invalid Left-Hand-Side expression", lhs);
     }
-  }
-  return lhs_result;
+    return Success(lhs);
+  };
 }
 
 
@@ -396,10 +392,12 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
     }
     expr_result = ParseYieldExpression(in);
     CHECK_AST(expr_result);
+    
   } else {  
     expr_result = ParseConditionalExpression(in, yield);
     if (expr_result) {
       auto expr = expr_result.value();
+      
       if (expr->HasNameView() &&
           cur_token()->Is(TokenKind::kArrowGlyph)) {
         return ParseArrowFunction(in, yield, expr);
@@ -408,6 +406,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
       if (!LanguageModeUtil::IsES6(compiler_option_)) {
         return Failed();
       }
+      
       RestoreParserState(rps);
       expr_result = ParseAssignmentPattern(yield);
       parsed_as_assignment_pattern = true;
@@ -440,11 +439,11 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
     // If left hand side expression is like 'func()',
     // that is invalid expression.
     if (expr_result.value()->IsValidLhs()) {
-      return ParseAssignmentExpression(in, yield).fmap([expr_result, &](rhs_result) {
-        auto result = New<ir::AssignmentView>(type, expr_result.value(), rhs_result.value());
+      return ParseAssignmentExpression(in, yield) >>= [&](Handle<ir::Node> rhs_result) {
+        auto result = New<ir::AssignmentView>(type, expr_result.value(), rhs_result);
         result->SetInformationForNode(expr_result.value());
         return Success(result);
-      });
+      };
     }
     SYNTAX_ERROR("invalid left hand side expression in 'assignment expression'", cur_token());
   } else if (parsed_as_assignment_pattern) {
@@ -458,9 +457,9 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrowFunction(bool in, bool yield, Handle<ir::Node> identifier) {
   LOG_PHASE(ParseArrowFunction);
-  return ParseArrowFunctionParameters(yield, identifier).fmap([&](call_sig) {
-    return ParseConciseBody(in, call_sig.value());
-  })
+  return ParseArrowFunctionParameters(yield, identifier) >>= [&](Handle<ir::Node> call_sig) {
+    return ParseConciseBody(in, call_sig);
+  };
 }
 
 
@@ -477,9 +476,11 @@ ParseResult Parser<UCharInputIterator>::ParseArrowFunctionParameters(bool yield,
     call_sig_result = ParseCallSignature(false, false);
     CHECK_AST(call_sig_result);
   }
+  
   if (cur_token()->type() != TokenKind::kArrowGlyph) {
     SYNTAX_ERROR("'=>' expected", cur_token());
   }
+  
   Next();
   return call_sig_result;
 }
@@ -489,15 +490,18 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseConciseBody(bool in, Handle<ir::Node> call_sig) {
   LOG_PHASE(ParseConciseBody);
   ParseResult concise_body_result;
+  
   if (cur_token()->type() == TokenKind::kLeftBrace) {
     concise_body_result = ParseFunctionBody(false);
   } else {
     concise_body_result = ParseAssignmentExpression(true, false);
   }
-  CHECK_AST(concise_body_result);
-  auto ret = New<ir::ArrowFunctionView>(call_sig, concise_body_result.value());
-  ret->SetInformationForNode(call_sig);
-  return Success(ret);
+  
+  return concise_body_result >>= [&](Handle<ir::Node> concise_body) {
+    auto ret = New<ir::ArrowFunctionView>(call_sig, concise_body);
+    ret->SetInformationForNode(call_sig);
+    return Success(ret);
+  };
 }
 
 
@@ -514,20 +518,22 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool
   
   if (cur_token()->type() == TokenKind::kQuestionMark) {
     Next();
-    auto left_result = ParseAssignmentExpression(in, yield);
-    CHECK_AST(left_result);
     
-    if (cur_token()->type() == TokenKind::kColon) {
-      Next();
-      auto right_result = ParseAssignmentExpression(in, yield);
-      CHECK_AST(right_result);      
-      auto temary = New<ir::TemaryExprView>(logical_or_expr_result.value(), left_result.value(), right_result.value());
-      temary->SetInformationForNode(logical_or_expr_result.value());
-      temary->MarkAsInValidLhs();
-      return Success(temary);
-    }
-    SYNTAX_ERROR("unexpected token in 'temary expression'", cur_token());
+    return ParseAssignmentExpression(in, yield) >>= [&](Handle<ir::Node> left) {
+      
+      if (cur_token()->type() == TokenKind::kColon) {
+        Next();
+        return ParseAssignmentExpression(in, yield) >>= [&](Handle<ir::Node> right) {
+          auto temary = New<ir::TemaryExprView>(logical_or_expr_result.value(), left, right);
+          temary->SetInformationForNode(logical_or_expr_result.value());
+          temary->MarkAsInValidLhs();
+          return Success(temary);
+        };
+      }
+      SYNTAX_ERROR("unexpected token in 'temary expression'", cur_token());
+    };
   }
+  
   return logical_or_expr_result;
 }
 
@@ -701,22 +707,20 @@ ParseResult Parser<UCharInputIterator>::ParseUnaryExpression(bool yield) {
     case TokenKind::kBitNor:
     case TokenKind::kNot: {
       Next();
-      auto unary_expr_result = ParseUnaryExpression(yield);
-      CHECK_AST(unary_expr_result);
-      auto ret = New<ir::UnaryExprView>(type, unary_expr_result.value());
-      ret->SetInformationForNode(unary_expr_result.value());
-      return Success(ret);
+      return ParseUnaryExpression(yield) >>= [&](Handle<ir::Node> unary_expr) {
+        auto ret = New<ir::UnaryExprView>(type, unary_expr);
+        ret->SetInformationForNode(unary_expr);
+        return Success(ret);
+      };
     }
     case TokenKind::kLess: {
-      auto type_arguments_result = ParseTypeArguments();
-      auto unary_expr_result = ParseUnaryExpression(yield);
-      
-      CHECK_AST(unary_expr_result);
-      CHECK_AST(type_arguments_result);
-      
-      Handle<ir::Node> ret = New<ir::CastView>(type_arguments_result.value(), unary_expr_result.value());
-      ret->SetInformationForNode(type_arguments_result.value());
-      return Success(ret);
+      return ParseTypeArguments() >>= [&](Handle<ir::Node> type_arguments) {
+        return ParseUnaryExpression(yield) >>= [&](Handle<ir::Node> unary_expr) {
+          auto ret = New<ir::CastView>(type_arguments, unary_expr);
+          ret->SetInformationForNode(type_arguments);
+          return Success(ret);
+        };
+      };
     }
     default:
       return ParsePostfixExpression(yield);
@@ -732,16 +736,16 @@ ParseResult Parser<UCharInputIterator>::ParseUnaryExpression(bool yield) {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParsePostfixExpression(bool yield) {
   LOG_PHASE(ParsePostfixExpression);
-  auto lhs_expr_result = ParseLeftHandSideExpression(yield);
-  CHECK_AST(lhs_expr_result);
-  if (cur_token()->type() == TokenKind::kIncrement ||
-      cur_token()->type() == TokenKind::kDecrement) {
-    auto ret = New<ir::PostfixView>(lhs_expr_result.value(), cur_token()->type());
-    ret->SetInformationForNode(lhs_expr_result.value());
-    Next();
-    return Success(ret);
-  }
-  return lhs_expr_result;
+  return ParseLeftHandSideExpression(yield) >>= [&](Handle<ir::Node> lhs_expr) {
+    if (cur_token()->Is(TokenKind::kIncrement) ||
+        cur_token()->Is(TokenKind::kDecrement)) {
+      auto ret = New<ir::PostfixView>(lhs_expr, cur_token()->type());
+      ret->SetInformationForNode(lhs_expr);
+      Next();
+      return Success(ret);
+    }
+    return Success(lhs_expr);
+  };
 }
 
 
@@ -830,12 +834,12 @@ ParseResult Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
       }
     }
   } else if (cur_token()->type() == TokenKind::kTemplateLiteral) {
-    auto template_literal_result = ParseTemplateLiteral();
-    CHECK_AST(template_literal_result);
-    Handle<ir::Node> call = New<ir::CallView>(target.value(), template_literal_result.value());
-    call->SetInformationForNode(target.value());
-    call->MarkAsInValidLhs();
-    return Success(call);
+    return ParseTemplateLiteral() >>= [&](Handle<ir::Node> template_literal) {
+      Handle<ir::Node> call = New<ir::CallView>(target.value(), template_literal);
+      call->SetInformationForNode(target.value());
+      call->MarkAsInValidLhs();
+      return Success(call);
+    };
   }
   return target;
 }

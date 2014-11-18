@@ -63,7 +63,7 @@ TEST_F(NodeTest, StatementView_expr_test) {
 
 TEST_F(NodeTest, StatementView_ToStatementView_test) {
   yatsc::Handle<yatsc::ir::Node> statement = irfactory.New<yatsc::ir::StatementView>();
-  ASSERT_TRUE(statement->ToStatementView());
+  ASSERT_TRUE(statement->ToStatementView() != nullptr);
 }
 
 
@@ -115,21 +115,21 @@ TEST_F(NodeTest, VariableDeclView_Remove_test) {
 
 TEST_F(NodeTest, VariableDeclView_ToVariableDeclView_test) {
   yatsc::Handle<yatsc::ir::Node> var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
-  ASSERT_TRUE(var_decl->ToVariableDeclView());
+  ASSERT_TRUE(var_decl->ToVariableDeclView() != nullptr);
 }
 
 
 // TrueView node
 TEST_F(NodeTest, TrueView_ToTrueView_test) {
   yatsc::Handle<yatsc::ir::Node> t = irfactory.New<yatsc::ir::TrueView>();
-  ASSERT_TRUE(t->ToTrueView());
+  ASSERT_TRUE(t->ToTrueView() != nullptr);
 }
 
 
 // FalseView node
 TEST_F(NodeTest, FalseView_ToFalseView_test) {
   yatsc::Handle<yatsc::ir::Node> f = irfactory.New<yatsc::ir::FalseView>();
-  ASSERT_TRUE(f->ToFalseView());
+  ASSERT_TRUE(f->ToFalseView() != nullptr);
 }
 
 
@@ -162,7 +162,7 @@ TEST_F(NodeTest, ModuleDeclView_set_body_test) {
 
 TEST_F(NodeTest, ModuleDeclView_ToModuleDeclView_test) {
   yatsc::Handle<yatsc::ir::Node> md = irfactory.New<yatsc::ir::ModuleDeclView>();
-  ASSERT_TRUE(md->ToModuleDeclView());
+  ASSERT_TRUE(md->ToModuleDeclView() != nullptr);
 }
 
 
@@ -190,7 +190,7 @@ TEST_F(NodeTest, ImportView_toImportView_test) {
   yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
   yatsc::Handle<yatsc::ir::Node> i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
 
-  ASSERT_TRUE(i->ToImportView());
+  ASSERT_TRUE(i->ToImportView() != nullptr);
 }
 
 

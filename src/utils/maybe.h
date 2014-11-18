@@ -32,6 +32,7 @@ class Maybe {
       : value_(target),
         valid_(valid) {}
 
+  
   YATSC_INLINE Maybe()
       : valid_(false) {}
 
@@ -103,9 +104,24 @@ class Maybe {
   template <typename Result, typename Fn>
   YATSC_INLINE Maybe<Result> fmap(Fn fn) {
     if (valid_) {
-      return Maybe<Result>(fn(value_));
+      return fn(value_);
     }
     return Maybe<Result>();
+  }
+
+
+  template <typename Fn>
+  YATSC_INLINE Maybe<T> fmap(Fn fn) {
+    if (valid_) {
+      return fn(value_);
+    }
+    return Maybe<T>();
+  }
+
+
+  template <typename Fn>
+  YATSC_INLINE Maybe<T> operator >>= (Fn fn) {
+    return fmap(fn);
   }
   
 
