@@ -1133,7 +1133,7 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
           return parse_result = node;
         }
       }
-      SYNTAX_ERROR_AND("')' expected", cur_token(), return parse_result = ParseResult());
+      SYNTAX_ERROR_AND("')' expected", cur_token(), return parse_result = Failed());
     }
     case TokenKind::kRegularExpr: {
       return parse_result = ParseRegularExpression();

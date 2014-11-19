@@ -90,7 +90,7 @@ void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC
 
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEPT {
-  if (token == TokenKind::kLineTerminator) {
+  if (kind == TokenKind::kLineTerminator) {
     while (!cur_token()->Is(TokenKind::kLineTerminator) &&
            !cur_token()->Is(TokenKind::kComma) &&
            !cur_token()->Is(TokenKind::kEof)) {
@@ -105,7 +105,7 @@ void Parser<UCharInputIterator>::SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEP
   } else {
     while (!cur_token()->Is(TokenKind::kEof) &&
            !cur_token()->Is(TokenKind::kComma) &&
-           !cur_token()->Is(token)) {
+           !cur_token()->Is(kind)) {
       Next();
     }
   }

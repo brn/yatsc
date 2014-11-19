@@ -42,6 +42,27 @@
       },
     },
     {
+      'target_name': 'maybe_test',
+      'type': 'executable',
+      'product_name': 'MaybeTest',
+      'include_dirs' : ['./lib', '/usr/local/include'],
+      'defines' : ['GTEST_HAS_RTTI=0', 'UNIT_TEST=1'],
+      'sources': [
+        './src/utils/utils.cc',
+        './src/utils/os.cc',
+        './lib/gtest/gtest-all.cc',
+        './test/utils/maybe-test.cc',
+        './test/test-main.cc',
+      ],
+      'xcode_settings': {
+        'MACOSX_DEPLOYMENT_TARGET': '10.7',
+        'OTHER_CFLAGS': [
+          "-std=c++11",
+          "-stdlib=libc++"
+        ],
+      },
+    },
+    {
       'target_name': 'aligned_heap_allocator_test',
       'type': 'executable',
       'product_name': 'AlignedHeapAllocatorTest',

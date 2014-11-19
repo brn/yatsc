@@ -23,97 +23,299 @@
 #ifndef YATSC_UTILS_MAYBE_H
 #define YATSC_UTILS_MAYBE_H
 
+#include <type_traits>
+#include "./utils.h"
+
 namespace yatsc {
 
 template <typename T>
-class Maybe {
+class Result {
  public:
-  YATSC_INLINE Maybe(T target, bool valid)
-      : value_(target),
-        valid_(valid) {}
+  typedef typename std::remove_reference<typename std::remove_const<T>::type>::type Type;
+
+  typedef const Type ConstType;
+  
+  YATSC_INLINE explicit Result(Type value)
+      : valid_(false) {
+    if (value_(value) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  YATSC_INLINE explicit Result(Type&& value)
+      : valid_(false) {
+    if (value_(std::move(value)) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  Result():
+      valid_(false) {}
+
+
+  YATSC_INLINE Result(const Result<T>& result)
+      : valid_(false) {
+    if (!result.exists()) {return;}
+    if (value_(result.value()) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  YATSC_INLINE Result(Result<T>&& result)
+      : valid_(false) {
+    if (!result.exists()) {return;}
+    if (value_(std::move(result.value())) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result(const Result<U>& result)
+      : valid_(false) {
+    if (!result.exists()) {return;}
+    if (value_(result.value()) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result(Result<U>&& result)
+      : valid_(false) {
+    if (!result.exists()) {return;}
+    if (value_(std::move(result.value())) != nullptr) {
+      valid_ = true;
+    }
+  }
+
+
+  YATSC_INLINE Result& operator = (const Result<T>& result) {
+    if (!result.exists()) {return; *this;}
+    valid_ = false;
+    if (value_(result.value()) != nullptr) {
+      valid_ = true;
+    }
+    return *this;
+  }
+
+
+  YATSC_INLINE Result& operator = (Result<T>&& result) {
+    if (!result.exists()) {return; *this;}
+    valid_ = false;
+    if (value_(std::move(result.value())) != nullptr) {
+      valid_ = true;
+    }
+    return *this;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result& operator = (const Result<U>& result) {
+    if (!result.exists()) {return; *this;}
+    valid_ = false;
+    if (value_(result.value()) != nullptr) {
+      valid_ = true;
+    }
+    return *this;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result& operator = (Result<U>&& result) {
+    if (!result.exists()) {return; *this;}
+    valid_ = false;
+    if (value_(std::move(result.value())) != nullptr) {
+      valid_ = true;
+    }
+    return *this;
+  }
+
+
+  YATSC_GETTER(Type&, value, *value_);
+
+
+  YATSC_CONST_GETTER(ConstType&, value, *value_);
+
+
+  YATSC_CONST_GETTER(bool, exists, valid_);
+  
+  
+ private:
+  bool valid_;
+  LazyInitializer<Type> value_;
+};
+
+
+
+template <typename T>
+class Result<T*> {
+ public:
+  typedef T* Type;
+
+  typedef const typename std::remove_const<T>::type* ConstType;
+  
+  YATSC_INLINE explicit Result(T* ptr)
+      : ptr_(ptr) {}
+
+
+  YATSC_INLINE Result()
+      : ptr_(nullptr) {}
+
+
+  YATSC_INLINE Result(const Result<T>& result)
+      : ptr_(result.value()) {}
+
+
+  YATSC_INLINE Result(Result<T>&& result)
+      : ptr_(result.value()) {}
+
+
+  template <typename U>
+  YATSC_INLINE Result(const Result<U>& result)
+      : ptr_(result.value()) {}
+
+
+  template <typename U>
+  YATSC_INLINE Result(Result<U>&& result)
+      : ptr_(result.value()) {}
+
+
+  YATSC_INLINE Result& operator = (const Result<T>& result) {
+    ptr_ = result.value();
+    return *this;
+  }
+
+
+  YATSC_INLINE Result& operator = (Result<T>&& result) {
+    ptr_ = result.value();
+    return *this;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result& operator = (const Result<U>& result) {
+    ptr_ = result.value();
+    return *this;
+  }
+
+
+  template <typename U>
+  YATSC_INLINE Result& operator = (Result<U>&& result) {
+    ptr_ = result.value();
+    return *this;
+  }
+
+
+  YATSC_GETTER(T*, value, ptr_);
+
+
+  YATSC_CONST_GETTER(const T*, value, ptr_);
+
+
+  YATSC_CONST_GETTER(bool, exists, ptr_ != nullptr);
+  
+  
+ private:
+  T* ptr_;
+};
+
+
+
+template <typename T>
+class Maybe {
+  template <typename Other>
+  friend class Maybe;
+ public:
+  explicit YATSC_INLINE Maybe(T target) {
+    result_(target);
+  }
 
   
-  YATSC_INLINE Maybe()
-      : valid_(false) {}
+  YATSC_INLINE Maybe() {
+    result_();
+  }
 
 
-  YATSC_INLINE Maybe(const Maybe& maybe)
-      : value_(maybe.value_),
-        valid_(maybe.valid_) {}
-
-
-  template <typename Other>
-  YATSC_INLINE Maybe(const Maybe<Other>& maybe)
-      : value_(maybe.value_),
-        valid_(maybe.valid_) {}
-
-
-  YATSC_INLINE Maybe(Maybe&& maybe)
-      : value_(std::move(maybe.value_)),
-        valid_(maybe.valid_) {}
+  YATSC_INLINE Maybe(const Maybe& maybe) {
+    result_(maybe.result());
+  }
 
 
   template <typename Other>
-  YATSC_INLINE Maybe(Maybe<Other>&& maybe)
-      : value_(std::move(maybe.value_)),
-        valid_(maybe.valid_) {}
+  YATSC_INLINE Maybe(const Maybe<Other>& maybe) {
+    result_(maybe.result());
+  }
+
+
+  YATSC_INLINE Maybe(Maybe&& maybe) {
+    result_(std::move(maybe.result()));
+  }
+
+
+  template <typename Other>
+  YATSC_INLINE Maybe(Maybe<Other>&& maybe) {
+    result_(std::move(maybe.result()));
+  }
 
 
   YATSC_INLINE Maybe<T>& operator = (const Maybe& maybe) {
-    value_ = maybe.value_;
-    valid_ = maybe.valid_;
+    result_(maybe.result());
     return *this;
   }
 
 
   template <typename Other>
   YATSC_INLINE Maybe<T>& operator = (const Maybe<Other>& maybe) {
-    value_ = maybe.value_;
-    valid_ = maybe.valid_;
+    result_(maybe.result());
     return *this;
   }
 
 
   YATSC_INLINE Maybe<T>& operator = (Maybe&& maybe) {
-    value_ = std::move(maybe.value_);
-    valid_ = maybe.valid_;
+    result_(maybe.result());
     return *this;
   }
 
 
   template <typename Other>
   YATSC_INLINE Maybe<T>& operator = (Maybe<Other>&& maybe) {
-    value_ = std::move(maybe.value_);
-    valid_ = maybe.valid_;
+    result_(maybe.result());
     return *this;
   }
 
 
-  YATSC_INLINE operator bool() YATSC_NO_SE {return valid_;}
+  YATSC_INLINE typename Result<T>::Type value() {return result_->value();}
+
+
+  YATSC_INLINE typename Result<T>::ConstType value() const {return result_->value();}
+
+
+  YATSC_INLINE operator bool() YATSC_NO_SE {return just();}
+
+
+  YATSC_INLINE bool just() YATSC_NO_SE {return result_->exists();}
 
   
-  YATSC_INLINE T value() {return value_;}
+  YATSC_INLINE bool nothing() YATSC_NO_SE {return !just();}
 
 
-  YATSC_INLINE bool just() YATSC_NO_SE {return valid_;}
-
-  
-  YATSC_INLINE bool nothing() YATSC_NO_SE {return !valid_;}
-
-
-  template <typename Result, typename Fn>
-  YATSC_INLINE Maybe<Result> fmap(Fn fn) {
-    if (valid_) {
-      return fn(value_);
+  template <typename ResultType, typename Fn>
+  YATSC_INLINE Maybe<ResultType> fmap(Fn fn) {
+    if (just()) {
+      return fn(value());
     }
-    return Maybe<Result>();
+    return Maybe<ResultType>();
   }
 
 
   template <typename Fn>
   YATSC_INLINE Maybe<T> fmap(Fn fn) {
-    if (valid_) {
-      return fn(value_);
+    if (just()) {
+      return fn(value());
     }
     return Maybe<T>();
   }
@@ -126,26 +328,29 @@ class Maybe {
   
 
  private:
-  T value_;
-  bool valid_;
+  YATSC_INLINE const Result<T>& result() const {
+    return *result_;
+  }
+
+
+  YATSC_INLINE Result<T>& result() {
+    return *result_;
+  }
+  
+  
+  LazyInitializer<Result<T>> result_;
 };
 
 
 template <typename T>
 Maybe<T> Just(T t) {
-  return Maybe<T>(t, true);
+  return Maybe<T>(t);
 }
 
 
 template <typename T>
 Maybe<T> Nothing() {
   return Maybe<T>();
-}
-
-
-template <typename T>
-Maybe<T> Nothing(T value) {
-  return Maybe<T>(value, false);
 }
 
 }

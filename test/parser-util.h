@@ -41,7 +41,7 @@ bool print_stack_trace = true;
   }
 
 #define WRAP_PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num = __LINE__; \
-    YatscParserTest(name, [&](yatsc::Parser<yatsc::UCharBuffer::iterator>* p){return yatsc::ParseResult(p->method_expr, true);}, type, code, expected_str, error, line_num); \
+    YatscParserTest(name, [&](yatsc::Parser<yatsc::UCharBuffer::iterator>* p){return yatsc::Just(p->method_expr);}, type, code, expected_str, error, line_num); \
   }
 
 
