@@ -35,6 +35,7 @@
 #include "./unicode-util.h"
 
 bool print_stack_trace = true;
+bool compare_node = true;
 
 #define PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num = __LINE__; \
     YatscParserTest(name, [&](yatsc::Parser<yatsc::UCharBuffer::iterator>* p){return p->method_expr;}, type, code, expected_str, error, line_num); \
@@ -70,7 +71,7 @@ void YatscParserTest(const char* name,
   auto result = fn(&parser);
   
   if (!error) {
-    if (!module_info->HasError() && result.value()) {
+    if (!module_info->HasError() && result.value() && compare_node) {
       yatsc::testing::CompareNode(line_num, result.value()->ToStringTree(), yatsc::String(expected_str));
     } else {
       if (print_stack_trace) {
@@ -82,4 +83,5 @@ void YatscParserTest(const char* name,
     ASSERT_TRUE(module_info->error_reporter()->HasError());
   }
   print_stack_trace = true;
+  compare_node = true;
 }

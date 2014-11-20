@@ -54,7 +54,7 @@ ParseResult Parser<UCharInputIterator>::ParseTypeParameters() {
       CHECK_AST(identifier_result);
       if (cur_token()->type() == TokenKind::kExtends) {
         Next();
-        auto ref_type_result = ParseReferencedType();
+        auto ref_type_result = ParseTypeExpression();
         CHECK_AST(ref_type_result);
         Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(identifier_result.value(),
                                                                          ref_type_result.value());

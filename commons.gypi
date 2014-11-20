@@ -9,6 +9,7 @@
   },
 
   'target_defaults': {
+    'defines': ["PRODUCT_DIR=\"<(current_dir)\""],
     'default_configuration': 'Debug',
     'msbuild_toolset': 'v120',  # Visual Studio 2013 (v120)
     'configurations': {

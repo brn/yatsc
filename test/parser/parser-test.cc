@@ -28,6 +28,8 @@
 
 #define ENTIRE_PARSER_TEST(name, type, expected_str)                    \
   yatsc::String code = yatsc::testing::ReadFile(name);                  \
+  compare_node = false;                                                 \
+  print_stack_trace = false;                                            \
   WRAP_PARSER_TEST(name, Parse(), type, code.c_str(), expected_str, false)
 
 #define ENTIRE_PARSER_THROW_TEST(name, type)                      \
@@ -45,8 +47,30 @@
   [&]{ENTIRE_PARSER_THROW_TEST(name, yatsc::LanguageMode::ES6);}()
 
 
+yatsc::Vector<yatsc::String> Split(const yatsc::String &s, char delim) {
+  yatsc::Vector<yatsc::String> elems;
+  yatsc::StringStream ss(s);
+  yatsc::String item;
+  while (getline(ss, item, delim)) {
+    if (!item.empty()) {
+      elems.push_back(item);
+    }
+  }
+  return std::move(elems);
+}
+
+
+void ParseTestCases() {
+  yatsc::String filelist = yatsc::testing::ReadFile("test/parser/parser-test-case/filelist");
+  auto ret = Split(filelist, '\n');
+  for (auto i: ret) {
+    printf("Parse => %s\n", i.c_str());
+    ENTIRE_PARSER_TEST_ALL(i.c_str(), "");
+  }
+}
+
+
 TEST(ParserTest, Parse) {
-  //print_stack_trace = false;
   // yatsc::String code1 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/core.ts");
   // ENTIRE_PARSER_TEST_ALL(code1.c_str(), "");
   // yatsc::String code2 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/parser.ts");
@@ -56,5 +80,7 @@ TEST(ParserTest, Parse) {
   //yatsc::String code4 = yatsc::testing::ReadFile("test/microsoft/typescript/src/compiler/diagnosticInformationMap.generated.ts");
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts", "");
   // ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts", "");
-  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/src/compiler/checker.ts", "");
+  //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/src/compiler/checker.ts", "");
+  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/compiler/ClassDeclaration14.ts", "");
+  //ParseTestCases();
 }

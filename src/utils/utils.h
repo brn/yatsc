@@ -261,15 +261,25 @@ YATSC_INLINE size_t Strlen(const T* str) {
 template <typename T>
 class LazyInitializer {
  public:
-  LazyInitializer() = default;
+  LazyInitializer()
+      : initialized_(false) {}
+
+  
   ~LazyInitializer() {
-    reinterpret_cast<T*>(heap_)->~T();
+    if (initialized_) {
+      reinterpret_cast<T*>(heap_)->~T();
+    }
   }
 
   
   template <typename ... Args>
   T* operator()(Args ... args) {
-    return new(heap_) T(args...);
+    initialized_ = false;
+    auto ret = new(heap_) T(args...);
+    if (ret != nullptr) {
+      initialized_ = true;
+    }
+    return ret;
   }
 
 
@@ -333,9 +343,13 @@ class LazyInitializer {
   const T& operator << (U u) const {
     return *(reinterpret_cast<T*>(heap_)) << u;
   }
+
+
+  YATSC_CONST_GETTER(bool, initialized, initialized_);
   
  private:
   Byte heap_[sizeof(T)];
+  bool initialized_;
 };
 
 

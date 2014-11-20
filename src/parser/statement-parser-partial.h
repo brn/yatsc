@@ -1355,23 +1355,25 @@ ParseResult Parser<UCharInputIterator>::ParseClassBody() {
   LOG_PHASE(ParseClassBody);
   auto fields = New<ir::ClassFieldListView>();
   bool success = true;
-  while (1) {
-    if (cur_token()->type() != TokenKind::kRightBrace) {
-      auto class_element_result = ParseClassElement();
-      SKIP_TOKEN_OR(class_element_result, success, TokenKind::kLineTerminator) {
-        fields->InsertLast(class_element_result.value());
-      }
-      if (IsLineTermination()) {
-        ConsumeLineTerminator();
-      } else if (cur_token()->type() != TokenKind::kRightBrace &&
-                 prev_token()->type() != TokenKind::kRightBrace) {
-        SYNTAX_ERROR("';' expected", prev_token());
-      }
-    } else {
-      Next();
-      return Success(fields);
+  
+  while (!cur_token()->Is(TokenKind::kRightBrace)) {
+    auto class_element_result = ParseClassElement();
+    SKIP_TOKEN_OR(class_element_result, success, TokenKind::kLineTerminator) {
+      fields->InsertLast(class_element_result.value());
+    }
+
+    if (cur_token()->Is(TokenKind::kEof)) {
+      SYNTAX_ERROR("unexpected end of input.", cur_token());
+    } else if (IsLineTermination()) {
+      ConsumeLineTerminator();
+    } else if (!cur_token()->Is(TokenKind::kRightBrace) &&
+               !prev_token()->Is(TokenKind::kRightBrace)) {
+      SYNTAX_ERROR("';' expected", prev_token());
     }
   }
+  
+  Next();
+  return Success(fields);
 }
 
 
@@ -1553,7 +1555,11 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir::Nod
         return constructor_overload_result;
       }
     } else {
-      SYNTAX_ERROR("incomplete constructor definition", cur_token());
+      if (overloads->size() > 0) {
+        SYNTAX_ERROR("incomplete constructor definition", overloads->last_child());
+      } else {
+        SYNTAX_ERROR("incomplete constructor definition", prev_token());
+      }
     }
   }
 }

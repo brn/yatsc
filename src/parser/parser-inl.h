@@ -27,7 +27,7 @@ namespace yatsc {
 // Return next token and replace previous token and current token.
 template <typename UCharInputIterator>
 Token* Parser<UCharInputIterator>::Next() {
-  if (current_token_info_ != nullptr) {
+  if (current_token_info_ != nullptr && !current_token_info_->Is(TokenKind::kEof)) {
     prev_token_info_ = *current_token_info_;
   }
   return current_token_info_ = scanner_->Scan();
@@ -71,11 +71,11 @@ template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT {
   if (token == TokenKind::kLineTerminator) {
     while (!cur_token()->Is(TokenKind::kLineTerminator) &&
-           !cur_token()->Is(TokenKind::kEof)) {
-      if (cur_token()->has_line_break_before_next() ||
-          cur_token()->Is(TokenKind::kRightBrace)) {
+           !cur_token()->Is(TokenKind::kEof) &&
+           !cur_token()->Is(TokenKind::kRightBrace)) {
+      if (cur_token()->has_line_break_before_next()) {
         Next();
-        return;
+        break;
       }
       Next();
     }

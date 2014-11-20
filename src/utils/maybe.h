@@ -28,124 +28,127 @@
 
 namespace yatsc {
 
+// Value container for Maybe.
+// value requirements:
+//   T must be copy constructible.
+//   T must be move constructible.
+//
 template <typename T>
 class Result {
  public:
+  // Raw type of T.
   typedef typename std::remove_reference<typename std::remove_const<T>::type>::type Type;
 
+  // Raw const type of T.
   typedef const Type ConstType;
+
+
+  // Concept check.
+  static_assert(std::is_move_constructible<T>::value, "The type T of Result<T> must be move constructible.");
+  static_assert(std::is_copy_constructible<T>::value, "The type T of Result<T> must be copy constructible.");
   
-  YATSC_INLINE explicit Result(Type value)
-      : valid_(false) {
-    if (value_(value) != nullptr) {
-      valid_ = true;
-    }
+
+  // Just constructor.
+  YATSC_INLINE explicit Result(Type value) {
+    value_(value);
   }
 
 
-  YATSC_INLINE explicit Result(Type&& value)
-      : valid_(false) {
-    if (value_(std::move(value)) != nullptr) {
-      valid_ = true;
-    }
+  // Just(move) constructor
+  YATSC_INLINE explicit Result(Type&& value) {
+    value_(std::move(value));
   }
 
 
-  Result():
-      valid_(false) {}
+  // Nothing constructor.
+  Result() = default;
 
 
-  YATSC_INLINE Result(const Result<T>& result)
-      : valid_(false) {
+  // Copy constructor.
+  YATSC_INLINE Result(const Result<T>& result) {
     if (!result.exists()) {return;}
-    if (value_(result.value()) != nullptr) {
-      valid_ = true;
-    }
+    value_(result.value());
   }
 
 
-  YATSC_INLINE Result(Result<T>&& result)
-      : valid_(false) {
+  // Move constructor.
+  YATSC_INLINE Result(Result<T>&& result) {
     if (!result.exists()) {return;}
-    if (value_(std::move(result.value())) != nullptr) {
-      valid_ = true;
-    }
+    value_(std::move(result.value()));
   }
 
 
+  // Copy constructor for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result(const Result<U>& result)
-      : valid_(false) {
+  YATSC_INLINE Result(const Result<U>& result) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return;}
-    if (value_(result.value()) != nullptr) {
-      valid_ = true;
-    }
+    value_(result.value());
   }
 
 
+  // Move constructor for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result(Result<U>&& result)
-      : valid_(false) {
+  YATSC_INLINE Result(Result<U>&& result) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return;}
-    if (value_(std::move(result.value())) != nullptr) {
-      valid_ = true;
-    }
+    value_(std::move(result.value()));
   }
 
 
+  // Copy assginment operator.
   YATSC_INLINE Result& operator = (const Result<T>& result) {
     if (!result.exists()) {return; *this;}
-    valid_ = false;
-    if (value_(result.value()) != nullptr) {
-      valid_ = true;
-    }
+    value_(result.value());
     return *this;
   }
 
 
+  // Move assginment operator.
   YATSC_INLINE Result& operator = (Result<T>&& result) {
     if (!result.exists()) {return; *this;}
-    valid_ = false;
-    if (value_(std::move(result.value())) != nullptr) {
-      valid_ = true;
-    }
+    value_(std::move(result.value()));
     return *this;
   }
 
 
+  // Copy assginment operator for U that is compatible type of T.
   template <typename U>
   YATSC_INLINE Result& operator = (const Result<U>& result) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return; *this;}
-    valid_ = false;
-    if (value_(result.value()) != nullptr) {
-      valid_ = true;
-    }
+    value_(result.value());
     return *this;
   }
 
 
+  // Move assginment operator for U that is compatible type of T.
   template <typename U>
   YATSC_INLINE Result& operator = (Result<U>&& result) {
+    static_assert(std::is_base_of<T, U>::value,
+                  "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return; *this;}
-    valid_ = false;
-    if (value_(std::move(result.value())) != nullptr) {
-      valid_ = true;
-    }
+    value_(std::move(result.value()));
     return *this;
   }
 
 
+  // Getter for the value_.
   YATSC_GETTER(Type&, value, *value_);
 
 
+  // Const getter for the value_.
   YATSC_CONST_GETTER(ConstType&, value, *value_);
 
 
-  YATSC_CONST_GETTER(bool, exists, valid_);
+  // Return Result<T> is Just or not.
+  YATSC_CONST_GETTER(bool, exists, value_.initialized());
   
   
  private:
-  bool valid_;
   LazyInitializer<Type> value_;
 };
 
@@ -301,6 +304,38 @@ class Maybe {
 
   
   YATSC_INLINE bool nothing() YATSC_NO_SE {return !just();}
+
+
+  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type&& alternate) {
+    if (!result_->exists()) {
+      return std::move(alternate);
+    }
+    return value();
+  }
+
+
+  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type&& alternate) const {
+    if (!result_->exists()) {
+      return std::move(alternate);
+    }
+    return value();
+  }
+  
+
+  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type& alternate) {
+    if (!result_->exists()) {
+      return alternate;
+    }
+    return value();
+  }
+
+
+  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type& alternate) const {
+    if (!result_->exists()) {
+      return alternate;
+    }
+    return value();
+  }
 
 
   template <typename ResultType, typename Fn>

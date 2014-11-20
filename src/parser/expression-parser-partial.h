@@ -412,10 +412,12 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
       parsed_as_assignment_pattern = true;
     }
   }
+
+  CHECK_AST(expr_result);
   
   // Expression is not an arrow_function.
-  const Token *token_info = cur_token();
-  TokenKind type = token_info->type();
+  const Token *token = cur_token();
+  auto type = token->type();
 
   // Check assignment operators.
   if (IsAssignmentOp(type)) {
@@ -784,6 +786,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   LOG_PHASE(ParseCallExpression);
   ParseResult target;
+  
   if (cur_token()->type() == TokenKind::kSuper) {
     target = Success(New<ir::SuperView>());
     target.value()->SetInformationForNode(cur_token());
@@ -803,6 +806,7 @@ ParseResult Parser<UCharInputIterator>::ParseCallExpression(bool yield) {
   
   if (cur_token()->type() == TokenKind::kLeftParen ||
       cur_token()->type() == TokenKind::kLess) {
+    
     auto arguments_result = ParseArguments(yield);
     if (!arguments_result) {return target;}
     target.value()->MarkAsInValidLhs();
@@ -849,9 +853,9 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::BuildArguments(ParseResult type_arguments_result,
                                                        Handle<ir::Node> args,
                                                        bool) {
-  auto arguments = New<ir::ArgumentsView>(type_arguments_result.value(), args);
+  auto arguments = New<ir::ArgumentsView>(type_arguments_result.or(ir::Node::Null()), args);
   if (type_arguments_result) {
-    arguments->SetInformationForNode(type_arguments_result.value());
+    arguments->SetInformationForNode(type_arguments_result.or(ir::Node::Null()));
   } else {
     arguments->SetInformationForNode(args);
   }
@@ -909,6 +913,7 @@ ParseResult Parser<UCharInputIterator>::ParseArguments(bool yield) {
           has_rest = true;
         }
       } else {
+        
         auto assignment_expr_result = ParseAssignmentExpression(true, yield);
         
         SKIP_TOKEN_OR(assignment_expr_result, success, TokenKind::kRightParen) {
@@ -939,11 +944,11 @@ ParseResult Parser<UCharInputIterator>::ParseNewExpression(bool yield) {
   RecordedParserState rps = parser_state();
   Next();
   if (cur_token()->type() == TokenKind::kNew) {
-    auto new_expr_result = ParseNewExpression(yield);
-    CHECK_AST(new_expr_result);
-    auto ret = New<ir::NewCallView>(new_expr_result.value(), ir::Node::Null());
-    ret->SetInformationForNode(&(rps.current()));
-    return Success(ret);
+    return ParseNewExpression(yield) >>= [&](Handle<ir::Node> new_expr) {
+      auto ret = New<ir::NewCallView>(new_expr, ir::Node::Null());
+      ret->SetInformationForNode(&(rps.current()));
+      return Success(ret);
+    };
   }
   RestoreParserState(rps);
   return ParseMemberExpression(yield);
@@ -983,14 +988,17 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
     // If paren exists, continue parsing.
     if (cur_token()->type() == TokenKind::kLeftParen ||
         cur_token()->type() == TokenKind::kLess) {
+
       auto arguments_result = ParseArguments(yield);
       if (!arguments_result) {
         return member;
       }
+      
       auto ret = New<ir::NewCallView>(member.value(), arguments_result.value());
       ret->SetInformationForNode(member.value());
       ret->MarkAsInValidLhs();
       return ParseGetPropOrElem(ret, yield, false, false);
+      
     } else {
       // Parens are not exists.
       // Immediate return.
@@ -1003,9 +1011,9 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
     super->SetInformationForNode(token_info);
     return ParseGetPropOrElem(super, yield, false, false);
   } else {
-    auto primary_expr_result = ParsePrimaryExpression(yield);
-    CHECK_AST(primary_expr_result);
-    return ParseGetPropOrElem(primary_expr_result.value(), yield, false, false);
+    return ParsePrimaryExpression(yield) >>= [&](Handle<ir::Node> primary_expr) {
+      return ParseGetPropOrElem(primary_expr, yield, false, false);
+    };
   }
 }
 
@@ -1210,29 +1218,29 @@ ParseResult Parser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
   LOG_PHASE(ParseArrayComprehension);
   Token info = *cur_token();
   Next();
-  auto comprehension_result = ParseComprehension(false, yield);
-  CHECK_AST(comprehension_result);
-  if (cur_token()->type() == TokenKind::kRightBracket) {
-    Next();
-    auto arr = New<ir::ArrayLiteralView>();
-    arr->SetInformationForNode(&info);
-    arr->InsertLast(comprehension_result.value());
-    return Success(arr);
-  }
-  SYNTAX_ERROR("']' expected", cur_token());
+  return ParseComprehension(false, yield) >>= [&](Handle<ir::Node> comprehension) {
+    if (cur_token()->type() == TokenKind::kRightBracket) {
+      Next();
+      auto arr = New<ir::ArrayLiteralView>();
+      arr->SetInformationForNode(&info);
+      arr->InsertLast(comprehension);
+      return Success(arr);
+    }
+    SYNTAX_ERROR("']' expected", cur_token());
+  };
 }
 
 
 template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseComprehension(bool generator, bool yield) {
   LOG_PHASE(ParseComprehension);
-  auto comp_for_result = ParseComprehensionFor(yield);
-  auto comp_tail_result = ParseComprehensionTail(yield);
-  CHECK_AST(comp_for_result);
-  CHECK_AST(comp_tail_result);
-  auto expr = New<ir::ComprehensionExprView>(generator, comp_for_result.value(), comp_tail_result.value());
-  expr->SetInformationForNode(comp_for_result.value());
-  return Success(expr);
+  return ParseComprehensionFor(yield) >>= [&](Handle<ir::Node> comp_for) {
+    return ParseComprehensionTail(yield) >>= [&](Handle<ir::Node> comp_tail) {
+      auto expr = New<ir::ComprehensionExprView>(generator, comp_for, comp_tail);
+      expr->SetInformationForNode(comp_for);
+      return Success(expr);
+    };
+  };
 }
 
 
@@ -1241,24 +1249,25 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionTail(bool yield) {
   LOG_PHASE(ParseComprehensionTail);
   if (cur_token()->type() == TokenKind::kFor) {
     
-    auto comp_for_result = ParseComprehensionFor(yield);
-    CHECK_AST(comp_for_result);
-    Handle<ir::ForStatementView> stmt(comp_for_result.value());
-    auto comp_tail_result = ParseComprehensionTail(yield);
-    CHECK_AST(comp_tail_result);
-    stmt->set_body(comp_tail_result.value());
-    return Success(stmt);
+    return ParseComprehensionFor(yield) >>= [&](Handle<ir::Node> comp_for) {
+      Handle<ir::ForStatementView> stmt(comp_for);
+      return ParseComprehensionTail(yield) >>= [&](Handle<ir::Node> comp_tail) {
+        stmt->set_body(comp_tail);
+        return Success(stmt);
+      };
+    };
     
   } else if (cur_token()->type() == TokenKind::kIf) {
     
-    auto comp_if_result = ParseComprehensionIf(yield);
-    CHECK_AST(comp_if_result);
-    Handle<ir::IfStatementView> stmt(comp_if_result.value());
-    auto comp_tail_result = ParseComprehensionTail(yield);
-    CHECK_AST(comp_tail_result);
-    stmt->set_then_block(comp_tail_result.value());
-    return Success(stmt);
+    return ParseComprehensionIf(yield) >>= [&](Handle<ir::Node> comp_if) {
+      Handle<ir::IfStatementView> stmt(comp_if);
+      return ParseComprehensionTail(yield) >>= [&](Handle<ir::Node> comp_tail) {
+        stmt->set_then_block(comp_tail);
+        return Success(stmt);
+      };
+    };
   }
+  
   return ParseAssignmentExpression(true, yield);
 }
 
@@ -1271,24 +1280,28 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
   Next();
   if (cur_token()->type() == TokenKind::kLeftParen) {
     Next();
-    auto for_bindig_result = ParseForBinding(yield);
-    CHECK_AST(for_bindig_result);
-    if (cur_token()->type() == TokenKind::kIdentifier &&
-        cur_token()->value()->Equals("of")) {
-      Next();
-      auto assignment_expr_result = ParseAssignmentExpression(true, yield);
-      CHECK_AST(assignment_expr_result);
-      if (cur_token()->type() == TokenKind::kRightParen) {
+    
+    return ParseForBinding(yield) >>= [&](Handle<ir::Node> for_binding) {
+      if (cur_token()->type() == TokenKind::kIdentifier &&
+          cur_token()->value()->Equals("of")) {
         Next();
-        auto for_expr = New<ir::ForOfStatementView>();
-        for_expr->set_property_name(for_bindig_result.value());
-        for_expr->set_expr(assignment_expr_result.value());
-        for_expr->SetInformationForNode(&info);
-        return Success(for_expr);
+        
+        return ParseAssignmentExpression(true, yield) >>= [&](Handle<ir::Node> assignment_expr) {
+          if (cur_token()->type() == TokenKind::kRightParen) {
+            Next();
+            auto for_expr = New<ir::ForOfStatementView>();
+            for_expr->set_property_name(for_binding);
+            for_expr->set_expr(assignment_expr);
+            for_expr->SetInformationForNode(&info);
+            return Success(for_expr);
+          }
+          SYNTAX_ERROR("')' expected", cur_token());
+        };
+        
       }
-      SYNTAX_ERROR("')' expected", cur_token());
-    }
-    SYNTAX_ERROR("'of' expected", cur_token());
+      SYNTAX_ERROR("'of' expected", cur_token());
+    };
+    
   }
   SYNTAX_ERROR("'(' expected", cur_token());
 }
@@ -1302,16 +1315,18 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionIf(bool yield) {
   Next();
   if (cur_token()->type() == TokenKind::kLeftParen) {
     Next();
-    auto assignment_expr_result = ParseAssignmentExpression(true, yield);
-    CHECK_AST(assignment_expr_result);
-    if (cur_token()->type() == TokenKind::kRightParen) {
-      Next();
-      auto if_expr = New<ir::IfStatementView>();
-      if_expr->set_expr(assignment_expr_result.value());
-      if_expr->SetInformationForNode(&info);
-      return Success(if_expr);
-    }
-    SYNTAX_ERROR("')' expected", cur_token());
+
+    return ParseAssignmentExpression(true, yield) >>= [&](Handle<ir::Node> assignment_expr) {
+      if (cur_token()->type() == TokenKind::kRightParen) {
+        Next();
+        auto if_expr = New<ir::IfStatementView>();
+        if_expr->set_expr(assignment_expr);
+        if_expr->SetInformationForNode(&info);
+        return Success(if_expr);
+      }
+      SYNTAX_ERROR("')' expected", cur_token());
+    };
+    
   }
   SYNTAX_ERROR("'(' expected", cur_token());
 }
@@ -1363,11 +1378,11 @@ ParseResult Parser<UCharInputIterator>::ParseYieldExpression(bool in) {
     continuation = true;
   }
 
-  auto assignment_expr_result = ParseAssignmentExpression(in, true);
-  CHECK_AST(assignment_expr_result);
-  auto yield_expr = New<ir::YieldView>(continuation, assignment_expr_result.value());
-  yield_expr->SetInformationForNode(cur_token());
-  return Success(yield_expr);
+  return ParseAssignmentExpression(in, true) >>= [&](Handle<ir::Node> assignment_expr) {
+    auto yield_expr = New<ir::YieldView>(continuation, assignment_expr);
+    yield_expr->SetInformationForNode(cur_token());
+    return Success(yield_expr);
+  };
 }
 
 
