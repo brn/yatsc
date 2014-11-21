@@ -588,7 +588,9 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
     CHECK_AST(value_result);
   }
 
-  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(), value_result.value(), type_expr_result.value());
+  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(),
+                                               value_result.or(ir::Node::Null()),
+                                               type_expr_result.or(ir::Node::Null()));
   ret->SetInformationForNode(lhs_result.value());
   current_scope()->Declare(ret);
   
@@ -627,7 +629,7 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
       }
       Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr_result.value(),
                                                                      then_stmt_result.value(),
-                                                                     else_stmt_result.value());
+                                                                     else_stmt_result.or(ir::Node::Null()));
       if_stmt->SetInformationForNode(&info);
       return Success(if_stmt);
     }
@@ -725,7 +727,7 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
         }
       }
     }
-    return ParseForIteration(reciever_result.value(), &info, yield, has_return);
+    return ParseForIteration(reciever_result.or(ir::Node::Null()), &info, yield, has_return);
   }
   SYNTAX_ERROR("'(' expected", cur_token());
 }
@@ -980,7 +982,7 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
           }
         }
         
-        Handle<ir::CaseView> case_view = New<ir::CaseView>(expr_result.value(), body);
+        Handle<ir::CaseView> case_view = New<ir::CaseView>(expr_result.or(ir::Node::Null()), body);
         case_view->SetInformationForNode(&info);
         case_list->InsertLast(case_view);
         break;
@@ -1070,8 +1072,8 @@ ParseResult Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_r
   }
     
   Handle<ir::TryStatementView> try_stmt = New<ir::TryStatementView>(block_stmt_result.value(),
-                                                                    catch_block_result.value(),
-                                                                    finally_block_result.value());
+                                                                    catch_block_result.or(ir::Node::Null()),
+                                                                    finally_block_result.or(ir::Node::Null()));
   try_stmt->SetInformationForNode(&info);
   return Success(try_stmt);
 }
@@ -1169,11 +1171,12 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
   }
 
   if (cur_token()->type() == TokenKind::kLeftBrace) {
-    auto interface_body_result = ParseObjectTypeExpression();
-    return Success(New<ir::InterfaceView>(identifier_result.value(),
-                                          type_parameters_result.value(),
-                                          extends,
-                                          interface_body_result.value()));
+    return ParseObjectTypeExpression() >>= [&](Handle<ir::Node> body) {
+      return Success(New<ir::InterfaceView>(identifier_result.or(ir::Node::Null()),
+                                            type_parameters_result.or(ir::Node::Null()),
+                                            extends,
+                                            body));
+    };
   }
   SYNTAX_ERROR("'{' expected.", cur_token());
 }
@@ -1290,10 +1293,10 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
     Next();
     auto class_body_result = ParseClassBody();
     SKIP_TOKEN_IF(class_body_result, success, TokenKind::kRightBrace);
-    auto class_decl = New<ir::ClassDeclView>(identifier_result.value(),
-                                             type_parameters_result.value(),
-                                             class_bases_result.value(),
-                                             class_body_result.value());
+    auto class_decl = New<ir::ClassDeclView>(identifier_result.or(ir::Node::Null()),
+                                             type_parameters_result.or(ir::Node::Null()),
+                                             class_bases_result.or(ir::Node::Null()),
+                                             class_body_result.or(ir::Node::Null()));
     class_decl->SetInformationForNode(&info);
     return Success(class_decl);
   }
@@ -1862,8 +1865,8 @@ ParseResult Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node> mod
     }
     auto member_variable = New<ir::MemberVariableView>(mods,
                                                        identifier_result.value(),
-                                                       type_result.value(),
-                                                       value_result.value());
+                                                       type_result.or(ir::Node::Null()),
+                                                       value_result.or(ir::Node::Null()));
     member_variable->SetInformationForNode(mods);
     return Success(member_variable);
   }
@@ -1941,7 +1944,7 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Ha
       auto function_body_result = ParseFunctionBody(yield? yield: generator);
       SKIP_TOKEN_IF_AND(function_body_result, success, TokenKind::kRightBrace, return Failed());
       ret = New<ir::FunctionView>(overloads,
-                                  identifier_result.value(),
+                                  identifier_result.or(ir::Node::Null()),
                                   call_sig_result.value(),
                                   function_body_result.value());
     } else if (overloads) {

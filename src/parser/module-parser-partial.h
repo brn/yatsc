@@ -167,7 +167,7 @@ ParseResult Parser<UCharInputIterator>::ParseImportClause() {
     }
   }
   
-  auto ret = New<ir::ImportClauseView>(first_result.value(), second_result.value());
+  auto ret = New<ir::ImportClauseView>(first_result.or(ir::Node::Null()), second_result.or(ir::Node::Null()));
   ret->SetInformationForNode(first_result.value());
   return Success(ret);
 }

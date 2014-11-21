@@ -136,7 +136,7 @@ ParseResult Parser<UCharInputIterator>::ParseTypeExpression() {
       CHECK_AST(type_expr_result);
       Handle<ir::Node> ft = New<ir::FunctionTypeExprView>(param_list_result.value(),
                                                           type_expr_result.value(),
-                                                          type_params_result.value());
+                                                          type_params_result.or(ir::Node::Null()));
       ft->SetInformationForNode(param_list_result.value());
       return ParseArrayType(ft);
     }
@@ -435,8 +435,8 @@ ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allo
     }
     
     auto ret = New<ir::CallSignatureView>(param_list_result.value(),
-                                          return_type_result.value(),
-                                          type_parameters_result.value());
+                                          return_type_result.or(ir::Node::Null()),
+                                          type_parameters_result.or(ir::Node::Null()));
     ret->SetInformationForNode(&token);
     return Success(ret);
   }

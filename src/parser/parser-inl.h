@@ -71,8 +71,7 @@ template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT {
   if (token == TokenKind::kLineTerminator) {
     while (!cur_token()->Is(TokenKind::kLineTerminator) &&
-           !cur_token()->Is(TokenKind::kEof) &&
-           !cur_token()->Is(TokenKind::kRightBrace)) {
+           !cur_token()->Is(TokenKind::kEof)) {
       if (cur_token()->has_line_break_before_next()) {
         Next();
         break;

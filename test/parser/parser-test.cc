@@ -81,6 +81,6 @@ TEST(ParserTest, Parse) {
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts", "");
   // ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts", "");
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/src/compiler/checker.ts", "");
-  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/compiler/ClassDeclaration14.ts", "");
+  ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/compiler/anonymousModules.ts", "");
   //ParseTestCases();
 }

@@ -61,7 +61,7 @@ class Result {
 
 
   // Nothing constructor.
-  Result() = default;
+  Result() {}
 
 
   // Copy constructor.

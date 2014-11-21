@@ -262,94 +262,90 @@ template <typename T>
 class LazyInitializer {
  public:
   LazyInitializer()
-      : initialized_(false) {}
+      : ptr_(nullptr) {}
 
   
   ~LazyInitializer() {
-    if (initialized_) {
-      reinterpret_cast<T*>(heap_)->~T();
+    if (ptr_ != nullptr) {
+      ptr_->~T();
     }
   }
 
   
   template <typename ... Args>
   T* operator()(Args ... args) {
-    initialized_ = false;
-    auto ret = new(heap_) T(args...);
-    if (ret != nullptr) {
-      initialized_ = true;
-    }
-    return ret;
+    ptr_ = nullptr;
+    return ptr_ = new(heap_) T(args...);
   }
 
 
-  T* Get() {return reinterpret_cast<T*>(heap_);}
+  T* Get() {return ptr_;}
 
   
-  const T* Get() const {return reinterpret_cast<T*>(heap_);}
+  const T* Get() const {return ptr_;}
 
 
   T& operator * () {
-    return *reinterpret_cast<T*>(heap_);
+    return *ptr_;
   }
 
 
   const T& operator * () const {
-    return *reinterpret_cast<const T*>(heap_);
+    return *ptr_;
   }
   
 
   T* operator -> () {
-    return reinterpret_cast<T*>(heap_);
+    return ptr_;
   }
 
 
   const T* operator -> () const {
-    return reinterpret_cast<const T*>(heap_);
+    return ptr_;
   }
   
 
   template <typename U>
   bool operator == (U u) const {
-    return *(reinterpret_cast<T*>(heap_)) == u;
+    return ptr_ == u;
   }
 
 
   template <typename U>
   bool operator != (U u) const {
-    return *(reinterpret_cast<T*>(heap_)) != u;
+    return ptr_ != u;
   }
 
 
   template <typename U>
   T& operator >> (U u) {
-    return *(reinterpret_cast<T*>(heap_)) >> u;
+    return *ptr_ >> u;
   }
 
 
   template <typename U>
   const T& operator >> (U u) const {
-    return *(reinterpret_cast<T*>(heap_)) >> u;
+    return *ptr_ >> u;
   }
 
 
   template <typename U>
   T& operator << (U u) {
-    return *(reinterpret_cast<T*>(heap_)) << u;
+    return *ptr_ << u;
   }
 
 
   template <typename U>
   const T& operator << (U u) const {
-    return *(reinterpret_cast<T*>(heap_)) << u;
+    return *ptr_ << u;
   }
 
 
-  YATSC_CONST_GETTER(bool, initialized, initialized_);
+  YATSC_CONST_GETTER(bool, initialized, ptr_ != nullptr);
   
  private:
-  Byte heap_[sizeof(T)];
-  bool initialized_;
+  Byte heap_[sizeof(T) + 1];
+  T* ptr_;
 };
 
 

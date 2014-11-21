@@ -117,20 +117,23 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientDeclaration(bool module_all
 template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientVariableDeclaration);
-  if (cur_token()->type() == TokenKind::kVar) {
+  if (cur_token()->Is(TokenKind::kVar)) {
     Next();
-    if (cur_token()->type() == TokenKind::kIdentifier) {
-      auto identifier_result = ParseIdentifier();
-      CHECK_AST(identifier_result);
-      ParseResult type_annotation_result;
-      if (cur_token()->type() == TokenKind::kColon) {
-        Next();
-        type_annotation_result = ParseTypeExpression();
-        CHECK_AST(type_annotation_result);
-      }
-      auto ret = New<ir::AmbientVariableView>(identifier_result.value(), type_annotation_result.value());
-      ret->SetInformationForNode(info);
-      return Success(ret);
+    if (cur_token()->Is(TokenKind::kIdentifier)) {
+
+      return ParseIdentifier() >>= [&](Handle<ir::Node> identifier) {
+        ParseResult type_annotation_result;
+        if (cur_token()->type() == TokenKind::kColon) {
+          Next();
+          type_annotation_result = ParseTypeExpression();
+          CHECK_AST(type_annotation_result);
+        }
+        auto ret = New<ir::AmbientVariableView>(identifier,
+                                                type_annotation_result.or(ir::Node::Null()));
+        ret->SetInformationForNode(info);
+        return Success(ret);
+      };
+      
     }
     SYNTAX_ERROR("'identifier' expected.", cur_token());
   }
@@ -146,17 +149,20 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(Token* 
   if (cur_token()->type() == TokenKind::kFunction) {
     Next();
     if (cur_token()->type() == TokenKind::kIdentifier) {
-      auto identifier_result = ParseIdentifier();
-      CHECK_AST(identifier_result);
-      if (cur_token()->type() == TokenKind::kMul) {
-        generator = true;
-        Next();
-      }
-      auto call_sig_result = ParseCallSignature(false, false);
-      CHECK_AST(call_sig_result);
-      auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier_result.value(), call_sig_result.value());
-      ret->SetInformationForNode(info);
-      return Success(ret);
+      
+      return ParseIdentifier() >>= [&](Handle<ir::Node> identifier) {
+        if (cur_token()->type() == TokenKind::kMul) {
+          generator = true;
+          Next();
+        }
+        
+        return ParseCallSignature(false, false) >>= [&](Handle<ir::Node> call_sig) {
+          auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier, call_sig);
+          ret->SetInformationForNode(info);
+          return Success(ret);
+        };
+      };
+      
     }
   }
   SYNTAX_ERROR("'function' expected.", cur_token());
@@ -181,7 +187,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(Token* inf
       auto ambient_class_body_result = ParseAmbientClassBody();
       CHECK_AST(ambient_class_body_result);
       auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.value(),
-                                                      type_parameters_result.value(),
+                                                      type_parameters_result.or(ir::Node::Null()),
                                                       class_bases_result.value(),
                                                       ambient_class_body_result.value());
       ret->SetInformationForNode(info);
@@ -366,7 +372,9 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<ir::No
       CHECK_AST(type_expr_result);
     }
 
-    auto member_variable = New<ir::AmbientMemberVariableView>(mods, identifier_result.value(), type_expr_result.value());
+    auto member_variable = New<ir::AmbientMemberVariableView>(mods,
+                                                              identifier_result.value(),
+                                                              type_expr_result.or(ir::Node::Null()));
     member_variable->SetInformationForNode(mods);
     return Success(member_variable);
   }

@@ -38,11 +38,11 @@ bool print_stack_trace = true;
 bool compare_node = true;
 
 #define PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num = __LINE__; \
-    YatscParserTest(name, [&](yatsc::Parser<yatsc::UCharBuffer::iterator>* p){return p->method_expr;}, type, code, expected_str, error, line_num); \
+    YatscParserTest(name, [&](yatsc::Parser<yatsc::SourceStream::iterator>* p){return p->method_expr;}, type, code, expected_str, error, line_num); \
   }
 
 #define WRAP_PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num = __LINE__; \
-    YatscParserTest(name, [&](yatsc::Parser<yatsc::UCharBuffer::iterator>* p){return yatsc::Just(p->method_expr);}, type, code, expected_str, error, line_num); \
+    YatscParserTest(name, [&](yatsc::Parser<yatsc::SourceStream::iterator>* p){return yatsc::Just(p->method_expr);}, type, code, expected_str, error, line_num); \
   }
 
 
@@ -55,15 +55,14 @@ void YatscParserTest(const char* name,
                      bool error,
                      int line_num) {
   using namespace yatsc;
-  typedef std::vector<yatsc::UChar>::iterator Iterator;
+  typedef yatsc::SourceStream::iterator Iterator;
   auto module_info = Heap::NewHandle<ModuleInfo>(String(name), String(code), true);
-  UCharBuffer uchar_buffer = yatsc::testing::AsciiToUCharVector(String(module_info->source_stream()->raw_buffer()));
   CompilerOption compiler_option;
   compiler_option.set_language_mode(type);
   auto lb = Heap::NewHandle<yatsc::LiteralBuffer>();
   auto global_scope = Heap::NewHandle<yatsc::ir::GlobalScope>(lb);
   
-  Scanner<Iterator> scanner(uchar_buffer.begin(), uchar_buffer.end(), lb.Get(), compiler_option);
+  Scanner<Iterator> scanner(module_info->source_stream()->begin(), module_info->source_stream()->end(), lb.Get(), compiler_option);
   Notificator<void(const yatsc::String&)> notificator;
   Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, global_scope);
   ErrorFormatter error_formatter(module_info);
