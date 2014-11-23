@@ -137,18 +137,42 @@ namespace yatsc {
     phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
   }                                                                     \
   indent_ += "  ";                                                      \
+  auto err_size = module_info_->error_reporter()->size();               \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
-    if (this->cur_token() != nullptr) {                                   \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
+    if (this->cur_token() != nullptr) {                                 \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]" << (err_size != module_info_->error_reporter()->size()? "[Error!]\n": "\n"); \
     } else {                                                            \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]"<< (err_size != module_info_->error_reporter()->size()? "[Error!]\n": "\n"); \
     }                                                                   \
   })
 #else
 // Disabled.
 #define LOG_PHASE(name)
 #endif
+
+
+template <bool Print>
+class DebugStream {
+ public:
+
+  template <typename T>
+  DebugStream& operator << (T value) {
+    buffer_ << value;
+    if (Print) {
+      std::cout << value;
+    }
+    return *this;
+  }
+
+
+  void PrintStackTrace() {
+    printf("%s\n", buffer_.str().c_str());
+  }
+  
+ private:
+  StringStream buffer_;
+};
 
 
 typedef Maybe<Handle<ir::Node>> ParseResult;
@@ -202,6 +226,62 @@ class Parser: public ParserBase {
     bool setter;
     bool getter;
     Token token_info;
+  };
+
+
+  class EnclosureBalancer {
+   public:
+    EnclosureBalancer()
+        : open_brace_count_(0),
+          open_bracket_count_(0),
+          open_paren_count_(0),
+          close_brace_count_(0),
+          close_bracket_count_(0),
+          close_paren_count_(0){}
+
+
+    void OpenBraceFound() {open_brace_count_++;}
+
+    
+    void CloseBraceFound() {close_brace_count_--;}
+
+    
+    void OpenBracketFound() {open_bracket_count_++;}
+
+    
+    void CloseBracketFound() {close_bracket_count_--;}
+
+    
+    void OpenParenFound() {open_paren_count_++;}
+
+    
+    void CloseParenFound() {close_paren_count_++;}
+
+    
+    bool IsBraceNotClose(long val) const {return open_brace_count_ > close_brace_count_;}
+
+    
+    bool IsBracketNotClose(long val) const {return open_bracket_count_ > close_brace_count_;}
+
+    
+    bool IsParenNotClose(long val) const {return open_paren_count_ > close_paren_count_;}
+
+    
+    int brace_difference() const {return open_brace_count_ - close_brace_count_;}
+
+
+    int bracket_difference() const {return open_bracket_count_ - close_bracket_count_;}
+
+    
+    int paren_difference() const {return open_paren_count_ - close_paren_count_;}
+    
+   private:
+    int open_brace_count_;
+    int open_bracket_count_;
+    int open_paren_count_;
+    int close_brace_count_;
+    int close_bracket_count_;
+    int close_paren_count_;
   };
   
 
@@ -300,9 +380,52 @@ class Parser: public ParserBase {
   
 
   YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
+
+
+  Handle<ir::Node> Null() const {return ir::Node::Null();}
+
+
+  void SkipEnclosureIfNotBalanced(int difference, TokenKind kind) {
+    if (difference < 0) return;
+    while (difference != 0 &&
+           !cur_token()->Is(TokenKind::kEof)) {
+      if (cur_token()->Is(kind)) {
+        difference--;
+      }
+      Next();
+    }
+  }
+
+
+  void OpenBraceFound() {enclosure_balancer_.OpenBraceFound();};
+
+
+  void CloseBraceFound() {enclosure_balancer_.CloseBraceFound();}
+
+
+  void OpenBracketFound() {enclosure_balancer_.OpenBracketFound();}
+
+  
+  void CloseBracketFound() {enclosure_balancer_.CloseBracketFound();}
+
+  
+  void OpenParenFound() {enclosure_balancer_.OpenParenFound();}
+
+
+  void CloseParenFound() {enclosure_balancer_.CloseParenFound();}
+
+
+  int brace_difference() const {return enclosure_balancer_.brace_difference();}
+
+  
+  int bracket_difference() const {return enclosure_balancer_.bracket_difference();}
+
+
+  int paren_difference() const {return enclosure_balancer_.paren_difference();}
+  
   
 #if defined(DEBUG) || defined(UNIT_TEST)
-  StringStream phase_buffer_;
+  DebugStream<true> phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;
@@ -310,6 +433,7 @@ class Parser: public ParserBase {
   LazyInitializer<UnsafeZoneAllocator> unsafe_zone_allocator_;
   IntrusiveRbTree<SourcePosition, Parsed*> memo_;
   Handle<ir::GlobalScope> global_scope_;
+  EnclosureBalancer enclosure_balancer_;
   
 
  VISIBLE_FOR_TESTING:
@@ -685,7 +809,7 @@ class Parser: public ParserBase {
   
 #if defined(UNIT_TEST) || defined(DEBUG)
   void PrintStackTrace() {
-    Printf("%s\n", phase_buffer_.str().c_str());
+    phase_buffer_.PrintStackTrace();
   }
 #endif
 };

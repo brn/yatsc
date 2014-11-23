@@ -564,7 +564,7 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool
 
 
 #define PARSE_BINARY_EXPRESSION(name, next, token)                      \
-  PARSE_BINARY_EXPRESSION_INTERNAL((cur_token()->type() == TokenKind::token), name, (next(in, yield)))
+  PARSE_BINARY_EXPRESSION_INTERNAL((cur_token()->Is(TokenKind::token)), name, (next(in, yield)))
 
 #define PARSE_BINARY_EXPRESSION_WITH_COND(cond, name, next)         \
   PARSE_BINARY_EXPRESSION_INTERNAL((cond), name, (next(in, yield)))
@@ -1160,6 +1160,7 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
 }
 
 
+
 template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
   LOG_PHASE(ParseArrayLiteral);
@@ -1461,24 +1462,24 @@ ParseResult Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield) {
       Next();
   }
 
-    if (cur_token()->type() == TokenKind::kIdentifier) {
-      key_result = ParseIdentifierReference(yield);
-    } else {
-      key_result = ParsePropertyName(yield, false);
-    }
+  if (cur_token()->type() == TokenKind::kIdentifier) {
+    key_result = ParseIdentifierReference(yield);
+  } else {
+    key_result = ParsePropertyName(yield, false);
+  }
 
-    if (key_result) {
-      if (key_result.value()->HasSymbol()) {
-        key_result.value()->symbol()->set_type(ir::SymbolType::kPropertyName);
-      }
-    } else {
-      if (getter || setter) {
-        key_result = Success(New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value())));
-        key_result.value()->SetInformationForNode(&info);
-      } else {
-        return Failed();
-      }
+  if (key_result) {
+    if (key_result.value()->HasSymbol()) {
+      key_result.value()->symbol()->set_type(ir::SymbolType::kPropertyName);
     }
+  } else {
+    if (getter || setter) {
+      key_result = Success(New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value())));
+      key_result.value()->SetInformationForNode(&info);
+    } else {
+      return Failed();
+    }
+  }
 
   if (cur_token()->type() == TokenKind::kMul) {
     generator = true;
@@ -1500,8 +1501,10 @@ ParseResult Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield) {
     Next();
     value_result = ParseAssignmentExpression(true, false);
     CHECK_AST(value_result);
+  } else {
+    SYNTAX_ERROR("':' expected.", cur_token());
   }
-  Handle<ir::ObjectElementView> element = New<ir::ObjectElementView>(key_result.value(), value_result.value());
+  Handle<ir::ObjectElementView> element = New<ir::ObjectElementView>(key_result.value(), value_result.or(Null()));
   element->SetInformationForNode(&info);
   return Success(element);
 }

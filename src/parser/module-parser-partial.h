@@ -47,6 +47,8 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
       SKIP_TOKEN_OR(export_decl_result, success, TokenKind::kLineTerminator) {
         file_scope->InsertLast(export_decl_result.value());
       }
+    } else if (cur_token()->Is(TokenKind::kIllegal)) {
+      SYNTAX_ERROR_AND("unexpected token.", cur_token(), break);
     } else {
       if (cur_token()->type() == TokenKind::kIdentifier &&
           cur_token()->value()->Equals("declare")) {
@@ -236,18 +238,16 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
 
     RecordedParserState rps = parser_state();
     auto binding_identifier_result = ParseBindingIdentifier(false, false);
-    CHECK_AST(binding_identifier_result);
 
     bool member = false;
     if (cur_token()->type() == TokenKind::kDot) {
       RestoreParserState(rps);
       binding_identifier_result = ParseMemberExpression(false);
-      CHECK_AST(binding_identifier_result);
       member = true;
     }
     
     if (cur_token()->type() == TokenKind::kLeftBrace) {
-      return ParseTSModule(binding_identifier_result.value(), &info);
+      return ParseTSModule(binding_identifier_result.or(ir::Node::Null()), &info);
     }
 
     if (member) {
@@ -255,7 +255,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     }
     auto module_specifier_result = ParseFromClause();
     CHECK_AST(module_specifier_result);
-    auto ret = New<ir::ModuleImportView>(binding_identifier_result.value(), module_specifier_result.value());
+    auto ret = New<ir::ModuleImportView>(binding_identifier_result.or(ir::Node::Null()), module_specifier_result.value());
     ret->SetInformationForNode(&info);
     return Success(ret);
   }
@@ -336,6 +336,9 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             }
             break;
           }
+          case TokenKind::kEof: {
+            SYNTAX_ERROR("unexpected end of input.", cur_token());
+          }
           default:
             if (cur_token()->type() == TokenKind::kIdentifier &&
                 cur_token()->value()->Equals("module")) {
@@ -359,6 +362,10 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
         SKIP_TOKEN_OR(module_import_result, success, TokenKind::kRightBrace) {
           block->InsertLast(module_import_result.value());
         }
+      } else if (cur_token()->Is(TokenKind::kEof)) {
+        SYNTAX_ERROR("unexpected end of input.", cur_token());
+      } else if (cur_token()->Is(TokenKind::kIllegal)) {
+        SYNTAX_ERROR("unexpected token.", cur_token());
       } else {
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
         SKIP_TOKEN_OR(stmt_list_result, success, TokenKind::kRightBrace) {

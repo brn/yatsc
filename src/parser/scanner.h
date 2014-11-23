@@ -37,7 +37,7 @@
 
 #if defined(DEBUG) || defined(UNIT_TEST)
 #define TOKEN_ERROR(message)                                            \
-  (void)[&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n" << message;Error(ss.str().c_str());}()
+  (void)[&]{StringStream ss;ss << message << '\n' << __FILE__ << ":" << __LINE__ << "\n";Error(ss.str().c_str());}()
 #else
 #define TOKEN_ERROR(message)                                            \
   (void)[&]{StringStream ss;ss << message << '\n';Error(ss.str().c_str());}()
@@ -64,6 +64,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
    * Scan the source file from the current position to the next token position.
    */
   Token* Scan();
+  
 
 
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
@@ -182,9 +183,13 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
       SkipSignature();
       SkipWhiteSpace();
     }
+    error_ = false;
     line_terminator_state_.Clear();
     scanner_source_position_.UpdateStartPosition();
   }
+
+
+  bool ErrorOccurred() const {return error_;}
 
 
   void AfterScan() {
@@ -192,6 +197,9 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
     SkipWhiteSpace();
     token_info_.set_line_terminator_state(line_terminator_state_);
   }
+
+
+  bool DoScan();
   
   
   /**
@@ -302,6 +310,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   
 
   void Error(const char* message) {
+    error_ = true;
     if (error_callback_) {
       error_callback_(message, CreateSourcePosition());
     }
@@ -338,7 +347,24 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   void Advance();
 
 
+  void Skip() {
+    while (!Character::IsWhiteSpace(char_, lookahead1_) &&
+           char_ != unicode::u32('\0')) {
+      Advance();
+    }
+  }
+
+  void Skip(UtfString& utf_string) {
+    while (!Character::IsWhiteSpace(char_, lookahead1_) &&
+           char_ != unicode::u32('\0')) {
+      Advance();
+      utf_string += char_;
+    }
+  }
+
+
   bool unscaned_;
+  bool error_;
   int generic_type_;
   ScannerSourcePosition scanner_source_position_;
   LineTerminatorState line_terminator_state_;

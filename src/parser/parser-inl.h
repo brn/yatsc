@@ -71,6 +71,7 @@ template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT {
   if (token == TokenKind::kLineTerminator) {
     while (!cur_token()->Is(TokenKind::kLineTerminator) &&
+           !cur_token()->Is(TokenKind::kIllegal) &&
            !cur_token()->Is(TokenKind::kEof)) {
       if (cur_token()->has_line_break_before_next()) {
         Next();
@@ -79,8 +80,9 @@ void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC
       Next();
     }
   } else {
-    while (cur_token()->type() != TokenKind::kEof &&
-           cur_token()->type() != token) {
+    while (!cur_token()->Is(TokenKind::kEof) &&
+           !cur_token()->Is(TokenKind::kIllegal) &&
+           !cur_token()->Is(token)) {
       Next();
     }
   }
@@ -158,11 +160,8 @@ void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& r
   scope_ = rps.scope();
   Handle<ErrorReporter> se = module_info_->error_reporter();
   if (se->size() != rps.error_count()) {
-    size_t diff = rps.error_count() - se->size();
-    if (diff > se->size()) {
-      diff = se->size();
-    }
-    for (size_t i = 0; i < diff; i++) {
+    int diff = abs(static_cast<int>(rps.error_count()) - static_cast<int>(se->size()));
+    for (int i = 0; i < diff; i++) {
       se->Pop();
     }
   }

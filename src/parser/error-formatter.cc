@@ -54,6 +54,7 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   size_t end = end_col > start_col? end_col - 1: end_col;
   size_t start = 0;
   size_t last_line = 2;
+  size_t last_line_num = 0;
   
   if (line_source_list.size() == 3) {
     if (start_line_number == 1) {
@@ -63,10 +64,12 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
       message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
       line_source = std::move(line_source_list[1]);
     }
+    last_line_num = 1;
   } else if (line_source_list.size() == 2) {
     if (start_line_number == 1) {
       line_source = std::move(line_source_list[0]);
       last_line = 1;
+      last_line_num = 1;
     } else {
       message << '\n' << (source_position.start_line_number() - 1) << ": " << line_source_list[0];
       line_source = std::move(line_source_list[1]);
@@ -92,6 +95,9 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
         message << '^';
       } else {
         message << '-';
+        if (line_source[i] == '\t') {
+          message << "---";
+        }
       }
     }
     size_t last = wrap * kMaxWidth;
@@ -110,23 +116,29 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
   }
 
   if (last_line != 0) {
-    message << '\n' << (source_position.start_line_number() + (last_line - 1)) << ": " << line_source_list[last_line];
+    message << '\n' << (source_position.start_line_number() + last_line_num) << ": " << line_source_list[last_line];
   }
   message << '\n';
   return std::move(message.str());
 }
 
 
+void Replace(String& str, const String& from, const String& to) {
+  String::size_type pos = 0;
+  while(pos = str.find(from, pos), pos != String::npos) {
+    str.replace(pos, from.length(), to);
+    pos += to.length();
+  }
+}
+
+
 Vector<String> ErrorFormatter::GetLineSource(const SourcePosition& source_position) const {
+  static const String kTab = "\t";
+  static const String kSpace = "  ";
   size_t count = 0;
   String::size_type start = 0;
   Vector<String> line_source;
   String raw_source_code(module_info_->raw_source_code());
-
-  if (1 == source_position.start_line_number()) {
-    line_source.push_back(raw_source_code);
-    return std::move(line_source);
-  }
   
   while (1) {
     String::size_type end = raw_source_code.find('\n', start);
@@ -140,7 +152,9 @@ Vector<String> ErrorFormatter::GetLineSource(const SourcePosition& source_positi
 
     if (source_position.start_line_number() >= count - 1 &&
         source_position.start_line_number() <= count + 1) {
-      line_source.push_back(std::move(raw_source_code.substr(start, end - start)));
+      String line = std::move(raw_source_code.substr(start, end - start));
+      Replace(line, kTab, kSpace);
+      line_source.push_back(line);
     } else if (source_position.start_line_number() + 2 == count) {
       break;
     }
