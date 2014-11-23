@@ -38,6 +38,31 @@
 
 namespace yatsc {
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(x) 0
+#endif
+
+#if !defined(DEBUG)
+#define DEBUG_BOOL false
+#elif
+#define DEBUG_BOOL true
+#endif
+
+
+#if defined(DEBUG)
+#define YATSC_SOURCEINFO_ARGS __FILE__, __LINE__
+#elif
+#define YATSC_SOURCEINFO_ARGS "", 0
+#endif
+
+
+#if __has_cpp_attribute(clang::fallthrough)
+#define FALLTHROUGH [[clang::fallthrough]]
+#else
+#define FALLTHROUGH
+#endif
+
+
 /**
  * Inline macro.
  */

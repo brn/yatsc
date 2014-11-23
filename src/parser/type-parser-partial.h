@@ -142,6 +142,7 @@ ParseResult Parser<UCharInputIterator>::ParseTypeExpression() {
     }
     SYNTAX_ERROR("SyntaxError '=>' expected", cur_token());
   } else if (cur_token()->type() == TokenKind::kLeftBrace) {
+    OpenBraceFound();
     auto object_type_result = ParseObjectTypeExpression();
     CHECK_AST(object_type_result);
     return ParseArrayType(object_type_result.value());
@@ -294,6 +295,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
   LOG_PHASE(ParseObjectTypeExpression);
   if (cur_token()->type() == TokenKind::kLeftBrace) {
+    OpenBraceFound();
     Next();
     Handle<ir::ObjectTypeExprView> object_type = New<ir::ObjectTypeExprView>();
     object_type->SetInformationForNode(cur_token());
@@ -312,7 +314,8 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
         SYNTAX_ERROR("SyntaxError ';' expected", prev_token());
       }
     }
-    Next();
+    CloseBraceFound();
+    BalanceEnclosureIfNotBalanced(cur_token(), true);
     return Success(object_type);
   }
   SYNTAX_ERROR("SyntaxError '{' expected", cur_token());
@@ -412,6 +415,7 @@ ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allo
   }
   
   if (cur_token()->type() == TokenKind::kLeftParen) {
+    OpenParenFound();
     Token token = (*cur_token());
     auto param_list_result = ParseParameterList(accesslevel_allowed);
     CHECK_AST(param_list_result);

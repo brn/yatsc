@@ -152,29 +152,6 @@ namespace yatsc {
 #endif
 
 
-template <bool Print>
-class DebugStream {
- public:
-
-  template <typename T>
-  DebugStream& operator << (T value) {
-    buffer_ << value;
-    if (Print) {
-      std::cout << value;
-    }
-    return *this;
-  }
-
-
-  void PrintStackTrace() {
-    printf("%s\n", buffer_.str().c_str());
-  }
-  
- private:
-  StringStream buffer_;
-};
-
-
 typedef Maybe<Handle<ir::Node>> ParseResult;
 
 
@@ -274,6 +251,15 @@ class Parser: public ParserBase {
 
     
     int paren_difference() const {return open_paren_count_ - close_paren_count_;}
+
+
+    void BalanceBrace() {open_brace_count_ = close_brace_count_;}
+
+
+    void BalanceParen() {open_paren_count_ = close_paren_count_;}
+
+
+    void BalanceBracket() {open_bracket_count_ = close_bracket_count_;}
     
    private:
     int open_brace_count_;
@@ -338,6 +324,42 @@ class Parser: public ParserBase {
   };
 
 
+  template <bool Print>
+  class DebugStream {
+   public:
+
+    template <typename T>
+    DebugStream& operator << (T value) {
+      buffer_ << value;
+      if (Print) {
+        std::cout << value;
+      }
+      return *this;
+    }
+
+
+    void PrintStackTrace() {
+      printf("%s\n", buffer_.str().c_str());
+    }
+  
+   private:
+    StringStream buffer_;
+  };
+
+
+  template <bool cplusplus_info>
+  class SyntaxErrorBuilder: private Static {
+   public:
+    template <typename T>
+    static Handle<ErrorDescriptor> Build(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+      if (cplusplus_info) {
+        return module_info_->error_reporter()->SyntaxError(item) << __FILE__ << ":" << __LINE__ << "\n";
+      }
+      return module_info_->error_reporter()->SyntaxError(item);
+    }
+  };
+
+
   void Initialize() YATSC_NOEXCEPT;
   
 
@@ -370,10 +392,7 @@ class Parser: public ParserBase {
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
 
   
-  void SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT;
-
-
-  void SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEPT;
+  void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) YATSC_NOEXCEPT;
 
 
   YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
@@ -385,16 +404,7 @@ class Parser: public ParserBase {
   Handle<ir::Node> Null() const {return ir::Node::Null();}
 
 
-  void SkipEnclosureIfNotBalanced(int difference, TokenKind kind) {
-    if (difference < 0) return;
-    while (difference != 0 &&
-           !cur_token()->Is(TokenKind::kEof)) {
-      if (cur_token()->Is(kind)) {
-        difference--;
-      }
-      Next();
-    }
-  }
+  void BalanceEnclosureIfNotBalanced(Token* token, TokenKind kind, bool move_to_next_token);
 
 
   void OpenBraceFound() {enclosure_balancer_.OpenBraceFound();};
@@ -422,6 +432,20 @@ class Parser: public ParserBase {
 
 
   int paren_difference() const {return enclosure_balancer_.paren_difference();}
+
+
+  template <typename T>
+  Handle<ErrorDescriptor> ReportParseError(T item, const char* filename, int line);
+
+  
+  template <typename T>
+  void UnexpectedEndOfInput(T item, const char* filename, int line);
+
+
+  void SkipIllegalTokens() {while (cur_token()->Is(TokenKind::kIllegal)) {Next();}}
+
+
+  void TryConsume(TokenKind kind) {if (cur_token()->Is(kind)) {Next();}}
   
   
 #if defined(DEBUG) || defined(UNIT_TEST)
@@ -533,6 +557,8 @@ class Parser: public ParserBase {
   ParseResult ParseFieldModifiers();
   
   ParseResult ParseFieldModifier();
+
+  bool IsAccessLevelModifier(Token* token) {return token->OneOf({TokenKind::kPublic, TokenKind::kProtected, TokenKind::kPrivate});};
 
   ParseResult ParseConstructorOverloads(Handle<ir::Node> mods);
 

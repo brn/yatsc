@@ -296,6 +296,14 @@ class Token {
   YATSC_INLINE bool Is(const TokenKind kind) YATSC_NO_SE {return kind == type_;}
 
 
+  inline bool OneOf(std::initializer_list<const TokenKind> kinds) {
+    for (auto kind: kinds) {
+      if (type_ == kind) {return true;}
+    }
+    return false;
+  }
+
+
   // Getter and setter for type_.
   YATSC_CONST_PROPERTY(TokenKind, type, type_);
 

@@ -68,47 +68,21 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
 
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipTokensIfErrorOccured(TokenKind token) YATSC_NOEXCEPT {
-  if (token == TokenKind::kLineTerminator) {
-    while (!cur_token()->Is(TokenKind::kLineTerminator) &&
-           !cur_token()->Is(TokenKind::kIllegal) &&
-           !cur_token()->Is(TokenKind::kEof)) {
-      if (cur_token()->has_line_break_before_next()) {
-        Next();
+void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) YATSC_NOEXCEPT {
+  while (!cur_token()->Is(TokenKind::kEof) &&
+         !cur_token()->Is(TokenKind::kIllegal)) {
+    for (auto kind: kinds) {
+      if (kind == TokenKind::kLineTerminator) {
+        if (cur_token()->has_line_break_before_next()) {
+          Next();
+          break;
+        }
+      }
+      if (cur_token()->Is(kind)) {
         break;
       }
-      Next();
     }
-  } else {
-    while (!cur_token()->Is(TokenKind::kEof) &&
-           !cur_token()->Is(TokenKind::kIllegal) &&
-           !cur_token()->Is(token)) {
-      Next();
-    }
-  }
-}
-
-
-template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipToNextCommaOr(TokenKind kind) YATSC_NOEXCEPT {
-  if (kind == TokenKind::kLineTerminator) {
-    while (!cur_token()->Is(TokenKind::kLineTerminator) &&
-           !cur_token()->Is(TokenKind::kComma) &&
-           !cur_token()->Is(TokenKind::kEof)) {
-      
-      if (cur_token()->has_line_break_before_next() ||
-          cur_token()->Is(TokenKind::kRightBrace)) {
-        Next();
-        break;
-      }
-      Next();
-    }
-  } else {
-    while (!cur_token()->Is(TokenKind::kEof) &&
-           !cur_token()->Is(TokenKind::kComma) &&
-           !cur_token()->Is(kind)) {
-      Next();
-    }
+    Next();
   }
 }
 
@@ -166,5 +140,75 @@ void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& r
     }
   }
 }
+
+
+template<typename UCharInputIterator>
+void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, TokenKind kind, bool move_to_next_token) {
+  int difference = 1;
+
+  switch (kind) {
+    case TokenKind::kRightBrace:
+      difference = enclosure_balancer_.brace_difference();
+      break;
+    case TokenKind::kRightParen:
+      difference = enclosure_balancer_.paren_difference();
+      break;
+    case TokenKind::kRightBracket:
+      difference = enclosure_balancer_.bracket_difference();
+      break;
+    default:
+      ;
+  }
+  
+  if (difference < 0) {
+    switch (kind) {
+      case TokenKind::kRightBrace: {
+        enclosure_balancer_.BalanceBrace();
+        SYNTAX_ERROR_AND("extra '}' found.", token, break);
+      }
+        
+      case TokenKind::kRightParen: {
+        enclosure_balancer_.BalanceParen();
+        SYNTAX_ERROR_AND("extra ')' found.", token, break);
+      }
+        
+      case TokenKind::kRightBracket: {
+        enclosure_balancer_.BalanceBracket();
+        SYNTAX_ERROR_AND("extra ']' found.", token, break);
+      }
+        
+      default:
+        ;
+    }
+    return;
+  }
+  
+  while (difference != 0 &&
+         !cur_token()->Is(TokenKind::kEof)) {
+    if (cur_token()->Is(kind)) {
+      difference--;
+    }
+    Next();
+  }
+
+  if (move_to_next_token) {
+    Next();
+  }
+}
+
+
+template <typename UCharInputIterator>
+template <typename T>
+Handle<ErrorDescriptor> Parser<UCharInputIterator>::ReportParseError(T item, const char* filename, int line) {
+  return SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line);
+}
+
+
+template <typename UCharInputIterator>
+template <typename T>
+void Parser<UCharInputIterator>::UnexpectedEndOfInput(T item, const char* filename, int line) {
+  SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line) << "Unexpected end of input.";
+}
+
 }
 

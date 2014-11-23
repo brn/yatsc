@@ -184,6 +184,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(Token* inf
     auto class_bases_result = ParseClassBases();
     CHECK_AST(class_bases_result);
     if (cur_token()->type() == TokenKind::kLeftBrace) {
+      OpenBraceFound();
       auto ambient_class_body_result = ParseAmbientClassBody();
       CHECK_AST(ambient_class_body_result);
       auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.value(),
@@ -203,6 +204,7 @@ template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
   LOG_PHASE(ParseAmbientClassBody);
   if (cur_token()->type() == TokenKind::kLeftBrace) {
+    OpenBraceFound();
     auto body = New<ir::AmbientClassFieldsView>();
     body->SetInformationForNode(cur_token());
     Next();
@@ -211,7 +213,8 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
 
     while (1) {
       if (cur_token()->type() == TokenKind::kRightBrace) {
-        Next();
+        CloseBraceFound();
+        BalanceEnclosureIfNotBalanced(cur_token(), true);
         return Success(body);
       } else {
         auto ambient_class_element_result = ParseAmbientClassElement();
@@ -403,12 +406,14 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
   LOG_PHASE(ParseAmbientEnumBody);
   if (cur_token()->type() == TokenKind::kLeftBrace) {
+    OpenBraceFound();
     auto ret = New<ir::AmbientEnumBodyView>();
     ret->SetInformationForNode(cur_token());
     Next();
 
     if (cur_token()->type() == TokenKind::kRightBrace) {
-      Next();
+      CloseBraceFound();
+      BalanceEnclosureIfNotBalanced(cur_token(), true);
       return Success(ret);
     }
     
@@ -422,11 +427,13 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
       if (cur_token()->type() == TokenKind::kComma) {
         Next();
         if (cur_token()->type() == TokenKind::kRightBrace) {
-          Next();
+          CloseBraceFound();
+          BalanceEnclosureIfNotBalanced(cur_token(), true);
           return Success(ret);
         }
       } else if (cur_token()->type() == TokenKind::kRightBrace) {
-        Next();
+        CloseBraceFound();
+        BalanceEnclosureIfNotBalanced(cur_token(), true);
         return Success(ret);
       } else {
         SYNTAX_ERROR("',' or '}' expected.", cur_token());
@@ -495,6 +502,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
   LOG_PHASE(ParseAmbientModuleBody);
   if (cur_token()->type() == TokenKind::kLeftBrace) {
+    OpenBraceFound();
     Handle<ir::Node> body = New<ir::AmbientModuleBody>();
     body->SetInformationForNode(cur_token());
     Next();
@@ -503,7 +511,8 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
     
     while (1) {
       if (cur_token()->type() == TokenKind::kRightBrace) {
-        Next();
+        CloseBraceFound();
+        BalanceEnclosureIfNotBalanced(cur_token(), true);
         return Success(body);
       } else if (cur_token()->type() == TokenKind::kEof) {
         SYNTAX_ERROR("unexpected end of input.", cur_token());
