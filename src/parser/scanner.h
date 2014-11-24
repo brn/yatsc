@@ -349,6 +349,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
 
   void Skip() {
     while (!Character::IsWhiteSpace(char_, lookahead1_) &&
+           Character::GetLineBreakType(char_, lookahead1_) == Character::LineBreakType::NONE &&
            char_ != unicode::u32('\0')) {
       Advance();
     }
@@ -371,6 +372,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   UCharInputIterator it_;
   UCharInputIterator end_;
   Token token_info_;
+  UChar prev_;
   UChar char_;
   UChar lookahead1_;
   UtfString last_multi_line_comment_;

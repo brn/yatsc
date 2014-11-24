@@ -36,6 +36,7 @@ namespace yatsc {
 class ErrorReporter {
  public:
   typedef Vector<Handle<ErrorDescriptor>> ErrorBuffer;
+  typedef ErrorBuffer WarningBuffer;
 
   
   ErrorReporter() = default;
@@ -48,6 +49,9 @@ class ErrorReporter {
 
 
   const ErrorBuffer& errors() YATSC_NO_SE {return buffer_;}
+
+
+  const WarningBuffer& warnings() YATSC_NO_SE {return warning_buffer_;}
 
 
   size_t size() const {return buffer_.size();}
@@ -97,6 +101,33 @@ class ErrorReporter {
   }
 
 
+  Handle<ErrorDescriptor> Warning(Handle<ErrorDescriptor> errd) {
+    warning_buffer_.push_back(errd);
+    return errd << "Warning ";
+  }
+  
+
+  Handle<ErrorDescriptor> Warning(const SourcePosition& source_position) {
+    return Warning(Heap::NewHandle<ErrorDescriptor>(source_position));
+  }
+
+
+  Handle<ErrorDescriptor> Warning(Token* info) {
+    return Warning(info->source_position());
+  }
+
+
+  Handle<ErrorDescriptor> Warning(const Token& info) {
+    return Warning(info.source_position());
+  }
+
+
+  template <typename T>
+  Handle<ErrorDescriptor> Warning(Handle<T> node) {
+    return Warning(node->source_position());
+  }
+
+
   Handle<ErrorDescriptor> SemanticError(Handle<ErrorDescriptor> errd) {
     buffer_.push_back(errd);
     return errd << "SemanticError ";
@@ -125,6 +156,7 @@ class ErrorReporter {
 
  private:
   ErrorBuffer buffer_;
+  WarningBuffer warning_buffer_;
 };
 
 }

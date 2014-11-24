@@ -62,7 +62,7 @@ namespace yatsc {
 // This method return Failed() result.
 #define SYNTAX_ERROR_AND_SKIP(message, item, token) \
   SYNTAX_ERROR_NO_RETURN(message, item);            \
-  SkipTokensIfErrorOccured(token);                  \
+  SkipTokensUntil({token}, false);                  \
   return Failed()
 
 
@@ -70,7 +70,7 @@ namespace yatsc {
 // This method return Failed() result.
 #define SYNTAX_ERROR_AND_SKIP_NEXT(message, item, token)  \
   SYNTAX_ERROR_NO_RETURN(message, item);                  \
-  SkipTokensIfErrorOccured(token);                        \
+  SkipTokensUntil({token}, false);                        \
   Next();                                                 \
   return Failed()
 
@@ -82,7 +82,7 @@ namespace yatsc {
 // Skip token until given token found if parse has failed, and if parse has not failed, goto next block.
 // Usage. SKIP_TOKEN_OR(result, flag, TokenKind::kLineTerminator) {...}
 #define SKIP_TOKEN_OR(result, flag, token)                          \
-  if (!result) {flag = false;SkipTokensIfErrorOccured(token);} else
+  if (!result) {flag = false;SkipTokensUntil({token}, false);} else
 
 
 // Skip token until given token found if parse has failed.
@@ -97,7 +97,7 @@ namespace yatsc {
 #define SKIP_TOKEN_IF_AND(result, flag, token, expr)  \
   if (!result) {                                      \
     flag = false;                                     \
-    SkipTokensIfErrorOccured(token);                  \
+    SkipTokensUntil({token}, false);                  \
     expr;                                             \
   } else {flag = true;}
 
@@ -277,11 +277,13 @@ class Parser: public ParserBase {
                         const Token& current,
                         const Token& prev,
                         Handle<ir::Scope> current_scope,
+                        EnclosureBalancer enclosure_balancer_,
                         size_t error_count)
         : rcp_(rcp),
           current_(current),
           prev_(prev),
           scope_(current_scope),
+          enclosure_balancer_(enclosure_balancer_),
           error_count_(error_count) {}
 
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
@@ -295,6 +297,8 @@ class Parser: public ParserBase {
 
     YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
 
+    YATSC_CONST_GETTER(const EnclosureBalancer&, enclosure_balancer, enclosure_balancer_);
+
     YATSC_CONST_GETTER(size_t, error_count, error_count_);
 
    private:
@@ -302,6 +306,7 @@ class Parser: public ParserBase {
     Token current_;
     Token prev_;
     Handle<ir::Scope> scope_;
+    EnclosureBalancer enclosure_balancer_;
     size_t error_count_;
   };
 
@@ -353,9 +358,18 @@ class Parser: public ParserBase {
     template <typename T>
     static Handle<ErrorDescriptor> Build(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
       if (cplusplus_info) {
-        return module_info_->error_reporter()->SyntaxError(item) << __FILE__ << ":" << __LINE__ << "\n";
+        return module_info->error_reporter()->SyntaxError(item) << filename << ":" << line << "\n";
       }
-      return module_info_->error_reporter()->SyntaxError(item);
+      return module_info->error_reporter()->SyntaxError(item);
+    }
+
+
+    template <typename T>
+    static Handle<ErrorDescriptor> BuildWarning(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+      if (cplusplus_info) {
+        return module_info->error_reporter()->Warning(item) << filename << ":" << line << "\n";
+      }
+      return module_info->error_reporter()->Warning(item);
     }
   };
 
@@ -437,6 +451,10 @@ class Parser: public ParserBase {
   template <typename T>
   Handle<ErrorDescriptor> ReportParseError(T item, const char* filename, int line);
 
+
+  template <typename T>
+  Handle<ErrorDescriptor> ReportParseWarning(T item, const char* filename, int line);
+
   
   template <typename T>
   void UnexpectedEndOfInput(T item, const char* filename, int line);
@@ -446,10 +464,13 @@ class Parser: public ParserBase {
 
 
   void TryConsume(TokenKind kind) {if (cur_token()->Is(kind)) {Next();}}
+
+
+  void SkipToNextStatement() YATSC_NOEXCEPT;
   
   
 #if defined(DEBUG) || defined(UNIT_TEST)
-  DebugStream<true> phase_buffer_;
+  DebugStream<false> phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;

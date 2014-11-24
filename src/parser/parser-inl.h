@@ -69,18 +69,56 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) YATSC_NOEXCEPT {
-  while (!cur_token()->Is(TokenKind::kEof) &&
-         !cur_token()->Is(TokenKind::kIllegal)) {
+  while (!cur_token()->Is(TokenKind::kEof)) {
     for (auto kind: kinds) {
       if (kind == TokenKind::kLineTerminator) {
         if (cur_token()->has_line_break_before_next()) {
-          Next();
-          break;
+          goto END;
         }
       }
       if (cur_token()->Is(kind)) {
-        break;
+        goto END;
       }
+    }
+    Next();
+  }
+
+END:
+  if (move_to_next_token) {
+    Next();
+  }
+}
+
+
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::SkipToNextStatement() YATSC_NOEXCEPT {
+  while (!cur_token()->Is(TokenKind::kEof)) {
+    if (cur_token()->OneOf({
+          TokenKind::kLeftBrace,
+            TokenKind::kLineTerminator,
+            TokenKind::kIf,
+            TokenKind::kFor,
+            TokenKind::kWhile,
+            TokenKind::kDo,
+            TokenKind::kContinue,
+            TokenKind::kBreak,
+            TokenKind::kReturn,
+            TokenKind::kWith,
+            TokenKind::kSwitch,
+            TokenKind::kThrow,
+            TokenKind::kDebugger,
+            TokenKind::kVar,
+            TokenKind::kFunction,
+            TokenKind::kClass,
+            TokenKind::kEnum,
+            TokenKind::kInterface,
+            TokenKind::kLet,
+            TokenKind::kConst,
+            TokenKind::kImport,
+            TokenKind::kExport,
+            TokenKind::kModule
+        })) {
+      break;
     }
     Next();
   }
@@ -121,7 +159,7 @@ typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterat
     scope = scope_;
   }
     
-  return RecordedParserState(scanner_->char_position(), current, prev, scope, module_info_->error_reporter()->size());
+  return RecordedParserState(scanner_->char_position(), current, prev, scope, enclosure_balancer_, module_info_->error_reporter()->size());
 }
 
 
@@ -132,6 +170,7 @@ void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& r
   *current_token_info_ = rps.current();
   prev_token_info_ = rps.prev();
   scope_ = rps.scope();
+  enclosure_balancer_ = rps.enclosure_balancer();
   Handle<ErrorReporter> se = module_info_->error_reporter();
   if (se->size() != rps.error_count()) {
     int diff = abs(static_cast<int>(rps.error_count()) - static_cast<int>(se->size()));
@@ -147,15 +186,21 @@ void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, Tok
   int difference = 1;
 
   switch (kind) {
-    case TokenKind::kRightBrace:
+    case TokenKind::kRightBrace: {
+      enclosure_balancer_.BalanceBrace();
       difference = enclosure_balancer_.brace_difference();
       break;
-    case TokenKind::kRightParen:
+    }
+    case TokenKind::kRightParen: {
+      enclosure_balancer_.BalanceParen();
       difference = enclosure_balancer_.paren_difference();
       break;
-    case TokenKind::kRightBracket:
+    }
+    case TokenKind::kRightBracket: {
+      enclosure_balancer_.BalanceBracket();
       difference = enclosure_balancer_.bracket_difference();
       break;
+    }
     default:
       ;
   }
@@ -163,18 +208,21 @@ void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, Tok
   if (difference < 0) {
     switch (kind) {
       case TokenKind::kRightBrace: {
-        enclosure_balancer_.BalanceBrace();
-        SYNTAX_ERROR_AND("extra '}' found.", token, break);
+        ReportParseError(token, YATSC_SOURCEINFO_ARGS)
+          << "extra '}' found.";
+        break;
       }
         
       case TokenKind::kRightParen: {
-        enclosure_balancer_.BalanceParen();
-        SYNTAX_ERROR_AND("extra ')' found.", token, break);
+        ReportParseError(token, YATSC_SOURCEINFO_ARGS)
+          << "extra ')' found.";
+        break;
       }
         
       case TokenKind::kRightBracket: {
-        enclosure_balancer_.BalanceBracket();
-        SYNTAX_ERROR_AND("extra ']' found.", token, break);
+        ReportParseError(token, YATSC_SOURCEINFO_ARGS)
+          << "extra ']' found.";
+        break;
       }
         
       default:
@@ -201,6 +249,13 @@ template <typename UCharInputIterator>
 template <typename T>
 Handle<ErrorDescriptor> Parser<UCharInputIterator>::ReportParseError(T item, const char* filename, int line) {
   return SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line);
+}
+
+
+template <typename UCharInputIterator>
+template <typename T>
+Handle<ErrorDescriptor> Parser<UCharInputIterator>::ReportParseWarning(T item, const char* filename, int line) {
+  return SyntaxErrorBuilder<DEBUG_BOOL>::BuildWarning(module_info_, item, filename, line);
 }
 
 

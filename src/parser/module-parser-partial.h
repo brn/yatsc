@@ -33,19 +33,25 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
   while (cur_token()->type() != TokenKind::kEof) {
     if (cur_token()->type() == TokenKind::kImport) {
       auto import_decl_result = ParseImportDeclaration();
-      SKIP_TOKEN_OR(import_decl_result, success, TokenKind::kLineTerminator) {
+      if (import_decl_result) {
         file_scope->InsertLast(import_decl_result.value());
+      } else {
+        SkipToNextStatement();
       }
     } else if (cur_token()->type() == TokenKind::kIdentifier &&
                cur_token()->value()->Equals("module")) {
       auto module_decl_result = ParseModuleImport();
-      SKIP_TOKEN_OR(module_decl_result, success, TokenKind::kLineTerminator) {
+      if (module_decl_result) {
         file_scope->InsertLast(module_decl_result.value());
+      } else {
+        SkipToNextStatement();
       }
     } else if (cur_token()->type() == TokenKind::kExport) {
       auto export_decl_result = ParseExportDeclaration();
-      SKIP_TOKEN_OR(export_decl_result, success, TokenKind::kLineTerminator) {
+      if (export_decl_result) {
         file_scope->InsertLast(export_decl_result.value());
+      } else {
+        SkipToNextStatement();
       }
     } else if (cur_token()->Is(TokenKind::kIllegal)) {
       SYNTAX_ERROR_AND("unexpected token.", cur_token(), break);
@@ -53,13 +59,17 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
       if (cur_token()->type() == TokenKind::kIdentifier &&
           cur_token()->value()->Equals("declare")) {
         auto ambient_decl_result = ParseAmbientDeclaration(true);
-        SKIP_TOKEN_OR(ambient_decl_result, success, TokenKind::kLineTerminator) {
+        if (ambient_decl_result) {
           file_scope->InsertLast(ambient_decl_result.value());
+        } else {
+          SkipToNextStatement();
         }
       } else {
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
-        SKIP_TOKEN_OR(stmt_list_result, success, TokenKind::kLineTerminator) {
+        if (stmt_list_result) {
           file_scope->InsertLast(stmt_list_result.value());
+        } else {
+          SkipToNextStatement();
         }
       }
     }
@@ -113,8 +123,14 @@ ParseResult Parser<UCharInputIterator>::ParseImportDeclaration() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseExternalModuleReference() {
   LOG_PHASE(ParseExternalModuleReference);
+  bool module;
   if (cur_token()->type() == TokenKind::kIdentifier &&
-      cur_token()->value()->Equals("require")) {
+      cur_token()->value()->Equals("require") ||
+      (module = cur_token()->value()->Equals("module"))) {
+    if (module) {
+      ReportParseWarning(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "'module' import is deprecated.";
+    }
     Next();
     if (cur_token()->type() == TokenKind::kLeftParen) {
       Next();

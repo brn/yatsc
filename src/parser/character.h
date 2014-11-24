@@ -48,7 +48,6 @@ class Character : private Static {
          uchar == unicode::u32(0x0c) ||
          uchar == unicode::u32(0x20) ||
          uchar == unicode::u32(255) ||
-         GetLineBreakType(uchar, lookahead) != LineBreakType::NONE ||
          uchar == unicode::u32(0x2028) ||
          uchar == unicode::u32(0x1680) ||
          uchar == unicode::u32(0x180E) ||
@@ -142,14 +141,14 @@ class Character : private Static {
 
 
   static LineBreakType GetLineBreakType(const UChar& uchar, const UChar& lookahead) {
-    if (uchar == unicode::u32('\n')) {
-      return LineBreakType::LF;
-    }
     if (uchar == unicode::u32('\r')) {
       if (lookahead == unicode::u32('\n')) {
         return LineBreakType::CRLF;
       }
       return LineBreakType::CR;
+    }
+    if (uchar == unicode::u32('\n')) {
+      return LineBreakType::LF;
     }
     return LineBreakType::NONE;
   }

@@ -172,31 +172,42 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(Token* 
 template <typename UCharInputInterator>
 ParseResult Parser<UCharInputInterator>::ParseAmbientClassDeclaration(Token* info) {
   LOG_PHASE(ParseAmbientClassDeclaration);
-  if (cur_token()->type() == TokenKind::kClass) {
-    Next();
-    auto identifier_result = ParseIdentifier();
-    CHECK_AST(identifier_result);
-    ParseResult type_parameters_result;
-    if (cur_token()->type() == TokenKind::kLess) {
-     type_parameters_result = ParseTypeParameters();
-     CHECK_AST(type_parameters_result);
-    }
-    auto class_bases_result = ParseClassBases();
-    CHECK_AST(class_bases_result);
-    if (cur_token()->type() == TokenKind::kLeftBrace) {
-      OpenBraceFound();
-      auto ambient_class_body_result = ParseAmbientClassBody();
-      CHECK_AST(ambient_class_body_result);
-      auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.value(),
-                                                      type_parameters_result.or(ir::Node::Null()),
-                                                      class_bases_result.value(),
-                                                      ambient_class_body_result.value());
-      ret->SetInformationForNode(info);
-      return Success(ret);
-    }
-    SYNTAX_ERROR("'{' expected.", cur_token());
+
+  Next();
+  auto identifier_result = ParseIdentifier();
+    
+  if (!identifier_result) {
+    SkipTokensUntil({TokenKind::kLess, TokenKind::kExtends, TokenKind::kImplements, TokenKind::kLeftBrace}, false);
   }
-  SYNTAX_ERROR("'class' expected.", cur_token());
+    
+  ParseResult type_parameters_result;
+    
+  if (cur_token()->Is(TokenKind::kLess)) {
+    type_parameters_result = ParseTypeParameters();
+     
+    if (!type_parameters_result) {
+      SkipTokensUntil({TokenKind::kGreater, TokenKind::kExtends, TokenKind::kImplements, TokenKind::kLeftBrace}, false);
+    }
+     
+  }
+    
+  auto class_bases_result = ParseClassBases();
+    
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
+    OpenBraceFound();
+      
+    auto ambient_class_body_result = ParseAmbientClassBody();
+    auto ret = New<ir::AmbientClassDeclarationView>(identifier_result.or(Null()),
+                                                    type_parameters_result.or(Null()),
+                                                    class_bases_result.or(Null()),
+                                                    ambient_class_body_result.or(Null()));
+    ret->SetInformationForNode(info);
+    return Success(ret);
+  }
+
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'{' expected.";
+  return Failed();
 }
 
 
@@ -212,19 +223,23 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
     bool success = true;
 
     while (1) {
-      if (cur_token()->type() == TokenKind::kRightBrace) {
+      if (cur_token()->Is(TokenKind::kRightBrace)) {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(body);
       } else {
+
         auto ambient_class_element_result = ParseAmbientClassElement();
-        SKIP_TOKEN_OR(ambient_class_element_result, success, TokenKind::kLineTerminator) {
+        if (!ambient_class_element_result) {
+          SkipTokensUntil({TokenKind::kLineTerminator, TokenKind::kRightBrace}, false);
+        } else {
           body->InsertLast(ambient_class_element_result.value());
         }
+        
         if (IsLineTermination()) {
-          ConsumeLineTerminator();
-        } else if (cur_token()->type() != TokenKind::kRightBrace &&
-                   prev_token()->type() != TokenKind::kRightBrace) {
+          TryConsume(TokenKind::kLineTerminator);
+        } else if (!cur_token()->Is(TokenKind::kRightBrace) &&
+                   !prev_token()->Is(TokenKind::kRightBrace)) {
           SYNTAX_ERROR("';' expected", prev_token());
         }
       }
@@ -242,7 +257,6 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
   }
 
   auto field_modifiers_result = ParseFieldModifiers();
-  CHECK_AST(field_modifiers_result);
   AccessorType at = ParseAccessor();
 
   if (Token::IsKeyword(cur_token()->type())) {
@@ -251,22 +265,22 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
   
   if (cur_token()->type() == TokenKind::kIdentifier) {
     if (cur_token()->value()->Equals("constructor")) {
-      return ParseAmbientConstructor(field_modifiers_result.value());
+      return ParseAmbientConstructor(field_modifiers_result.or(Null()));
     } else {
       RecordedParserState rps = parser_state();
       Next();
       if (cur_token()->type() == TokenKind::kLeftParen ||
           cur_token()->type() == TokenKind::kLess) {
         RestoreParserState(rps);
-        return ParseAmbientMemberFunction(field_modifiers_result.value(), &at);
+        return ParseAmbientMemberFunction(field_modifiers_result.or(Null()), &at);
       } else {
         RestoreParserState(rps);
-        return ParseAmbientMemberVariable(field_modifiers_result.value());
+        return ParseAmbientMemberVariable(field_modifiers_result.or(Null()));
       }
     }
   } else if (cur_token()->type() == TokenKind::kMul) {
     Next();
-    return ParseAmbientGeneratorMethod(field_modifiers_result.value());
+    return ParseAmbientGeneratorMethod(field_modifiers_result.or(Null()));
   }
   SYNTAX_ERROR("unexpected token", cur_token());
 }
@@ -302,23 +316,18 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* accessor_type) {
   LOG_PHASE(ParseAmbientMemberFunction);
   
-  if (cur_token()->type() == TokenKind::kIdentifier ||
-      cur_token()->type() == TokenKind::kPublic ||
-      cur_token()->type() == TokenKind::kPrivate ||
-      cur_token()->type() == TokenKind::kProtected) {   
+  if (cur_token()->Is(TokenKind::kIdentifier) || IsAccessLevelModifier(cur_token())) {   
     
-    if (cur_token()->type() == TokenKind::kIdentifier) {
+    if (cur_token()->Is(TokenKind::kIdentifier)) {
       Token info = *cur_token();
       auto identifier_result = ParseIdentifier();
-      CHECK_AST(identifier_result);
       auto call_sig_result = ParseCallSignature(true, false);
-      CHECK_AST(call_sig_result);
       auto ret = New<ir::AmbientMemberFunctionView>(accessor_type->getter,
                                                     accessor_type->setter,
                                                     false,
                                                     mods,
-                                                    identifier_result.value(),
-                                                    call_sig_result.value());
+                                                    identifier_result.or(Null()),
+                                                    call_sig_result.or(Null()));
       ret->SetInformationForNode(mods);
       return Success(ret);
     }
@@ -413,7 +422,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
 
     if (cur_token()->type() == TokenKind::kRightBrace) {
       CloseBraceFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
       return Success(ret);
     }
     
@@ -428,12 +437,12 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
         Next();
         if (cur_token()->type() == TokenKind::kRightBrace) {
           CloseBraceFound();
-          BalanceEnclosureIfNotBalanced(cur_token(), true);
+          BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
           return Success(ret);
         }
       } else if (cur_token()->type() == TokenKind::kRightBrace) {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(ret);
       } else {
         SYNTAX_ERROR("',' or '}' expected.", cur_token());
@@ -512,10 +521,12 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
     while (1) {
       if (cur_token()->type() == TokenKind::kRightBrace) {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(body);
       } else if (cur_token()->type() == TokenKind::kEof) {
         SYNTAX_ERROR("unexpected end of input.", cur_token());
+      } else if (cur_token()->Is(TokenKind::kIllegal)) {
+        SkipIllegalTokens();
       } else {
         auto ambient_module_element_result = ParseAmbientModuleElement(external);
         SKIP_TOKEN_OR(ambient_module_element_result, success, TokenKind::kLineTerminator) {

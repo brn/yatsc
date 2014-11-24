@@ -1418,11 +1418,13 @@ ParseResult Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
     
   while (1) {
     auto prop_definition_result = ParsePropertyDefinition(yield);
-    SKIP_TOKEN_OR(prop_definition_result, success, TokenKind::kRightBrace) {
+    if (prop_definition_result) {
       object_literal->InsertLast(prop_definition_result.value());
       if (prop_definition_result.value()->first_child()->HasSymbol()) {
         prop->Declare(prop_definition_result.value()->first_child()->symbol(), prop_definition_result.value());
       }
+    } else {
+      SkipTokensUntil({TokenKind::kComma, TokenKind::kRightBrace}, false);
     }
 
     if (cur_token()->type() == TokenKind::kComma) {

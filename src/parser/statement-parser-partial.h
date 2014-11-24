@@ -88,7 +88,7 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
       parse_result = ParseBreakStatement(yield);
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (!cur_token()->OneOf(TokenKind::kRightBrace, TokenKind::kRightParen)){
+      } else if (!cur_token()->OneOf({TokenKind::kRightBrace, TokenKind::kRightParen})){
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
         Next();
         return Failed();
@@ -221,7 +221,7 @@ ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has
     while (1) {
       if (cur_token()->type() == TokenKind::kRightBrace) {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         break;
       } else if (cur_token()->Is(TokenKind::kIllegal)) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "Unexpected token.";
@@ -417,7 +417,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
       }
       case TokenKind::kRightBrace: {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(binding_prop_list);
       }
       default:
@@ -578,9 +578,13 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
     
   while (1) {
     auto variable_decl_result = ParseVariableDeclaration(in, yield);
-    SKIP_TOKEN_OR(variable_decl_result, success, TokenKind::kLineTerminator) {
+    
+    if (variable_decl_result) {
       vars->InsertLast(variable_decl_result.value());
+    } else {
+      SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
     }
+    
     if (cur_token()->type() == TokenKind::kComma) {
       Next();
     } else {
@@ -604,15 +608,20 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
   ParseResult lhs_result;
   if (cur_token()->type() == TokenKind::kIdentifier) {
     lhs_result = ParseBindingIdentifier(false, in, yield);
+  } else if (Token::IsKeyword(cur_token()->type())) {
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "keyword '" << cur_token()->utf8_value() << "' is not valid identifier.";
+    Next();
+    return Failed();
   } else {
     lhs_result = ParseBindingPattern(yield, false);
   }
 
-  CHECK_AST(lhs_result);
-
-  if (!lhs_result.value()->IsValidLhs()) {
-    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "left hand side of variable declaration is invalid.";
-    return Failed();
+  if (lhs_result) {
+    if (!lhs_result.value()->IsValidLhs()) {
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "left hand side of variable declaration is invalid.";
+      return Failed();
+    }
   }
 
   ParseResult type_expr_result;
@@ -627,10 +636,10 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
     value_result = ParseAssignmentExpression(in, yield);
     CHECK_AST(value_result);
   }
-
-  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(),
-                                               value_result.or(ir::Node::Null()),
-                                               type_expr_result.or(ir::Node::Null()));
+  
+  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.or(Null()),
+                                               value_result.or(Null()),
+                                               type_expr_result.or(Null()));
   ret->SetInformationForNode(lhs_result.value());
   current_scope()->Declare(ret);
   
@@ -647,38 +656,41 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
   LOG_PHASE(ParseIfStatement);
   Token info = *cur_token();
   Next();
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+  
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
     auto expr_result = ParseExpression(true, yield);
-    CHECK_AST(expr_result);
-    if (cur_token()->type() == TokenKind::kRightParen) {
+    
+    if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
       auto then_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
-      CHECK_AST(then_stmt_result);
-      if (prev_token()->type() != TokenKind::kRightBrace && IsLineTermination()) {
+      
+      if (!prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
         ConsumeLineTerminator();
       }
+      
       ParseResult else_stmt_result;
-      if (cur_token()->type() == TokenKind::kElse) {
+      
+      if (cur_token()->Is(TokenKind::kElse)) {
         Next();
         else_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
-        CHECK_AST(else_stmt_result);
-        if (prev_token()->type() != TokenKind::kRightBrace && IsLineTermination()) {
+        if (prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
           ConsumeLineTerminator();
         }
       }
-      Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr_result.value(),
-                                                                     then_stmt_result.value(),
-                                                                     else_stmt_result.or(ir::Node::Null()));
+      
+      Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr_result.or(Null()),
+                                                                     then_stmt_result.or(Null()),
+                                                                     else_stmt_result.or(Null()));
       if_stmt->SetInformationForNode(&info);
       return Success(if_stmt);
     }
 
     Token token = *cur_token();
 
-    BalanceEnclosureIfNotBalanced(cur_token(), true);
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
     
     ReportParseError(&token, YATSC_SOURCEINFO_ARGS) << "')' expected.";
     return Failed();
@@ -871,9 +883,9 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseIterationBody(bool yield, bool has_return) {
-  if (cur_token()->type() == TokenKind::kRightParen) {
+  if (cur_token()->Is(TokenKind::kRightParen)) {
     CloseParenFound();
-    BalanceEnclosureIfNotBalanced(cur_token(), true);
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
     return ParseStatement(yield, has_return, true, true);
   }
   
@@ -962,14 +974,14 @@ ParseResult Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_
     
   Next();
     
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
     auto expr_result = ParseExpression(true, yield);
     CHECK_AST(expr_result);
-    if (cur_token()->type() == TokenKind::kRightParen) {
+    if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
       auto stmt_result = ParseStatement(yield, has_return, breakable, continuable);
       CHECK_AST(stmt_result);
       return parse_result = Success(New<ir::WithStatementView>(expr_result.value(), stmt_result.value()));
@@ -1002,17 +1014,17 @@ ParseResult Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool ha
     auto expr_result = ParseExpression(true, yield);
     CHECK_AST(expr_result);
     
-    if (cur_token()->type() == TokenKind::kRightParen) {
+    if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
-      if (cur_token()->type() == TokenKind::kLeftBrace) {
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
+      if (cur_token()->Is(TokenKind::kLeftBrace)) {
         OpenBraceFound();
         Next();
         auto case_clauses_result = ParseCaseClauses(yield, has_return, continuable);
         CHECK_AST(case_clauses_result);
-        if (cur_token()->type() == TokenKind::kRightBrace) {
+        if (cur_token()->Is(TokenKind::kRightBrace)) {
           CloseBraceFound();
-          BalanceEnclosureIfNotBalanced(cur_token(), true);
+          BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
           auto switch_stmt = New<ir::SwitchStatementView>(expr_result.value(), case_clauses_result.value());
           switch_stmt->SetInformationForNode(&info);
           return Success(switch_stmt);
@@ -1107,7 +1119,7 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
         
       case TokenKind::kRightBrace: {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), false);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, false);
         return Success(case_list);
       }
 
@@ -1287,7 +1299,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
 
   auto identifier_result = ParseIdentifier();
   if (!identifier_result) {
-    SkipTokensUntil({TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace});
+    SkipTokensUntil({TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
   }
   
   ParseResult type_parameters_result;
@@ -1298,7 +1310,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     type_parameters_result = ParseTypeParameters();
     
     if (!type_parameters_result) {
-      SkipTokensUntil({TokenKind::kGreater, TokenKind::kExtends, TokenKind::LeftBrace, TokenKind::kRightBrace}, false);
+      SkipTokensUntil({TokenKind::kGreater, TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
     }
   }
     
@@ -1309,7 +1321,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     while (1) {
       auto ref_type_result = ParseReferencedType();
       if (!ref_type_result) {
-        SkipTokensUntil({TokenKind::kComma, TokenKind::kLeftBrace, TokenKind::kRightBrace});
+        SkipTokensUntil({TokenKind::kComma, TokenKind::kLeftBrace}, false);
       }
 
       extends->InsertLast(ref_type_result.or(Null()));
@@ -1358,7 +1370,7 @@ ParseResult Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bool ha
       auto ret = New<ir::EnumDeclView>(identifier_result.or(Null()), enum_body);
       ret->SetInformationForNode(&info);
       return Success(ret);
-    }
+    };
   }
 
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected.";
@@ -1376,7 +1388,7 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
     
   if (cur_token()->Is(TokenKind::kRightBrace)) {
     CloseBraceFound();
-    BalanceEnclosureIfNotBalanced(cur_token(), true);
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
     return Success(ret);
   }
 
@@ -1393,12 +1405,12 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
       Next();
       if (cur_token()->Is(TokenKind::kRightBrace)) {
         CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), true);
+        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(ret);
       }
     } else if (cur_token()->Is(TokenKind::kRightBrace)) {
       CloseBraceFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
       return Success(ret);
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "',' or '}' expected.";
@@ -1458,26 +1470,30 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
     }
     TryConsume(TokenKind::kGreater);
   }
-    
-  auto class_bases_result = ParseClassBases();
+
+  ParseResult class_bases_result;
+  if (cur_token()->OneOf({TokenKind::kImplements, TokenKind::kExtends})) {
+    class_bases_result = ParseClassBases();
+  }
     
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
-    Next();
-    auto class_body_result = ParseClassBody();
-    if (!class_body_result) {
-      SkipTokensUntil({TokenKind::kRightBrace}, true);
-    }
-    
-    auto class_decl = New<ir::ClassDeclView>(identifier_result.or(Null()),
-                                             type_parameters_result.or(Null()),
-                                             class_bases_result.or(Null()),
-                                             class_body_result.or(Null()));
-    class_decl->SetInformationForNode(&info);
-    return Success(class_decl);
+  } else {
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected";
   }
-
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected";
+  Next();
+  
+  auto class_body_result = ParseClassBody();
+  if (!class_body_result) {
+    SkipTokensUntil({TokenKind::kRightBrace}, true);
+  }
+    
+  auto class_decl = New<ir::ClassDeclView>(identifier_result.or(Null()),
+                                           type_parameters_result.or(Null()),
+                                           class_bases_result.or(Null()),
+                                           class_body_result.or(Null()));
+  class_decl->SetInformationForNode(&info);
+  return Success(class_decl);
 }
 
 
@@ -1531,6 +1547,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassBases() {
       return Success(bases);
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token";
+      return Failed();
     }
   }
 }
@@ -1546,7 +1563,8 @@ ParseResult Parser<UCharInputIterator>::ParseClassBody() {
     auto class_element_result = ParseClassElement();
 
     if (!class_element_result) {
-      SkipTokensUntil({TokenKind::kLineTerminator, TokenKind::kRightBrace}, false);
+      SkipTokensUntil({TokenKind::kPublic, TokenKind::kPrivate, TokenKind::kProtected,
+            TokenKind::kStatic, TokenKind::kIdentifier, TokenKind::kRightBrace}, false);
       
       if (cur_token()->Is(TokenKind::kRightBrace)) {
         continue;
@@ -1568,7 +1586,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassBody() {
   }
   
   CloseBraceFound();
-  BalanceEnclosureIfNotBalanced(cur_token(), true);
+  BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
   return Success(fields);
 }
 
@@ -1599,10 +1617,10 @@ ParseResult Parser<UCharInputIterator>::ParseClassElement() {
           OpenParenFound();
         }
         RestoreParserState(rps);
-        return ParseMemberFunctionOverloads(field_modifiers_result.or(Null), &at);
+        return ParseMemberFunctionOverloads(field_modifiers_result.or(Null()), &at);
       } else {
         RestoreParserState(rps);
-        return ParseMemberVariable(field_modifiers_result.or(Null));
+        return ParseMemberVariable(field_modifiers_result.or(Null()));
       }
     }
   } else if (cur_token()->Is(TokenKind::kMul)) {
@@ -1753,10 +1771,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir::Nod
         IsAccessLevelModifier(cur_token())) {
       
       auto constructor_overload_result = ParseConstructorOverloadOrImplementation(first, mods, overloads);
-      if (!constructor_overload_result) {
-        SkipTokensUntil({TokenKind::kIdentifier, TokenKind::kPrivate, TokenKind::kProtected, TokenKind::kPublic}, false);
-        continue;
-      }
+      CHECK_AST(constructor_overload_result);
       
       if (constructor_overload_result.value()->HasMemberFunctionOverloadView()) {
         overloads->InsertLast(constructor_overload_result.value());
@@ -1770,7 +1785,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir::Nod
       if (overloads->size() > 0) {
         pos = overloads->last_child()->source_position();
       } else {
-        pos = prev_token->source_position();
+        pos = prev_token()->source_position();
       }
       ReportParseError(pos, YATSC_SOURCEINFO_ARGS) << "incomplete constructor definition.";
       return Failed();
@@ -1868,10 +1883,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle<ir::
 
       // Parse an overload or an implementation.
       auto member_function_result = ParseMemberFunctionOverloadOrImplementation(first, mods, at, overloads);
-      if (!member_function_result) {
-        SkipTokensUntil({TokenKind::kIdentifier, TokenKind::kPublic, TokenKind::kPrivate, TokenKind::kProtected, TokenKind::kStatic}, false);
-        continue;
-      }
+      CHECK_AST(member_function_result);
 
       // If function is overload decl,
       // add node to the overloads list.
@@ -1995,10 +2007,7 @@ ParseResult Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Handle<ir:
       RestoreParserState(rps);
       
       auto generator_result = ParseGeneratorMethodOverloadOrImplementation(first, mods, overloads);
-      if (!generator_result) {
-        SkipTokensUntil({TokenKind::kIdentifier, TokenKind::kPublic, TokenKind::kPrivate, TokenKind::kProtected, TokenKind::kStatic}, false);
-        continue;
-      }
+      CHECK_AST(generator_result);
       
       if (generator_result.value()->HasMemberFunctionOverloadView()) {
         ValidateOverload(Handle<ir::MemberFunctionOverloadView>(generator_result.value()), overloads);
@@ -2242,7 +2251,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
 
   if (cur_token()->type() == TokenKind::kRightParen) {
     CloseParenFound();
-    BalanceEnclosureIfNotBalanced(cur_token(), true);
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
     return Success(param_list);
   }
     
@@ -2288,7 +2297,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
       Next();
     } else if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
       return Success(param_list);
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
@@ -2383,7 +2392,7 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
   while (1) {
     if (cur_token()->Is(TokenKind::kRightBrace)) {
       CloseBraceFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), true);
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
       break;
     } else if (cur_token()->Is(TokenKind::kIllegal)) {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)

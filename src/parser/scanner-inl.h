@@ -72,13 +72,18 @@ Token* Scanner<UCharInputIterator>::Scan() {
   
   if (!char_.IsAscii()) {
     ILLEGAL_TOKEN();
-    Advance();
-  }
-  
-  while (!DoScan() &&
-         char_ != unicode::u32('\0')) {
-    Advance();
-    AfterScan();
+    UtfString str;
+    while (!char_.IsAscii()) {
+      str += char_;
+      Advance();
+    }
+    BuildToken(TokenKind::kIdentifier, str);
+  } else {  
+    while (!DoScan() &&
+           char_ != unicode::u32('\0')) {
+      Advance();
+      AfterScan();
+    }
   }
 
   AfterScan();
@@ -143,8 +148,14 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
   UChar quote = char_;
   UtfString v;
   bool escaped = false;
+  bool unicode_scan_success = true;
   while (1) {
-    Advance();
+    
+    if (unicode_scan_success) {
+      Advance();
+    }
+    unicode_scan_success = true;
+    
     if (char_ == quote) {
       if (!escaped) {
         break;
@@ -152,20 +163,20 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
       escaped = false;
     } else if (char_ == unicode::u32('\0') ||
                Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
-      TOKEN_ERROR("Unterminated string literal.");
-      BuildToken(TokenKind::kStringLiteral, v);
-      return;
+      TOKEN_ERROR("unterminated string literal.");
+      if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+        line_terminator_state_.set_line_break_before_next();
+        LineFeed();
+      }
+      break;
     } else if (char_ == unicode::u32('\\')) {
       if (!escaped) {
         if (lookahead1_ == unicode::u32('u')) {
-          if (!ScanUnicodeEscapeSequence(&v, true)) {
-            return BuildToken(TokenKind::kIllegal, v);
-          }
+          unicode_scan_success = ScanUnicodeEscapeSequence(&v, true);
           continue;
-        } else if (lookahead1_ == unicode::u32('x')) {
-          if (!ScanAsciiEscapeSequence(&v)) {
-            return;
-          }
+        } else if (lookahead1_ == unicode::u32('x') ||
+                   lookahead1_ == unicode::u32('X')) {
+          ScanAsciiEscapeSequence(&v);
           continue;
         } else {
           escaped = !escaped; 
@@ -185,7 +196,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
 
 template<typename UCharInputIterator>
 void Scanner<UCharInputIterator>::ScanDigit() {
-  if (char_ == unicode::u32('0') && lookahead1_ == unicode::u32('x')) {
+  if (char_ == unicode::u32('0') && (lookahead1_ == unicode::u32('x') || lookahead1_ == unicode::u32('X'))) {
     return ScanHex();
   }
 
@@ -279,7 +290,7 @@ void Scanner<UCharInputIterator>::ScanInteger() {
     if (Character::IsNumericLiteral(char_)) {
       v += char_;
       if (exponent && !exponent_operator) {
-        return ILLEGAL_TOKEN();
+        v += UChar::FromAscii('+');
       }
       exponent = false;
       exponent_operator = false;
@@ -318,10 +329,9 @@ void Scanner<UCharInputIterator>::ScanIdentifier() {
   UtfString v;  
   while (Character::IsInIdentifierRange(char_) || char_ == unicode::u32('\\')) {
     if (char_ == unicode::u32('\\')) {
-      if (!ScanUnicodeEscapeSequence(&v, false)) {
-        return BuildToken(TokenKind::kIllegal, v);
+      if (ScanUnicodeEscapeSequence(&v, false)) {
+        Advance();
       }
-      Advance();
     } else {
       v += char_;
       Advance();
@@ -466,7 +476,7 @@ Token* Scanner<UCharInputIterator>::CheckRegularExpression(Token* token_info) {
         }
       } else if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE ||
                  char_.IsInvalid()) {
-        TOKEN_ERROR("Unterminated regular expression");
+        TOKEN_ERROR("unterminated regular expression");
         return nullptr;
       } else {
         escaped = false;
@@ -513,7 +523,6 @@ bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool i
   Advance();
   if (char_ != unicode::u32('u')) {
     TOKEN_ERROR("UnicodeEscapeSequence not started with 'u'");
-    Skip();
     return false;
   } else {
     Advance();
@@ -521,17 +530,19 @@ bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool i
   bool success;
   UC16 uc16 = ScanHexEscape(char_, 4, &success);
   if (!success) {
-    TOKEN_ERROR("Not allowed token in UnicodeEscapeSequence.");
-    Skip();
+    Advance();
+    TOKEN_ERROR("not allowed token in unicode escape sequence.");
     return false;
   } else if (!in_string_literal && (uc16 == '\\' || !Character::IsIdentifierStartChar(uc16))) {
-    TOKEN_ERROR("Not allowed token in UnicodeEscapeSequence.");
-    Skip();
+    Advance();
+    TOKEN_ERROR("invalid identifier.");
     return false;
   }
   UC8Bytes bytes = utf16::Convertor::Convert(uc16, 0);
   if (bytes.size() == 0) {
-    ILLEGAL_TOKEN();
+    Advance();
+    TOKEN_ERROR("invalid unicode escape sequence.");
+    return false;
   }
   (*v) += UChar(uc16, bytes);
   return true;
@@ -540,17 +551,12 @@ bool Scanner<UCharInputIterator>::ScanUnicodeEscapeSequence(UtfString* v, bool i
 
 template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::ScanAsciiEscapeSequence(UtfString* v) {
-  Advance();
-  if (char_ != unicode::u32('x')) {
-    TOKEN_ERROR("ILLEGAL_TOKEN Token");
-    Skip();
-    return false;
-  }
-  Advance();
+  Advance(); // backslash
+  Advance(); // x
   bool success;
   UC8 uc8 = unicode::u8(ScanHexEscape(char_, 2, &success));
   if (!success || !utf8::IsAscii(uc8)) {
-    ILLEGAL_TOKEN();
+    TOKEN_ERROR("invalid ascii escape sequence.");
     return false;
   }
   (*v) += UChar::FromAscii(static_cast<char>(uc8));
@@ -683,6 +689,8 @@ bool Scanner<UCharInputIterator>::SkipMultiLineComment() {
   bool skip = false;
   if (Character::IsMultiLineCommentStart(char_, lookahead1_)) {
     UtfString str;
+    Advance(); // /
+    Advance(); // *
     while (!Character::IsMultiLineCommentEnd(char_, lookahead1_)) {
       Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);
       if (lt != Character::LineBreakType::NONE) {

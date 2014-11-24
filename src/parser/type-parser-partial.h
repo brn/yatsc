@@ -315,7 +315,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
       }
     }
     CloseBraceFound();
-    BalanceEnclosureIfNotBalanced(cur_token(), true);
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
     return Success(object_type);
   }
   SYNTAX_ERROR("SyntaxError '{' expected", cur_token());

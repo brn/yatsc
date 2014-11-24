@@ -44,7 +44,7 @@ namespace yatsc {
 
 #if !defined(DEBUG)
 #define DEBUG_BOOL false
-#elif
+#else
 #define DEBUG_BOOL true
 #endif
 
