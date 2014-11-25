@@ -125,7 +125,7 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
 
 void Replace(String& str, const String& from, const String& to) {
   String::size_type pos = 0;
-  while(pos = str.find(from, pos), pos != String::npos) {
+  while ((pos = str.find(from, pos)) != String::npos) {
     str.replace(pos, from.length(), to);
     pos += to.length();
   }
@@ -139,11 +139,14 @@ Vector<String> ErrorFormatter::GetLineSource(const SourcePosition& source_positi
   String::size_type start = 0;
   Vector<String> line_source;
   String raw_source_code(module_info_->raw_source_code());
+  int next = 2;
   
   while (1) {
+    next = 2;
     String::size_type end = raw_source_code.find("\r\n", start);
     if (String::npos == end) {
-      end = raw_source_code.find("\n", start);
+      end = raw_source_code.find('\n', start);
+      next = 1;
     }
     
     count++;
@@ -166,7 +169,7 @@ Vector<String> ErrorFormatter::GetLineSource(const SourcePosition& source_positi
       break;
     }
       
-    start = end + 1;
+    start = end + next;
   }
   return std::move(line_source);
 }

@@ -166,7 +166,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
       TOKEN_ERROR("unterminated string literal.");
       if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
         line_terminator_state_.set_line_break_before_next();
-        LineFeed();
+        ConsumeLineBreak();
       }
       break;
     } else if (char_ == unicode::u32('\\')) {

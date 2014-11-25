@@ -604,9 +604,11 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool yield) {
   LOG_PHASE(ParseVariableDeclaration);
+
   ParseResult value_result;
   ParseResult lhs_result;
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     lhs_result = ParseBindingIdentifier(false, in, yield);
   } else if (Token::IsKeyword(cur_token()->type())) {
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
@@ -617,27 +619,27 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
     lhs_result = ParseBindingPattern(yield, false);
   }
 
-  if (lhs_result) {
-    if (!lhs_result.value()->IsValidLhs()) {
-      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "left hand side of variable declaration is invalid.";
-      return Failed();
-    }
+  CHECK_AST(lhs_result);
+
+  if (!lhs_result.value()->IsValidLhs()) {
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "left hand side of variable declaration is invalid.";
+    return Failed();
   }
 
   ParseResult type_expr_result;
-  if (cur_token()->type() == TokenKind::kColon) {
+  if (cur_token()->Is(TokenKind::kColon)) {
     Next();
     type_expr_result = ParseTypeExpression();
     CHECK_AST(type_expr_result);
   }
   
-  if (cur_token()->type() == TokenKind::kAssign) {
+  if (cur_token()->Is(TokenKind::kAssign)) {
     Next();
     value_result = ParseAssignmentExpression(in, yield);
     CHECK_AST(value_result);
   }
   
-  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.or(Null()),
+  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(),
                                                value_result.or(Null()),
                                                type_expr_result.or(Null()));
   ret->SetInformationForNode(lhs_result.value());
