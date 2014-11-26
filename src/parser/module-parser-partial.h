@@ -24,39 +24,65 @@
 
 namespace yatsc {
 
+
+// Parse all file scope statements.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseModule() {
   LOG_PHASE(ParseModule);
   
   auto file_scope = New<ir::FileScopeView>(current_scope());
   bool success = true;
-  while (cur_token()->type() != TokenKind::kEof) {
-    if (cur_token()->type() == TokenKind::kImport) {
+
+  // Parse all statements until eof is found.
+  while (!cur_token()->Is(TokenKind::kEof)) {
+    // import {a, b, c} from '...' or
+    // import a = require(...) etc.
+    if (cur_token()->Is(TokenKind::kImport)) {
+
       auto import_decl_result = ParseImportDeclaration();
       if (import_decl_result) {
         file_scope->InsertLast(import_decl_result.value());
       } else {
         SkipToNextStatement();
       }
-    } else if (cur_token()->type() == TokenKind::kIdentifier &&
+      
+    } else if (cur_token()->Is(TokenKind::kIdentifier) &&
                cur_token()->value()->Equals("module")) {
+
+      // Parse module declaration.
+      // module import a from ....
+      // module a {} etc.
       auto module_decl_result = ParseModuleImport();
       if (module_decl_result) {
         file_scope->InsertLast(module_decl_result.value());
       } else {
         SkipToNextStatement();
       }
-    } else if (cur_token()->type() == TokenKind::kExport) {
+      
+    } else if (cur_token()->Is(TokenKind::kExport)) {
+
+      // Parse export declaration.
+      // export a = ...
+      // default export a = ...
+      // export = ...
       auto export_decl_result = ParseExportDeclaration();
       if (export_decl_result) {
         file_scope->InsertLast(export_decl_result.value());
       } else {
         SkipToNextStatement();
       }
+      
     } else if (cur_token()->Is(TokenKind::kIllegal)) {
-      SYNTAX_ERROR_AND("unexpected token.", cur_token(), break);
+
+      // In case scan error found.
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "unexpected token.";
+      SkipIllegalTokens();
+      
     } else {
-      if (cur_token()->type() == TokenKind::kIdentifier &&
+
+      // Parse ambient declaration.
+      if (cur_token()->Is(TokenKind::kIdentifier) &&
           cur_token()->value()->Equals("declare")) {
         auto ambient_decl_result = ParseAmbientDeclaration(true);
         if (ambient_decl_result) {
@@ -65,6 +91,8 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
           SkipToNextStatement();
         }
       } else {
+
+        // Parse normal statement.
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
         if (stmt_list_result) {
           file_scope->InsertLast(stmt_list_result.value());
