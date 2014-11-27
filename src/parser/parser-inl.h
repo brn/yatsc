@@ -119,6 +119,10 @@ void Parser<UCharInputIterator>::SkipToNextStatement() YATSC_NOEXCEPT {
             TokenKind::kModule
         })) {
       break;
+    } else if (cur_token()->Is(TokenKind::kIdentifier) &&
+               (cur_token()->value()->Equals("declare") ||
+                cur_token()->value()->Equals("module"))) {
+      break;
     }
     Next();
   }

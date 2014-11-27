@@ -110,41 +110,62 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
 }
 
 
+// Parse import declarations.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseImportDeclaration() {
   LOG_PHASE(ParseImportDeclaration);
-  if (cur_token()->type() == TokenKind::kImport) {
+  
+  if (cur_token()->Is(TokenKind::kImport)) {
     Token info = *cur_token();
     Next();
-    if (cur_token()->type() == TokenKind::kIdentifier ||
-        cur_token()->type() == TokenKind::kLeftBrace) {
 
-      auto import_clause_result = ParseImportClause();
-      CHECK_AST(import_clause_result);
+    switch (cur_token()->type()) {
+      case TokenKind::kIdentifier:
+        FALLTHROUGH
+      case TokenKind::kLeftBrace: {
+        
+        auto import_clause_result = ParseImportClause();
+        CHECK_AST(import_clause_result);
       
-      if (cur_token()->type() == TokenKind::kAssign) {
-        Next();
-        auto external_module_ref_result = ParseExternalModuleReference();
-        CHECK_AST(external_module_ref_result);
-        auto import_view = New<ir::ImportView>(import_clause_result.value(), external_module_ref_result.value());
+        if (cur_token()->Is(TokenKind::kAssign)) {
+
+          Next();
+
+          auto external_module_ref_result = ParseExternalModuleReference();
+          CHECK_AST(external_module_ref_result);
+          
+          auto import_view = New<ir::ImportView>(import_clause_result.value(), external_module_ref_result.value());
+          import_view->SetInformationForNode(&info);
+          return Success(import_view);
+        }
+        
+        auto from_clause_result = ParseFromClause();
+        CHECK_AST(from_clause_result);
+        
+        auto import_view = New<ir::ImportView>(import_clause_result.value(), from_clause_result.value());
         import_view->SetInformationForNode(&info);
         return Success(import_view);
       }
-      auto from_clause_result = ParseFromClause();
-      CHECK_AST(from_clause_result);
-      auto import_view = New<ir::ImportView>(import_clause_result.value(), from_clause_result.value());
-      import_view->SetInformationForNode(&info);
-      return Success(import_view);
-    } else if (cur_token()->type() == TokenKind::kStringLiteral) {
-      auto module_specifier_result = ParseStringLiteral();
-      CHECK_AST(module_specifier_result);
-      auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier_result.value());
-      import_view->SetInformationForNode(&info);
-      return Success(import_view);
+        
+      case TokenKind::kStringLiteral: {
+        auto module_specifier_result = ParseStringLiteral();
+        CHECK_AST(module_specifier_result);
+        auto import_view = New<ir::ImportView>(ir::Node::Null(), module_specifier_result.value());
+        import_view->SetInformationForNode(&info);
+        return Success(import_view);
+      }
+
+      default:
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "identifier or '{' or string literal expected.";
+        return Failed();
     }
-    SYNTAX_ERROR("identifier or '{' or string literal expected.", cur_token());
+    
   }
-  SYNTAX_ERROR("'import' expected.", cur_token());
+
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'import' expected.";
+  return Failed();
 }
 
 
@@ -152,36 +173,54 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseExternalModuleReference() {
   LOG_PHASE(ParseExternalModuleReference);
   bool module;
-  if (cur_token()->type() == TokenKind::kIdentifier &&
+  
+  if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("require") ||
       (module = cur_token()->value()->Equals("module"))) {
+    
     if (module) {
       ReportParseWarning(cur_token(), YATSC_SOURCEINFO_ARGS)
         << "'module' import is deprecated.";
     }
+    
     Next();
-    if (cur_token()->type() == TokenKind::kLeftParen) {
+    
+    if (cur_token()->Is(TokenKind::kLeftParen)) {
       Next();
-      if (cur_token()->type() == TokenKind::kStringLiteral) {
+      if (cur_token()->Is(TokenKind::kStringLiteral)) {
         Token info = *cur_token();
         Next();
-        if (cur_token()->type() == TokenKind::kRightParen) {
+        if (cur_token()->Is(TokenKind::kRightParen)) {
           Next();
+          
           if (info.value()->utf8_length() > 0) {
             if (info.utf8_value()[0] == '.') {
               String dir = Path::Dirname(module_info_->module_name());
               Notify("Parser::ModuleFound", Path::Join(dir, info.utf8_value()));
             }
           }
+          
           return Success(New<ir::ExternalModuleReference>(NewSymbol(ir::SymbolType::kVariableName, info.value())));
         }
-        SYNTAX_ERROR("')' expected.", cur_token());
+
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "')' expected.";
+        return Failed();
       }
-      SYNTAX_ERROR("string literal expected.", cur_token());
+
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "string literal expected.";
+      return Failed();
     }
-    SYNTAX_ERROR("'(' expected.", cur_token());
+
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "'(' expected.";
+    return Failed();
   }
-  SYNTAX_ERROR("'require' expected.", cur_token());
+
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'require' expected.";
+  return Failed();
 }
 
 
@@ -191,22 +230,23 @@ ParseResult Parser<UCharInputIterator>::ParseImportClause() {
   ParseResult first_result;
   ParseResult second_result;
 
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     first_result = ParseIdentifier();
     CHECK_AST(first_result);
-    if (cur_token()->type() == TokenKind::kComma) {
+    
+    if (cur_token()->Is(TokenKind::kComma)) {
       Next();
-      if (cur_token()->type() == TokenKind::kLeftBrace) {
+      if (cur_token()->Is(TokenKind::kLeftBrace)) {
         second_result = ParseNamedImport();
         CHECK_AST(second_result);
       } 
     }
-  } else if (cur_token()->type() == TokenKind::kLeftBrace) {
+  } else if (cur_token()->Is(TokenKind::kLeftBrace)) {
     first_result = ParseNamedImport();
     CHECK_AST(first_result);
-    if (cur_token()->type() == TokenKind::kComma) {
+    if (cur_token()->Is(TokenKind::kComma)) {
       Next();
-      if (cur_token()->type() == TokenKind::kIdentifier) {
+      if (cur_token()->Is(TokenKind::kIdentifier)) {
         second_result = ParseIdentifier();
         CHECK_AST(second_result);
       } 
@@ -231,51 +271,61 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
     while (1) {
       auto identifier_result = ParseBindingIdentifier(false, false);
       CHECK_AST(identifier_result);
+      
       if (identifier_result.value()->HasNameView() &&
-          cur_token()->type() == TokenKind::kIdentifier &&
+          cur_token()->Is(TokenKind::kIdentifier) &&
           cur_token()->value()->Equals("as")) {
+        
         Next();
         auto binding_identifier_result = ParseBindingIdentifier(false, false);
         CHECK_AST(binding_identifier_result);
         auto named_import = New<ir::NamedImportView>(identifier_result.value(), binding_identifier_result.value());
         named_import->SetInformationForNode(identifier_result.value());
         named_import_list->InsertLast(named_import);
+        
       } else {
         named_import_list->InsertLast(identifier_result.value());
       }
       
-      if (cur_token()->type() == TokenKind::kComma) {
+      if (cur_token()->Is(TokenKind::kComma)) {
         Next();
-      } else if (cur_token()->type() == TokenKind::kRightBrace) {
+      } else if (cur_token()->Is(TokenKind::kRightBrace)) {
         Next();
         break;
       } else {
-        SYNTAX_ERROR("unexpected token.", cur_token());
+        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return Failed();
       }
     }
     return Success(named_import_list);
   }
-  SYNTAX_ERROR("'{' expected.", cur_token());
+
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'{' expected.";
+  return Failed();
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseFromClause() {
   LOG_PHASE(ParseFromClause);
-  if (cur_token()->type() == TokenKind::kIdentifier &&
+  if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("from")) {
     Token info = *cur_token();
     Next();
     return ParseStringLiteral();
   }
-  SYNTAX_ERROR("'from' expected.", cur_token());
+
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'from' expected.";
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
   LOG_PHASE(ParseModuleImport);
-  if (cur_token()->type() == TokenKind::kIdentifier &&
+  if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("module")) {
     Token info = *cur_token();
     Next();
@@ -284,136 +334,186 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     auto binding_identifier_result = ParseBindingIdentifier(false, false);
 
     bool member = false;
-    if (cur_token()->type() == TokenKind::kDot) {
+    if (cur_token()->Is(TokenKind::kDot)) {
       RestoreParserState(rps);
       binding_identifier_result = ParseMemberExpression(false);
       member = true;
     }
     
-    if (cur_token()->type() == TokenKind::kLeftBrace) {
+    if (cur_token()->Is(TokenKind::kLeftBrace)) {
       return ParseTSModule(binding_identifier_result.or(ir::Node::Null()), &info);
     }
 
     if (member) {
-      SYNTAX_ERROR("unexpected token.", cur_token());
+      ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+        << "unexpected token.";
+      return Failed();
     }
+    
     auto module_specifier_result = ParseFromClause();
     CHECK_AST(module_specifier_result);
     auto ret = New<ir::ModuleImportView>(binding_identifier_result.or(ir::Node::Null()), module_specifier_result.value());
     ret->SetInformationForNode(&info);
     return Success(ret);
   }
-  SYNTAX_ERROR("'module' expected.", cur_token());
+  
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'module' expected.";
+  return Failed();
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> identifier, Token* info) {
   LOG_PHASE(ParseTSModule);
-  if (cur_token()->type() == TokenKind::kLeftBrace) {
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
     auto ts_module_body_result = ParseTSModuleBody();
     CHECK_AST(ts_module_body_result);
     auto ret = New<ir::ModuleDeclView>(identifier, ts_module_body_result.value());
     ret->SetInformationForNode(info);
     return Success(ret);
   }
-  SYNTAX_ERROR("'{' expected.", cur_token());
+
+
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'{' expected.";
+  
+  return Failed();
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
   LOG_PHASE(ParseTSModuleBody);
-  if (cur_token()->type() == TokenKind::kLeftBrace) {
+  
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
     Handle<ir::Scope> scope = NewScope();
     set_current_scope(scope);
     YATSC_SCOPED([&] {set_current_scope(scope->parent_scope());})
     auto block = New<ir::BlockView>(scope);
     block->SetInformationForNode(cur_token());
     Next();
-
-    bool success = true;
     
-    while (cur_token()->type() != TokenKind::kRightBrace) {
-      if (cur_token()->type() == TokenKind::kExport) {
+    while (!cur_token()->Is(TokenKind::kRightBrace)) {
+      if (cur_token()->Is(TokenKind::kExport)) {
         Next();
+        
         switch (cur_token()->type()) {
           case TokenKind::kVar: {
             auto variable_stmt_result = ParseVariableStatement(true, false);
-            SKIP_TOKEN_OR(variable_stmt_result, success, TokenKind::kRightBrace) {
+            
+            if (variable_stmt_result) {
               block->InsertLast(variable_stmt_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
           case TokenKind::kFunction: {
             auto function_overloads_result = ParseFunctionOverloads(false, false, true, true);
-            SKIP_TOKEN_OR(function_overloads_result, success, TokenKind::kRightBrace) {
+            
+            if (function_overloads_result) {
               block->InsertLast(function_overloads_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
           case TokenKind::kClass: {
             auto class_decl_result = ParseClassDeclaration(false, false);
-            SKIP_TOKEN_OR(class_decl_result, success, TokenKind::kRightBrace) {
+
+            if (class_decl_result) {
               block->InsertLast(class_decl_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
           case TokenKind::kInterface: {
             auto interface_decl_result = ParseInterfaceDeclaration();
-            SKIP_TOKEN_OR(interface_decl_result, success, TokenKind::kRightBrace) {
+
+            if (interface_decl_result) {
               block->InsertLast(interface_decl_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
           case TokenKind::kEnum: {
             auto enum_decl_result = ParseEnumDeclaration(false, false);
-            SKIP_TOKEN_OR(enum_decl_result, success, TokenKind::kRightBrace) {
+
+            if (enum_decl_result) {
               block->InsertLast(enum_decl_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
           case TokenKind::kImport: {
             auto variable_stmt_result = ParseVariableStatement(true, false);
-            SKIP_TOKEN_OR(variable_stmt_result, success, TokenKind::kRightBrace) {
+            
+            if (variable_stmt_result) {
               block->InsertLast(variable_stmt_result.value());
+            } else {
+              SkipToNextStatement();
             }
             break;
           }
+            
           case TokenKind::kEof: {
-            SYNTAX_ERROR("unexpected end of input.", cur_token());
+            ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+              << "unexpected end of input.";
+            return Failed();
           }
+            
           default:
-            if (cur_token()->type() == TokenKind::kIdentifier &&
+            if (cur_token()->Is(TokenKind::kIdentifier) &&
                 cur_token()->value()->Equals("module")) {
               auto module_import_result = ParseModuleImport();
-              SKIP_TOKEN_OR(module_import_result, success, TokenKind::kRightBrace) {
+
+              if (module_import_result) {
                 block->InsertLast(module_import_result.value());
+              } else {
+                SkipToNextStatement();
               }
-            } else if (cur_token()->type() == TokenKind::kIdentifier &&
+            } else if (cur_token()->Is(TokenKind::kIdentifier) &&
                        cur_token()->value()->Equals("declare")) {
               auto ambient_decl_result = ParseAmbientDeclaration(false);
-              SKIP_TOKEN_OR(ambient_decl_result, success, TokenKind::kRightBrace) {
+
+              if (ambient_decl_result) {
                 block->InsertLast(ambient_decl_result.value());
+              } else {
+                SkipToNextStatement();
               }
             } else {
-              SYNTAX_ERROR("unexpected token.", cur_token());
+              ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+                << "unexpected token.";
+              return Failed();
             }
         }
-      } else if (cur_token()->type() == TokenKind::kIdentifier &&
+      } else if (cur_token()->Is(TokenKind::kIdentifier) &&
                  cur_token()->value()->Equals("module")) {
         auto module_import_result = ParseModuleImport();
-        SKIP_TOKEN_OR(module_import_result, success, TokenKind::kRightBrace) {
+
+        if (module_import_result) {
           block->InsertLast(module_import_result.value());
+        } else {
+          SkipToNextStatement();
         }
       } else if (cur_token()->Is(TokenKind::kEof)) {
-        SYNTAX_ERROR("unexpected end of input.", cur_token());
+        UnexpectedEndOfInput(cur_token, YATSC_SOURCEINFO_ARGS);
+        return Failed();
       } else if (cur_token()->Is(TokenKind::kIllegal)) {
-        SYNTAX_ERROR("unexpected token.", cur_token());
+        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return Failed();
       } else {
         auto stmt_list_result = ParseStatementListItem(false, false, false, false);
-        SKIP_TOKEN_OR(stmt_list_result, success, TokenKind::kRightBrace) {
+
+        if (stmt_list_result) {
           block->InsertLast(stmt_list_result.value());
+        } else {
+          SkipToNextStatement();
         }
       }
       
@@ -424,18 +524,22 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
     Next();
     return Success(block);
   }
-  SYNTAX_ERROR("'{' expected.", cur_token());
+
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'{' expected.";
+  return Failed();
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
   LOG_PHASE(ParseExportDeclaration);
-  if (cur_token()->type() == TokenKind::kExport) {
+  
+  if (cur_token()->Is(TokenKind::kExport)) {
 
     Token info = *cur_token();
     Next();
-    if (cur_token()->type() == TokenKind::kMul) {
+    if (cur_token()->Is(TokenKind::kMul)) {
       Next();
       auto from_clause_result = ParseFromClause();
       CHECK_AST(from_clause_result);
@@ -446,7 +550,7 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
       case TokenKind::kLeftBrace: {
         auto export_clause_result = ParseExportClause();
         CHECK_AST(export_clause_result);
-        if (cur_token()->type() == TokenKind::kIdentifier &&
+        if (cur_token()->Is(TokenKind::kIdentifier) &&
             cur_token()->value()->Equals("from")) {
           auto from_clause_result = ParseFromClause();
           CHECK_AST(from_clause_result);
@@ -477,16 +581,21 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
         return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
       }
       default:
-        if (cur_token()->type() == TokenKind::kIdentifier &&
+        if (cur_token()->Is(TokenKind::kIdentifier) &&
             cur_token()->value()->Equals("declare")) {
           auto ambient_decl_result = ParseAmbientDeclaration(true);
           CHECK_AST(ambient_decl_result);
           return Success(CreateExportView(ambient_decl_result.value(), ir::Node::Null(), &info, true));
         }
-        SYNTAX_ERROR("unexpected token.", cur_token());
+        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return Failed();
     }
   }
-  SYNTAX_ERROR("'export' expected.", cur_token());
+
+  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+    << "'export' expected.";
+  return Failed();
 }
 
 
