@@ -172,7 +172,7 @@ ParseResult Parser<UCharInputIterator>::ParseImportDeclaration() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseExternalModuleReference() {
   LOG_PHASE(ParseExternalModuleReference);
-  bool module;
+  bool module = false;
   
   if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("require") ||

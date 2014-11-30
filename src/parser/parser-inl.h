@@ -30,7 +30,15 @@ Token* Parser<UCharInputIterator>::Next() {
   if (current_token_info_ != nullptr && !current_token_info_->Is(TokenKind::kEof)) {
     prev_token_info_ = *current_token_info_;
   }
-  return current_token_info_ = scanner_->Scan();
+  current_token_info_ = scanner_->Scan();
+  
+  if (current_token_info_->Is(TokenKind::kIllegal)) {
+    while (current_token_info_->Is(TokenKind::kIllegal)) {
+      current_token_info_ = scanner_->Scan();
+    }
+  }
+
+  return current_token_info_;
 }
 
 
@@ -84,6 +92,11 @@ void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind
   }
 
 END:
+
+  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
+    throw FatalParseError();
+  }
+  
   if (move_to_next_token) {
     Next();
   }
@@ -126,6 +139,10 @@ void Parser<UCharInputIterator>::SkipToNextStatement() YATSC_NOEXCEPT {
     }
     Next();
   }
+
+  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
+    throw FatalParseError();
+  }
 }
 
 
@@ -150,6 +167,8 @@ void Parser<UCharInputIterator>::Initialize() YATSC_NOEXCEPT {
 
 template <typename UCharInputIterator>
 typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterator>::parser_state() YATSC_NOEXCEPT {
+  EnterRecordMode();
+  
   Token prev;
   Token current;
   Handle<ir::Scope> scope;
@@ -163,19 +182,28 @@ typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterat
     scope = scope_;
   }
     
-  return RecordedParserState(scanner_->char_position(), current, prev, scope, enclosure_balancer_, module_info_->error_reporter()->size());
+  return RecordedParserState(
+      scanner_->char_position(),
+      current,
+      prev,
+      scope,
+      enclosure_balancer_,
+      module_info_->error_reporter()->size());
 }
 
 
 
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& rps) YATSC_NOEXCEPT {
+  ExitRecordMode();
+  
   scanner_->RestoreScannerPosition(rps.rcp());
   *current_token_info_ = rps.current();
   prev_token_info_ = rps.prev();
   scope_ = rps.scope();
   enclosure_balancer_ = rps.enclosure_balancer();
   Handle<ErrorReporter> se = module_info_->error_reporter();
+  
   if (se->size() != rps.error_count()) {
     int diff = abs(static_cast<int>(rps.error_count()) - static_cast<int>(se->size()));
     for (int i = 0; i < diff; i++) {
@@ -243,6 +271,10 @@ void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, Tok
     Next();
   }
 
+  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
+    throw FatalParseError();
+  }
+
   if (move_to_next_token) {
     Next();
   }
@@ -267,7 +299,17 @@ template <typename UCharInputIterator>
 template <typename T>
 void Parser<UCharInputIterator>::UnexpectedEndOfInput(T item, const char* filename, int line) {
   SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line) << "Unexpected end of input.";
+  if (!IsInRecordMode()) {
+    throw FatalParseError();
+  }
 }
 
-}
 
+template <typename UCharInputIterator>
+void Parser<UCharInputIterator>::SkipIllegalTokens() {
+  while (cur_token()->Is(TokenKind::kIllegal)) {Next();}
+  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
+    throw FatalParseError();
+  }
+}
+}

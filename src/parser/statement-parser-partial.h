@@ -39,7 +39,8 @@ namespace yatsc {
 //   ThrowStatement[?Yield]
 //   TryStatement[?Yield, ?Return]
 //   DebuggerStatement
-
+//
+// Parse statments.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseStatement);
@@ -71,32 +72,35 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
       break;
 
     case TokenKind::kContinue:
+      // If this stament not in the iteration statement body,
+      // record error and continue parsing.
       if (!continuable) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'continue' only allowed in loops";
-        Next();
-        return Failed();
       }
       parse_result = ParseContinueStatement(yield);
       break;
 
     case TokenKind::kBreak: {
+      // If this stament not in the iteration statement body,
+      // record error and continue parsing.
       if (!breakable) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'break' not allowed here";
-        Next();
-        return Failed();
       }
       parse_result = ParseBreakStatement(yield);
+      
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (!cur_token()->OneOf({TokenKind::kRightBrace, TokenKind::kRightParen})){
+      } else if (!cur_token()->OneOf({TokenKind::kRightBrace, TokenKind::kLeftBrace})){
+        // After break statement, followed token is not ';' or line break or '}' or '{',
+        // that is error.
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
-        Next();
-        return Failed();
       }
       break;
     }
 
     case TokenKind::kReturn:
+      // If this stament not in the function body,
+      // record error and continue parsing.
       if (!has_return) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'return' statement only allowed in function";
       }
@@ -125,37 +129,48 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
 
     case TokenKind::kVar: {
       auto variable_stmt_result = ParseVariableStatement(true, yield);
+      
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (!cur_token()->Is(TokenKind::kRightBrace)) {
+      } else if (!cur_token()->OneOf({TokenKind::kRightBrace, TokenKind::kLeftBrace})) {
+        // After variable statement, followed token is not ';' or line break or '}' or '{',
+        // that is error.
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
-        Next();
-        return Failed();
       }
       return variable_stmt_result;
     }
 
     case TokenKind::kEof: {
-      UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);;
+      UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);
       return Failed();
     }
       
     default: {
+      // If keyword encounted, record as error and,
+      // treat it as identifier and continue parsing.
       if (Token::IsKeyword(cur_token()->type())) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
           << "'" << cur_token()->utf8_value() << "' is not allowed here.";
         cur_token()->set_type(TokenKind::kIdentifier);
       }
-      
-      if (cur_token()->type() == TokenKind::kIdentifier) {
+
+      // Labelled statment and expression is ambiguous,
+      // so first, try parse as a labelled statement.
+      // If labelled statement parsing is failed, parse as an expression.
+      if (cur_token()->Is(TokenKind::kIdentifier)) {
         RecordedParserState rps = parser_state();
         Next();
-        if (cur_token()->type() == TokenKind::kColon) {
+        
+        // If colon is encounted after identifier,
+        // it must be a labelled statement.
+        if (cur_token()->Is(TokenKind::kColon)) {
           RestoreParserState(rps);
           return ParseLabelledStatement(yield, has_return, breakable, continuable);
         }
         RestoreParserState(rps);
       }
+
+      // Parse an expression.
       Token info = *cur_token();
       parse_result = ParseExpression(true, yield);
       CHECK_AST(parse_result);
@@ -190,7 +205,6 @@ ParseResult Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield,
         ConsumeLineTerminator();
       } else if (!cur_token()->Is(TokenKind::kRightBrace)) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected.";
-        return Failed();
       }
       return lexical_decl_result;
     }
@@ -204,31 +218,33 @@ ParseResult Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield,
 }
 
 
+
+// { StatementList[?Yield, ?Return](opt) }
+//
+// Parse block statment.
+// e.g. { ... }
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseBlockStatement);
+  
   Handle<ir::Scope> scope = NewScope();
   set_current_scope(scope);
+  
   auto block_view = New<ir::BlockView>(scope);
   block_view->SetInformationForNode(cur_token());
 
-  if (cur_token()->type() == TokenKind::kLeftBrace) {
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
     Next();
-    bool success = true;
-    while (1) {
-      if (cur_token()->type() == TokenKind::kRightBrace) {
-        CloseBraceFound();
-        BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
-        break;
-      } else if (cur_token()->Is(TokenKind::kIllegal)) {
-        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "Unexpected token.";
-        SkipIllegalTokens();
-      } else if (cur_token()->type() == TokenKind::kEof) {
+    
+    while (!cur_token()->Is(TokenKind::kRightBrace)) {
+      if (cur_token()->Is(TokenKind::kEof)) {
         UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);
         return Failed();
       } else {
         auto statement_list_result = ParseStatementListItem(yield, has_return, breakable, continuable);
+        // If parse failed,
+        // skip to next statement beggining.
         if (!statement_list_result) {
           SkipToNextStatement();
         } else {
@@ -236,98 +252,133 @@ ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has
         }
       }
     }
+
+    CloseBraceFound();
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
+    
     set_current_scope(scope->parent_scope());
     return Success(block_view);
   }
+  
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected";
   return Failed();
 }
 
-
+// StatementListItem[Yield, Return]
+//   Statement[?Yield, ?Return]
+//   Declaration[?Yield]
+//
+// Parse statements and declarations.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseStatementListItem);
+
+  // First parse declarations,
+  // If declaration parsing failed,
+  // parse statement.
   auto decl_result = ParseDeclaration(false, yield, false);
+  
   if (!decl_result) {
     return ParseStatement(yield, has_return, breakable, continuable);
   }
+  
   return decl_result;
 }
 
 
-// lexical_declaration[in, yield]
-//   : let_or_const binding_list[?in, ?yield]
-//   ;
-// let_or_const
-//   : 'let'
-//   | 'const'
-//   ;
+// LexicalDeclaration[In, Yield]
+//   LetOrConst BindingList[?In, ?Yield] ;
+//
+// Parse lexical declaration.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yield) {
   LOG_PHASE(ParseLexicalDeclaration);
-  bool has_const = cur_token()->type() == TokenKind::kConst;
+  bool has_const = cur_token()->Is(TokenKind::kConst);
+  
   Handle<ir::LexicalDeclView> lexical_decl = New<ir::LexicalDeclView>(cur_token()->type());
   lexical_decl->SetInformationForNode(cur_token());
+
+  // Consume let or const.
   Next();
-  bool success = false;
+  
   while (1) {
     auto lexical_decl_result = ParseLexicalBinding(has_const, in, yield);
+    
     if (lexical_decl_result) {
       lexical_decl->InsertLast(lexical_decl_result.value());
     } else {
+      // If parse failed, skip to comma or line end.
       SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
     }
-    
+
+    // Parse comma.
+    // const a = 1, b = 2, c = 3;
     if (cur_token()->Is(TokenKind::kComma)) {
       Next();
     } else {
       break;
     }
   }
+  
   return Success(lexical_decl);
 }
 
 
-// binding_list[in, yield]
-//   : lexical_binding[?in, ?yield]
-//   | binding_list[?in, ?yield] ',' lexical_binding[?in, ?yield]
-//   ;
-// lexical_binding[in, yield]
-//   : binding_identifier[?yield] initializer__opt[?in, ?yield]
-//   | binding_pattern[?yield] initializer[?in, ?yield]
-//   ;
+// BindingList[In, Yield]
+//   LexicalBinding[?In, ?Yield]
+//   BindingList[?In, ?Yield] , LexicalBinding[?In, ?Yield]
+//   LexicalBinding[In, Yield]
+//
+// BindingIdentifier[?Yield] TypeAnnotation(opt) Initializer[?In, ?Yield](opt)
+//   BindingPattern[?Yield] TypeAnnotation(opt) Initializer[?In, ?Yield]
+//
+// Parse lexical variable declaration identifier bindings.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, bool in, bool yield) {
   LOG_PHASE(ParseLexicalBinding);
+
   ParseResult value_result;
   ParseResult lhs_result;
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+
+  // If binding is identifier, parse as simple identifier.
+  // If not, parse as destructuring assignment pattern.
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     lhs_result = ParseBindingIdentifier(false, in, yield);
   } else {
     lhs_result = ParseBindingPattern(yield, false);
   }
 
+  // If binding parsing is failed,
+  // parsing is not continue.
   CHECK_AST(lhs_result);
 
   if (!lhs_result.value()->IsValidLhs()) {
-    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "left hand side of lexical binding is invalid";
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "left hand side of lexical binding is invalid";
     return Failed();
   }
 
   ParseResult type_expr_result;
-  if (cur_token()->type() == TokenKind::kColon) {
+
+  // If colon continue after binding,
+  // that is type annotation, so parse as type expression.
+  if (cur_token()->Is(TokenKind::kColon)) {
     Next();
     type_expr_result = ParseTypeExpression();
     CHECK_AST(type_expr_result);
   }
-  
-  if (cur_token()->type() == TokenKind::kAssign) {
+
+  // If initializer exists.
+  if (cur_token()->Is(TokenKind::kAssign)) {
     Next();
     value_result = ParseAssignmentExpression(in, yield);
     CHECK_AST(value_result);
+    
   } else if (const_decl) {
-    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "const declaration must have an initializer.";
-    return Failed();
+    // If const declaration is not initialized,
+    // treat it as error.
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "const declaration must have an initializer.";
   }
 
   Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(), value_result.value(), type_expr_result.value());
@@ -337,27 +388,32 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, boo
 }
 
 
-// binding_identifier[default, yield]
-//   : [+default] 'default'
-//   | [~yield] 'yield' identifier
-//   | identifier
-//   ;
+// BindingIdentifier[Default, Yield]
+//   [+Default] default
+//   [~Yield] yield Identifier
+//   Identifier
+//
+// Parse binding identifer.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allowed, bool in, bool yield) {
   LOG_PHASE(ParseBindingIdentifier);
+  
   Handle<ir::Node> ret;
-  if (cur_token()->type() == TokenKind::kDefault) {
+  if (cur_token()->Is(TokenKind::kDefault)) {
+    // If not default allowed here, record error,
+    // but parsing is continue.
     if (!default_allowed) {
-      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'default' keyword not allowed here";
-      Next();
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "'default' keyword not allowed here";
     }
     ret = New<ir::DefaultView>();
-  } else if (cur_token()->type() == TokenKind::kYield) {
+  } else if (cur_token()->Is(TokenKind::kYield)) {
     ret = New<ir::YieldView>(false, ir::Node::Null());
-  } else if (cur_token()->type() == TokenKind::kIdentifier) {
+  } else if (cur_token()->Is(TokenKind::kIdentifier)) {
     ret = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, cur_token()->value()));
   } else {
-    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'default', 'yield' or 'identifier' expected.";
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "'default', 'yield' or 'identifier' expected.";
     return Failed();
   }
   
@@ -368,10 +424,11 @@ ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allo
 }
 
 
-// binding_pattern[yield,generator_parameter]
-//   : object_binding_pattern[?yield,?generator_parameter]
-//   | array_binding_pattern[?yield,?generator_parameter]
-//   ;
+// BindingPattern[Yield,GeneratorParameter]
+//   ObjectBindingPattern[?Yield,?GeneratorParameter]
+//   ArrayBindingPattern[?Yield,?GeneratorParameter]
+//
+// Parse binding pattern.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseBindingPattern(bool yield, bool generator_parameter) {
   LOG_PHASE(ParseBindingPattern);
@@ -484,7 +541,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       auto binding_elem_result = ParseBindingElement(yield, generator_parameter);
       if (binding_elem_result) {
         ParseResult assignment_expr_result;
-        if (cur_token()->type() == TokenKind::kAssign) {
+        if (cur_token()->Is(TokenKind::kAssign)) {
           assignment_expr_result = ParseAssignmentExpression(true, yield);
         }
         auto ret = New<ir::BindingElementView>(ir::Node::Null(),
@@ -497,13 +554,13 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       }
     }
 
-    if (cur_token()->type() == TokenKind::kRightBracket) {
+    if (cur_token()->Is(TokenKind::kRightBracket)) {
       Next();
       break;
     } else if (exit) {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "spread binding must be end of bindings";
       return Failed();
-    } else if (cur_token()->type() == TokenKind::kComma) {
+    } else if (cur_token()->Is(TokenKind::kComma)) {
       Next();
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
@@ -529,7 +586,7 @@ ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool ge
   ParseResult elem_result;
   ParseResult init_result;
 
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     key_result = ParseIdentifier();
     CHECK_AST(key_result);
   } else {
@@ -537,13 +594,13 @@ ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool ge
     return Failed();
   }
   
-  if (cur_token()->type() == TokenKind::kColon) {
+  if (cur_token()->Is(TokenKind::kColon)) {
     Next();
     elem_result = ParseBindingElement(yield, generator_parameter);
     CHECK_AST(elem_result);
   }
 
-  if (cur_token()->type() == TokenKind::kAssign) {
+  if (cur_token()->Is(TokenKind::kAssign)) {
     Next();
     init_result = ParseAssignmentExpression(true, yield);
     CHECK_AST(init_result);
@@ -595,7 +652,7 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
       SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
     }
     
-    if (cur_token()->type() == TokenKind::kComma) {
+    if (cur_token()->Is(TokenKind::kComma)) {
       Next();
     } else {
       break;
@@ -720,7 +777,7 @@ ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has
   Token info = *(cur_token());
   Next();
   
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
     auto expr_result = ParseExpression(true, yield);
@@ -749,17 +806,17 @@ ParseResult Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, bool h
   auto stmt_result = ParseStatement(yield, has_return, true, true);
   CHECK_AST(stmt_result);
   
-  if (cur_token()->type() == TokenKind::kWhile) {
+  if (cur_token()->Is(TokenKind::kWhile)) {
     Next();
     
-    if (cur_token()->type() == TokenKind::kLeftParen) {
+    if (cur_token()->Is(TokenKind::kLeftParen)) {
       
       OpenParenFound();
       Next();
       auto expr_result = ParseExpression(true, yield);
       CHECK_AST(expr_result);
       
-      if (cur_token()->type() == TokenKind::kRightParen) {
+      if (cur_token()->Is(TokenKind::kRightParen)) {
 
         CloseParenFound();
         BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
@@ -795,7 +852,7 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
   Token info = *cur_token();
   Next();
   
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
     ParseResult reciever_result;
@@ -818,7 +875,7 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
         reciever_result = ParseExpression(true, yield);
         CHECK_AST(reciever_result);
         
-        if (cur_token()->type() != TokenKind::kLineTerminator) {
+        if (!cur_token()->Is(TokenKind::kLineTerminator)) {
           RestoreParserState(rps);
           reciever_result = ParseLeftHandSideExpression(yield);
           CHECK_AST(reciever_result);
@@ -842,29 +899,29 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
   bool for_in = false;
   bool for_of = false;
   
-  if (cur_token()->type() == TokenKind::kLineTerminator) {
+  if (cur_token()->Is(TokenKind::kLineTerminator)) {
     // for (var i = 0; i < 10; i++) ...
     Next();
-    if (cur_token()->type() != TokenKind::kLineTerminator) {
+    if (!cur_token()->Is(TokenKind::kLineTerminator)) {
       second_result = ParseExpression(true, yield);
       CHECK_AST(second_result);
     }
-    if (cur_token()->type() == TokenKind::kLineTerminator) {
+    if (cur_token()->Is(TokenKind::kLineTerminator)) {
       Next();
-      if (cur_token()->type() != TokenKind::kRightParen) {
+      if (!cur_token()->Is(TokenKind::kRightParen)) {
         third_result = ParseExpression(true, yield);
         CHECK_AST(third_result);
       }
       
     }
-  } else if (cur_token()->type() == TokenKind::kIdentifier &&
+  } else if (cur_token()->Is(TokenKind::kIdentifier) &&
              cur_token()->value()->Equals("of")) {
     // for (var i in obj) ...
     Next();
     second_result = ParseAssignmentExpression(true, yield);
     CHECK_AST(second_result);
     for_of = true;
-  } else if (cur_token()->type() == TokenKind::kIn) {
+  } else if (cur_token()->Is(TokenKind::kIn)) {
     // for (var i of obj) ...
     Next();
     second_result = ParseAssignmentExpression(false, yield);
@@ -916,7 +973,7 @@ ParseResult Parser<UCharInputIterator>::ParseContinueStatement(bool yield) {
       parse_result.value()->SetInformationForNode(&info);
     }
   });
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     auto primary_expr_result = ParsePrimaryExpression(yield);
     CHECK_AST(primary_expr_result);
     return parse_result = Success(New<ir::ContinueStatementView>(primary_expr_result.value()));
@@ -937,7 +994,7 @@ ParseResult Parser<UCharInputIterator>::ParseBreakStatement(bool yield) {
       parse_result.value()->SetInformationForNode(&info);
     }
   });
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     auto primary_expr_result = ParsePrimaryExpression(yield);
     return parse_result = Success(New<ir::BreakStatementView>(primary_expr_result.value()));
   }
@@ -1016,7 +1073,7 @@ ParseResult Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool ha
   Token info = *cur_token();
   Next();
   
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
 
     OpenParenFound();
 
@@ -1178,7 +1235,7 @@ ParseResult Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable) {
-  if (cur_token()->type() == TokenKind::kFunction) {
+  if (cur_token()->Is(TokenKind::kFunction)) {
     return ParseFunctionOverloads(yield, false, true, false);
   }
   return ParseStatement(yield, has_return, breakable, continuable);
@@ -1783,7 +1840,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloads(Handle<ir::Nod
   bool first = true;
   
   while (1) {
-    if ((cur_token()->type() == TokenKind::kIdentifier &&
+    if ((cur_token()->Is(TokenKind::kIdentifier) &&
          cur_token()->value()->Equals("constructor")) ||
         IsAccessLevelModifier(cur_token())) {
       
@@ -1824,7 +1881,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation
     mods = field_modifiers_result.or(Null());
   }
   
-  if (cur_token()->type() == TokenKind::kIdentifier &&
+  if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("constructor")) {
     
     Token info = *cur_token();
@@ -2070,7 +2127,7 @@ ParseResult Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementa
   }
   
     
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     auto identifier_result = ParseIdentifier();
     auto call_sig_result = ParseCallSignature(false, false);
     Handle<ir::Node> ret;
@@ -2198,7 +2255,7 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration) {
   LOG_PHASE(ParseFunctionOverloadOrImplementation);
-  if (cur_token()->type() == TokenKind::kFunction) {
+  if (cur_token()->Is(TokenKind::kFunction)) {
     bool generator = false;
     bool success = true;
     

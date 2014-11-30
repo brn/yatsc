@@ -84,10 +84,15 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
       compiler_option_);
   
   Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info, global_scope_);
-  Handle<ir::Node> root = parser.Parse();
-  if (!module_info->HasError()) {
-    AddResult(Heap::NewHandle<CompilationUnit>(root, module_info, literal_buffer_));
-  } else {
+  
+  try {
+    ParseResult root_result = parser.Parse();
+    if (!module_info->HasError() && root_result) {
+      AddResult(Heap::NewHandle<CompilationUnit>(root_result.value(), module_info, literal_buffer_));
+    } else {
+      AddResult(Heap::NewHandle<CompilationUnit>(module_info));
+    }
+  } catch(const FatalParseError& fpe) {
     AddResult(Heap::NewHandle<CompilationUnit>(module_info));
   }
 

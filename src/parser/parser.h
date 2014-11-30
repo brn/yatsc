@@ -155,6 +155,12 @@ namespace yatsc {
 typedef Maybe<Handle<ir::Node>> ParseResult;
 
 
+class FatalParseError: std::exception {
+ public:
+  FatalParseError() = default;
+};
+
+
 template <typename UCharInputSourceIterator>
 class Parser: public ParserBase {
   
@@ -166,15 +172,16 @@ class Parser: public ParserBase {
          Handle<ModuleInfo> module_info,
          Handle<ir::GlobalScope> global_scope)
       : ParserBase(co, notificator),
+        record_mode_(0),
         scanner_(scanner),
         module_info_(module_info),
         global_scope_(global_scope) {Initialize();}
 
-  Handle<ir::Node> Parse() {
+  ParseResult Parse() {
     if (module_info_->IsDefinitionFile()) {
-      return ParseDeclarationModule().value();
+      return ParseDeclarationModule();
     } else {
-      return ParseModule().value();
+      return ParseModule();
     }
   };
 
@@ -284,7 +291,7 @@ class Parser: public ParserBase {
           prev_(prev),
           scope_(current_scope),
           enclosure_balancer_(enclosure_balancer_),
-          error_count_(error_count) {}
+      error_count_(error_count) {}
 
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
 
@@ -297,8 +304,10 @@ class Parser: public ParserBase {
 
     YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
 
+    
     YATSC_CONST_GETTER(const EnclosureBalancer&, enclosure_balancer, enclosure_balancer_);
 
+    
     YATSC_CONST_GETTER(size_t, error_count, error_count_);
 
    private:
@@ -415,37 +424,46 @@ class Parser: public ParserBase {
   YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
 
 
-  Handle<ir::Node> Null() const {return ir::Node::Null();}
+  YATSC_INLINE Handle<ir::Node> Null() const {return ir::Node::Null();}
 
 
   void BalanceEnclosureIfNotBalanced(Token* token, TokenKind kind, bool move_to_next_token);
 
 
-  void OpenBraceFound() {enclosure_balancer_.OpenBraceFound();};
+  YATSC_INLINE void OpenBraceFound() YATSC_NOEXCEPT {enclosure_balancer_.OpenBraceFound();};
 
 
-  void CloseBraceFound() {enclosure_balancer_.CloseBraceFound();}
+  YATSC_INLINE void CloseBraceFound() YATSC_NOEXCEPT {enclosure_balancer_.CloseBraceFound();}
 
 
-  void OpenBracketFound() {enclosure_balancer_.OpenBracketFound();}
-
-  
-  void CloseBracketFound() {enclosure_balancer_.CloseBracketFound();}
+  YATSC_INLINE void OpenBracketFound() YATSC_NOEXCEPT {enclosure_balancer_.OpenBracketFound();}
 
   
-  void OpenParenFound() {enclosure_balancer_.OpenParenFound();}
-
-
-  void CloseParenFound() {enclosure_balancer_.CloseParenFound();}
-
-
-  int brace_difference() const {return enclosure_balancer_.brace_difference();}
+  YATSC_INLINE void CloseBracketFound() YATSC_NOEXCEPT {enclosure_balancer_.CloseBracketFound();}
 
   
-  int bracket_difference() const {return enclosure_balancer_.bracket_difference();}
+  YATSC_INLINE void OpenParenFound() YATSC_NOEXCEPT {enclosure_balancer_.OpenParenFound();}
 
 
-  int paren_difference() const {return enclosure_balancer_.paren_difference();}
+  YATSC_INLINE void CloseParenFound() YATSC_NOEXCEPT {enclosure_balancer_.CloseParenFound();}
+
+
+  YATSC_INLINE int brace_difference() YATSC_NO_SE {return enclosure_balancer_.brace_difference();}
+
+  
+  YATSC_INLINE int bracket_difference() YATSC_NO_SE {return enclosure_balancer_.bracket_difference();}
+
+
+  YATSC_INLINE int paren_difference() YATSC_NO_SE {return enclosure_balancer_.paren_difference();}
+
+
+  YATSC_INLINE bool IsInRecordMode() YATSC_NO_SE {return record_mode_ != 0;}
+
+
+  YATSC_INLINE void EnterRecordMode() {record_mode_++;}
+
+
+  YATSC_INLINE void ExitRecordMode() {record_mode_--;}
 
 
   template <typename T>
@@ -460,7 +478,7 @@ class Parser: public ParserBase {
   void UnexpectedEndOfInput(T item, const char* filename, int line);
 
 
-  void SkipIllegalTokens() {while (cur_token()->Is(TokenKind::kIllegal)) {Next();}}
+  void SkipIllegalTokens();
 
 
   void TryConsume(TokenKind kind) {if (cur_token()->Is(kind)) {Next();}}
@@ -468,9 +486,10 @@ class Parser: public ParserBase {
 
   void SkipToNextStatement() YATSC_NOEXCEPT;
   
-  
+
+  int record_mode_;
 #if defined(DEBUG) || defined(UNIT_TEST)
-  DebugStream<true> phase_buffer_;
+  DebugStream<false> phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;

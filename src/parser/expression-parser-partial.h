@@ -1121,9 +1121,11 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
   }
 
 
-  YATSC_SCOPED([&] {
-    Memoize(info.source_position(), parse_result);
-  });
+  if (IsInRecordMode()) {
+    YATSC_SCOPED([&] {
+      Memoize(info.source_position(), parse_result);
+    });
+  }
   
   
   switch (token_info->type()) {

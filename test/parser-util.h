@@ -42,7 +42,7 @@ bool compare_node = true;
   }
 
 #define WRAP_PARSER_TEST(name, method_expr, type, code, expected_str, error) { int line_num = __LINE__; \
-    YatscParserTest(name, [&](yatsc::Parser<yatsc::SourceStream::iterator>* p){return yatsc::Just(p->method_expr);}, type, code, expected_str, error, line_num); \
+    YatscParserTest(name, [&](yatsc::Parser<yatsc::SourceStream::iterator>* p){return p->method_expr;}, type, code, expected_str, error, line_num); \
   }
 
 
@@ -66,11 +66,14 @@ void YatscParserTest(const char* name,
   Notificator<void(const yatsc::String&)> notificator;
   Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, global_scope);
   ErrorFormatter error_formatter(module_info);
-  
-  auto result = fn(&parser);
+
+  ParseResult result;
+  try {
+    result = fn(&parser);
+  } catch(const FatalParseError& fpe) {}
   
   if (!error) {
-    if (!module_info->HasError() && result.value() && compare_node) {
+    if (!module_info->HasError() && result && result.value() && compare_node) {
       yatsc::testing::CompareNode(line_num, result.value()->ToStringTree(), yatsc::String(expected_str));
     } else {
       if (print_stack_trace) {
