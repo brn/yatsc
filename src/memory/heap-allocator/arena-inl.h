@@ -76,6 +76,10 @@ YATSC_INLINE void CentralArena::Dealloc(void* ptr) YATSC_NOEXCEPT {
     // CentralArena is not thread safe, so we lock large_bin_.
     lock_.lock();
     large_bin_.Delete(large_header->size());
+    if (large_header->next() != nullptr) {
+      large_bin_.Insert(large_header->next()->size(), large_header->next());
+      large_header->set_next(nullptr);
+    }
     lock_.unlock();
 
     // Simply unmap.

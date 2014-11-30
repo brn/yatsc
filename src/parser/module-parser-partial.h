@@ -293,7 +293,7 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
         Next();
         break;
       } else {
-        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
           << "unexpected token.";
         return Failed();
       }
@@ -301,7 +301,7 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
     return Success(named_import_list);
   }
 
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'{' expected.";
   return Failed();
 }
@@ -317,7 +317,7 @@ ParseResult Parser<UCharInputIterator>::ParseFromClause() {
     return ParseStringLiteral();
   }
 
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'from' expected.";
 }
 
@@ -345,7 +345,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     }
 
     if (member) {
-      ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
         << "unexpected token.";
       return Failed();
     }
@@ -357,7 +357,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     return Success(ret);
   }
   
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'module' expected.";
   return Failed();
 }
@@ -375,7 +375,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> identifie
   }
 
 
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'{' expected.";
   
   return Failed();
@@ -461,7 +461,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
           }
             
           case TokenKind::kEof: {
-            ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+            ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
               << "unexpected end of input.";
             return Failed();
           }
@@ -486,7 +486,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
                 SkipToNextStatement();
               }
             } else {
-              ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+              ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
                 << "unexpected token.";
               return Failed();
             }
@@ -501,10 +501,10 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
           SkipToNextStatement();
         }
       } else if (cur_token()->Is(TokenKind::kEof)) {
-        UnexpectedEndOfInput(cur_token, YATSC_SOURCEINFO_ARGS);
+        UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);
         return Failed();
       } else if (cur_token()->Is(TokenKind::kIllegal)) {
-        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
           << "unexpected token.";
         return Failed();
       } else {
@@ -525,7 +525,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
     return Success(block);
   }
 
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'{' expected.";
   return Failed();
 }
@@ -587,13 +587,13 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
           CHECK_AST(ambient_decl_result);
           return Success(CreateExportView(ambient_decl_result.value(), ir::Node::Null(), &info, true));
         }
-        ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
           << "unexpected token.";
         return Failed();
     }
   }
 
-  ReportParseError(cur_token, YATSC_SOURCEINFO_ARGS)
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'export' expected.";
   return Failed();
 }

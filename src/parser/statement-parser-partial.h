@@ -99,8 +99,6 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
     case TokenKind::kReturn:
       if (!has_return) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'return' statement only allowed in function";
-        Next();
-        return Failed();
       }
       parse_result = ParseReturnStatement(yield);
       break;
@@ -231,7 +229,9 @@ ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has
         return Failed();
       } else {
         auto statement_list_result = ParseStatementListItem(yield, has_return, breakable, continuable);
-        SKIP_TOKEN_OR(statement_list_result, success, TokenKind::kRightBrace) {
+        if (!statement_list_result) {
+          SkipToNextStatement();
+        } else {
           block_view->InsertLast(statement_list_result.value());
         }
       }
@@ -272,10 +272,13 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yi
   bool success = false;
   while (1) {
     auto lexical_decl_result = ParseLexicalBinding(has_const, in, yield);
-    SKIP_TOKEN_OR(lexical_decl_result, success, TokenKind::kLineTerminator) {
+    if (lexical_decl_result) {
       lexical_decl->InsertLast(lexical_decl_result.value());
+    } else {
+      SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
     }
-    if (cur_token()->type() == TokenKind::kComma) {
+    
+    if (cur_token()->Is(TokenKind::kComma)) {
       Next();
     } else {
       break;
@@ -404,9 +407,11 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
     
   while (1) {
     auto binding_prop_result = ParseBindingProperty(yield, generator_parameter);
-      
-    SKIP_TOKEN_OR(binding_prop_result, success, TokenKind::kRightBrace) {
+
+    if (binding_prop_list) {
       binding_prop_list->InsertLast(binding_prop_result.value());
+    } else {
+      SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kComma}, false);
     }
 
  DELIMITER:
@@ -457,24 +462,27 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
   bool success = true;
     
   while (1) {
-    if (cur_token()->type() == TokenKind::kComma) {
+    if (cur_token()->Is(TokenKind::kComma)) {
       Next();
       binding_array->InsertLast(ir::Node::Null());
     }
-    if (cur_token()->type() == TokenKind::kRest) {
+    if (cur_token()->Is(TokenKind::kRest)) {
       Handle<ir::RestParamView> rest = New<ir::RestParamView>();
       rest->SetInformationForNode(cur_token());
       Next();
+
       auto binding_identifier_result = ParseBindingIdentifier(false, true, yield);
-      SKIP_TOKEN_OR(binding_identifier_result, success, TokenKind::kRightBracket) {
+      if (binding_identifier_result) {
         rest->set_parameter(binding_identifier_result.value());
         binding_array->InsertLast(rest);
         exit = true;
+      } else {
+        SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
       }
+      
     } else {
       auto binding_elem_result = ParseBindingElement(yield, generator_parameter);
-        
-      SKIP_TOKEN_OR(binding_elem_result, success, TokenKind::kRightBracket) {
+      if (binding_elem_result) {
         ParseResult assignment_expr_result;
         if (cur_token()->type() == TokenKind::kAssign) {
           assignment_expr_result = ParseAssignmentExpression(true, yield);
@@ -484,6 +492,8 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
                                                assignment_expr_result.value());
         ret->SetInformationForNode(binding_elem_result.value());
         binding_array->InsertLast(ret);
+      } else {
+        SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
       }
     }
 
@@ -658,48 +668,46 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
   LOG_PHASE(ParseIfStatement);
   Token info = *cur_token();
   Next();
-  
+
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
-    auto expr_result = ParseExpression(true, yield);
-    
-    if (cur_token()->Is(TokenKind::kRightParen)) {
-      CloseParenFound();
-      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-      auto then_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
-      
-      if (!prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
-        ConsumeLineTerminator();
-      }
-      
-      ParseResult else_stmt_result;
-      
-      if (cur_token()->Is(TokenKind::kElse)) {
-        Next();
-        else_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
-        if (prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
-          ConsumeLineTerminator();
-        }
-      }
-      
-      Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr_result.or(Null()),
-                                                                     then_stmt_result.or(Null()),
-                                                                     else_stmt_result.or(Null()));
-      if_stmt->SetInformationForNode(&info);
-      return Success(if_stmt);
-    }
-
-    Token token = *cur_token();
-
-    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-    
-    ReportParseError(&token, YATSC_SOURCEINFO_ARGS) << "')' expected.";
-    return Failed();
+  } else {
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'(' expected."; 
   }
+  
 
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'(' expected.";
-  return Failed();
+  auto expr_result = ParseExpression(true, yield);
+    
+  if (cur_token()->Is(TokenKind::kRightParen)) {
+    CloseParenFound();
+  } else {
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "')' expected.";
+  }
+    
+  BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
+    
+  auto then_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
+      
+  if (!prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
+    ConsumeLineTerminator();
+  }
+      
+  ParseResult else_stmt_result;
+      
+  if (cur_token()->Is(TokenKind::kElse)) {
+    Next();
+    else_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
+    if (prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
+      ConsumeLineTerminator();
+    }
+  }
+      
+  Handle<ir::IfStatementView> if_stmt = New<ir::IfStatementView>(expr_result.or(Null()),
+                                                                 then_stmt_result.or(Null()),
+                                                                 else_stmt_result.or(Null()));
+  if_stmt->SetInformationForNode(&info);
+  return Success(if_stmt);
 }
 
 
@@ -1071,7 +1079,10 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
         normal_case = true;
         Next();
         expr_result = ParseExpression(true, yield);
-        SKIP_TOKEN_IF_AND(expr_result, success, TokenKind::kRightBrace, break);
+        if (!expr_result) {
+          SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
+          break;
+        }
         
         FALLTHROUGH;
       }
@@ -1102,13 +1113,17 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
           
           if (cur_token()->Is(TokenKind::kLeftBrace)) {
             auto block_stmt_result = ParseBlockStatement(yield, has_return, true, continuable);
-            SKIP_TOKEN_OR(block_stmt_result, success, TokenKind::kRightBrace) {
+            if (block_stmt_result) {
               body->InsertLast(block_stmt_result.value());
+            } else {
+              SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
             }
           } else {
             auto stmt_list_result = ParseStatementListItem(yield, has_return, true, continuable);
-            SKIP_TOKEN_OR(stmt_list_result, success, TokenKind::kRightBrace) {
+            if (stmt_list_result) {
               body->InsertLast(stmt_list_result.value());
+            } else {
+              SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
             }
           }
         }
@@ -2251,7 +2266,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
   param_list->SetInformationForNode(cur_token());
   Next();
 
-  if (cur_token()->type() == TokenKind::kRightParen) {
+  if (cur_token()->Is(TokenKind::kRightParen)) {
     CloseParenFound();
     BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
     return Success(param_list);

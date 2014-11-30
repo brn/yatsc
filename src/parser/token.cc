@@ -371,5 +371,21 @@ bool Token::IsKeyword(TokenKind kind) {
 }
 
 
+bool Token::IsLetOperator(TokenKind kind) {
+  return kind == TokenKind::kAddLet ||
+    kind == TokenKind::kSubLet ||
+    kind == TokenKind::kDivLet ||
+    kind == TokenKind::kModLet ||
+    kind == TokenKind::kMulLet ||
+    kind == TokenKind::kShiftLeftLet ||
+    kind == TokenKind::kShiftRightLet ||
+    kind == TokenKind::kUShiftRightLet ||
+    kind == TokenKind::kNorLet ||
+    kind == TokenKind::kAndLet ||
+    kind == TokenKind::kOrLet ||
+    kind == TokenKind::kXorLet;
+}
+
+
 Token Token::kNullToken;
 }

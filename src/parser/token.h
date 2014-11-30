@@ -366,6 +366,8 @@ class Token {
 
   
   static bool IsKeyword(TokenKind type);
+
+  static bool IsLetOperator(TokenKind kind);
   
  private:  
   const Literal* literal_;

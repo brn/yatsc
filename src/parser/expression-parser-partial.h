@@ -420,7 +420,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
   auto type = token->type();
 
   // Check assignment operators.
-  if (IsAssignmentOp(type)) {
+  if (IsAssignmentOp(type)) {    
     if (!parsed_as_assignment_pattern &&
         (expr_result.value()->HasObjectLiteralView() ||
          expr_result.value()->HasArrayLiteralView())) {
@@ -433,6 +433,14 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
       
       expr_result = ParseAssignmentPattern(yield);
       CHECK_AST(expr_result);
+    }
+
+    if ((Token::IsLetOperator(type) &&
+         !expr_result.value()->HasNameView() &&
+         !expr_result.value()->HasGetPropView() &&
+         !expr_result.value()->HasGetElemView())) {
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "Invalid Left-Hand-Side expression";
+      return Failed();
     }
     
     Next();
@@ -548,8 +556,16 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool
     CHECK_AST(ret);                                                     \
     while (1) {                                                         \
       if (check) {                                                      \
+        if (!ret.value()->IsValidLhs() ||                               \
+            (Token::IsLetOperator(cur_token()->type()) &&               \
+             !ret.value()->HasNameView() &&                             \
+             !ret.value()->HasGetPropView() &&                          \
+             !ret.value()->HasGetElemView())) {                         \
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "invalid left handle side expression."; \
+          return Failed();                                              \
+        }                                                               \
         auto tmp = ret;                                                 \
-        TokenKind type = cur_token()->type();                             \
+        TokenKind type = cur_token()->type();                           \
         Next();                                                         \
         auto n = next;                                                  \
         CHECK_AST(n);                                                   \

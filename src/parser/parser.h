@@ -470,7 +470,7 @@ class Parser: public ParserBase {
   
   
 #if defined(DEBUG) || defined(UNIT_TEST)
-  DebugStream<false> phase_buffer_;
+  DebugStream<true> phase_buffer_;
 #endif
   Scanner<UCharInputSourceIterator>* scanner_;
   Handle<ModuleInfo> module_info_;
