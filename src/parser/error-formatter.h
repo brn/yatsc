@@ -71,6 +71,8 @@ class ErrorFormatter {
   Vector<String> GetLineSource(const SourcePosition& source_position) const;
   
   Handle<ModuleInfo> module_info_;
+
+  Vector<String> line_source_cache_;
 };
 
 }

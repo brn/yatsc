@@ -423,16 +423,10 @@ ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allo
     if (cur_token()->type() == TokenKind::kColon) {
       Next();
       return_type_result = ParseTypeExpression();
-      if (!return_type_result) {
-        return_type_result = ParseResult();
-      }
     } else if (annotation) {
       if (cur_token()->type() == TokenKind::kArrowGlyph) {
         Next();
         return_type_result = ParseTypeExpression();
-        if (!return_type_result) {
-          return_type_result = ParseResult();
-        }
       } else {
         SYNTAX_ERROR("SyntaxError '=>' expected.", cur_token());
       }

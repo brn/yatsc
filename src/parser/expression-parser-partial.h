@@ -240,7 +240,6 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield) {
   Token info = *cur_token();
   
   ParseResult property_name;
-  ParseResult elem;
 
   // Check whether property name is identifier reference or not.
   bool identifier = false;
@@ -261,15 +260,15 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield) {
   if (identifier && cur_token()->Is(TokenKind::kAssign)) {
     Next();
     init = ParseAssignmentExpression(true, yield);
-    CHECK_AST(init);
   } else if (cur_token()->Is(TokenKind::kColon)) {
     Next();
-    elem = ParseAssignmentElement(yield);
-    CHECK_AST(elem);
+    init = ParseAssignmentElement(yield);
   }
 
+  CHECK_AST(init);
+
   // All destructuring assignment element is convert to BindingElementView.
-  auto binding_element = New<ir::BindingElementView>(property_name.value(), elem.value(), init.value());
+  auto binding_element = New<ir::BindingElementView>(property_name.value(), init.value());
   binding_element->SetInformationForNode(&info);
   return Success(binding_element);
 }
@@ -294,7 +293,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentElement(bool yield) {
   }
 
   // All destructuring assignment element is convert to BindingElementView.
-  auto binding_element = New<ir::BindingElementView>(ir::Node::Null(), target.value(), init.value());
+  auto binding_element = New<ir::BindingElementView>(target.value(), init.value());
   binding_element->SetInformationForNode(target.value());
   return Success(binding_element);
 }

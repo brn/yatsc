@@ -444,23 +444,22 @@ ParseResult Parser<UCharInputIterator>::ParseBindingPattern(bool yield, bool gen
 }
 
 
-// object_binding_pattern[yield,generator_parameter]
-//   : '{' '}'
-//   | '{' binding_property_list[?yield,?generator_parameter] '}'
-//   | '{' binding_property_list[?yield,?generator_parameter] ',' '}'
-//   ;
-// binding_property_list[yield,generator_parameter]
-//   : binding_property[?yield, ?generator_parameter]
-//   | binding_property_list[?yield, ?generator_parameter] ',' binding_property[?yield, ?generator_parameter]
-//   ;
+// ObjectBindingPattern[Yield,GeneratorParameter]
+//   { }
+//   { BindingPropertyList[?Yield,?GeneratorParameter] }
+//   { BindingPropertyList[?Yield,?GeneratorParameter] , }
+//
+// BindingPropertyList[Yield,GeneratorParameter]
+//   BindingProperty[?Yield, ?GeneratorParameter]
+//   BindingPropertyList[?Yield, ?GeneratorParameter] , BindingProperty[?Yield, ?GeneratorParameter]
+// Parse destructuring assignment pattern for object.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bool generator_parameter) {
   LOG_PHASE(ParseObjectBindingPattern);
+  
   Handle<ir::Node> binding_prop_list = New<ir::BindingPropListView>();
   binding_prop_list->SetInformationForNode(cur_token());
   Next();
-
-  bool success = true;
     
   while (1) {
     auto binding_prop_result = ParseBindingProperty(yield, generator_parameter);
@@ -491,22 +490,23 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
 }
 
 
-// array_binding_pattern[yield,generator_parameter]
-//   : '[' elision__opt binding_rest_element__opt[?yield, ?generator_parameter] ']'
-//   | '[' binding_element_list[?yield, ?generator_parameter] ']'
-//   | '[' binding_element_list[?yield, ?generator_parameter] ',' elision__opt binding_rest_element__opt[?yield, ?generator_parameter] ']'
-//   ;
-// binding_element_list[yield,generator_parameter]
-//   : binding_elision_element[?yield, ?generator_parameter]
-//   | binding_element_list[?yield, ?generator_parameter] ',' binding_elision_element[?yield, ?generator_parameter]
-//   ;
-// binding_elision_element[yield,generator_parameter]
-//   : elision__opt bindingelement[?yield, ?generator_parameter]
-//   ;
-// binding_rest_element[yield, generator_parameter]
-//   : [+generator_parameter] '...' binding_identifier[yield]
-//   | [~generator_parameter] '...' binding_identifier[?yield]
-//   ;
+// ArrayBindingPattern[Yield,GeneratorParameter]
+//   [ Elision(opt) BindingRestElement[?Yield, ?GeneratorParameter](opt) ]
+//   [ BindingElementList[?Yield, ?GeneratorParameter] ]
+//   [ BindingElementList[?Yield, ?GeneratorParameter] , Elision(opt) BindingRestElement[?Yield, ?GeneratorParameter](opt) ]
+//
+// BindingElementList[Yield,GeneratorParameter]
+//   BindingElisionElement[?Yield, ?GeneratorParameter]
+//   BindingElementList[?Yield, ?GeneratorParameter] , BindingElisionElement[?Yield, ?GeneratorParameter]
+//
+// BindingElisionElement[Yield,GeneratorParameter]
+//   Elision(opt) BindingElement[?Yield, ?GeneratorParameter]
+//
+// BindingRestElement[Yield, GeneratorParameter]
+//   [+GeneratorParameter] ... BindingIdentifier[Yield]
+//   [~GeneratorParameter] ... BindingIdentifier[?Yield]
+//
+// Parse destructuring assignment pattern for array.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, bool generator_parameter) {
   LOG_PHASE(ParseArrayBindingPattern);
@@ -516,22 +516,30 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
   Next();
 
   bool exit = false;
-  bool success = true;
     
   while (1) {
+
+    // If comma found in array binding pattern,
+    // this element is skipped.
     if (cur_token()->Is(TokenKind::kComma)) {
       Next();
+      // Insert empty.
       binding_array->InsertLast(ir::Node::Null());
     }
+
+    // Case rest element.
     if (cur_token()->Is(TokenKind::kRest)) {
       Handle<ir::RestParamView> rest = New<ir::RestParamView>();
       rest->SetInformationForNode(cur_token());
       Next();
 
       auto binding_identifier_result = ParseBindingIdentifier(false, true, yield);
+      
       if (binding_identifier_result) {
         rest->set_parameter(binding_identifier_result.value());
         binding_array->InsertLast(rest);
+        // Binding rest element must be end of element,
+        // so, any element after rest element cause syntax error.
         exit = true;
       } else {
         SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
@@ -539,14 +547,17 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       
     } else {
       auto binding_elem_result = ParseBindingElement(yield, generator_parameter);
+      
       if (binding_elem_result) {
         ParseResult assignment_expr_result;
+
+        // Case initializer.
         if (cur_token()->Is(TokenKind::kAssign)) {
           assignment_expr_result = ParseAssignmentExpression(true, yield);
         }
-        auto ret = New<ir::BindingElementView>(ir::Node::Null(),
-                                               binding_elem_result.value(),
-                                               assignment_expr_result.value());
+        
+        auto ret = New<ir::BindingElementView>(binding_elem_result.value(),
+                                               assignment_expr_result.or(Null()));
         ret->SetInformationForNode(binding_elem_result.value());
         binding_array->InsertLast(ret);
       } else {
@@ -567,24 +578,24 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
     }
   }
+  
   return Success(binding_array);
 }
 
 
-// binding_property[yield,generator_parameter]
-//   : single_name_binding [?yield, ?generator_parameter]
-//   : property_name[?yield, ?generator_parameter] ':' binding_element[?yield, ?generator_parameter]
-//   ;
-// single_name_binding[yield,generator_parameter]
-//   : [+generator_parameter] binding_identifier[yield] initializer__opt[in]
-//   | [~generator_parameter] binding_identifier[?yield] initializer__opt[in, ?yield]
-//   ;
+// BindingProperty[Yield,GeneratorParameter]
+//   SingleNameBinding[?Yield, ?GeneratorParameter]
+//
+// SingleNameBinding[Yield,GeneratorParameter]
+//   [+GeneratorParameter] BindingIdentifier[Yield] Initializer[In](opt)
+//   [~GeneratorParameter] BindingIdentifier[?Yield] Initializer[In, ?Yield](opt)
+//
+// Parse destructuring assignment object property.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool generator_parameter) {
   LOG_PHASE(ParseBindingProperty);
   ParseResult key_result;
-  ParseResult elem_result;
-  ParseResult init_result;
+  ParseResult value_result;
 
   if (cur_token()->Is(TokenKind::kIdentifier)) {
     key_result = ParseIdentifier();
@@ -593,29 +604,31 @@ ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool ge
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'identifier' expected.";
     return Failed();
   }
-  
+
+  // Case nested element.
   if (cur_token()->Is(TokenKind::kColon)) {
     Next();
-    elem_result = ParseBindingElement(yield, generator_parameter);
-    CHECK_AST(elem_result);
-  }
-
-  if (cur_token()->Is(TokenKind::kAssign)) {
+    value_result = ParseBindingElement(yield, generator_parameter);
+    CHECK_AST(value_result);
+  } else if (cur_token()->Is(TokenKind::kAssign)) {
+    // Case initializer.
     Next();
-    init_result = ParseAssignmentExpression(true, yield);
-    CHECK_AST(init_result);
+    value_result = ParseAssignmentExpression(true, yield);
+    CHECK_AST(value_result);
   }
-  Handle<ir::Node> ret = New<ir::BindingElementView>(key_result.value(), elem_result.value(), init_result.value());
+  
+  Handle<ir::Node> ret = New<ir::BindingElementView>(key_result.value(), value_result.or(Null()));
   ret->SetInformationForNode(key_result.value());
   return Success(ret);
 }
 
 
-// binding_element[yield, generator_parameter ]
-//   : single_name_binding[?yield, ?generator_parameter]
-//   | [+generator_parameter] binding_pattern[?yield,generator_parameter] initializer__opt[in]
-//   | [~generator_parameter] binding_pattern[?yield] initializer__opt[in, ?yield]
-//   ;
+// BindingElement[Yield, GeneratorParameter ]
+//   SingleNameBinding[?Yield, ?GeneratorParameter]
+//   [+GeneratorParameter] BindingPattern[?Yield,GeneratorParameter] Initializer[In](opt)
+//   [~GeneratorParameter] BindingPattern[?Yield] Initializer[In, ?Yield](opt)
+//
+// Parse destructuring array element.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseBindingElement(bool yield, bool generator_parameter) {
   LOG_PHASE(ParseBindingElement);
@@ -630,18 +643,18 @@ ParseResult Parser<UCharInputIterator>::ParseBindingElement(bool yield, bool gen
 }
 
 
-// variable_statement[yield]
-//  : 'var' variable_declaration_list[in, ?yield]
-//  ;
-// variable_declaration_list[in, yield]
-//  : variable_declaration[?in, ?yield]
-//  | variable_declaration_list[?in, ?yield] ',' variable_declaration[?in, ?yield]
-//  ;
+// VariableStatement[Yield]
+//   var VariableDeclarationList[In, ?Yield] ;
+//
+// VariableDeclarationList[In, Yield]
+//   VariableDeclaration[?In, ?Yield]
+//   VariableDeclarationList[?In, ?Yield] , VariableDeclaration[?In, ?Yield]
+//
+// Parse variable statement.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yield) {
   Next();
   Handle<ir::VariableDeclView> vars = New<ir::VariableDeclView>();
-  bool success = true;
     
   while (1) {
     auto variable_decl_result = ParseVariableDeclaration(in, yield);
@@ -664,10 +677,11 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
 }
 
 
-// variable_declaration[in, yield]
-//  : binding_identifier[?yield] initializer[?in, ?yield]__opt
-//  | binding_pattern[yield] initializer[?in, ?yield]
-//  ;
+// VariableDeclaration[In, Yield]
+//   BindingIdentifier[?Yield] TypeAnnotation(opt) Initializer[?In, ?Yield](opt)
+//   BindingPattern[Yield] TypeAnnotation(opt) Initializer[?In, ?Yield]
+//
+// Parse variable declaration.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool yield) {
   LOG_PHASE(ParseVariableDeclaration);
@@ -678,10 +692,12 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
   if (cur_token()->Is(TokenKind::kIdentifier)) {
     lhs_result = ParseBindingIdentifier(false, in, yield);
   } else if (Token::IsKeyword(cur_token()->type())) {
+    // If keyword found in binding identifier section,
+    // we recognize it as identifier and continue parsing.
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
       << "keyword '" << cur_token()->utf8_value() << "' is not valid identifier.";
-    Next();
-    return Failed();
+    cur_token()->set_type(TokenKind::kIdentifier);
+    lhs_result = ParseBindingIdentifier(false, in, yield);
   } else {
     lhs_result = ParseBindingPattern(yield, false);
   }
@@ -716,10 +732,11 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
 }
 
 
-// if_statement[yield, return]
-//   : 'if' '(' expression[in, ?yield] ')' statement[?yield, ?return] 'else' statement[?yield, ?return]
-//   | 'if' '(' expression[in, ?yield] ')' statement[?yield, ?return]
-//   ;
+// IfStatement[Yield, Return]
+//   if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return] else Statement[?Yield, ?Return]
+//   if ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+//
+// Parse if statement.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable) {
   LOG_PHASE(ParseIfStatement);
@@ -768,23 +785,27 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
 }
 
 
-// while_statment
-//   : 'while' '(' expression[in, ?yield] ')' statement[?yield, ?return]
-//   ;
+// while ( Expression[In, ?Yield] ) Statement[?Yield, ?Return]
+//
+// Parse while statement.
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has_return) {
   LOG_PHASE(ParseWhileStatement);
   Token info = *(cur_token());
+
+  // Consume 'while' keyword.
   Next();
   
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
     auto expr_result = ParseExpression(true, yield);
-    CHECK_AST(expr_result);
+    if (!expr_result) {
+      SkipTokensUntil({TokenKind::kRightParen}, false);
+    }
     auto iteration_body_result = ParseIterationBody(yield, has_return);
     CHECK_AST(iteration_body_result);
-    auto while_stmt = New<ir::WhileStatementView>(expr_result.value(), iteration_body_result.value());
+    auto while_stmt = New<ir::WhileStatementView>(expr_result.or(Null()), iteration_body_result.value());
     while_stmt->SetInformationForNode(&info);
     return Success(while_stmt);
   }
@@ -1374,11 +1395,11 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
   auto identifier_result = ParseIdentifier();
   if (!identifier_result) {
     SkipTokensUntil({TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
+  } else {
+    identifier_result.value()->symbol()->set_type(ir::SymbolType::kInterfaceName);
   }
   
   ParseResult type_parameters_result;
-
-  identifier_result.value()->symbol()->set_type(ir::SymbolType::kInterfaceName);
     
   if (cur_token()->Is(TokenKind::kLess)) {
     type_parameters_result = ParseTypeParameters();
@@ -1396,9 +1417,9 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
       auto ref_type_result = ParseReferencedType();
       if (!ref_type_result) {
         SkipTokensUntil({TokenKind::kComma, TokenKind::kLeftBrace}, false);
+      } else {
+        extends->InsertLast(ref_type_result.value());
       }
-
-      extends->InsertLast(ref_type_result.or(Null()));
 
       if (cur_token()->Is(TokenKind::kComma)) {
         Next();
@@ -1472,8 +1493,9 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
     auto enum_property_result = ParseEnumProperty(yield, has_default);
     if (!enum_property_result) {
       SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator, TokenKind::kLineTerminator}, false);
+    } else {
+      ret->InsertLast(enum_property_result.value());
     }
-    ret->InsertLast(enum_property_result.or(Null()));
     
     if (cur_token()->Is(TokenKind::kComma)) {
       Next();
@@ -1604,9 +1626,9 @@ ParseResult Parser<UCharInputIterator>::ParseClassBases() {
         auto ref_type_result = ParseReferencedType();
         if (!ref_type_result) {
           SkipTokensUntil({TokenKind::kComma, TokenKind::kExtends, TokenKind::kLeftBrace}, false);
+        } else {
+          impls->InsertLast(ref_type_result.value()); 
         }
-
-        impls->InsertLast(ref_type_result.or(Null()));
         
         if (!cur_token()->Is(TokenKind::kComma)) {
           break;
@@ -1804,10 +1826,12 @@ void Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefin
         Handle<ir::Node> ret = call_sig->return_type();
         if (ret->HasSimpleTypeExprView()) {
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
-          auto name = ret_type->symbol();
-          if (name->Equals("void") || name->Equals("null")) {
-            ReportParseError(ret_type, YATSC_SOURCEINFO_ARGS)
-              << "getter function must return value.";
+          if (ret_type->HasNameView()) {
+            auto name = ret_type->symbol();
+            if (name->Equals("void") || name->Equals("null")) {
+              ReportParseError(ret_type, YATSC_SOURCEINFO_ARGS)
+                << "getter function must return value.";
+            }
           }
         }
       }
@@ -1821,10 +1845,12 @@ void Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefin
         Handle<ir::Node> ret = call_sig->return_type();
         if (ret->HasSimpleTypeExprView()) {
           Handle<ir::Node> ret_type(ret->ToSimpleTypeExprView()->type_name());
-          auto name = ret_type->symbol();
-          if (!name->Equals("void") && !name->Equals("null")) {
-            ReportParseError(ret_type, YATSC_SOURCEINFO_ARGS)
-              << "setter function must not return value.";
+          if (ret_type->HasNameView()) {
+            auto name = ret_type->symbol();
+            if (!name->Equals("void") && !name->Equals("null")) {
+              ReportParseError(ret_type, YATSC_SOURCEINFO_ARGS)
+                << "setter function must not return value.";
+            }
           }
         }
       }

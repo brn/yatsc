@@ -55,7 +55,7 @@ void Scanner<UCharInputIterator>::Advance()  {
   }
   
   char_ = *it_;
-  scanner_source_position_.AdvancePosition(1);
+  scanner_source_position_.AdvancePosition(char_.utf8_length());
   ++it_;
   if (it_ == end_) {
     lookahead1_ = UChar::Null();
@@ -162,7 +162,7 @@ void Scanner<UCharInputIterator>::ScanStringLiteral() {
       }
       escaped = false;
     } else if (char_ == unicode::u32('\0') ||
-               Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
+               (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE && !escaped)) {
       TOKEN_ERROR("unterminated string literal.");
       if (Character::GetLineBreakType(char_, lookahead1_) != Character::LineBreakType::NONE) {
         line_terminator_state_.set_line_break_before_next();
@@ -702,7 +702,10 @@ bool Scanner<UCharInputIterator>::SkipMultiLineComment() {
         str += char_;
         Advance();
         str += char_;
-        Advance();          
+        Advance();
+      } else if (char_ == unicode::u16('\0')) {
+        TOKEN_ERROR("unterminated multi line comment.");
+        return true;
       } else {
         str += char_;
         Advance();

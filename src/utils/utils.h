@@ -51,7 +51,7 @@ namespace yatsc {
 
 #if defined(DEBUG)
 #define YATSC_SOURCEINFO_ARGS __FILE__, __LINE__
-#elif
+#else
 #define YATSC_SOURCEINFO_ARGS "", 0
 #endif
 

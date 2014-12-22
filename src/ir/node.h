@@ -2052,16 +2052,15 @@ class BindingArrayView: public Node {
 
 class BindingElementView: public Node {
  public:
-  BindingElementView(Handle<Node> prop, Handle<Node> elem, Handle<Node> init)
-      : Node(NodeType::kBindingElementView, 3u, {prop, elem, init}) {}
+  BindingElementView(Handle<Node> prop, Handle<Node> value)
+      : Node(NodeType::kBindingElementView, 2u, {prop, value}) {}
 
   BindingElementView()
-      : Node(NodeType::kBindingElementView, 3u) {}
+      : Node(NodeType::kBindingElementView, 2u) {}
 
   
   NODE_PROPERTY(prop, 0);
-  NODE_PROPERTY(elem, 1);
-  NODE_PROPERTY(init, 2);
+  NODE_PROPERTY(value, 1);
 };
 
 

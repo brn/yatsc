@@ -510,7 +510,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleDeclaration(Token* inf
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
   LOG_PHASE(ParseAmbientModuleBody);
-  if (cur_token()->type() == TokenKind::kLeftBrace) {
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
     Handle<ir::Node> body = New<ir::AmbientModuleBody>();
     body->SetInformationForNode(cur_token());
@@ -519,19 +519,26 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
     bool success = true;
     
     while (1) {
-      if (cur_token()->type() == TokenKind::kRightBrace) {
+      if (cur_token()->Is(TokenKind::kRightBrace)) {
         CloseBraceFound();
         BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
         return Success(body);
-      } else if (cur_token()->type() == TokenKind::kEof) {
+      } else if (cur_token()->Is(TokenKind::kEof)) {
         SYNTAX_ERROR("unexpected end of input.", cur_token());
       } else if (cur_token()->Is(TokenKind::kIllegal)) {
         SkipIllegalTokens();
-      } else {
+      } else if (cur_token()->OneOf({TokenKind::kExport, TokenKind::kVar, TokenKind::kClass, TokenKind::kInterface,
+              TokenKind::kEnum, TokenKind::kImport, TokenKind::kIdentifier})) {
         auto ambient_module_element_result = ParseAmbientModuleElement(external);
-        SKIP_TOKEN_OR(ambient_module_element_result, success, TokenKind::kLineTerminator) {
-          body->InsertLast(ambient_module_element_result.value());
+        if (!ambient_module_element_result) {
+          SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kLineTerminator}, false);
+        } else {
+          body->InsertLast(ambient_module_element_result.value()); 
         }
+      } else {
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return Failed();
       }
       if (IsLineTermination()) {
         ConsumeLineTerminator();
@@ -547,11 +554,18 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
   LOG_PHASE(ParseAmbientModuleElement);
   Handle<ir::ExportView> export_view;
   
-  if (cur_token()->type() == TokenKind::kExport) {
+  if (cur_token()->Is(TokenKind::kExport)) {
     Token info = *cur_token();
     export_view = New<ir::ExportView>();
     export_view->SetInformationForNode(cur_token());
     Next();
+
+    while (cur_token()->Is(TokenKind::kExport)) {
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "export already seen.";
+      Next();
+    }
+    
     if (external && cur_token()->type() == TokenKind::kAssign) {
       Next();
       auto assignment_expr_result = ParseAssignmentExpression(true, false);
@@ -587,7 +601,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
       parse_result = ParseImportDeclaration();
       CHECK_AST(parse_result);
       if (!external) {
-        Handle<ir::Node> maybe_from = parse_result.value()->ToExportView()->from_clause();
+        Handle<ir::Node> maybe_from = parse_result.value()->ToImportView()->from_expr();
         if (maybe_from) {
           if (maybe_from->HasExternalModuleReference()) {
             SYNTAX_ERROR("'require' not allowed here.", maybe_from);

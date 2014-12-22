@@ -174,48 +174,55 @@ ParseResult Parser<UCharInputIterator>::ParseExternalModuleReference() {
   LOG_PHASE(ParseExternalModuleReference);
   bool module = false;
   
-  if (cur_token()->Is(TokenKind::kIdentifier) &&
-      cur_token()->value()->Equals("require") ||
-      (module = cur_token()->value()->Equals("module"))) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
+
+    if (cur_token()->value()->Equals("require") ||
+        (module = cur_token()->value()->Equals("module"))) {
+      if (module) {
+        ReportParseWarning(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "'module' import is deprecated.";
+      }
     
-    if (module) {
-      ReportParseWarning(cur_token(), YATSC_SOURCEINFO_ARGS)
-        << "'module' import is deprecated.";
-    }
-    
-    Next();
-    
-    if (cur_token()->Is(TokenKind::kLeftParen)) {
       Next();
-      if (cur_token()->Is(TokenKind::kStringLiteral)) {
-        Token info = *cur_token();
+    
+      if (cur_token()->Is(TokenKind::kLeftParen)) {
         Next();
-        if (cur_token()->Is(TokenKind::kRightParen)) {
+        if (cur_token()->Is(TokenKind::kStringLiteral)) {
+          Token info = *cur_token();
           Next();
+          if (cur_token()->Is(TokenKind::kRightParen)) {
+            Next();
           
-          if (info.value()->utf8_length() > 0) {
-            if (info.utf8_value()[0] == '.') {
-              String dir = Path::Dirname(module_info_->module_name());
-              Notify("Parser::ModuleFound", Path::Join(dir, info.utf8_value()));
+            if (info.value()->utf8_length() > 0) {
+              if (info.utf8_value()[0] == '.') {
+                String dir = Path::Dirname(module_info_->module_name());
+                Notify("Parser::ModuleFound", Path::Join(dir, info.utf8_value()));
+              }
             }
-          }
           
-          return Success(New<ir::ExternalModuleReference>(NewSymbol(ir::SymbolType::kVariableName, info.value())));
+            return Success(New<ir::ExternalModuleReference>(NewSymbol(ir::SymbolType::kVariableName, info.value())));
+          }
+
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+            << "')' expected.";
+          return Failed();
         }
 
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-          << "')' expected.";
+          << "string literal expected.";
         return Failed();
       }
 
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-        << "string literal expected.";
+        << "'(' expected.";
+      return Failed();
+    } else {
+      auto ref = ParsePrimaryExpression(false);
+      if (ref) {
+        return ref;
+      }
       return Failed();
     }
-
-    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-      << "'(' expected.";
-    return Failed();
   }
 
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
@@ -319,6 +326,7 @@ ParseResult Parser<UCharInputIterator>::ParseFromClause() {
 
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
     << "'from' expected.";
+  return Failed();
 }
 
 
@@ -464,6 +472,12 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
               << "unexpected end of input.";
             return Failed();
+          }
+
+          case TokenKind::kExport: {
+            ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+              << "export already seen.";
+            continue;
           }
             
           default:
