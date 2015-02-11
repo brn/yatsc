@@ -689,7 +689,9 @@ bool Scanner<UCharInputIterator>::SkipMultiLineComment() {
   bool skip = false;
   if (Character::IsMultiLineCommentStart(char_, lookahead1_)) {
     UtfString str;
+    str += char_;
     Advance(); // /
+    str += char_;
     Advance(); // *
     while (!Character::IsMultiLineCommentEnd(char_, lookahead1_)) {
       Character::LineBreakType lt = Character::GetLineBreakType(char_, lookahead1_);

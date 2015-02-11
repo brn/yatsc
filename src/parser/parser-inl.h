@@ -76,7 +76,7 @@ void Parser<UCharInputIterator>::ConsumeLineTerminator() YATSC_NOEXCEPT {
 
 // Skip all tokens except given token and eof.
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) YATSC_NOEXCEPT {
+void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) {
   while (!cur_token()->Is(TokenKind::kEof)) {
     for (auto kind: kinds) {
       if (kind == TokenKind::kLineTerminator) {
@@ -104,7 +104,7 @@ END:
 
 
 template <typename UCharInputIterator>
-void Parser<UCharInputIterator>::SkipToNextStatement() YATSC_NOEXCEPT {
+void Parser<UCharInputIterator>::SkipToNextStatement() {
   while (!cur_token()->Is(TokenKind::kEof)) {
     if (cur_token()->OneOf({
           TokenKind::kLeftBrace,

@@ -337,6 +337,13 @@ class Heap: private Static {
   }
 
 
+  // Allocate raw pointer that has specified size from the CentralArena.
+  template <typename T>
+  static T* NewTypedPtr(size_t size) {
+    return reinterpret_cast<T*>(NewPtr(size));
+  }
+
+
   // Allocate from heap that has combined size of
   // size of T and size of HeapReferenceCounter,
   // and instantiate T and return Handle<T>.

@@ -75,8 +75,11 @@ String ErrorFormatter::Format(const ErrorDescriptor& error_descriptor) const {
       line_source = std::move(line_source_list[1]);
       last_line = 0;
     }
-  } else {
+  } else if (line_source_list.size() == 1) {
     line_source = std::move(line_source_list[0]);
+    last_line = 0;
+  } else {
+    line_source = "";
     last_line = 0;
   }
   

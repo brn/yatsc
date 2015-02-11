@@ -415,7 +415,7 @@ class Parser: public ParserBase {
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
 
   
-  void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token) YATSC_NOEXCEPT;
+  void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token);
 
 
   YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
@@ -484,7 +484,7 @@ class Parser: public ParserBase {
   void TryConsume(TokenKind kind) {if (cur_token()->Is(kind)) {Next();}}
 
 
-  void SkipToNextStatement() YATSC_NOEXCEPT;
+  void SkipToNextStatement();
   
 
   int record_mode_;
