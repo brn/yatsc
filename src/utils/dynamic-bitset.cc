@@ -26,14 +26,40 @@
 
 namespace yatsc {
 
-static const int kAvailableBitLength = 27;
-static const int kEachBitBlockSize = 5;
-static const int kIndexShifter = 7;
-static const int kEachBitLength = kAvailableBitLength * kEachBitBlockSize;
+const int DynamicBitset::kMinimumBitLength    = 32;
+const int DynamicBitset::kMinimumBitBlockSize = 2;
+const int DynamicBitset::kBitNodeBitSize      = kMinimumBitLength * kMinimumBitBlockSize;
+const int DynamicBitset::kEachBitBlockSize    = 2;
+const int DynamicBitset::kIndexShifter        = 7;
+const int DynamicBitset::kEachBitLength       = kBitNodeBitSize * kEachBitBlockSize;
+const int DynamicBitset::kMinMask             = 0xF0;
+const int DynamicBitset::kLargeMask           = 0xF;
+const int DynamicBitset::kGrowSize            = 3;
+
+
+DynamicBitset::DynamicBitset(uint32_t bit)
+    : current_length_(2),
+      used_length_(0),
+      bit_node_(Heap::NewTypedPtr<BitNode>(sizeof(BitNode) * kGrowSize)) {
+  for (int i = 0; i < kMinimumBitLength; i++) {
+    Set(i, static_cast<bool>(bit & (0x1 << (i - 1))));
+  }
+}
+
+
+DynamicBitset::DynamicBitset(const char* str)
+    : current_length_(2),
+      used_length_(0),
+      bit_node_(Heap::NewTypedPtr<BitNode>(sizeof(BitNode) * kGrowSize)) {
+  for (size_t i = 0, len = strlen(str); i < len; i++) {
+    Set(static_cast<int>(i), static_cast<bool>(str[i] - '0'));
+  }
+}
 
 
 DynamicBitset::DynamicBitset()
     : current_length_(2),
+      used_length_(0),
       bit_node_(Heap::NewTypedPtr<BitNode>(sizeof(BitNode) * kGrowSize)) {}
 
 
@@ -42,44 +68,41 @@ DynamicBitset::~DynamicBitset() {
 }
 
 
-YATSC_INLINE int GetIndex(int index) YATSC_NOEXCEPT {
-  return index >> kIndexShifter;
-}
-
-
-YATSC_INLINE int GetPosition(int index, int node_index) YATSC_NOEXCEPT {
-  return index - node_index * 128;
-}
-
-
 void DynamicBitset::Set(int index, bool val) {
-  int node_index = GetIndex(index);
+  int node_index = GetLargeIndex(index);
   if (node_index >= current_length_) {
     Grow(node_index);
   }
-  bit_node_[node_index].Set(GetPosition(index, node_index), val);
+  
+  used_length_ = node_index > used_length_? node_index: used_length_;
+  
+  bit_node_[node_index].Set(GetLargePosition(index, node_index), val);
 }
 
 
-bool DynamicBitset::Get(int num) {
-  int index = GetIndex(num);
+bool DynamicBitset::Get(int num) YATSC_NO_SE {
+  int index = GetLargeIndex(num);
   if (index > current_length_) {
     return false;
   }
-  return bit_node_[index].Get(GetPosition(num, index));
+  return bit_node_[index].Get(GetLargePosition(num, index));
 }
 
 
-int DynamicBitset::Rank(int num) {
-  int node_index = GetIndex(num);
-  int pos = GetPosition(node_index, pos);
-  int ret = 0;
+int DynamicBitset::Rank(int num) YATSC_NO_SE {
+  int node_index = GetLargeIndex(num);
+  int pos        = GetLargePosition(num, node_index);
+  int ret        = 0;
+  
   if (node_index == 0) {
-    return bit_node_[0].Rank();
+    return bit_node_[0].GetSpecificRank(num);
   }
-  for (int i = 0; i <= node_index && node_index < current_length_; i++) {
+  
+  int i = 0;
+  for (; i < node_index && node_index < current_length_; i++) {
     ret += bit_node_[i].Rank();
   }
+  ret += bit_node_[i].GetSpecificRank(pos);
   return ret;
 }
 
@@ -100,35 +123,42 @@ void DynamicBitset::Grow(int pos) {
 }
 
 
-const int DynamicBitset::kGrowSize = 3;
-
-
-int CountFlagedBit(uint32_t bits) {
-  bits = (bits & 0x55555555) + (bits >> 1 & 0x55555555);
-  bits = (bits & 0x33333333) + (bits >> 2 & 0x33333333);
-  bits = (bits & 0x0f0f0f0f) + (bits >> 4 & 0x0f0f0f0f);
-  bits = (bits & 0x00ff00ff) + (bits >> 8 & 0x00ff00ff);
-  return (bits & 0x0000ffff) + (bits >>16 & 0x0000ffff);
-}
-
-
-void DynamicBitset::BitNode::Set(int index, bool val) {
-  int pos = index >> 5;
-  if (val) {
-    bits_[pos] |= (0x01 << index - 1);
+int DynamicBitset::BitNode::GetSpecificRank(int num) {
+  Position pos = GetPosition(num);
+  int ret = 0;
+  if (pos.large_index == 0) {
+    if (pos.small_index == 0) {
+      ret = CountFlagedBit(bits_[0].bits[0] >> (kMinimumBitLength - pos.small_position));
+    } else {
+      ret = (bits_[0].mbit >> 4) + CountFlagedBit(bits_[0].bits[1] >> (kMinimumBitLength - pos.small_position));
+    }
   } else {
-    bits_[pos] &= ~(0x01 << index - 1);
+    if (pos.small_index == 0) {
+      ret = GetSmallRank() + CountFlagedBit(bits_[1].bits[0] >> (kMinimumBitLength - pos.small_position));
+    } else {
+      ret = GetSmallRank() + (bits_[1].mbit >> 4) + CountFlagedBit(bits_[1].bits[1] >> (kMinimumBitLength - pos.small_position));
+    }
   }
-  rank_ = CountFlagedBit(bits_[0])
-    + CountFlagedBit(bits_[1])
-    + CountFlagedBit(bits_[2])
-    + CountFlagedBit(bits_[3]);
+  return ret;
 }
 
 
-bool DynamicBitset::BitNode::Get(int index) {
-  int pos = index >> 5;
-  int bit_value = (0x01 << index - 1);
-  return (bits_[pos] & bit_value) == bit_value;
+void DynamicBitset::BitNode::Set(int num, bool val) {
+  Position pos = GetPosition(num);
+  if (val) {
+    bits_[pos.large_index].bits[pos.small_index] |= (0x01 << pos.small_position - 1);
+  } else {
+    bits_[pos.large_index].bits[pos.small_index] &= ~(0x01 << pos.small_position - 1);
+  }
+  
+  if (pos.small_index == 0) {
+    int min_val = bits_[pos.large_index].mbit & kLargeMask;
+    bits_[pos.large_index].mbit = CountFlagedBit(bits_[pos.large_index].bits[0]) << 4;
+    bits_[pos.large_index].mbit |= min_val;
+  } else {
+    int large_val = bits_[pos.large_index].mbit & kMinMask;
+    bits_[pos.large_index].mbit = CountFlagedBit(bits_[pos.large_index].bits[1]);
+    bits_[pos.large_index].mbit |= large_val;
+  }
 }
 }

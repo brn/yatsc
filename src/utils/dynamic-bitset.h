@@ -29,60 +29,145 @@
 
 namespace yatsc {
 
+// Implementation of dynamic bit vector that is able to grow length of bit
+// until the int max size.
+// And support Rank(O(Log(N))) Select.
 class DynamicBitset {
  public:
+  // Construct bits from binary expression strings, like "010100011".
+  explicit DynamicBitset(const char* bit_str);
+
+  
+  // Construct bits from uint32_t values.
+  explicit DynamicBitset(uint32_t bit);
+
+  
+  // Default
   DynamicBitset();
+
+  
+  // Destructor.
   ~DynamicBitset();
 
+
+  // Set or unset bit of the specified index.
   void Set(int index, bool val);
 
-  bool Get(int index);
 
-  int Rank(int index);
+  // Get bit value of specified index.
+  bool Get(int index) YATSC_NO_SE;
 
+
+  // Count flaged bit number from zero to specified index.
+  int Rank(int index) YATSC_NO_SE;
+
+  
   int Select(int index);
+
+
+  // Return true if any bit is flaged.
+  YATSC_INLINE bool Any() YATSC_NO_SE;
+
+
+  // Return true if all bits are flaged.
+  YATSC_INLINE bool All() YATSC_NO_SE;
+
+
+  // Return true if any bits are not flaged.
+  YATSC_INLINE bool None() YATSC_NO_SE;
+
+
+  // Return current used bits size.
+  YATSC_INLINE size_t size() YATSC_NO_SE;
 
  private:
 
   void Grow(int len);
 
+  YATSC_INLINE int GetLargeIndex(int index) YATSC_NO_SE;
+
+
+  YATSC_INLINE int GetLargePosition(int index, int node_index) YATSC_NO_SE;
+  
+
   class BitNode {
    public:
     
-    BitNode()
-        : bits_(),
-          rank_(0) {}
+    BitNode() {}
     
     ~BitNode() = default;
 
     BitNode(const BitNode& bit_node)
-        : bits_(bit_node.bits_),
-          rank_(bit_node.rank_) {}
+        : bits_(bit_node.bits_) {}
 
     BitNode& operator = (const BitNode& bit_node) {
       bits_ = bit_node.bits_;
-      rank_ = bit_node.rank_;
       return (*this);
     }
 
     void Set(int index, bool val);
 
     
-    bool Get(int index);
+    YATSC_INLINE bool Get(int index) YATSC_NO_SE;
 
     
-    int Rank() {return rank_;}
+    YATSC_INLINE int Rank() YATSC_NO_SE;
+
+    
+    int GetSpecificRank(int num);
 
    private:
-    std::array<uint32_t, 5> bits_;
-    uint8_t rank_;
+    class Position {
+     public:
+      Position(int large_index, int small_index, int small_position)
+          : large_index(large_index),
+            small_index(small_index),
+            small_position(small_position) {}
+      int large_index;
+      int small_index;
+      int small_position;
+    };
+    
+    class Bit {
+     public:
+      Bit()
+          : bits({0, 0}),
+            mbit(0) {}
+      Bit(const Bit& bit)
+          : bits(bit.bits),
+            mbit(bit.mbit) {}
+      std::array<uint32_t, 2> bits; // 64
+      uint8_t mbit;
+    };
+
+    YATSC_INLINE int GetSmallRank() YATSC_NO_SE;
+
+    YATSC_INLINE int GetLargeRank() YATSC_NO_SE;
+
+    YATSC_INLINE int CountFlagedBit(uint32_t bits) YATSC_NO_SE;
+
+    YATSC_INLINE Position GetPosition(int num) YATSC_NO_SE;
+    
+    std::array<Bit, 2> bits_; // 128
   };
 
   static const int kGrowSize;
+  static const int kMinimumBitLength;
+  static const int kMinimumBitBlockSize;
+  static const int kBitNodeBitSize;
+  static const int kEachBitBlockSize;
+  static const int kIndexShifter;  
+  static const int kEachBitLength;      
+  static const int kMinMask;     
+  static const int kLargeMask;
+  
   int current_length_;
+  size_t used_length_;
   BitNode* bit_node_;
 };
 
 }
+
+#include "dynamic-bitset-inl.h"
 
 #endif
