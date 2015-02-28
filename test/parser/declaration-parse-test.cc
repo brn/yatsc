@@ -42,14 +42,16 @@
   [&]{DECLARATION_THROW_TEST(yatsc::LanguageMode::ES6, code);}()
 
 
-TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
+TEST(DeclarationParseTest, ParseLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100;",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [NameView][x]\n"
                    "    [NumberView][100]\n"
                    "    [Empty]");
+}
 
+TEST(DeclarationParseTest, ParseCommaLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x = 100, y = 200, z = 300",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
@@ -64,7 +66,10 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [NameView][z]\n"
                    "    [NumberView][300]\n"
                    "    [Empty]");
+}
 
+
+TEST(DeclarationParseTest, ParseTypedLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let x: string = 100;",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
@@ -72,21 +77,21 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [NumberView][100]\n"
                    "    [SimpleTypeExprView]\n"
                    "      [NameView][string]");
+}
 
+
+TEST(DeclarationParseTest, ParseArrayDestructuringLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c] = [1,2,3];",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingArrayView]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][a]\n"
                    "        [Empty]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][b]\n"
                    "        [Empty]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][c]\n"
                    "        [Empty]\n"
                    "    [ArrayLiteralView]\n"
@@ -94,7 +99,10 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "      [NumberView][2]\n"
                    "      [NumberView][3]\n"
                    "    [Empty]");
+}
 
+
+TEST(DeclarationParseTest, ParseObjectDestructuringLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c} = {a:100,b:200,c:300};",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
@@ -102,14 +110,11 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "      [BindingElementView]\n"
                    "        [NameView][a]\n"
                    "        [Empty]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][b]\n"
                    "        [Empty]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][c]\n"
-                   "        [Empty]\n"
                    "        [Empty]\n"
                    "    [ObjectLiteralView]\n"
                    "      [ObjectElementView]\n"
@@ -122,7 +127,9 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "        [NameView][c]\n"
                    "        [NumberView][300]\n"
                    "    [Empty]");
+}
 
+TEST(DeclarationParseTest, ParseMixedDestructuringLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {foo:a,b:{c:[x,y,z]},c:[{bar}]} = {a:100,b:{c:[1,2,3]},c:[{bar:100}]};",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
@@ -130,7 +137,6 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "      [BindingElementView]\n"
                    "        [NameView][foo]\n"
                    "        [NameView][a]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][b]\n"
                    "        [BindingPropListView]\n"
@@ -138,31 +144,23 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "            [NameView][c]\n"
                    "            [BindingArrayView]\n"
                    "              [BindingElementView]\n"
-                   "                [Empty]\n"
                    "                [NameView][x]\n"
                    "                [Empty]\n"
                    "              [BindingElementView]\n"
-                   "                [Empty]\n"
                    "                [NameView][y]\n"
                    "                [Empty]\n"
                    "              [BindingElementView]\n"
-                   "                [Empty]\n"
                    "                [NameView][z]\n"
                    "                [Empty]\n"
-                   "            [Empty]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][c]\n"
                    "        [BindingArrayView]\n"
                    "          [BindingElementView]\n"
-                   "            [Empty]\n"
                    "            [BindingPropListView]\n"
                    "              [BindingElementView]\n"
                    "                [NameView][bar]\n"
                    "                [Empty]\n"
-                   "                [Empty]\n"
                    "            [Empty]\n"
-                   "        [Empty]\n"
                    "    [ObjectLiteralView]\n"
                    "      [ObjectElementView]\n"
                    "        [NameView][a]\n"
@@ -184,22 +182,21 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "              [NameView][bar]\n"
                    "              [NumberView][100]\n"
                    "    [Empty]");
+}
 
 
+TEST(DeclarationParseTest, ParseTypedArrayDestructuringLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let [a, b, c]: number[] = [1,2,3];",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
                    "    [BindingArrayView]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][a]\n"
                    "        [Empty]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][b]\n"
                    "        [Empty]\n"
                    "      [BindingElementView]\n"
-                   "        [Empty]\n"
                    "        [NameView][c]\n"
                    "        [Empty]\n"
                    "    [ArrayLiteralView]\n"
@@ -209,7 +206,10 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "    [ArrayTypeExprView]\n"
                    "      [SimpleTypeExprView]\n"
                    "        [NameView][number]");
+}
 
+
+TEST(DeclarationParseTest, ParseTypedObjectDestructuringLexicalDeclaration) {
   DECLARATION_TEST(yatsc::LanguageMode::ES6, "let {a,b,c}: Object = {a:100,b:200,c:300};",
                    "[LexicalDeclView][Let]\n"
                    "  [VariableView]\n"
@@ -217,14 +217,11 @@ TEST(DeclarationParseTest, ParseLexicalDeclaration_let) {
                    "      [BindingElementView]\n"
                    "        [NameView][a]\n"
                    "        [Empty]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][b]\n"
                    "        [Empty]\n"
-                   "        [Empty]\n"
                    "      [BindingElementView]\n"
                    "        [NameView][c]\n"
-                   "        [Empty]\n"
                    "        [Empty]\n"
                    "    [ObjectLiteralView]\n"
                    "      [ObjectElementView]\n"
@@ -379,24 +376,22 @@ TEST(DeclarationParseTest, ParseFunctionOverloads) {
 }
 
 
-TEST(DeclarationParseTest, ParseClassDeclaration) {
+TEST(DeclarationParseTest, ParseEmptyClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseConstructorDeclaration) {
   DECLARATION_TEST_ALL("class Foo {constructor(){}}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -408,8 +403,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "        [Empty]\n"
                        "      [MemberFunctionOverloadsView]\n"
                        "      [BlockView]");
+}
 
 
+TEST(DeclarationParseTest, ParseConstructorOverloadDeclaration) {
   DECLARATION_TEST_ALL("class Foo {"
                        "  constructor();"
                        "  constructor(a);"
@@ -418,9 +415,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -458,7 +453,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "            [Empty]\n"
                        "      [BlockView]");
+}
 
+
+TEST(DeclarationParseTest, ParseMemberFunctionDeclaration) {
   DECLARATION_TEST_ALL("class Foo {"
                        "  constructor();"
                        "  constructor(a);"
@@ -468,9 +466,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -518,8 +514,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "        [Empty]\n"
                        "      [MemberFunctionOverloadsView]\n"
                        "      [BlockView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMemberFunctionOverloadDeclaration) {
   DECLARATION_TEST_ALL("class Foo {"
                        "  constructor();"
                        "  constructor(a);"
@@ -534,9 +532,7 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -657,15 +653,15 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "            [Empty]\n"
                        "            [Empty]\n"
                        "      [BlockView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMemberVariableDeclaration) {
   DECLARATION_TEST_ALL("class Foo {public member = 1;}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberVariableView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -673,15 +669,32 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [NameView][member]\n"
                        "      [Empty]\n"
                        "      [NumberView][1]");
+}
 
 
+TEST(DeclarationParseTest, ParseKeywordMemberVariableDeclaration) {
+  DECLARATION_TEST_ALL("class Foo {public const: number = 0;}",
+                       "[ClassDeclView]\n"
+                       "  [NameView][Foo]\n"
+                       "  [Empty]\n"
+                       "  [Empty]\n"
+                       "  [ClassFieldListView]\n"
+                       "    [MemberVariableView]\n"
+                       "      [ClassFieldModifiersView]\n"
+                       "        [ClassFieldAccessLevelView][Public]\n"
+                       "      [NameView][const]\n"
+                       "      [SimpleTypeExprView]\n"
+                       "        [NameView][number]\n"
+                       "      [NumberView][0]");
+}
+
+
+TEST(DeclarationParseTest, ParseStaticMemberVariableDeclaration) {
   DECLARATION_TEST_ALL("class Foo {private static member = 1;}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberVariableView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -690,8 +703,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [NameView][member]\n"
                        "      [Empty]\n"
                        "      [NumberView][1]");
+}
 
 
+TEST(DeclarationParseTest, ParseDerivedClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo extends Bar {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -702,8 +717,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "        [NameView][Bar]\n"
                        "    [Empty]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseImplementsClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo implements Bar {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -714,8 +731,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [SimpleTypeExprView]\n"
                        "        [NameView][Bar]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMultiImplementsClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo implements Bar implements Buz {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -728,8 +747,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [SimpleTypeExprView]\n"
                        "        [NameView][Buz]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMultiImplementsAndDrivedClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo extends Bar implements Buz implements Qux {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -744,17 +765,17 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [SimpleTypeExprView]\n"
                        "        [NameView][Qux]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseGetterMemberFunctionDeclaration) {
   DECLARATION_TEST_ALL("class Foo {"
                        "  public get bar(){}"
                        "}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -766,16 +787,17 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "        [Empty]\n"
                        "      [MemberFunctionOverloadsView]\n"
                        "      [BlockView]");
+}
 
+
+TEST(DeclarationParseTest, ParseSetterMemberFunctionDeclaration) {
   DECLARATION_TEST_ALL("class Foo {"
                        "  public set bar(x): void{}"
                        "}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [MemberFunctionView]\n"
                        "      [ClassFieldModifiersView]\n"
@@ -793,8 +815,10 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "        [Empty]\n"
                        "      [MemberFunctionOverloadsView]\n"
                        "      [BlockView]");
+}
 
 
+TEST(DeclarationParseTest, ParseGetterAndSetterErrorMemberFunctionDeclaration) {
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public get bar(x): void{}"
                              "}");
@@ -814,19 +838,21 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
   DECLARATION_THROW_TEST_ALL("class Foo {"
                              "  public set bar(): string {}"
                              "}");
+}
 
 
+TEST(DeclarationParseTest, ParseGenericClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo<T> {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [TypeParametersView]\n"
                        "    [NameView][T]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMultiTypeParameterDeclaration) {
   DECLARATION_TEST_ALL("class Foo<T, U, V> {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -834,12 +860,12 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "    [NameView][T]\n"
                        "    [NameView][U]\n"
                        "    [NameView][V]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseDerivedGenericClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo<T extends Bar, U extends Baz> {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -852,12 +878,12 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "      [NameView][U]\n"
                        "      [SimpleTypeExprView]\n"
                        "        [NameView][Baz]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseMultiImplementsAndDerivedGenericClassDeclaration) {
   DECLARATION_TEST_ALL("class Foo<T, U> extends Bar<BarT> implements Buz<BuzT> implements Qux<QuxT> {}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -883,15 +909,15 @@ TEST(DeclarationParseTest, ParseClassDeclaration) {
                        "          [SimpleTypeExprView]\n"
                        "            [NameView][QuxT]\n"
                        "  [ClassFieldListView]");
+}
 
 
+TEST(DeclarationParseTest, ParseIndexSignatureMemberDeclaration) {
   DECLARATION_TEST_ALL("class Foo {[x:string]:number}",
                        "[ClassDeclView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
-                       "  [ClassBasesView]\n"
-                       "    [Empty]\n"
-                       "    [Empty]\n"
+                       "  [Empty]\n"
                        "  [ClassFieldListView]\n"
                        "    [IndexSignatureView]\n"
                        "      [NameView][x]\n"
@@ -1000,7 +1026,7 @@ TEST(DeclarationParseTest, ParseInterfaceDeclaration) {
                        "  [ObjectTypeExprView]");
 
 
-  DECLARATION_TEST_ALL("interface Foo extends Bar extends Baz {}",
+  DECLARATION_TEST_ALL("interface Foo extends Bar, Baz {}",
                        "[InterfaceView]\n"
                        "  [NameView][Foo]\n"
                        "  [Empty]\n"
@@ -1012,7 +1038,7 @@ TEST(DeclarationParseTest, ParseInterfaceDeclaration) {
                        "  [ObjectTypeExprView]");
 
 
-  DECLARATION_TEST_ALL("interface Foo<X, Y, Z> extends Bar extends Baz {}",
+  DECLARATION_TEST_ALL("interface Foo<X, Y, Z> extends Bar, Baz {}",
                        "[InterfaceView]\n"
                        "  [NameView][Foo]\n"
                        "  [TypeParametersView]\n"
@@ -1027,7 +1053,7 @@ TEST(DeclarationParseTest, ParseInterfaceDeclaration) {
                        "  [ObjectTypeExprView]");
 
 
-  DECLARATION_TEST_ALL("interface Foo<X extends Bar, Y extends Baz> extends Bar extends Baz {}",
+  DECLARATION_TEST_ALL("interface Foo<X extends Bar, Y extends Baz> extends Bar, Baz {}",
                        "[InterfaceView]\n"
                        "  [NameView][Foo]\n"
                        "  [TypeParametersView]\n"

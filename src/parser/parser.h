@@ -36,6 +36,14 @@
 namespace yatsc {
 
 
+#define SKIP_IF_ERROR_RECOVERY_ENABLED(advance_to_next, ...)    \
+  if (IsErrorRecorveryEnabled()) {                              \
+    SkipTokensUntil({__VA_ARGS__}, advance_to_next);           \
+  } else {                                                      \
+    return Failed();                                            \
+  }
+
+
 // Generate SyntaxError and push it to buffer.
 // This macro return Failed() result.
 // Usage. SYNTAX_ERROR("test " << message, cur_token())
@@ -116,35 +124,37 @@ namespace yatsc {
 #ifndef DEBUG
 
 // Push error to the buffer.
-#define REPORT_SYNTAX_ERROR_INTERNAL(message, item) \
+#define REPORT_SYNTAX_ERROR_INTERNAL(message, item)             \
   module_info_->error_reporter()->SyntaxError(item) << message;
 
 #else
 
 // Push error to the buffer.
 // This method debug only.
-#define REPORT_SYNTAX_ERROR_INTERNAL(message, item)               \
+#define REPORT_SYNTAX_ERROR_INTERNAL(message, item)                     \
   module_info_->error_reporter()->SyntaxError(item) << message << '\n' << __FILE__ << ":" << __LINE__;
 #endif
 
 
 #ifdef DEBUG
 // Logging current parse phase.
-#define LOG_PHASE(name)                                          \
-  if (cur_token() != nullptr) {                                           \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]\n"; \
+#define LOG_PHASE(name)                                                 \
+  if (cur_token() != nullptr) {                                         \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << ']'; \
   } else {                                                              \
-    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]\n"; \
+    phase_buffer_ << indent_ << "Enter " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << ']'; \
   }                                                                     \
+  phase_buffer_ << cur_token()->source_position().start_line_number() << '\n'; \
   indent_ += "  ";                                                      \
   auto err_size = module_info_->error_reporter()->size();               \
   YATSC_SCOPED([&]{                                                     \
     indent_ = indent_.substr(0, indent_.size() - 2);                    \
     if (this->cur_token() != nullptr) {                                 \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]" << (err_size != module_info_->error_reporter()->size()? "[Error!]\n": "\n"); \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = " << cur_token()->ToStringWithValue() << ",generic?[" << scanner_->nested_generic_count() << "]" << (err_size != module_info_->error_reporter()->size()? "[Error!]": ""); \
     } else {                                                            \
-      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]"<< (err_size != module_info_->error_reporter()->size()? "[Error!]\n": "\n"); \
+      phase_buffer_ << indent_ << "Exit " << #name << ": CurrentToken = null,generic?[" << scanner_->nested_generic_count() << "]"<< (err_size != module_info_->error_reporter()->size()? "[Error!]": ""); \
     }                                                                   \
+    phase_buffer_ << cur_token()->source_position().start_line_number() << '\n'; \
   })
 #else
 // Disabled.
@@ -173,6 +183,7 @@ class Parser: public ParserBase {
          Handle<ir::GlobalScope> global_scope)
       : ParserBase(co, notificator),
         record_mode_(0),
+        error_recovery_(1),
         scanner_(scanner),
         module_info_(module_info),
         global_scope_(global_scope) {Initialize();}
@@ -291,7 +302,7 @@ class Parser: public ParserBase {
           prev_(prev),
           scope_(current_scope),
           enclosure_balancer_(enclosure_balancer_),
-      error_count_(error_count) {}
+          error_count_(error_count) {}
 
     YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
 
@@ -324,8 +335,8 @@ class Parser: public ParserBase {
    public:
     explicit Parsed(ParseResult parse_result, RecordedParserState rps)
         : RbTreeNode<SourcePosition, Parsed*>(),
-          parse_result_(parse_result),
-          parser_state_(rps) {}
+        parse_result_(parse_result),
+        parser_state_(rps) {}
 
     YATSC_GETTER(ParseResult, parse_result, parse_result_);
 
@@ -344,7 +355,7 @@ class Parser: public ParserBase {
 
     template <typename T>
     DebugStream& operator << (T value) {
-      buffer_ << value;
+      //buffer_ << value;
       if (Print) {
         std::cout << value;
       }
@@ -413,6 +424,15 @@ class Parser: public ParserBase {
 
 
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
+
+
+  void EnableErrorRecovery() YATSC_NOEXCEPT {error_recovery_++;}
+
+
+  void DisableErrorRecovery() YATSC_NOEXCEPT {error_recovery_--;}
+  
+
+  bool IsErrorRecorveryEnabled() YATSC_NO_SE {return error_recovery_ > 0;}
 
   
   void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token);
@@ -488,6 +508,7 @@ class Parser: public ParserBase {
   
 
   int record_mode_;
+  int error_recovery_;
 #if defined(DEBUG) || defined(UNIT_TEST)
   DebugStream<false> phase_buffer_;
 #endif
@@ -629,6 +650,8 @@ class Parser: public ParserBase {
 
   ParseResult ParseTypeExpression();
 
+  ParseResult ParseType();
+
   ParseResult ParseReferencedType();
 
   ParseResult ParseGenericType();
@@ -689,7 +712,7 @@ class Parser: public ParserBase {
   // Parse conditional expression.
   ParseResult ParseConditionalExpression(bool in, bool yield);
 
-#define DEF_PARSE_BINARY_EXPR(name)                       \
+#define DEF_PARSE_BINARY_EXPR(name)                         \
   ParseResult Parse##name##Expression(bool in, bool yield);
 
   DEF_PARSE_BINARY_EXPR(LogicalOR);

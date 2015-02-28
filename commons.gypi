@@ -198,6 +198,7 @@
             '-Wno-format-nonliteral',
             '-Wno-weak-vtables',
             '-Wno-extra-semi'
+            "-Wno-pedantic"
           ]
         },
       }],

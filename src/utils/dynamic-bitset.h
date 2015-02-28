@@ -88,6 +88,15 @@ class DynamicBitset {
 
 
   YATSC_INLINE int GetLargePosition(int index, int node_index) YATSC_NO_SE;
+
+
+  YATSC_INLINE void MarkAsUpdated() YATSC_NO_SE {updated_ = true;}
+
+
+  YATSC_INLINE void UnmarkUpdated() YATSC_NO_SE {updated_ = false;}
+
+
+  YATSC_INLINE bool IsUpdated() YATSC_NO_SE {return updated_;}
   
 
   class BitNode {
@@ -111,10 +120,16 @@ class DynamicBitset {
     YATSC_INLINE bool Get(int index) YATSC_NO_SE;
 
     
-    YATSC_INLINE int Rank() YATSC_NO_SE;
+    YATSC_INLINE int SelfRank() YATSC_NO_SE;
 
     
     int GetSpecificRank(int num);
+
+    
+    int SelectSpecific(int num) YATSC_NO_SE;
+
+    
+    YATSC_PROPERTY(uint16_t, rank, rank_);
 
    private:
     class Position {
@@ -147,8 +162,11 @@ class DynamicBitset {
     YATSC_INLINE int CountFlagedBit(uint32_t bits) YATSC_NO_SE;
 
     YATSC_INLINE Position GetPosition(int num) YATSC_NO_SE;
+
+    int IndexOf(int index, uint32_t bits, int all_index) YATSC_NO_SE;
     
     std::array<Bit, 2> bits_; // 128
+    uint16_t rank_;
   };
 
   static const int kGrowSize;
@@ -156,13 +174,16 @@ class DynamicBitset {
   static const int kMinimumBitBlockSize;
   static const int kBitNodeBitSize;
   static const int kEachBitBlockSize;
-  static const int kIndexShifter;  
-  static const int kEachBitLength;      
-  static const int kMinMask;     
+  static const int kIndexShifter;
+  static const int kEachBitLength;
+  static const int kMinMask;
   static const int kLargeMask;
+  static const uint32_t kAllFlaged;
+  static const uint32_t k31BitMask;
   
   int current_length_;
   size_t used_length_;
+  mutable bool updated_;
   BitNode* bit_node_;
 };
 

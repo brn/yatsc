@@ -367,6 +367,7 @@ bool Token::IsKeyword(TokenKind kind) {
     kind == TokenKind::kVoid ||
     kind == TokenKind::kWhile ||
     kind == TokenKind::kWith ||
+    kind == TokenKind::kFutureReservedWord ||
     kind == TokenKind::kYield;
 }
 

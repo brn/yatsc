@@ -90,6 +90,47 @@ TEST(ExpressionParseTest, ParseExpression_array) {
 }
 
 
+TEST(ExpressionParseTest, ParseExpression_complexArray) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "[new Opcode(1, function(x: foo.bar, y: foo.bar2) { return x + y}), 2]",
+            "[ArrayLiteralView]\n"
+            "  [NewCallView]\n"
+            "    [NameView][Opcode]\n"
+            "    [ArgumentsView]\n"
+            "      [Empty]\n"
+            "      [CallArgsView]\n"
+            "        [NumberView][1]\n"
+            "        [FunctionView]\n"
+            "          [Empty]\n"
+            "          [Empty]\n"
+            "          [CallSignatureView]\n"
+            "            [ParamList]\n"
+            "              [ParameterView]\n"
+            "                [NameView][x]\n"
+            "                [Empty]\n"
+            "                [SimpleTypeExprView]\n"
+            "                  [GetPropView]\n"
+            "                    [NameView][foo]\n"
+            "                    [NameView][bar]\n"
+            "                [Empty]\n"
+            "              [ParameterView]\n"
+            "                [NameView][y]\n"
+            "                [Empty]\n"
+            "                [SimpleTypeExprView]\n"
+            "                  [GetPropView]\n"
+            "                    [NameView][foo]\n"
+            "                    [NameView][bar2]\n"
+            "                [Empty]\n"
+            "            [Empty]\n"
+            "            [Empty]\n"
+            "          [BlockView]\n"
+            "            [ReturnStatementView]\n"
+            "              [BinaryExprView][Plus]\n"
+            "                [NameView][x]\n"
+            "                [NameView][y]\n"
+            "  [NumberView][2]");
+}
+
+
 TEST(ExpressionParseTest, ParseExpression_object) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "({})", "[ObjectLiteralView]");
   EXPR_TEST(yatsc::LanguageMode::ES3, "({a:200,b:300,c:400})",
@@ -341,6 +382,31 @@ TEST(ExpressionParseTest, ParseExpression_generic_property_call) {
             "      [SimpleTypeExprView]\n"
             "        [NameView][string]\n"
             "    [CallArgsView]");
+}
+
+TEST(ExpressionParseTest, ParseArrowFunctionExprInExpr) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "((a:string,b:number): number => a + b)",
+            "[ArrowFunctionView]\n"
+            "  [CallSignatureView]\n"
+            "    [ParamList]\n"
+            "      [ParameterView]\n"
+            "        [NameView][a]\n"
+            "        [Empty]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][string]\n"
+            "        [Empty]\n"
+            "      [ParameterView]\n"
+            "        [NameView][b]\n"
+            "        [Empty]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][number]\n"
+            "        [Empty]\n"
+            "    [SimpleTypeExprView]\n"
+            "      [NameView][number]\n"
+            "    [Empty]\n"
+            "  [BinaryExprView][Plus]\n"
+            "    [NameView][a]\n"
+            "    [NameView][b]");
 }
 
 
@@ -923,5 +989,30 @@ TEST(ExpressionParseTest, ParseExpression_postfix_expr) {
   EXPR_TEST(yatsc::LanguageMode::ES3, "i--",
             "[PostfixView][Decrement]\n"
             "  [NameView][i]");
+}
+
+
+TEST(ExpressionParseTest, ParseTypeAssertions) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "((<InterfaceType>type).typeParameters ? (<InterfaceType>type).typeParameters.length : 0) !== arity",
+            "[BinaryExprView][NotEq]\n"
+            "  [TemaryExprView]\n"
+            "    [GetPropView]\n"
+            "      [CastView]\n"
+            "        [TypeArgumentsView]\n"
+            "          [SimpleTypeExprView]\n"
+            "            [NameView][InterfaceType]\n"
+            "        [NameView][type]\n"
+            "      [NameView][typeParameters]\n"
+            "    [GetPropView]\n"
+            "      [GetPropView]\n"
+            "        [CastView]\n"
+            "          [TypeArgumentsView]\n"
+            "            [SimpleTypeExprView]\n"
+            "              [NameView][InterfaceType]\n"
+            "          [NameView][type]\n"
+            "        [NameView][typeParameters]\n"
+            "      [NameView][length]\n"
+            "    [NumberView][0]\n"
+            "  [NameView][arity]");
 }
 

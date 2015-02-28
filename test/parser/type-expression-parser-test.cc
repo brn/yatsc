@@ -87,6 +87,45 @@ TEST(TypeParser, ParseTypeExpression) {
   TYPE_PARSER_THROW_TEST_ALL("typeof foo.['bar'].baz");
 
 
+  // Union type
+  
+  TYPE_PARSER_TEST_ALL("T|U|R",
+                       "[UnionTypeExprView]\n"
+                       "  [SimpleTypeExprView]\n"
+                       "    [NameView][T]\n"
+                       "  [SimpleTypeExprView]\n"
+                       "    [NameView][U]\n"
+                       "  [SimpleTypeExprView]\n"
+                       "    [NameView][R]");
+
+
+  TYPE_PARSER_TEST_ALL("T[]|U|R",
+                       "[UnionTypeExprView]\n"
+                       "  [ArrayTypeExprView]\n"
+                       "    [SimpleTypeExprView]\n"
+                       "      [NameView][T]\n"
+                       "  [SimpleTypeExprView]\n"
+                       "    [NameView][U]\n"
+                       "  [SimpleTypeExprView]\n"
+                       "    [NameView][R]");
+
+
+  TYPE_PARSER_TEST_ALL("()=>number|{x:number}|R[]",
+                       "[FunctionTypeExprView]\n"
+                       "  [ParamList]\n"
+                       "  [UnionTypeExprView]\n"
+                       "    [SimpleTypeExprView]\n"
+                       "      [NameView][number]\n"
+                       "    [ObjectTypeExprView]\n"
+                       "      [PropertySignatureView]\n"
+                       "        [NameView][x]\n"
+                       "        [SimpleTypeExprView]\n"
+                       "          [NameView][number]\n"
+                       "    [ArrayTypeExprView]\n"
+                       "      [SimpleTypeExprView]\n"
+                       "        [NameView][R]");
+
+
   // Type Literal
 
   TYPE_PARSER_TEST_ALL("{foo:string; bar:number}",
@@ -101,7 +140,7 @@ TEST(TypeParser, ParseTypeExpression) {
                        "      [NameView][number]");
 
 
-  TYPE_PARSER_TEST_ALL("{foo() => string; bar:number}",
+  TYPE_PARSER_TEST_ALL("{foo(): string; bar:number}",
                        "[ObjectTypeExprView]\n"
                        "  [MethodSignatureView]\n"
                        "    [NameView][foo]\n"
@@ -115,7 +154,7 @@ TEST(TypeParser, ParseTypeExpression) {
                        "    [SimpleTypeExprView]\n"
                        "      [NameView][number]");
 
-  TYPE_PARSER_TEST_ALL("{foo:string; bar() => number}",
+  TYPE_PARSER_TEST_ALL("{foo:string; bar(): number}",
                        "[ObjectTypeExprView]\n"
                        "  [PropertySignatureView]\n"
                        "    [NameView][foo]\n"
@@ -129,7 +168,7 @@ TEST(TypeParser, ParseTypeExpression) {
                        "        [NameView][number]\n"
                        "      [Empty]");
 
-  TYPE_PARSER_TEST_ALL("{() => string; bar<T>() => number}",
+  TYPE_PARSER_TEST_ALL("{(): string; bar<T>(): number}",
                        "[ObjectTypeExprView]\n"
                        "  [CallSignatureView]\n"
                        "    [ParamList]\n"

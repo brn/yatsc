@@ -83,5 +83,6 @@ TEST(ParserTest, Parse) {
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/src/compiler/checker.ts", "");
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/compiler/sourceMap-LineBreaks.ts.", "");
   //ENTIRE_PARSER_TEST_ALL("test/microsoft/typescript/tests/cases/conformance/parser/ecmascript5/ErrorRecovery/ParameterLists/parserErrorRecovery_ParameterList2.ts", "");
-  ParseTestCases();
+  ENTIRE_PARSER_TEST("test/microsoft/typescript/src/compiler/checker.ts", yatsc::LanguageMode::ES5_STRICT, "");
+  //ParseTestCases();
 }

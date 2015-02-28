@@ -100,6 +100,18 @@ void CheckBits(yatsc::DynamicBitset* bitset) {
 }
 
 
+void SetBitsAndCheckSelect(yatsc::DynamicBitset* bitset) {
+  int j = 0;
+  for (int i = 0; i < 5; i++) {
+    int k = 0;
+    for (;k < 6; ++k && j++) {
+      bitset->Set(kValues[j].index, kValues[j].val);
+    }
+    ASSERT_EQ(kValues[j - 1].index + 1, bitset->Select(4 * (i + 1)));
+  }
+}
+
+
 void CheckStrBits(yatsc::DynamicBitset* bitset) {
   for (int i = 0, len = 30; i < len; i++) {
     ASSERT_EQ(bitset->Get(i), kBitStrValue[i]);
@@ -165,4 +177,12 @@ TEST(DynamicBitset, Rank) {
   DynamicBitset bitset;
   SetBitsAndCheckRank(&bitset);
   SetRbitsAndCheckRrank(&bitset);
+}
+
+
+TEST(DynamicBitset, Select) {
+  using namespace yatsc;
+  DynamicBitset bitset;
+  SetBits(&bitset);
+  SetBitsAndCheckSelect(&bitset);
 }

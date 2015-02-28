@@ -24,22 +24,12 @@
 namespace yatsc {
 
 YATSC_INLINE bool DynamicBitset::Any() YATSC_NO_SE {
-  for (size_t i = 0; i < used_length_; i++) {
-    if (bit_node_[i].Rank() > 0) {
-      return true;
-    }
-  }
-  return false;
+  return bit_node_[used_length_].rank() > 0;
 }
 
 
 YATSC_INLINE bool DynamicBitset::All() YATSC_NO_SE {
-  for (size_t i = 0; i < used_length_; i++) {
-    if (bit_node_[i].Rank() < kEachBitLength) {
-      return false;
-    }
-  }
-  return true;
+  return bit_node_[used_length_].rank() == used_length_ * kEachBitLength;
 }
 
 
@@ -70,7 +60,7 @@ YATSC_INLINE bool DynamicBitset::BitNode::Get(int num) YATSC_NO_SE {
 }
 
 
-YATSC_INLINE int DynamicBitset::BitNode::Rank() YATSC_NO_SE {
+YATSC_INLINE int DynamicBitset::BitNode::SelfRank() YATSC_NO_SE {
   return GetSmallRank() + GetLargeRank();
 }
 

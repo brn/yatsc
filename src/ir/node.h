@@ -105,8 +105,9 @@ namespace yatsc {namespace ir {
   DECLARE(TypeConstraintsView)                          \
   DECLARE(TypeArgumentsView)                            \
   DECLARE(TypeQueryView)                                \
-  DECLARE(ArrayTypeExprView)                            \
+  DECLARE(ArrayTypeExprView)                            \  
   DECLARE(ObjectTypeExprView)                           \
+  DECLARE(UnionTypeExprView)                            \
   DECLARE(PropertySignatureView)                        \
   DECLARE(MethodSignatureView)                          \
   DECLARE(FunctionTypeExprView)                         \
@@ -1686,6 +1687,16 @@ class ObjectTypeExprView: public Node {
 
   ObjectTypeExprView()
       : Node(NodeType::kObjectTypeExprView, 0u) {}
+};
+
+
+class UnionTypeExprView: public Node {
+ public:
+  UnionTypeExprView(std::initializer_list<Handle<Node>> union_member_list)
+      : Node(NodeType::kUnionTypeExprView, 0u, union_member_list) {}
+
+  UnionTypeExprView()
+      : Node(NodeType::kUnionTypeExprView, 0u) {}
 };
 
 

@@ -86,7 +86,9 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentPattern(bool yield) {
       break;
     }
     default:
-      SYNTAX_ERROR("assignment pattern begin with '{' or '[' expected.", (&token));
+      ReportParseError(&token, YATSC_SOURCEINFO_ARGS)
+        << "assignment pattern begin with '{' or '[' expected.";
+      return Failed();
   }
 
   CHECK_AST(result);
@@ -121,8 +123,10 @@ ParseResult Parser<UCharInputIterator>::ParseObjectAssignmentPattern(bool yield)
     Next();
     return result;
   }
-  
-  SYNTAX_ERROR("'}' expected.", cur_token());
+
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'}' expected.";
+  return Failed();
 }
 
 
@@ -165,7 +169,10 @@ ParseResult Parser<UCharInputIterator>::ParseArrayAssignmentPattern(bool yield) 
       auto result = ParseAssignmentRestElement(yield);
     
       // If failed, skip all tokens until RightBracket encounted.
-      SKIP_TOKEN_IF_AND(result, success, TokenKind::kRightBracket, return Failed());
+      if (!result) {
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kRightBracket, TokenKind::kRest);
+        return Failed();
+      }
     
       array_view->InsertLast(result.value());
       rest_token = Just(*cur_token());
@@ -174,7 +181,9 @@ ParseResult Parser<UCharInputIterator>::ParseArrayAssignmentPattern(bool yield) 
       // Parse closed array initializer.
       // If array pattern element count is zero, it's treated as SyntaxError.
       if (array_view->size() == 0) {
-        SYNTAX_ERROR("destructuring assignment left hand side is not allowed empty array", cur_token());
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "destructuring assignment left hand side is not allowed empty array";
+        return Failed();
       }
     
       Next();
@@ -183,7 +192,9 @@ ParseResult Parser<UCharInputIterator>::ParseArrayAssignmentPattern(bool yield) 
 
     // The ParameterRest is not allowed in any position of array pattern except the last element.
     if (rest_token) {
-      SYNTAX_ERROR("destructuring assignment rest expression must be the end of the elements.", (rest_token.value()));
+      ReportParseError(rest_token.value(), YATSC_SOURCEINFO_ARGS)
+        << "destructuring assignment rest expression must be the end of the elements.";
+      return Failed();
     } else if (cur_token()->Is(TokenKind::kComma)) {
       Next();
       continue;
@@ -191,7 +202,9 @@ ParseResult Parser<UCharInputIterator>::ParseArrayAssignmentPattern(bool yield) 
 
     // If reached to this line, that mean token not machted with '[' or ',',
     // so produce error.
-    SYNTAX_ERROR("unexpected token. ']' or ',' expected.", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "unexpected token. ']' or ',' expected.";
+    return Failed();
   }
 }
 
@@ -212,8 +225,10 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentPropertyList(bool yield) 
   while (1) {
     auto result = ParseAssignmentProperty(yield);
 
-    SKIP_TOKEN_OR(result, success, TokenKind::kComma) {
+    if (result) {
       prop_list->InsertLast(result.value());
+    } else {
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kRightBrace);
     }
     
     if (cur_token()->Is(TokenKind::kComma)) {
@@ -221,9 +236,11 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentPropertyList(bool yield) 
       continue;
     } else if (cur_token()->Is(TokenKind::kRightBrace)) {
       return Success(prop_list);
-    } else {
-      SYNTAX_ERROR("',' or '}' expected.", cur_token());
     }
+
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "',' or '}' expected.";
+    return Failed();
   }
 }
 
@@ -247,9 +264,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentProperty(bool yield) {
   if (cur_token()->Is(TokenKind::kIdentifier)) {
     identifier = true;
     property_name = ParseIdentifierReference(yield);
-  } else if (cur_token()->Is(TokenKind::kStringLiteral) ||
-             cur_token()->Is(TokenKind::kNumericLiteral) ||
-             cur_token()->Is(TokenKind::kLeftBracket)) {
+  } else if (cur_token()->OneOf({TokenKind::kStringLiteral, TokenKind::kNumericLiteral, TokenKind::kLeftBracket})) {
     property_name = ParsePropertyName(yield, false);
   }
   CHECK_AST(property_name);
@@ -323,6 +338,9 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentRestElement(bool yield) {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool yield) {
   LOG_PHASE(ParseDestructuringAssignmentTarget);
+
+  DisableErrorRecovery();
+  YATSC_SCOPED([&]{EnableErrorRecovery();});
   
   RecordedParserState rps = parser_state();
   
@@ -331,10 +349,12 @@ ParseResult Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget(bool 
     if (!lhs->IsValidLhs()) {
       if (lhs->HasObjectLiteralView() || lhs->HasArrayLiteralView()) {
         RestoreParserState(rps);
+        EnableErrorRecovery();
         return ParseAssignmentPattern(yield);
       }
-    
-      SYNTAX_ERROR("invalid Left-Hand-Side expression", lhs);
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "invalid Left-Hand-Side expression";
+      return Failed();
     }
     return Success(lhs);
   };
@@ -369,11 +389,12 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
   // Record current buffer position.
   RecordedParserState rps = parser_state();
   
-  if (cur_token()->Is(TokenKind::kLeftParen) ||
-      cur_token()->Is(TokenKind::kLess)) {
+  if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
+    DisableErrorRecovery();
     // First try parse as arrow function.
     // parsae an arrow_function_parameters.
     auto arrow_param_result = ParseArrowFunctionParameters(yield, ir::Node::Null());
+    EnableErrorRecovery();
     // if node is exists, arrow function parameter parse is succeeded.
     if (arrow_param_result) {
       return ParseConciseBody(in, arrow_param_result.value());
@@ -387,7 +408,8 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
 
   if (cur_token()->Is(TokenKind::kYield)) {
     if (!yield) {
-      SYNTAX_ERROR("invalid use of 'yield' keyword", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "invalid use of 'yield' keyword";
     }
     expr_result = ParseYieldExpression(in);
     CHECK_AST(expr_result);
@@ -427,7 +449,8 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
       RestoreParserState(rps);
 
       if (!LanguageModeUtil::IsES6(compiler_option_)) {
-        SYNTAX_ERROR("Invalid Left-Hand-Side expression", cur_token());
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "Invalid Left-Hand-Side expression";
       }
       
       expr_result = ParseAssignmentPattern(yield);
@@ -454,9 +477,13 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression(bool in, bool 
         return Success(result);
       };
     }
-    SYNTAX_ERROR("invalid left hand side expression in 'assignment expression'", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "invalid left hand side expression in 'assignment expression'";
+    return Failed();
   } else if (parsed_as_assignment_pattern) {
-    SYNTAX_ERROR("destructuring assignment must be initialized", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "destructuring assignment must be initialized";
+    return Failed();
   }
   
   return expr_result;
@@ -487,7 +514,9 @@ ParseResult Parser<UCharInputIterator>::ParseArrowFunctionParameters(bool yield,
   }
   
   if (!cur_token()->Is(TokenKind::kArrowGlyph)) {
-    SYNTAX_ERROR("'=>' expected", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "'=>' expected";
+    return Failed();
   }
   
   Next();
@@ -539,7 +568,9 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool
           return Success(temary);
         };
       }
-      SYNTAX_ERROR("unexpected token in 'temary expression'", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "unexpected token in 'temary expression'";
+      return Failed();
     };
   }
   
@@ -555,7 +586,7 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression(bool in, bool
     CHECK_AST(ret);                                                     \
     while (1) {                                                         \
       if (check) {                                                      \
-        if (!ret.value()->IsValidLhs() ||                               \
+        if ((!ret.value()->IsValidLhs() && Token::IsLetOperator(cur_token()->type())) || \
             (Token::IsLetOperator(cur_token()->type()) &&               \
              !ret.value()->HasNameView() &&                             \
              !ret.value()->HasGetPropView() &&                          \
@@ -745,8 +776,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParsePostfixExpression(bool yield) {
   LOG_PHASE(ParsePostfixExpression);
   return ParseLeftHandSideExpression(yield) >>= [&](Handle<ir::Node> lhs_expr) {
-    if (cur_token()->Is(TokenKind::kIncrement) ||
-        cur_token()->Is(TokenKind::kDecrement)) {
+    if (cur_token()->OneOf({TokenKind::kIncrement, TokenKind::kDecrement})) {
       auto ret = New<ir::PostfixView>(lhs_expr, cur_token()->type());
       ret->SetInformationForNode(lhs_expr);
       Next();
@@ -910,25 +940,31 @@ ParseResult Parser<UCharInputIterator>::ParseArguments(bool yield) {
         Token info = *cur_token();
         Next();
         auto assignment_expr_result = ParseAssignmentExpression(true, yield);
-        
-        SKIP_TOKEN_OR(assignment_expr_result, success, TokenKind::kRightParen) {
+
+        if (assignment_expr_result) {
           auto rest = New<ir::RestParamView>(assignment_expr_result.value());
           rest->SetInformationForNode(&info);
           args->InsertLast(rest);
           has_rest = true;
+        } else {
+          SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightParen, TokenKind::kComma);
         }
       } else {
         
         auto assignment_expr_result = ParseAssignmentExpression(true, yield);
-        
-        SKIP_TOKEN_OR(assignment_expr_result, success, TokenKind::kRightParen) {
-          args->InsertLast(assignment_expr_result.value());
+
+        if (assignment_expr_result) {
+          args->InsertLast(assignment_expr_result.value()); 
+        } else {
+          SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightParen, TokenKind::kComma);
         }
       }
       
       if (cur_token()->Is(TokenKind::kComma)) {
         if (has_rest) {
-          SYNTAX_ERROR("the spread argument must be the end of arguments", cur_token());
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+            << "the spread argument must be the end of arguments";
+          return Failed();
         }
         Next();
         continue;
@@ -936,10 +972,14 @@ ParseResult Parser<UCharInputIterator>::ParseArguments(bool yield) {
         Next();
         return BuildArguments(type_arguments_result, args, success);
       }
-      SYNTAX_ERROR("unexpected token in 'arguments'", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "unexpected token in 'arguments'";
+      return Failed();
     }
   }
-  SYNTAX_ERROR("'(' expected.", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'(' expected.";
+  return Failed();
 }
 
 
@@ -975,7 +1015,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
   LOG_PHASE(ParseMemberExpression);
   // Not advance scanner.
   Token* token_info = cur_token();
-  if (token_info->type() ==  TokenKind::kNew) {
+  if (token_info->Is(TokenKind::kNew)) {
     Token info = *cur_token();
     // Parse new Foo() expression.
     Next();
@@ -1010,7 +1050,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression(bool yield) {
       ret->SetInformationForNode(member.value());
       return Success(ret);
     }
-  } else if (token_info->type() == TokenKind::kSuper) {
+  } else if (token_info->Is(TokenKind::kSuper)) {
     auto super = New<ir::SuperView>();
     super->SetInformationForNode(token_info);
     return ParseGetPropOrElem(super, yield, false, false);
@@ -1032,7 +1072,9 @@ ParseResult Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node
       case TokenKind::kLeftBracket: {
         if (dot_only) {
           if (is_throw) {
-            SYNTAX_ERROR("'.' expected.", cur_token());
+            ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+              << "'.' expected.";
+            return Failed();
           }
           return Success(node);
         }
@@ -1042,8 +1084,10 @@ ParseResult Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node
         CHECK_AST(expr_result);
         node = New<ir::GetElemView>(node, expr_result.value());
         node->SetInformationForNode(node);
-        if (!cur_token()->Is(TokenKind::kRightBracket)) {
-          SYNTAX_ERROR("unexpected token", cur_token());
+        
+        if (cur_token()->Isnt(TokenKind::kRightBracket)) {
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+            << "']' expected";
         }
         Next();
         break;
@@ -1051,13 +1095,16 @@ ParseResult Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node
       case TokenKind::kDot: {
         // a.b.c expression.
         Next();
-        if (!cur_token()->Is(TokenKind::kIdentifier) &&
-            !Token::IsKeyword(cur_token()->type())) {
-          SYNTAX_ERROR("'identifier' expected.", cur_token());
-        }
+
         if (Token::IsKeyword(cur_token()->type())) {
           cur_token()->set_type(TokenKind::kIdentifier);
         }
+        
+        if (cur_token()->Isnt(TokenKind::kIdentifier)) {
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+            << "'identifier' expected.";
+        }
+        
         auto primary_expr_result = ParsePrimaryExpression(yield);
         CHECK_AST(primary_expr_result);
         node = New<ir::GetPropView>(node, primary_expr_result.value());
@@ -1102,18 +1149,18 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
   
   ParseResult parse_result;
   
-  Parsed* parsed = GetMemoizedRecord(token_info->source_position());
-  if (parsed != nullptr) {
-    RestoreParserState(parsed->parser_state());
-    return parsed->parse_result();
-  }
+  // Parsed* parsed = GetMemoizedRecord(token_info->source_position());
+  // if (parsed != nullptr) {
+  //   RestoreParserState(parsed->parser_state());
+  //   return parsed->parse_result();
+  // }
 
 
-  if (IsInRecordMode()) {
-    YATSC_SCOPED([&] {
-      Memoize(info.source_position(), parse_result);
-    });
-  }
+  // if (IsInRecordMode()) {
+  //   YATSC_SCOPED([&] {
+  //     Memoize(info.source_position(), parse_result);
+  //   });
+  // }
   
   
   switch (token_info->type()) {
@@ -1147,7 +1194,9 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
           return parse_result = node;
         }
       }
-      SYNTAX_ERROR_AND("')' expected", cur_token(), return parse_result = Failed());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "')' expected";
+      return parse_result = Failed();
     }
     case TokenKind::kRegularExpr: {
       return parse_result = ParseRegularExpression();
@@ -1167,13 +1216,13 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression(bool yield) {
 
 
 
+// Array literal parsing is started from after the left bracket.
+// because the left bracket is comsumed by ParseArrayInitializer.
 template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
   LOG_PHASE(ParseArrayLiteral);
 
   auto array_literal = New<ir::ArrayLiteralView>();
-  array_literal->SetInformationForNode(cur_token());
-  Next();
 
   if (cur_token()->Is(TokenKind::kRightBracket)) {
     Next();
@@ -1202,7 +1251,9 @@ ParseResult Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
       
     if (cur_token()->Is(TokenKind::kComma)) {
       if (spread) {
-        SYNTAX_ERROR("array spread element must be the end of the array element list", cur_token());
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+          << "array spread element must be the end of the array element list";
+        return Failed();
       }
       Next();
       if (cur_token()->Is(TokenKind::kRightBracket)) {
@@ -1213,27 +1264,31 @@ ParseResult Parser<UCharInputIterator>::ParseArrayLiteral(bool yield) {
       Next();
       break;
     } else {
-      SYNTAX_ERROR("unexpected token in 'array literal'", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "unexpected token in 'array literal'";
+      return Failed();
     }
   }
   return Success(array_literal);
 }
 
 
+// Array comprehension parsing is started from after the left bracket.
+// because the left bracket is comsumed by ParseArrayInitializer.
 template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayComprehension(bool yield) {
   LOG_PHASE(ParseArrayComprehension);
-  Token info = *cur_token();
-  Next();
+  
   return ParseComprehension(false, yield) >>= [&](Handle<ir::Node> comprehension) {
     if (cur_token()->Is(TokenKind::kRightBracket)) {
       Next();
       auto arr = New<ir::ArrayLiteralView>();
-      arr->SetInformationForNode(&info);
       arr->InsertLast(comprehension);
       return Success(arr);
     }
-    SYNTAX_ERROR("']' expected", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "']' expected";
+    return Failed();
   };
 }
 
@@ -1302,15 +1357,21 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionFor(bool yield) {
             for_expr->SetInformationForNode(&info);
             return Success(for_expr);
           }
-          SYNTAX_ERROR("')' expected", cur_token());
+          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+            << "')' expected";
+          return Failed();
         };
         
       }
-      SYNTAX_ERROR("'of' expected", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "'of' expected";
+      return Failed();
     };
     
   }
-  SYNTAX_ERROR("'(' expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'(' expected";
+  return Failed();
 }
 
 
@@ -1331,11 +1392,15 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionIf(bool yield) {
         if_expr->SetInformationForNode(&info);
         return Success(if_expr);
       }
-      SYNTAX_ERROR("')' expected", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "')' expected";
+      return Failed();
     };
     
   }
-  SYNTAX_ERROR("'(' expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'(' expected";
+  return Failed();
 }
 
 
@@ -1346,11 +1411,17 @@ ParseResult Parser<UCharInputIterator>::ParseGeneratorComprehension(bool yield) 
   Next();
   bool success = true;
   auto comp_result = ParseComprehension(true, yield);
-  SKIP_TOKEN_IF(comp_result, success, TokenKind::kRightParen);
-  if (cur_token()->Is(TokenKind::kRightParen)) {
-    return Success(comp_result.value());
+  if (comp_result) {
+    if (cur_token()->Is(TokenKind::kRightParen)) {
+      return Success(comp_result.value());
+    }
+  } else {
+    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightParen, TokenKind::kRightParen);
   }
-  SYNTAX_ERROR("')' expected", cur_token());
+  
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "')' expected";
+  return Failed();
 }
 
 
@@ -1443,7 +1514,9 @@ ParseResult Parser<UCharInputIterator>::ParseObjectLiteral(bool yield) {
       Next();
       break;
     } else {
-      SYNTAX_ERROR("expected ',' or '}'", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "expected ',' or '}'";
+      return Failed();
     }
   }
   return Success(object_literal);
@@ -1504,13 +1577,17 @@ ParseResult Parser<UCharInputIterator>::ParsePropertyDefinition(bool yield) {
                                             ir::Node::Null(), call_sig_result.value(), function_body_result.value()));
     }
   } else if (generator) {
-    SYNTAX_ERROR("'(' expected", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "'(' expected";
+    return Failed();
   } else if (cur_token()->Is(TokenKind::kColon)) {
     Next();
     value_result = ParseAssignmentExpression(true, false);
     CHECK_AST(value_result);
   } else {
-    SYNTAX_ERROR("':' expected.", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "':' expected.";
+    return Failed();
   }
   Handle<ir::ObjectElementView> element = New<ir::ObjectElementView>(key_result.value(), value_result.or(Null()));
   element->SetInformationForNode(&info);
@@ -1549,7 +1626,9 @@ ParseResult Parser<UCharInputIterator>::ParseLiteralPropertyName() {
         cur_token()->set_type(TokenKind::kIdentifier);
         return ParseIdentifier();
       }
-      SYNTAX_ERROR("identifier or string literal or numeric literal expected", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "identifier or string literal or numeric literal expected";
+      return Failed();
   }
 }
 
@@ -1565,7 +1644,10 @@ ParseResult Parser<UCharInputIterator>::ParseComputedPropertyName(bool yield) {
     Next();
     return assignment_expr_result;
   }
-  SYNTAX_ERROR("']' expected", cur_token());
+  
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "']' expected";
+  return Failed();
 }
 
 
@@ -1602,7 +1684,9 @@ ParseResult Parser<UCharInputIterator>::ParseValueLiteral() {
     case TokenKind::kNan:
       return ParseNaNLiteral();
     default:
-      SYNTAX_ERROR("boolean or numeric literal or string literal expected", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "boolean or numeric literal or string literal expected";
+      return Failed();
   }
 }
 
@@ -1611,34 +1695,48 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayInitializer(bool yield) {
   LOG_PHASE(ParseArrayInitializer);
 
-  RecordedParserState rps = parser_state();
-  auto array_literal_result = ParseArrayLiteral(yield);
-  if (!array_literal_result) {      
-    RestoreParserState(rps);
+  // Consume '['.
+  Next();
+
+  Token info = *cur_token();
+  if (cur_token()->Is(TokenKind::kFor)) {
     if (!LanguageModeUtil::IsES6(compiler_option_)) {
-      SYNTAX_ERROR("ArrayComprehension is not allowed except es6 mode.", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "ArrayComprehension is not allowed except es6 mode.";
+      return Failed();
     }
-    array_literal_result = ParseArrayComprehension(yield);
-    CHECK_AST(array_literal_result);
+    return ParseArrayComprehension(yield) >>= [&](Handle<ir::Node> comp) {
+      comp->SetInformationForNode(&info);
+      return Success(comp);
+    };    
   }
-  return array_literal_result;
+  return ParseArrayLiteral(yield) >>= [&](Handle<ir::Node> array_literal) {
+    array_literal->SetInformationForNode(&info);
+    return Success(array_literal);
+  };
 }
 
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseIdentifierReference(bool yield) {
   LOG_PHASE(ParseIdentifierReference);
+
   if (cur_token()->Is(TokenKind::kIdentifier)) {
     return ParseIdentifier();
   } else if (cur_token()->Is(TokenKind::kYield)) {
     if (!yield) {
-      SYNTAX_ERROR("'yield' not allowed here", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "'yield' not allowed here";
+      return Failed();
     }
     auto node = New<ir::YieldView>(false, ir::Node::Null());
     node->SetInformationForNode(cur_token());
     return Success(node);
   }
-  SYNTAX_ERROR("'identifier' or 'yield' expected", cur_token());
+  
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'identifier' or 'yield' expected";
+  return Failed();
 }
 
 
@@ -1648,7 +1746,9 @@ ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allo
   ParseResult parse_result;
   if (cur_token()->Is(TokenKind::kDefault)) {
     if (!default_allowed) {
-      SYNTAX_ERROR("'default' keyword not allowed here", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "'default' keyword not allowed here";
+      return Failed();
     }
     parse_result = Success(New<ir::DefaultView>());
     Next();
@@ -1662,7 +1762,9 @@ ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allo
     parse_result = ParseIdentifier();
     CHECK_AST(parse_result);
   } else {
-    SYNTAX_ERROR("'default', 'yield' or 'identifier' expected", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "'default', 'yield' or 'identifier' expected";
+    return Failed();
   }
 
   parse_result.value()->SetInformationForNode(cur_token());
@@ -1674,7 +1776,9 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseLabelIdentifier(bool yield) {
   LOG_PHASE(ParseLabelIdentifier);
   if (cur_token()->Is(TokenKind::kYield) && yield) {
-    SYNTAX_ERROR("yield not allowed here", cur_token());
+    ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+      << "yield not allowed here";
+    return Failed();
   }
   if (cur_token()->Is(TokenKind::kYield)) {
     auto node = New<ir::YieldView>(false, ir::Node::Null());
@@ -1695,7 +1799,9 @@ ParseResult Parser<UCharInputIterator>::ParseIdentifier() {
     Next();
     return Success(node);
   }
-  SYNTAX_ERROR("'identifier' expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'identifier' expected";
+  return Failed();
 }
 
 
@@ -1708,7 +1814,9 @@ ParseResult Parser<UCharInputIterator>::ParseStringLiteral() {
     Next();
     return Success(string_literal);
   }
-  SYNTAX_ERROR("string literal expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "string literal expected";
+  return Failed();
 }
 
 
@@ -1721,7 +1829,9 @@ ParseResult Parser<UCharInputIterator>::ParseNumericLiteral() {
     Next();
     return Success(number);
   }
-  SYNTAX_ERROR("numeric literal expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "numeric literal expected";
+  return Failed();
 }
 
 
@@ -1740,7 +1850,9 @@ ParseResult Parser<UCharInputIterator>::ParseBooleanLiteral() {
     Next();
     return parse_result;
   }
-  SYNTAX_ERROR("boolean literal expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "boolean literal expected";
+  return Failed();
 }
 
 
@@ -1753,7 +1865,9 @@ ParseResult Parser<UCharInputIterator>::ParseUndefinedLiteral() {
     Next();
     return Success(node);
   }
-  SYNTAX_ERROR("'undefined' expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'undefined' expected";
+  return Failed();
 }
 
 
@@ -1766,7 +1880,9 @@ ParseResult Parser<UCharInputIterator>::ParseNaNLiteral() {
     Next();
     return Success(node);
   }
-  SYNTAX_ERROR("'NaN' expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'NaN' expected";
+  return Failed();
 }
 
 
@@ -1779,7 +1895,9 @@ ParseResult Parser<UCharInputIterator>::ParseRegularExpression() {
     Next();
     return Success(reg_expr);
   }
-  SYNTAX_ERROR("regular expression expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "regular expression expected";
+  return Failed();
 }
 
 
@@ -1792,7 +1910,9 @@ ParseResult Parser<UCharInputIterator>::ParseTemplateLiteral() {
     template_literal->SetInformationForNode(cur_token());
     return Success(template_literal);
   }
-  SYNTAX_ERROR("template literal expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "template literal expected";
+  return Failed();
 }
 
 

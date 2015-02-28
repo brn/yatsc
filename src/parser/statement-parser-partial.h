@@ -148,7 +148,8 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
     default: {
       // If keyword encounted, record as error and,
       // treat it as identifier and continue parsing.
-      if (Token::IsKeyword(cur_token()->type())) {
+      if (Token::IsKeyword(cur_token()->type()) &&
+          !cur_token()->OneOf({TokenKind::kThis, TokenKind::kSuper, TokenKind::kNew, TokenKind::kDelete})) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
           << "'" << cur_token()->utf8_value() << "' is not allowed here.";
         cur_token()->set_type(TokenKind::kIdentifier);
@@ -308,7 +309,7 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yi
       lexical_decl->InsertLast(lexical_decl_result.value());
     } else {
       // If parse failed, skip to comma or line end.
-      SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kLineTerminator);
     }
 
     // Parse comma.
@@ -381,7 +382,7 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, boo
       << "const declaration must have an initializer.";
   }
 
-  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(), value_result.value(), type_expr_result.value());
+  Handle<ir::Node> ret = New<ir::VariableView>(lhs_result.value(), value_result.or(Null()), type_expr_result.or(Null()));
   ret->SetInformationForNode(lhs_result.value());
   current_scope()->Declare(ret);
   return Success(ret);
@@ -467,7 +468,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
     if (binding_prop_list) {
       binding_prop_list->InsertLast(binding_prop_result.value());
     } else {
-      SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kComma}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kComma);
     }
 
  DELIMITER:
@@ -483,7 +484,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
       }
       default:
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
-        SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kComma}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kComma);
         goto DELIMITER;
     }
   }
@@ -542,7 +543,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
         // so, any element after rest element cause syntax error.
         exit = true;
       } else {
-        SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBracket, TokenKind::kComma);
       }
       
     } else {
@@ -561,7 +562,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
         ret->SetInformationForNode(binding_elem_result.value());
         binding_array->InsertLast(ret);
       } else {
-        SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBracket, TokenKind::kComma);
       }
     }
 
@@ -575,7 +576,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       Next();
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
-      SkipTokensUntil({TokenKind::kRightBracket, TokenKind::kComma}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBracket, TokenKind::kComma);
     }
   }
   
@@ -662,7 +663,7 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
     if (variable_decl_result) {
       vars->InsertLast(variable_decl_result.value());
     } else {
-      SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kLineTerminator);
     }
     
     if (cur_token()->Is(TokenKind::kComma)) {
@@ -801,7 +802,7 @@ ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has
     Next();
     auto expr_result = ParseExpression(true, yield);
     if (!expr_result) {
-      SkipTokensUntil({TokenKind::kRightParen}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightParen);
     }
     auto iteration_body_result = ParseIterationBody(yield, has_return);
     CHECK_AST(iteration_body_result);
@@ -950,7 +951,7 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
     for_in = true;
   } else {
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'in' or 'of' or ';' expected.";
-    SkipTokensUntil({TokenKind::kRightParen}, true);
+    SKIP_IF_ERROR_RECOVERY_ENABLED(true, TokenKind::kRightParen);
   }
 
   auto iteration_body_result = ParseIterationBody(yield, has_return);
@@ -1158,7 +1159,7 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
         Next();
         expr_result = ParseExpression(true, yield);
         if (!expr_result) {
-          SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
+          SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault);
           break;
         }
         
@@ -1194,14 +1195,14 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
             if (block_stmt_result) {
               body->InsertLast(block_stmt_result.value());
             } else {
-              SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
+              SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault);
             }
           } else {
             auto stmt_list_result = ParseStatementListItem(yield, has_return, true, continuable);
             if (stmt_list_result) {
               body->InsertLast(stmt_list_result.value());
             } else {
-              SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault}, false);
+              SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault);
             }
           }
         }
@@ -1225,7 +1226,7 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
         
       default:
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
-        SkipTokensUntil({TokenKind::kCase, TokenKind::kDefault, TokenKind::kRightBrace}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kCase, TokenKind::kDefault, TokenKind::kRightBrace);
     }
   }
 }
@@ -1394,7 +1395,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
 
   auto identifier_result = ParseIdentifier();
   if (!identifier_result) {
-    SkipTokensUntil({TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
+    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace);
   } else {
     identifier_result.value()->symbol()->set_type(ir::SymbolType::kInterfaceName);
   }
@@ -1405,7 +1406,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     type_parameters_result = ParseTypeParameters();
     
     if (!type_parameters_result) {
-      SkipTokensUntil({TokenKind::kGreater, TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kGreater, TokenKind::kExtends, TokenKind::kLeftBrace, TokenKind::kRightBrace);
     }
   }
     
@@ -1416,7 +1417,7 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
     while (1) {
       auto ref_type_result = ParseReferencedType();
       if (!ref_type_result) {
-        SkipTokensUntil({TokenKind::kComma, TokenKind::kLeftBrace}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kLeftBrace);
       } else {
         extends->InsertLast(ref_type_result.value());
       }
@@ -1456,7 +1457,7 @@ ParseResult Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bool ha
   Next();
   auto identifier_result = ParseIdentifier();
   if (!identifier_result) {
-    SkipTokensUntil({TokenKind::kLeftBrace, TokenKind::kRightBrace}, false);
+    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLeftBrace, TokenKind::kRightBrace);
   }
     
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
@@ -1492,7 +1493,7 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
   while (1) {
     auto enum_property_result = ParseEnumProperty(yield, has_default);
     if (!enum_property_result) {
-      SkipTokensUntil({TokenKind::kComma, TokenKind::kLineTerminator, TokenKind::kLineTerminator}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kLineTerminator, TokenKind::kLineTerminator);
     } else {
       ret->InsertLast(enum_property_result.value());
     }
@@ -1554,7 +1555,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
   bool success = true;
 
   if (!identifier_result) {
-    SkipTokensUntil({TokenKind::kLess, TokenKind::kImplements, TokenKind::kExtends, TokenKind::kLeftBrace}, false);
+    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLess, TokenKind::kImplements, TokenKind::kExtends, TokenKind::kLeftBrace);
   } else {
     identifier_result.value()->symbol()->set_type(ir::SymbolType::kClassName); 
   }
@@ -1562,7 +1563,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
   if (cur_token()->Is(TokenKind::kLess)) {
     type_parameters_result = ParseTypeParameters();
     if (!type_parameters_result) {
-      SkipTokensUntil({TokenKind::kGreater, TokenKind::kImplements, TokenKind::kExtends, TokenKind::kLeftBrace}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kGreater, TokenKind::kImplements, TokenKind::kExtends, TokenKind::kLeftBrace);
     }
     TryConsume(TokenKind::kGreater);
   }
@@ -1581,7 +1582,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
   
   auto class_body_result = ParseClassBody();
   if (!class_body_result) {
-    SkipTokensUntil({TokenKind::kRightBrace}, true);
+    SKIP_IF_ERROR_RECOVERY_ENABLED(true, TokenKind::kRightBrace);
   }
     
   auto class_decl = New<ir::ClassDeclView>(identifier_result.or(Null()),
@@ -1614,7 +1615,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassBases() {
       auto ref_type_result = ParseReferencedType();
 
       if (!ref_type_result) {
-        SkipTokensUntil({TokenKind::kImplements, TokenKind::kLeftBrace}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kImplements, TokenKind::kLeftBrace);
       } else {
         auto heritage = New<ir::ClassHeritageView>(ref_type_result.value());
         heritage->SetInformationForNode(&info);
@@ -1625,7 +1626,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassBases() {
       while (1) {
         auto ref_type_result = ParseReferencedType();
         if (!ref_type_result) {
-          SkipTokensUntil({TokenKind::kComma, TokenKind::kExtends, TokenKind::kLeftBrace}, false);
+          SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kExtends, TokenKind::kLeftBrace);
         } else {
           impls->InsertLast(ref_type_result.value()); 
         }
@@ -1659,8 +1660,8 @@ ParseResult Parser<UCharInputIterator>::ParseClassBody() {
     auto class_element_result = ParseClassElement();
 
     if (!class_element_result) {
-      SkipTokensUntil({TokenKind::kPublic, TokenKind::kPrivate, TokenKind::kProtected,
-            TokenKind::kStatic, TokenKind::kIdentifier, TokenKind::kRightBrace}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kPublic, TokenKind::kPrivate, TokenKind::kProtected,
+            TokenKind::kStatic, TokenKind::kIdentifier, TokenKind::kRightBrace);
       
       if (cur_token()->Is(TokenKind::kRightBrace)) {
         continue;
@@ -1714,10 +1715,9 @@ ParseResult Parser<UCharInputIterator>::ParseClassElement() {
         }
         RestoreParserState(rps);
         return ParseMemberFunctionOverloads(field_modifiers_result.or(Null()), &at);
-      } else {
-        RestoreParserState(rps);
-        return ParseMemberVariable(field_modifiers_result.or(Null()));
-      }
+      } 
+      RestoreParserState(rps);
+      return ParseMemberVariable(field_modifiers_result.or(Null()));
     }
   } else if (cur_token()->Is(TokenKind::kMul)) {
     Next();
@@ -1915,7 +1915,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation
     auto call_sig_result = ParseCallSignature(true, false);
 
     if (!call_sig_result) {
-      SkipTokensUntil({TokenKind::kLeftBrace, TokenKind::kLineTerminator}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLeftBrace, TokenKind::kLineTerminator);
     }
     
     Handle<ir::Node> ret;
@@ -2369,7 +2369,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
       
       auto parameter_result = ParseParameter(false, accesslevel_allowed);
       if (!parameter_result) {
-        SkipTokensUntil({TokenKind::kComma, TokenKind::kRightParen}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kRightParen);
       } else {
         param_list->InsertLast(parameter_result.value());
       }
@@ -2380,7 +2380,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
       Next();
       auto parameter_result = ParseParameter(true, accesslevel_allowed);
       if (!parameter_result) {
-        SkipTokensUntil({TokenKind::kComma, TokenKind::kRightParen}, false);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kRightParen);
       } else {
         Handle<ir::Node> node = New<ir::RestParamView>(parameter_result.value());
         node->SetInformationForNode(&token);
@@ -2390,7 +2390,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
     } else {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
         << "unexpected token in formal parameter list.";
-      SkipTokensUntil({TokenKind::kComma, TokenKind::kRightParen}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kRightParen);
     }
 
     if (cur_token()->Is(TokenKind::kComma)) {
@@ -2506,7 +2506,7 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
     auto stmt_list_result = ParseStatementListItem(yield, true, false, false);
     
     if (!stmt_list_result) {
-      SkipTokensUntil({TokenKind::kRightBrace}, false);
+      SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace);
     } else {
       block->InsertLast(stmt_list_result.value());
     }

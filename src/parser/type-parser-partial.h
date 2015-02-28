@@ -78,29 +78,49 @@ ParseResult Parser<UCharInputIterator>::ParseTypeParameters() {
 }
 
 
-// type
-//   : predefined_type 
-//   | type_reference 
-//   | type_query 
-//   | type_literal
-//   ;
+// Type:
+//   PrimaryOrUnionType
+//   FunctionType
+//   ConstructorType
 //
-// pre_defined_type 
-//   : 'any'
-//   | 'number'
-//   | 'boolean'
-//   | 'string'
-//   | 'void'
-//   ;
-// type_literal 
-//   : object_type 
-//   | array_type 
-//   | function_type 
-//   | constructor_type
-//   ;
+// PrimaryOrUnionType:
+//   PrimaryType
+//   UnionType
+//
+// PrimaryType:
+//   ParenthesizedType
+//   PredefinedType
+//   TypeReference
+//   ObjectType
+//   ArrayType
+//   TupleType
+//   TypeQuery
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseTypeExpression() {
-  LOG_PHASE(ParseTypeExpression);
+  auto type_result = ParseType();
+
+  CHECK_AST(type_result);
+  
+  if (cur_token()->Is(TokenKind::kBitOr)) {
+    auto union_type = New<ir::UnionTypeExprView>();
+    union_type->SetInformationForNode(cur_token());
+    union_type->InsertLast(type_result.value());
+    while (cur_token()->Is(TokenKind::kBitOr)) {
+      Next();
+      type_result = ParseType();
+      CHECK_AST(type_result);
+      union_type->InsertLast(type_result.value());
+    }
+    return Success(union_type);
+  }
+
+  return type_result;
+}
+
+
+template <typename UCharInputIterator>
+ParseResult Parser<UCharInputIterator>::ParseType() {
+  LOG_PHASE(ParseType);
   if (cur_token()->type() == TokenKind::kVoid) {
     cur_token()->set_type(TokenKind::kIdentifier);
   }
@@ -116,21 +136,21 @@ ParseResult Parser<UCharInputIterator>::ParseTypeExpression() {
     CHECK_AST(type_query_result);
     return ParseArrayType(type_query_result.value());
   } else if (cur_token()->type() == TokenKind::kIdentifier) {
-    cur_token()->set_type(TokenKind::kIdentifier);
     auto ref_type_result = ParseReferencedType();
     CHECK_AST(ref_type_result);
     return ParseArrayType(ref_type_result.value());
-  } else if (cur_token()->type() == TokenKind::kLeftParen ||
-             cur_token()->type() == TokenKind::kLess) {
+  } else if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
     ParseResult type_params_result;
-    if (cur_token()->type() == TokenKind::kLess) {
+    
+    if (cur_token()->Is(TokenKind::kLess)) {
       type_params_result = ParseTypeParameters();
       CHECK_AST(type_params_result);
     }
+    
     auto param_list_result = ParseParameterList(false);
     CHECK_AST(param_list_result);
     
-    if (cur_token()->type() == TokenKind::kArrowGlyph) {
+    if (cur_token()->Is(TokenKind::kArrowGlyph)) {
       Next();
       auto type_expr_result = ParseTypeExpression();
       CHECK_AST(type_expr_result);
@@ -165,15 +185,15 @@ ParseResult Parser<UCharInputIterator>::ParseTypeExpression() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseReferencedType() {
   LOG_PHASE(ParseReferencedType);
-  if (cur_token()->type() == TokenKind::kIdentifier) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
     auto primary_expr_result = ParsePrimaryExpression(false);
     CHECK_AST(primary_expr_result);
-    if (cur_token()->type() == TokenKind::kDot) {
+    if (cur_token()->Is(TokenKind::kDot)) {
       primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), false, true, false);
       CHECK_AST(primary_expr_result);
     }
     
-    if (!cur_token()->has_line_break_before_next() && cur_token()->type() == TokenKind::kLess) {
+    if (!cur_token()->has_line_break_before_next() && cur_token()->Is(TokenKind::kLess)) {
       auto type_arguments_result = ParseTypeArguments();
       CHECK_AST(type_arguments_result);
       Handle<ir::Node> ret = New<ir::GenericTypeExprView>(primary_expr_result.value(),
@@ -294,7 +314,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayType(Handle<ir::Node> type_exp
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
   LOG_PHASE(ParseObjectTypeExpression);
-  if (cur_token()->type() == TokenKind::kLeftBrace) {
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
     Next();
     Handle<ir::ObjectTypeExprView> object_type = New<ir::ObjectTypeExprView>();
@@ -302,16 +322,18 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
 
     bool success = true;
     
-    while (cur_token()->type() != TokenKind::kRightBrace) {
+    while (cur_token()->Isnt(TokenKind::kRightBrace)) {
       auto object_element_result = ParseObjectTypeElement();
-      SKIP_TOKEN_OR(object_element_result, success, TokenKind::kRightBrace) {
+      if (!object_element_result) {
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kComma);
+      } else {
         object_type->InsertLast(object_element_result.value());
       }
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (cur_token()->type() != TokenKind::kRightBrace &&
-                 prev_token()->type() != TokenKind::kRightBrace) {
-        SYNTAX_ERROR("SyntaxError ';' expected", prev_token());
+      } else if (cur_token()->Isnt(TokenKind::kRightBrace) &&
+                 prev_token()->Isnt(TokenKind::kRightBrace)) {
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
       }
     }
     CloseBraceFound();
@@ -332,17 +354,16 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
   LOG_PHASE(ParseObjectTypeElement);
-  if (cur_token()->type() == TokenKind::kNew) {
+  if (cur_token()->Is(TokenKind::kNew)) {
     Next();
     auto call_sig_result = ParseCallSignature(false, true);
     CHECK_AST(call_sig_result);
     Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig_result.value());
     ret->SetInformationForNode(call_sig_result.value());
     return Success(ret);
-  } else if (cur_token()->type() == TokenKind::kLeftParen ||
-             cur_token()->type() == TokenKind::kLess) {
+  } else if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
     return ParseCallSignature(false, true);
-  } else if (cur_token()->type() == TokenKind::kLeftBracket) {
+  } else if (cur_token()->Is(TokenKind::kLeftBracket)) {
     return ParseIndexSignature();
   } else {
     bool optional = false;
@@ -350,7 +371,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
     AccessorType at = ParseAccessor();
     ParseResult key_result;
 
-    if (cur_token()->type() == TokenKind::kMul) {
+    if (cur_token()->Is(TokenKind::kMul)) {
       generator = true;
       Next();
     }
@@ -360,7 +381,8 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
     if (Token::IsKeyword(cur_token()->type())) {
       cur_token()->set_type(TokenKind::kIdentifier);
     }
-    if (cur_token()->type() == TokenKind::kIdentifier) {
+    
+    if (cur_token()->Is(TokenKind::kIdentifier)) {
       key_result = ParseIdentifierReference(false);
     } else {
       key_result = ParsePropertyName(false, false);
@@ -375,12 +397,12 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
       }
     }
     
-    if (cur_token()->type() == TokenKind::kQuestionMark) {
+    if (cur_token()->Is(TokenKind::kQuestionMark)) {
       optional = true;
       Next();
     }
     
-    if (cur_token()->type() == TokenKind::kLeftParen || cur_token()->type() == TokenKind::kLess) {
+    if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
       if (!key_result.value()->HasNameView()) {
         SYNTAX_ERROR("SyntaxError invalid method name", key_result.value());
       }
@@ -389,7 +411,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
       auto ret = New<ir::MethodSignatureView>(optional, at.getter, at.setter, generator, key_result.value(), call_sig_result.value());
       ret->SetInformationForNode(key_result.value());
       return Success(ret);
-    } else if (cur_token()->type() == TokenKind::kColon) {
+    } else if (cur_token()->Is(TokenKind::kColon)) {
       Next();
       auto type_expr_result = ParseTypeExpression();
       CHECK_AST(type_expr_result);
@@ -408,23 +430,27 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed, bool annotation) {
   LOG_PHASE(ParseCallSignature);
   ParseResult type_parameters_result;
-  
-  if (cur_token()->type() == TokenKind::kLess) {
+
+  // Parse generics. <T>
+  if (cur_token()->Is(TokenKind::kLess)) {
     type_parameters_result = ParseTypeParameters();
     CHECK_AST(type_parameters_result);
   }
-  
-  if (cur_token()->type() == TokenKind::kLeftParen) {
+
+
+  // Parse formal parameters. (a, b, c: string)
+  if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Token token = (*cur_token());
     auto param_list_result = ParseParameterList(accesslevel_allowed);
     CHECK_AST(param_list_result);
     ParseResult return_type_result;
-    if (cur_token()->type() == TokenKind::kColon) {
+    
+    if (cur_token()->Is(TokenKind::kColon)) {
       Next();
       return_type_result = ParseTypeExpression();
     } else if (annotation) {
-      if (cur_token()->type() == TokenKind::kArrowGlyph) {
+      if (cur_token()->Is(TokenKind::kArrowGlyph)) {
         Next();
         return_type_result = ParseTypeExpression();
       } else {
