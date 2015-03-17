@@ -56,7 +56,7 @@ namespace yatsc {
 #endif
 
 
-#if __has_cpp_attribute(clang::fallthrough)
+#if defined(__clang__)
 #define FALLTHROUGH [[clang::fallthrough]]
 #else
 #define FALLTHROUGH
@@ -366,7 +366,7 @@ class LazyInitializer {
   }
 
 
-  YATSC_CONST_GETTER(bool, initialized, ptr_ != nullptr);
+  YATSC_CONST_GETTER(bool, initialized, ptr_ != nullptr)
   
  private:
   Byte heap_[sizeof(T) + 1];

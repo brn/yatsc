@@ -137,15 +137,15 @@ class Result {
 
 
   // Getter for the value_.
-  YATSC_GETTER(Type&, value, *value_);
+  YATSC_GETTER(Type&, value, *value_)
 
 
   // Const getter for the value_.
-  YATSC_CONST_GETTER(ConstType&, value, *value_);
+  YATSC_CONST_GETTER(ConstType&, value, *value_)
 
 
   // Return Result<T> is Just or not.
-  YATSC_CONST_GETTER(bool, exists, value_.initialized());
+  YATSC_CONST_GETTER(bool, exists, value_.initialized())
   
   
  private:
@@ -213,13 +213,13 @@ class Result<T*> {
   }
 
 
-  YATSC_GETTER(T*, value, ptr_);
+  YATSC_GETTER(T*, value, ptr_)
 
 
-  YATSC_CONST_GETTER(const T*, value, ptr_);
+  YATSC_CONST_GETTER(const T*, value, ptr_)
 
 
-  YATSC_CONST_GETTER(bool, exists, ptr_ != nullptr);
+  YATSC_CONST_GETTER(bool, exists, ptr_ != nullptr)
   
   
  private:

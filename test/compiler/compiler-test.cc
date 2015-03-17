@@ -62,12 +62,11 @@ TEST(Compiler, Compile_Products) {
 
 
 TEST(Compiler, Compile_Ambient) {
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientDeclarations.ts");
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientDeclarationsExternal.ts");
-  ////RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientErrors.ts");
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbient.ts");
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleInsideNonAmbientExternalModule.ts");
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientExternalModuleMerging.ts");
-  ////RunCompiler("test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbient.ts");
-  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/tests/cases/conformance/ambient/ambientInsideNonAmbientExternalModule.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/core.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/dom.generated.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/extension.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/importcore.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/scriptHost.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/webworker.generated.d.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/lib/webworker.importscripts.d.ts");
 }

@@ -194,10 +194,9 @@
             '-Wno-padded',
             '-Wno-switch-enum',
             '-Wno-undef',
-            '-Wno-c++98-compat',
+            '-Wno-c++98-compat-pedantic',
             '-Wno-format-nonliteral',
             '-Wno-weak-vtables',
-            '-Wno-extra-semi'
             "-Wno-pedantic"
           ]
         },

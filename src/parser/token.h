@@ -91,7 +91,6 @@ namespace yatsc {
   DECLARE(Void)                                           \
   DECLARE(While)                                          \
   DECLARE(With)                                           \
-  DECLARE(Yield)                                          \
   DECLARE(Increment)                                      \
   DECLARE(Decrement)                                      \
   DECLARE(Equal)                                          \
@@ -232,18 +231,13 @@ class Token {
   ~Token() = default;
   
 
-  /**
-   * Set token value.
-   * @param utf_string The token value that is unicode encoded string.
-   */
+  // Set token value.
   YATSC_INLINE void set_value(const Literal* literal) {
     literal_ = literal;
   }
 
 
-  /**
-   * Remove token value.
-   */
+  // Remove token value.
   YATSC_INLINE void ClearValue() {
     literal_ = nullptr;
   }
@@ -254,35 +248,25 @@ class Token {
   }
 
   
-  /**
-   * Remove token value.
-   */
+  // Remove token value.
   YATSC_INLINE void ClearComment() {
     multi_line_comment_.Clear();
   }
   
 
-  /**
-   * Return token value.
-   * @returns The token value that is unicode encoded string.
-   */
+  // Return token value.
   YATSC_INLINE const Literal* value() YATSC_NO_SE {
     return literal_;
   }
 
-  /**
-   * Return token value.
-   * @returns The token value that is unicode encoded string.
-   */
+  
+  // Return token value.
   YATSC_INLINE const char* utf8_value() YATSC_NO_SE {
     return literal_->utf8_value();
   }
 
 
-  /**
-   * Return token value.
-   * @returns The token value that is unicode encoded string.
-   */
+  // Return token value.
   YATSC_INLINE const UC16* utf16_value() YATSC_NO_SE {
     return literal_->utf16_value();
   }
@@ -308,24 +292,26 @@ class Token {
 
 
   // Getter and setter for type_.
-  YATSC_CONST_PROPERTY(TokenKind, type, type_);
+  YATSC_CONST_PROPERTY(TokenKind, type, type_)
 
 
   // Setter for source_position_.
-  YATSC_SETTER(SourcePosition, source_position, source_position_);
+  YATSC_SETTER(SourcePosition, source_position, source_position_)
   
   
   // Getter for source_position_.
-  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_)
 
 
-  YATSC_SETTER(LineTerminatorState, line_terminator_state, line_terminator_state_);
+  YATSC_SETTER(LineTerminatorState, line_terminator_state, line_terminator_state_)
   
 
-  YATSC_CONST_GETTER(bool, has_line_terminator_before_next, line_terminator_state_.has_line_terminator_before_next());
+  YATSC_CONST_GETTER(bool, has_line_terminator_before_next, line_terminator_state_.has_line_terminator_before_next())
 
 
-  YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next());
+  YATSC_CONST_GETTER(bool, has_line_break_before_next, line_terminator_state_.has_line_break_before_next())
+
+  YATSC_INLINE bool IsKeyword() YATSC_NO_SE {return Token::IsKeyword(type_);}
 
 #ifdef UNIT_TEST
   String ToStringWithValue() const {
@@ -347,18 +333,11 @@ class Token {
   }
 #endif
   
-  /**
-   * Get a type of the identifier like Var
-   * @param maybe_keyword An identifier value.
-   * @param es_harmony Harmony option.
-   */
+  // Get a type of the identifier like Var
   static TokenKind GetIdentifierType(const char* maybe_keyword, const CompilerOption& co);
 
 
-  /**
-   * Get a type of the puncture like LeftBrace.
-   * @param uchar The unicode char.
-   */
+  // Get a type of the puncture like LeftBrace.
   static TokenKind GetPunctureType(const UChar& uchar);
 
   

@@ -50,7 +50,7 @@ class Notificator {
   
  public :
   Notificator();
-  virtual ~Notificator(){};
+  virtual ~Notificator(){}
   Notificator(const Notificator<Signature>& notificator);
   const Notificator<Signature>& operator = (const Notificator<Signature>& notificator);
 

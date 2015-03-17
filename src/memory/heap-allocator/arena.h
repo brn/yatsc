@@ -47,10 +47,10 @@ class LargeHeader: public RbTreeNode<size_t, LargeHeader*> {
       : size_(size),
         next_(nullptr) {}
   
-  YATSC_CONST_PROPERTY(size_t, size, size_);
+  YATSC_CONST_PROPERTY(size_t, size, size_)
 
 
-  YATSC_PROPERTY(LargeHeader*, next, next_);
+  YATSC_PROPERTY(LargeHeader*, next, next_)
  private:
   size_t size_;
   LargeHeader* next_;
@@ -134,11 +134,11 @@ class InternalHeap {
 
 
   // Getter and setter for memory_block_.
-  YATSC_PROPERTY(Byte*, block, memory_block_);
+  YATSC_PROPERTY(Byte*, block, memory_block_)
   
 
   // Getter and setter for next_.
-  YATSC_PROPERTY(InternalHeap*, next, next_);
+  YATSC_PROPERTY(InternalHeap*, next, next_)
 
 
   // Increment used block count.

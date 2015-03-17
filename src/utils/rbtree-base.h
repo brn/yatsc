@@ -70,7 +70,7 @@ class RbTreeBase {
 #endif
 
   // Getter for node count.
-  YATSC_CONST_GETTER(size_t, size, size_);
+  YATSC_CONST_GETTER(size_t, size, size_)
   
  protected:
   
@@ -178,11 +178,11 @@ class RbTreeNode {
 
 #if defined(DEBUG) || defined(UNIT_TEST)
   // Return node color.
-  static inline RbTreeNodeColor GetColor(RbTreeNode<Key, T>* n) {return n->color();};
+  static inline RbTreeNodeColor GetColor(RbTreeNode<Key, T>* n) {return n->color();}
 
 
   // Return node key.
-  static inline Key GetKey(RbTreeNode<Key, T>* n) {return n->key();};
+  static inline Key GetKey(RbTreeNode<Key, T>* n) {return n->key();}
 #endif
     
  private:
@@ -303,15 +303,15 @@ class RbTreeNode {
 
 
   // Getter and setter for the key.
-  YATSC_CONST_PROPERTY(Key, key, key_);
+  YATSC_CONST_PROPERTY(Key, key, key_)
 
 
   // Getter and setter for the left tree.
-  YATSC_PROPERTY(Pointer, left, left_);
+  YATSC_PROPERTY(Pointer, left, left_)
 
 
   // Getter and setter for the right tree.
-  YATSC_PROPERTY(Pointer, right, right_);
+  YATSC_PROPERTY(Pointer, right, right_)
 
 
   // Getter and setter for the parent node.

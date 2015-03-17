@@ -74,87 +74,93 @@ class ErrorReporter {
   ErrorBuffer::const_iterator cend() const {return buffer_.cend();}
 
 
-  Handle<ErrorDescriptor> SyntaxError(Handle<ErrorDescriptor> errd) {
+  ErrorDescriptor& Ignore() {
+    return ignore_desc_;
+  }
+
+
+  ErrorDescriptor& SyntaxError(Handle<ErrorDescriptor> errd) {
     buffer_.push_back(errd);
-    return errd << "SyntaxError ";
+    return (*errd) << "SyntaxError ";
   }
   
 
-  Handle<ErrorDescriptor> SyntaxError(const SourcePosition& source_position) {
+  ErrorDescriptor& SyntaxError(const SourcePosition& source_position) {
     return SyntaxError(Heap::NewHandle<ErrorDescriptor>(source_position));
   }
 
 
-  Handle<ErrorDescriptor> SyntaxError(Token* info) {
+  ErrorDescriptor& SyntaxError(Token* info) {
     return SyntaxError(info->source_position());
   }
 
 
-  Handle<ErrorDescriptor> SyntaxError(const Token& info) {
+  ErrorDescriptor& SyntaxError(const Token& info) {
     return SyntaxError(info.source_position());
   }
 
 
   template <typename T>
-  Handle<ErrorDescriptor> SyntaxError(Handle<T> node) {
+  ErrorDescriptor& SyntaxError(Handle<T> node) {
     return SyntaxError(node->source_position());
   }
 
 
-  Handle<ErrorDescriptor> Warning(Handle<ErrorDescriptor> errd) {
+  ErrorDescriptor& Warning(Handle<ErrorDescriptor> errd) {
     warning_buffer_.push_back(errd);
-    return errd << "Warning ";
+    return (*errd) << "Warning ";
   }
   
 
-  Handle<ErrorDescriptor> Warning(const SourcePosition& source_position) {
+  ErrorDescriptor& Warning(const SourcePosition& source_position) {
     return Warning(Heap::NewHandle<ErrorDescriptor>(source_position));
   }
 
 
-  Handle<ErrorDescriptor> Warning(Token* info) {
+  ErrorDescriptor& Warning(Token* info) {
     return Warning(info->source_position());
   }
 
 
-  Handle<ErrorDescriptor> Warning(const Token& info) {
+  ErrorDescriptor& Warning(const Token& info) {
     return Warning(info.source_position());
   }
 
 
   template <typename T>
-  Handle<ErrorDescriptor> Warning(Handle<T> node) {
+  ErrorDescriptor& Warning(Handle<T> node) {
     return Warning(node->source_position());
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(Handle<ErrorDescriptor> errd) {
+  ErrorDescriptor& SemanticError(Handle<ErrorDescriptor> errd) {
     buffer_.push_back(errd);
-    return errd << "SemanticError ";
+    return (*errd) << "SemanticError ";
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(const SourcePosition& source_position) {
+  ErrorDescriptor& SemanticError(const SourcePosition& source_position) {
     return SemanticError(Heap::NewHandle<ErrorDescriptor>(source_position));
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(Token* info) {
+  ErrorDescriptor& SemanticError(Token* info) {
     return SemanticError(info->source_position());
   }
 
 
-  Handle<ErrorDescriptor> SemanticError(const Token& info) {
+  ErrorDescriptor& SemanticError(const Token& info) {
     return SemanticError(info.source_position());
   }
 
 
   template <typename T>
-  Handle<ErrorDescriptor> SemanticError(Handle<T> node) {
+  ErrorDescriptor& SemanticError(Handle<T> node) {
     return SemanticError(node->source_position());
   }
 
  private:
+  static ErrorDescriptor ignore_desc_;
   ErrorBuffer buffer_;
   WarningBuffer warning_buffer_;
 };

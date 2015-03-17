@@ -54,7 +54,7 @@ class Properties: private Uncopyable {
 
   YATSC_INLINE Property FindDeclaredItem(Handle<Symbol> symbol) {
     return *(properties_.find(symbol));
-  };
+  }
 
 
   YATSC_INLINE PropertyRange declared_items() {return MakeRange(properties_.begin(), properties_.end());}

@@ -44,7 +44,7 @@ void Scope::Declare(Handle<Node> var, Handle<Type> type) {
   if (var->HasVariableView()) {
     if (var->first_child()->HasNameView()) {
       auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
-      declared_items_.insert(std::make_pair(var->first_child()->symbol()->id(), info));
+      declared_items_.insert(std::make_pair(var->first_child()->symbol()->utf8_value(), info));
     } else if (var->first_child()->HasBindingPropListView()) {
       Declare(var->first_child());
     }
@@ -52,7 +52,7 @@ void Scope::Declare(Handle<Node> var, Handle<Type> type) {
     for (auto node: *var) {
       if (!node->node_list()[0]) {
         auto info = GatheredTypeInfo(type, node->node_list()[0], ir::Type::Modifier::kPublic);
-        declared_items_.insert(std::make_pair(node->node_list()[0]->symbol()->id(), info));
+        declared_items_.insert(std::make_pair(node->node_list()[0]->symbol()->utf8_value(), info));
       } else {
         Declare(node->node_list()[0]);
       }
@@ -61,7 +61,13 @@ void Scope::Declare(Handle<Node> var, Handle<Type> type) {
     Handle<ir::Node> name = var->node_list()[1];
     if (name && name->HasNameView()) {
       auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
-      declared_items_.insert(std::make_pair(name->symbol()->id(), info));
+      declared_items_.insert(std::make_pair(name->symbol()->utf8_value(), info));
+    }
+  } else if (var->HasClassDeclView() || var->HasInterfaceView() || var->HasEnumDeclView()) {
+    Handle<ir::Node> name = var->first_child();
+    if (name && name->HasNameView()) {
+      auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
+      declared_items_.insert(std::make_pair(name->symbol()->utf8_value(), info));
     }
   }
 }

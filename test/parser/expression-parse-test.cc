@@ -28,15 +28,15 @@
 
 
 #define EXPR_TEST_ALL(code, expected_str)                             \
-  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES3, code, expected_str, false); }(); \
-  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES5_STRICT, code, expected_str, false);}(); \
-  []{PARSER_TEST("anonymous", ParseExpression(true, false), yatsc::LanguageMode::ES6, code, expected_str, false)}()
+  []{PARSER_TEST("anonymous", ParseExpression(), yatsc::LanguageMode::ES3, code, expected_str, false); }(); \
+  []{PARSER_TEST("anonymous", ParseExpression(), yatsc::LanguageMode::ES5_STRICT, code, expected_str, false);}(); \
+  []{PARSER_TEST("anonymous", ParseExpression(), yatsc::LanguageMode::ES6, code, expected_str, false)}()
 
 #define EXPR_TEST(type, code, expected_str)                             \
-  PARSER_TEST("anonymous", ParseExpression(true, false), type, code, expected_str, false)
+  PARSER_TEST("anonymous", ParseExpression(), type, code, expected_str, false)
 
 #define EXPR_THROW_TEST(type, code)                                     \
-  PARSER_TEST("anonymous", ParseExpression(true, false), type, code, "", true)
+  PARSER_TEST("anonymous", ParseExpression(), type, code, "", true)
 
 
 TEST(ExpressionParseTest, ParseLiteral_string) {
@@ -915,6 +915,37 @@ TEST(ExpressionParseTest, ParseExpression_condition_expr) {
 }
 
 
+TEST(ExpressionParseTest, ParseExpressionConditional2) {
+  EXPR_TEST_ALL("components.length ? (quote ? quoteStr(components[components.length - 1]) : components[components.length - 1]) : modPath;",
+                "[TemaryExprView]\n"
+                "  [GetPropView]\n"
+                "    [NameView][components]\n"
+                "    [NameView][length]\n"
+                "  [TemaryExprView]\n"
+                "    [NameView][quote]\n"
+                "    [CallView]\n"
+                "      [NameView][quoteStr]\n"
+                "      [ArgumentsView]\n"
+                "        [Empty]\n"
+                "        [CallArgsView]\n"
+                "          [GetElemView]\n"
+                "            [NameView][components]\n"
+                "            [BinaryExprView][Minus]\n"
+                "              [GetPropView]\n"
+                "                [NameView][components]\n"
+                "                [NameView][length]\n"
+                "              [NumberView][1]\n"
+                "    [GetElemView]\n"
+                "      [NameView][components]\n"
+                "      [BinaryExprView][Minus]\n"
+                "        [GetPropView]\n"
+                "          [NameView][components]\n"
+                "          [NameView][length]\n"
+                "        [NumberView][1]\n"
+                "  [NameView][modPath]");
+}
+
+
 TEST(ExpressionParseTest, ParseExpression_binary_expr) {
   EXPR_TEST_ALL("1 + 1",
                 "[BinaryExprView][Plus]\n"
@@ -1014,5 +1045,23 @@ TEST(ExpressionParseTest, ParseTypeAssertions) {
             "      [NameView][length]\n"
             "    [NumberView][0]\n"
             "  [NameView][arity]");
+}
+
+
+TEST(ExpressionParseTest, ParseTypeAssertions2) {
+  EXPR_TEST(yatsc::LanguageMode::ES3, "(<Identifier>(<ExpressionStatement>node).expression).text",
+            "[GetPropView]\n"
+            "  [GetPropView]\n"
+            "    [CastView]\n"
+            "      [TypeArgumentsView]\n"
+            "        [SimpleTypeExprView]\n"
+            "          [NameView][Identifier]\n"
+            "      [CastView]\n"
+            "        [TypeArgumentsView]\n"
+            "          [SimpleTypeExprView]\n"
+            "            [NameView][ExpressionStatement]\n"
+            "        [NameView][node]\n"
+            "    [NameView][expression]\n"
+            "  [NameView][text]");
 }
 

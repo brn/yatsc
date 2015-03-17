@@ -50,18 +50,11 @@ ParseResult Parser<UCharInputIterator>::ParseTypeParameters() {
   while (1) {
     if (cur_token()->type() == TokenKind::kIdentifier) {
       found = true;
-      auto identifier_result = ParseIdentifier();
-      CHECK_AST(identifier_result);
-      if (cur_token()->type() == TokenKind::kExtends) {
-        Next();
-        auto ref_type_result = ParseTypeExpression();
-        CHECK_AST(ref_type_result);
-        Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(identifier_result.value(),
-                                                                         ref_type_result.value());
-        type_constraints->SetInformationForNode(identifier_result.value());
-        type_params->InsertLast(type_constraints);
+      auto ret = ParseTypeParameter();
+      if (!ret) {
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kGreater);
       } else {
-        type_params->InsertLast(identifier_result.value());
+        type_params->InsertLast(ret.value());
       }
     } else if (cur_token()->type() == TokenKind::kGreater) {
       if (!found) {
@@ -72,11 +65,29 @@ ParseResult Parser<UCharInputIterator>::ParseTypeParameters() {
     } else if (cur_token()->type() == TokenKind::kComma) {
       Next();
     } else {
-      SYNTAX_ERROR("SyntaxError unexpected token", cur_token());
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
+      return Failed();
     }
   }
 }
 
+
+template <typename UCharInputIterator>
+ParseResult Parser<UCharInputIterator>::ParseTypeParameter() {
+  LOG_PHASE(ParseTypeParameter);
+  auto identifier_result = ParseIdentifier();
+  CHECK_AST(identifier_result);
+  if (cur_token()->Is(TokenKind::kExtends)) {
+    Next();
+    auto ref_type_result = ParseTypeExpression();
+    CHECK_AST(ref_type_result);
+    Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(identifier_result.value(),
+                                                                     ref_type_result.value());
+    type_constraints->SetInformationForNode(identifier_result.value());
+    return Success(type_constraints);
+  }
+  return identifier_result;
+}
 
 // Type:
 //   PrimaryOrUnionType
@@ -126,7 +137,7 @@ ParseResult Parser<UCharInputIterator>::ParseType() {
   }
   if (cur_token()->type() == TokenKind::kNew) {
     Next();
-    auto call_sig_result = ParseCallSignature(false, true);
+    auto call_sig_result = ParseCallSignature(false, true, true);
     CHECK_AST(call_sig_result);
     Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig_result.value());
     ret->SetInformationForNode(call_sig_result.value());
@@ -186,10 +197,10 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseReferencedType() {
   LOG_PHASE(ParseReferencedType);
   if (cur_token()->Is(TokenKind::kIdentifier)) {
-    auto primary_expr_result = ParsePrimaryExpression(false);
+    auto primary_expr_result = ParsePrimaryExpression();
     CHECK_AST(primary_expr_result);
     if (cur_token()->Is(TokenKind::kDot)) {
-      primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), false, true, false);
+      primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), true, false);
       CHECK_AST(primary_expr_result);
     }
     
@@ -223,17 +234,19 @@ ParseResult Parser<UCharInputIterator>::ParseTypeQueryExpression() {
   LOG_PHASE(ParseTypeQueryExpression);
   Next();
   if (cur_token()->type() == TokenKind::kIdentifier) {
-    auto primary_expr_result = ParsePrimaryExpression(false);
+    auto primary_expr_result = ParsePrimaryExpression();
     CHECK_AST(primary_expr_result);
     if (cur_token()->type() == TokenKind::kDot) {
-      primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), false, true, false);
+      primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), true, false);
       CHECK_AST(primary_expr_result);
     }
     Handle<ir::Node> ret = New<ir::TypeQueryView>(primary_expr_result.value());
     ret->SetInformationForNode(primary_expr_result.value());
     return Success(ret);
   }
-  SYNTAX_ERROR("SyntaxError identifier expected", cur_token());
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "SyntaxError identifier expected";
+  return Failed();
 }
 
 
@@ -320,20 +333,34 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
     Handle<ir::ObjectTypeExprView> object_type = New<ir::ObjectTypeExprView>();
     object_type->SetInformationForNode(cur_token());
 
-    bool success = true;
+    if (cur_token()->Is(TokenKind::kRightBrace)) {
+      CloseBraceFound();
+      BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
+      return Success(object_type);
+    }
     
-    while (cur_token()->Isnt(TokenKind::kRightBrace)) {
+    while (1) {
+      CheckEof(YATSC_SOURCEINFO_ARGS);
       auto object_element_result = ParseObjectTypeElement();
       if (!object_element_result) {
-        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kComma);
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace);
       } else {
         object_type->InsertLast(object_element_result.value());
       }
+
       if (IsLineTermination()) {
         ConsumeLineTerminator();
-      } else if (cur_token()->Isnt(TokenKind::kRightBrace) &&
-                 prev_token()->Isnt(TokenKind::kRightBrace)) {
+        if (cur_token()->Is(TokenKind::kRightBrace)) {
+          break;
+        }
+      } else if (cur_token()->Is(TokenKind::kRightBrace)) {
+        break;
+      } else if (cur_token()->Is(TokenKind::kComma)) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
+        Next();
+      } else {
+        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "';' expected";
+        SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace);
       }
     }
     CloseBraceFound();
@@ -356,13 +383,13 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
   LOG_PHASE(ParseObjectTypeElement);
   if (cur_token()->Is(TokenKind::kNew)) {
     Next();
-    auto call_sig_result = ParseCallSignature(false, true);
+    auto call_sig_result = ParseCallSignature(false, true, false);
     CHECK_AST(call_sig_result);
     Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig_result.value());
     ret->SetInformationForNode(call_sig_result.value());
     return Success(ret);
   } else if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
-    return ParseCallSignature(false, true);
+    return ParseCallSignature(false, true, false);
   } else if (cur_token()->Is(TokenKind::kLeftBracket)) {
     return ParseIndexSignature();
   } else {
@@ -378,23 +405,16 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
 
     Token info = *cur_token();
 
-    if (Token::IsKeyword(cur_token()->type())) {
-      cur_token()->set_type(TokenKind::kIdentifier);
-    }
-    
-    if (cur_token()->Is(TokenKind::kIdentifier)) {
-      key_result = ParseIdentifierReference(false);
+    if (at.setter || at.getter) {
+      key_result = Success(New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value())));
+      key_result.value()->SetInformationForNode(&info);
     } else {
-      key_result = ParsePropertyName(false, false);
-    }
-
-    if (!key_result) {
-      if (at.getter || at.setter) {
-        key_result = Success(New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value())));
-        key_result.value()->SetInformationForNode(&info);
+      if (cur_token()->Is(TokenKind::kIdentifier)) {
+        key_result = ParseIdentifierReference();
       } else {
-        SYNTAX_ERROR("identifier expected.", (&info));
+        key_result = ParsePropertyName();
       }
+      CHECK_AST(key_result);
     }
     
     if (cur_token()->Is(TokenKind::kQuestionMark)) {
@@ -406,7 +426,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
       if (!key_result.value()->HasNameView()) {
         SYNTAX_ERROR("SyntaxError invalid method name", key_result.value());
       }
-      auto call_sig_result = ParseCallSignature(false, false);
+      auto call_sig_result = ParseCallSignature(false, true, false);
       CHECK_AST(call_sig_result);
       auto ret = New<ir::MethodSignatureView>(optional, at.getter, at.setter, generator, key_result.value(), call_sig_result.value());
       ret->SetInformationForNode(key_result.value());
@@ -427,7 +447,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed, bool annotation) {
+ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allowed, bool type_annotation, bool arrow_glyph_expected) {
   LOG_PHASE(ParseCallSignature);
   ParseResult type_parameters_result;
 
@@ -445,16 +465,14 @@ ParseResult Parser<UCharInputIterator>::ParseCallSignature(bool accesslevel_allo
     auto param_list_result = ParseParameterList(accesslevel_allowed);
     CHECK_AST(param_list_result);
     ParseResult return_type_result;
-    
-    if (cur_token()->Is(TokenKind::kColon)) {
-      Next();
-      return_type_result = ParseTypeExpression();
-    } else if (annotation) {
-      if (cur_token()->Is(TokenKind::kArrowGlyph)) {
+
+    if (type_annotation) {
+      if (cur_token()->Is(TokenKind::kColon) && !arrow_glyph_expected) {
         Next();
         return_type_result = ParseTypeExpression();
-      } else {
-        SYNTAX_ERROR("SyntaxError '=>' expected.", cur_token());
+      } else if (cur_token()->Is(TokenKind::kArrowGlyph) && arrow_glyph_expected) {
+        Next();
+        return_type_result = ParseTypeExpression();
       }
     }
     

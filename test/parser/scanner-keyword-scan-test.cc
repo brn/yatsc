@@ -131,5 +131,4 @@ KEYWORD_TEST_ALL(var, Var);
 KEYWORD_TEST_ALL(void, Void);
 KEYWORD_TEST_ALL(while, While);
 KEYWORD_TEST_ALL(with, With);
-KEYWORD_TEST_ES6(yield, Yield);
 

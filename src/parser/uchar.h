@@ -57,7 +57,7 @@ class UChar {
    */
   YATSC_INLINE UChar(UC32 c, const UC8Bytes& utf8):
       uchar_(c),
-      utf8_(utf8){};
+      utf8_(utf8){}
 
 
   /**

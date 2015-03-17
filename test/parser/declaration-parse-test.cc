@@ -26,10 +26,10 @@
 
 
 #define DECLARATION_TEST(type, code, expected_str)                      \
-  PARSER_TEST("anonymous", ParseDeclaration(true, true, false), type, code, expected_str, false)
+  PARSER_TEST("anonymous", ParseDeclaration(true), type, code, expected_str, false)
 
 #define DECLARATION_THROW_TEST(type, code)                              \
-  PARSER_TEST("anonymous", ParseDeclaration(true, true, false), type, code, "", true)
+  PARSER_TEST("anonymous", ParseDeclaration(true), type, code, "", true)
 
 #define DECLARATION_TEST_ALL(code, expected_str)                        \
   [&]{DECLARATION_TEST(yatsc::LanguageMode::ES3, code, expected_str);}(); \
@@ -1074,7 +1074,7 @@ TEST(DeclarationParseTest, ParseInterfaceDeclaration) {
 };
 
 
-TEST(DeclarationParseTest, ParseEnumDeclaration) {
+TEST(DeclarationParseTest, ParseSimpleEnumDeclaration) {
   DECLARATION_TEST_ALL("enum Foo{BAR=1}",
                        "[EnumDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -1082,8 +1082,10 @@ TEST(DeclarationParseTest, ParseEnumDeclaration) {
                        "    [EnumFieldView]\n"
                        "      [NameView][BAR]\n"
                        "      [NumberView][1]");
+}
 
-  
+
+TEST(DeclarationParseTest, ParseComplexEnumDeclaration) {
   DECLARATION_TEST_ALL("enum Foo{BAR=1,BAZ,QUX=1 + 2}",
                        "[EnumDeclView]\n"
                        "  [NameView][Foo]\n"
@@ -1100,7 +1102,9 @@ TEST(DeclarationParseTest, ParseEnumDeclaration) {
                        "        [NumberView][1]\n"
                        "        [NumberView][2]");
 
-  
+}
+
+TEST(DeclarationParseTest, ParseInvalidEnumDeclaration) {
   DECLARATION_THROW_TEST_ALL("enum Foo {BAR;BAZ}");
   DECLARATION_THROW_TEST_ALL("enum {}");
 }

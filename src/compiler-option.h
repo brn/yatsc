@@ -44,11 +44,11 @@ class CompilerOption {
  public:
   CompilerOption();
   
-  YATSC_CONST_PROPERTY(LanguageMode, language_mode, language_mode_);
+  YATSC_CONST_PROPERTY(LanguageMode, language_mode, language_mode_)
 
-  YATSC_CONST_PROPERTY(LanguageMode, output_language_mode, output_language_mode_);
+  YATSC_CONST_PROPERTY(LanguageMode, output_language_mode, output_language_mode_)
   
-  YATSC_CONST_PROPERTY(ModuleType, module_type, module_type_);
+  YATSC_CONST_PROPERTY(ModuleType, module_type, module_type_)
   
  private:
   LanguageMode language_mode_;
@@ -97,7 +97,7 @@ class LanguageModeUtil : private Static {
       case LanguageMode::ES6:
         return kEs6;
       default:
-        return kEs3;
+        return nullptr;
     }
   }
 

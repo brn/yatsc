@@ -68,7 +68,7 @@ class Stat{
       : Stat(str.c_str()) {}
 
 
-  ~Stat(){};
+  ~Stat(){}
 
 
   YATSC_INLINE bool IsExistsAndFile() {return IsExist() && IsReg();}
@@ -92,13 +92,13 @@ class Stat{
   YATSC_INLINE int UId() const { return fstat_.st_uid; }
 
 
-  YATSC_INLINE int GId() const { return fstat_.st_gid; };
+  YATSC_INLINE int GId() const { return fstat_.st_gid; }
 
 
-  YATSC_INLINE int RDev() const { return fstat_.st_rdev; };
+  YATSC_INLINE int RDev() const { return fstat_.st_rdev; }
 
 
-  YATSC_INLINE int Size() const { return fstat_.st_size; };
+  YATSC_INLINE int Size() const { return fstat_.st_size; }
 
 
   YATSC_INLINE const char* ATime() {

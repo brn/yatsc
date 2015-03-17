@@ -165,7 +165,7 @@ TEST(ScannerTest, ScanDigit_exponent2) {
 
 
 TEST(ScannerTest, ScanDigit_exponent_illegal) {
-  INIT_ERROR(token, "1.3e1");
+  INIT_ERROR(token, "1.3ee");
 }
 
 

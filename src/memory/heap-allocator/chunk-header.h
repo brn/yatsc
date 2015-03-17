@@ -45,14 +45,14 @@ class HeapHeader {
         next_(nullptr) {}
 
   // Getter for ChunkHeader.
-  YATSC_GETTER(ChunkHeader*, chunk_header, chunk_header_);
+  YATSC_GETTER(ChunkHeader*, chunk_header, chunk_header_)
 
     
   // Getter and setter for next pointer.
-  YATSC_PROPERTY(HeapHeader*, next, next_);
+  YATSC_PROPERTY(HeapHeader*, next, next_)
 
 
-  YATSC_PROPERTY(size_t, used, used_);
+  YATSC_PROPERTY(size_t, used, used_)
  private:
     
   ChunkHeader* chunk_header_;
@@ -103,7 +103,7 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
 
   // Getter and setter for size_class_.
   // size_class_ mean allocation target size.
-  YATSC_CONST_PROPERTY(size_t, size_class, size_class_);
+  YATSC_CONST_PROPERTY(size_t, size_class, size_class_)
 
 
   // The mask that is calculate front of the memory block address.
@@ -121,7 +121,7 @@ class ChunkHeader : public RbTreeNode<size_t, ChunkHeader*> {
   // locate in heap block body.
   class FreeHeader {
    public:
-    YATSC_PROPERTY(FreeHeader*, next, next_);
+    YATSC_PROPERTY(FreeHeader*, next, next_)
 
    private:
     FreeHeader* next_;

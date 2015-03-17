@@ -32,7 +32,7 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
   
   auto file_scope = New<ir::FileScopeView>(current_scope());
   bool success = true;
-
+  
   // Parse all statements until eof is found.
   while (!cur_token()->Is(TokenKind::kEof)) {
     // import {a, b, c} from '...' or
@@ -93,7 +93,7 @@ ParseResult Parser<UCharInputIterator>::ParseModule() {
       } else {
 
         // Parse normal statement.
-        auto stmt_list_result = ParseStatementListItem(false, false, false, false);
+        auto stmt_list_result = ParseStatementListItem();
         if (stmt_list_result) {
           file_scope->InsertLast(stmt_list_result.value());
         } else {
@@ -121,7 +121,6 @@ ParseResult Parser<UCharInputIterator>::ParseImportDeclaration() {
 
     switch (cur_token()->type()) {
       case TokenKind::kIdentifier:
-        FALLTHROUGH
       case TokenKind::kLeftBrace: {
         
         auto import_clause_result = ParseImportClause();
@@ -217,7 +216,7 @@ ParseResult Parser<UCharInputIterator>::ParseExternalModuleReference() {
         << "'(' expected.";
       return Failed();
     } else {
-      auto ref = ParsePrimaryExpression(false);
+      auto ref = ParsePrimaryExpression();
       if (ref) {
         return ref;
       }
@@ -276,7 +275,7 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
     bool success = true;
     
     while (1) {
-      auto identifier_result = ParseBindingIdentifier(false, false);
+      auto identifier_result = ParseBindingIdentifier();
       CHECK_AST(identifier_result);
       
       if (identifier_result.value()->HasNameView() &&
@@ -284,7 +283,7 @@ ParseResult Parser<UCharInputIterator>::ParseNamedImport() {
           cur_token()->value()->Equals("as")) {
         
         Next();
-        auto binding_identifier_result = ParseBindingIdentifier(false, false);
+        auto binding_identifier_result = ParseBindingIdentifier();
         CHECK_AST(binding_identifier_result);
         auto named_import = New<ir::NamedImportView>(identifier_result.value(), binding_identifier_result.value());
         named_import->SetInformationForNode(identifier_result.value());
@@ -338,24 +337,18 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
     Token info = *cur_token();
     Next();
 
-    RecordedParserState rps = parser_state();
-    auto binding_identifier_result = ParseBindingIdentifier(false, false);
+    auto binding_identifier_result = ParseGetPropOrElem(ParseBindingIdentifier().or(Null()), false, true);
+    CHECK_AST(binding_identifier_result);
 
-    bool member = false;
-    if (cur_token()->Is(TokenKind::kDot)) {
-      RestoreParserState(rps);
-      binding_identifier_result = ParseMemberExpression(false);
-      member = true;
-    }
+    // if (binding_identifier_result.value()->HasGetPropView() ||
+    //     binding_identifier_result.value()->HasGetElemView()) {
+    //   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    //     << "unexpected token.";
+    //   return Failed();
+    // }
     
     if (cur_token()->Is(TokenKind::kLeftBrace)) {
       return ParseTSModule(binding_identifier_result.or(ir::Node::Null()), &info);
-    }
-
-    if (member) {
-      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-        << "unexpected token.";
-      return Failed();
     }
     
     auto module_specifier_result = ParseFromClause();
@@ -408,7 +401,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
         
         switch (cur_token()->type()) {
           case TokenKind::kVar: {
-            auto variable_stmt_result = ParseVariableStatement(true, false);
+            auto variable_stmt_result = ParseVariableStatement();
             
             if (variable_stmt_result) {
               block->InsertLast(variable_stmt_result.value());
@@ -418,7 +411,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             break;
           }
           case TokenKind::kFunction: {
-            auto function_overloads_result = ParseFunctionOverloads(false, false, true, true);
+            auto function_overloads_result = ParseFunctionOverloads(true, true);
             
             if (function_overloads_result) {
               block->InsertLast(function_overloads_result.value());
@@ -428,7 +421,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             break;
           }
           case TokenKind::kClass: {
-            auto class_decl_result = ParseClassDeclaration(false, false);
+            auto class_decl_result = ParseClassDeclaration();
 
             if (class_decl_result) {
               block->InsertLast(class_decl_result.value());
@@ -448,7 +441,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             break;
           }
           case TokenKind::kEnum: {
-            auto enum_decl_result = ParseEnumDeclaration(false, false);
+            auto enum_decl_result = ParseEnumDeclaration();
 
             if (enum_decl_result) {
               block->InsertLast(enum_decl_result.value());
@@ -458,7 +451,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
             break;
           }
           case TokenKind::kImport: {
-            auto variable_stmt_result = ParseVariableStatement(true, false);
+            auto variable_stmt_result = ParseVariableStatement();
             
             if (variable_stmt_result) {
               block->InsertLast(variable_stmt_result.value());
@@ -522,7 +515,7 @@ ParseResult Parser<UCharInputIterator>::ParseTSModuleBody() {
           << "unexpected token.";
         return Failed();
       } else {
-        auto stmt_list_result = ParseStatementListItem(false, false, false, false);
+        auto stmt_list_result = ParseStatementListItem();
 
         if (stmt_list_result) {
           block->InsertLast(stmt_list_result.value());
@@ -573,7 +566,7 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
         return Success(CreateExportView(export_clause_result.value(), ir::Node::Null(), &info, false));
       }
       case TokenKind::kVar: {
-        auto variable_stmt_result = ParseVariableStatement(true, false);
+        auto variable_stmt_result = ParseVariableStatement();
         CHECK_AST(variable_stmt_result);
         return Success(CreateExportView(variable_stmt_result.value(), ir::Node::Null(), &info, false));
       }
@@ -583,14 +576,14 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
       case TokenKind::kLet:
       case TokenKind::kFunction:
       case TokenKind::kEnum: {
-        auto decl_result = ParseDeclaration(true, true, false);
+        auto decl_result = ParseDeclaration(true);
         CHECK_AST(decl_result);
         return Success(CreateExportView(decl_result.value(), ir::Node::Null(), &info, false));
       }
       case TokenKind::kDefault:
       case TokenKind::kAssign: {
         Next();
-        auto assignment_expr_result = ParseAssignmentExpression(true, false);
+        auto assignment_expr_result = ParseAssignmentExpression();
         CHECK_AST(assignment_expr_result);
         return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
       }

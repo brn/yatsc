@@ -31,18 +31,26 @@ namespace yatsc {
 
 class ErrorDescriptor {
  public:
-  ErrorDescriptor(const SourcePosition& source_position)
-      : source_position_(source_position) {}
+  ErrorDescriptor()
+      : ignore_(true) {}
+
+  
+  explicit ErrorDescriptor(const SourcePosition& source_position)
+      : ignore_(false),
+        source_position_(source_position) {}
 
     
   ErrorDescriptor(ErrorDescriptor&& error_descriptor)
-      : source_position_(std::move(error_descriptor.source_position_)),
+      : ignore_(error_descriptor.ignore_),
+        source_position_(std::move(error_descriptor.source_position_)),
         error_message_(std::move(error_descriptor.error_message_)) {}
 
 
   template <typename T>
   ErrorDescriptor& operator << (T&& message) {
-    error_message_ << message;
+    if (!ignore_) {
+      error_message_ << message;
+    }
     return *this;
   }
 
@@ -52,10 +60,11 @@ class ErrorDescriptor {
   }
 
 
-  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_)
     
 
  private:
+  bool ignore_;
   SourcePosition source_position_;
   StringStream error_message_;
 };

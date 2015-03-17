@@ -21,52 +21,10 @@
 // THE SOFTWARE.
 
 
-#ifndef COMPILER_COMPILATION_UNIT_H
-#define COMPILER_COMPILATION_UNIT_H
-
-#include "../memory/heap.h"
-#include "../parser/literalbuffer.h"
-#include "../parser/error-reporter.h"
-#include "../parser/sourcestream.h"
-#include "../utils/stl.h"
-#include "../ir/node.h"
-#include "./module-info.h"
-
+#include "./error-reporter.h"
 
 namespace yatsc {
 
-class CompilationUnit {
- public:
-  CompilationUnit(Handle<ir::Node> root, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer);
-
-  
-  CompilationUnit(Handle<ModuleInfo> module_info);
-
-  
-  CompilationUnit(const CompilationUnit& compilation_unit);
-
-  
-  CompilationUnit(CompilationUnit&& compilation_unit);
-
-
-  bool success() const {return !module_info_->HasError();}
-
-
-  YATSC_CONST_GETTER(const char*, module_name, module_info_->module_name())
-
-
-  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, module_info_->error_reporter())
-
-
-  YATSC_GETTER(Handle<ModuleInfo>, module_info, module_info_)
-
-  
- private:
-  Handle<ir::Node> root_;
-  Handle<ModuleInfo> module_info_;
-  Handle<LiteralBuffer> literal_buffer_;
-};
+ErrorDescriptor ErrorReporter::ignore_desc_;
 
 }
-
-#endif

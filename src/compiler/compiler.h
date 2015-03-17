@@ -57,17 +57,17 @@ class Compiler {
       ScopedSpinLock lock(lock_);
       ++count_;
       compiled_modules_.insert(module_info->module_name());
-    };
+    }
 
 
     YATSC_INLINE void ReleaseCompilationCount() YATSC_NO_SE {
       if (--count_ == 0) {
         thread_pool_->Shutdown();
       }
-    };
+    }
 
 
-    YATSC_CONST_GETTER(int, count, count_.load(std::memory_order_relaxed));
+    YATSC_CONST_GETTER(int, count, count_.load(std::memory_order_relaxed))
 
 
     YATSC_INLINE bool ShouldCompile(Handle<ModuleInfo> module_info) YATSC_NO_SE {

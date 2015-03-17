@@ -48,7 +48,7 @@ class Literal {
         value_(literal.value_) {}
 
 
-  YATSC_CONST_GETTER(Unique::Id, id, id_);
+  YATSC_CONST_GETTER(Unique::Id, id, id_)
 
 
   bool Equals(Literal* literal) YATSC_NO_SE {

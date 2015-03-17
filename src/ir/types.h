@@ -158,9 +158,9 @@ class GatheredTypeInfo {
   }
 
 
-  YATSC_GETTER(Handle<Type>, type, type_);
-  YATSC_GETTER(Handle<Node>, node, node_);
-  YATSC_GETTER(Type::Modifier, modifier, modifier_);
+  YATSC_GETTER(Handle<Type>, type, type_)
+  YATSC_GETTER(Handle<Node>, node, node_)
+  YATSC_GETTER(Type::Modifier, modifier, modifier_)
   
 
  private:
@@ -176,7 +176,7 @@ class PlaceHolderType: public Type {
       : Type(TypeId::kPlaceHolder) {}
 
 
-  YATSC_GETTER(Handle<Symbol>, symbol, symbol_);
+  YATSC_GETTER(Handle<Symbol>, symbol, symbol_)
 
   
  private:
@@ -192,10 +192,10 @@ class TypeConstraintsType: public Type {
         base_type_(base_type){}
 
   
-  YATSC_GETTER(Handle<PlaceHolderType>, derived_type, derived_type_);
+  YATSC_GETTER(Handle<PlaceHolderType>, derived_type, derived_type_)
 
 
-  YATSC_GETTER(Handle<Type>, base_type, base_type_);
+  YATSC_GETTER(Handle<Type>, base_type, base_type_)
   
   
  private:
@@ -240,7 +240,7 @@ class ArrayType: public Type {
       : Type(TypeId::kArray),
         type_(type) {}
 
-  YATSC_CONST_PROPERTY(Handle<Type>, type, type_);
+  YATSC_CONST_PROPERTY(Handle<Type>, type, type_)
   
  private:
   Handle<Type> type_;
@@ -265,7 +265,7 @@ class PropertyType: public GenericType {
       return Nothing<GatheredTypeInfo>();
     }
     return it->second;
-  };
+  }
 
 
   YATSC_INLINE TypePropertyRange declared_types() {return MakeRange(properties_.begin(), properties_.end());}
@@ -288,7 +288,7 @@ class StringType: public Type {
       : Type(TypeId::kString) {}
 
   
-  YATSC_PROPERTY(Handle<Type>, box_type, box_type_);
+  YATSC_PROPERTY(Handle<Type>, box_type, box_type_)
 
  private:
   Handle<Type> box_type_;
@@ -300,7 +300,7 @@ class NumberType: public Type {
   NumberType()
       : Type(TypeId::kNumber) {}
 
-  YATSC_PROPERTY(Handle<Type>, box_type, box_type_);
+  YATSC_PROPERTY(Handle<Type>, box_type, box_type_)
 
  private:
   Handle<Type> box_type_;
@@ -312,7 +312,7 @@ class BooleanType: public Type {
   BooleanType()
       : Type(TypeId::kBoolean) {}
 
-  YATSC_PROPERTY(Handle<Type>, box_type, box_type_);
+  YATSC_PROPERTY(Handle<Type>, box_type, box_type_)
 
  private:
   Handle<Type> box_type_;
@@ -361,7 +361,7 @@ class CallSignatureType: public GenericType {
   }
 
 
-  YATSC_PROPERTY(Handle<Type>, return_type, return_type_);
+  YATSC_PROPERTY(Handle<Type>, return_type, return_type_)
 
   
  private:
@@ -406,7 +406,7 @@ class InstanceType: public PropertyType {
     return it->second;
   }
 
-  YATSC_CONST_GETTER(Handle<GenericType>, generic_type, generic_type_);
+  YATSC_CONST_GETTER(Handle<GenericType>, generic_type, generic_type_)
 
  private:
   Handle<Placeholder> generic_type_;

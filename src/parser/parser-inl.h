@@ -93,9 +93,7 @@ void Parser<UCharInputIterator>::SkipTokensUntil(std::initializer_list<TokenKind
 
 END:
 
-  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
-    throw FatalParseError();
-  }
+  CheckEof(YATSC_SOURCEINFO_ARGS);
   
   if (move_to_next_token) {
     Next();
@@ -140,9 +138,7 @@ void Parser<UCharInputIterator>::SkipToNextStatement() {
     Next();
   }
 
-  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
-    throw FatalParseError();
-  }
+  CheckEof(YATSC_SOURCEINFO_ARGS);
 }
 
 
@@ -178,6 +174,7 @@ typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterat
   if (cur_token() != nullptr) {
     current = *cur_token();
   }
+  
   if (scope_) {
     scope = scope_;
   }
@@ -188,6 +185,7 @@ typename Parser<UCharInputIterator>::RecordedParserState Parser<UCharInputIterat
       prev,
       scope,
       enclosure_balancer_,
+      state_,
       module_info_->error_reporter()->size());
 }
 
@@ -203,6 +201,7 @@ void Parser<UCharInputIterator>::RestoreParserState(const RecordedParserState& r
   scope_ = rps.scope();
   enclosure_balancer_ = rps.enclosure_balancer();
   Handle<ErrorReporter> se = module_info_->error_reporter();
+  state_ = std::move(rps.state());
   
   if (se->size() != rps.error_count()) {
     int diff = abs(static_cast<int>(rps.error_count()) - static_cast<int>(se->size()));
@@ -271,9 +270,7 @@ void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, Tok
     Next();
   }
 
-  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
-    throw FatalParseError();
-  }
+  CheckEof(YATSC_SOURCEINFO_ARGS);
 
   if (move_to_next_token) {
     Next();
@@ -283,14 +280,18 @@ void Parser<UCharInputIterator>::BalanceEnclosureIfNotBalanced(Token* token, Tok
 
 template <typename UCharInputIterator>
 template <typename T>
-Handle<ErrorDescriptor> Parser<UCharInputIterator>::ReportParseError(T item, const char* filename, int line) {
+ErrorDescriptor& Parser<UCharInputIterator>::ReportParseError(T item, const char* filename, int line) {
+  if (state_.IsInErrorRecoveryMode()) {
+    return SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_);
+  }
+  state_.EnterErrorRecovery();
   return SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line);
 }
 
 
 template <typename UCharInputIterator>
 template <typename T>
-Handle<ErrorDescriptor> Parser<UCharInputIterator>::ReportParseWarning(T item, const char* filename, int line) {
+ErrorDescriptor& Parser<UCharInputIterator>::ReportParseWarning(T item, const char* filename, int line) {
   return SyntaxErrorBuilder<DEBUG_BOOL>::BuildWarning(module_info_, item, filename, line);
 }
 
@@ -299,17 +300,13 @@ template <typename UCharInputIterator>
 template <typename T>
 void Parser<UCharInputIterator>::UnexpectedEndOfInput(T item, const char* filename, int line) {
   SyntaxErrorBuilder<DEBUG_BOOL>::Build(module_info_, item, filename, line) << "Unexpected end of input.";
-  if (!IsInRecordMode()) {
-    throw FatalParseError();
-  }
+  throw FatalParseError();
 }
 
 
 template <typename UCharInputIterator>
 void Parser<UCharInputIterator>::SkipIllegalTokens() {
   while (cur_token()->Is(TokenKind::kIllegal)) {Next();}
-  if (cur_token()->Is(TokenKind::kEof) && !IsInRecordMode()) {
-    throw FatalParseError();
-  }
+  CheckEof(YATSC_SOURCEINFO_ARGS);
 }
 }

@@ -62,7 +62,7 @@ void Compiler::Schedule(const String& filename) {
   }
   compilation_scheduler_->AddCompilationCount(module_info);
   
-  thread_pool_->send_request([module_info, this](int thread_id) {
+  thread_pool_->send_request([module_info, this](int thread_id) mutable {
     Run(module_info);
     compilation_scheduler_->ReleaseCompilationCount();
   });

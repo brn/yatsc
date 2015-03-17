@@ -67,7 +67,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   
 
 
-  YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number());
+  YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number())
 
 
   // Check whether current token is regular expression or not.
@@ -110,10 +110,10 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
           start_line_number_(1) {}
 
 
-    YATSC_CONST_GETTER(size_t, start_position, start_position_);
-    YATSC_CONST_GETTER(size_t, current_position, current_position_);
-    YATSC_CONST_GETTER(size_t, current_line_number, current_line_number_);
-    YATSC_CONST_GETTER(size_t, start_line_number, start_line_number_);
+    YATSC_CONST_GETTER(size_t, start_position, start_position_)
+    YATSC_CONST_GETTER(size_t, current_position, current_position_)
+    YATSC_CONST_GETTER(size_t, current_line_number, current_line_number_)
+    YATSC_CONST_GETTER(size_t, start_line_number, start_line_number_)
 
     YATSC_INLINE void AdvancePosition(size_t pos) YATSC_NOEXCEPT {current_position_ += pos;}
 
@@ -150,10 +150,10 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
     RecordedCharPosition(const RecordedCharPosition& rcp) = default;
     
 
-    YATSC_CONST_GETTER(ScannerSourcePosition, ssp, ssp_);
-    YATSC_CONST_GETTER(UCharInputIterator, ucii, ucii_);
-    YATSC_CONST_GETTER(UChar, current, uchar_);
-    YATSC_CONST_GETTER(UChar, lookahead, lookahead_);
+    YATSC_CONST_GETTER(ScannerSourcePosition, ssp, ssp_)
+    YATSC_CONST_GETTER(UCharInputIterator, ucii, ucii_)
+    YATSC_CONST_GETTER(UChar, current, uchar_)
+    YATSC_CONST_GETTER(UChar, lookahead, lookahead_)
 
    private:
     ScannerSourcePosition ssp_;

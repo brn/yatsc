@@ -42,13 +42,13 @@ namespace yatsc {
 //
 // Parse statments.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseStatement() {
   LOG_PHASE(ParseStatement);
   ParseResult parse_result;
   
   switch (cur_token()->type()) {
     case TokenKind::kLeftBrace:
-      parse_result = ParseBlockStatement(yield, has_return, breakable, continuable);
+      parse_result = ParseBlockStatement();
       break;
 
     case TokenKind::kLineTerminator:
@@ -56,37 +56,37 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
       break;
 
     case TokenKind::kIf:
-      parse_result = ParseIfStatement(yield, has_return, breakable, continuable);
+      parse_result = ParseIfStatement();
       break;
 
     case TokenKind::kFor:
-      parse_result = ParseForStatement(yield, has_return);
+      parse_result = ParseForStatement();
       break;
 
     case TokenKind::kWhile:
-      parse_result = ParseWhileStatement(yield, has_return);
+      parse_result = ParseWhileStatement();
       break;
 
     case TokenKind::kDo:
-      parse_result = ParseDoWhileStatement(yield, has_return);
+      parse_result = ParseDoWhileStatement();
       break;
 
     case TokenKind::kContinue:
       // If this stament not in the iteration statement body,
       // record error and continue parsing.
-      if (!continuable) {
+      if (!state_.IsContinuable()) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'continue' only allowed in loops";
       }
-      parse_result = ParseContinueStatement(yield);
+      parse_result = ParseContinueStatement();
       break;
 
     case TokenKind::kBreak: {
       // If this stament not in the iteration statement body,
       // record error and continue parsing.
-      if (!breakable) {
+      if (!state_.IsBreakable()) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'break' not allowed here";
       }
-      parse_result = ParseBreakStatement(yield);
+      parse_result = ParseBreakStatement();
       
       if (IsLineTermination()) {
         ConsumeLineTerminator();
@@ -101,18 +101,18 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
     case TokenKind::kReturn:
       // If this stament not in the function body,
       // record error and continue parsing.
-      if (!has_return) {
+      if (!state_.IsReturnable()) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'return' statement only allowed in function";
       }
-      parse_result = ParseReturnStatement(yield);
+      parse_result = ParseReturnStatement();
       break;
 
     case TokenKind::kWith:
-      parse_result = ParseWithStatement(yield, has_return, breakable, continuable);
+      parse_result = ParseWithStatement();
       break;
 
     case TokenKind::kSwitch:
-      parse_result = ParseSwitchStatement(yield, has_return, continuable);
+      parse_result = ParseSwitchStatement();
       break;
 
     case TokenKind::kThrow:
@@ -120,7 +120,7 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
       break;
 
     case TokenKind::kTry:
-      parse_result = ParseTryStatement(yield, has_return, breakable, continuable);
+      parse_result = ParseTryStatement();
       break;
 
     case TokenKind::kDebugger:
@@ -128,7 +128,7 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
       break;
 
     case TokenKind::kVar: {
-      auto variable_stmt_result = ParseVariableStatement(true, yield);
+      auto variable_stmt_result = ParseVariableStatement();
       
       if (IsLineTermination()) {
         ConsumeLineTerminator();
@@ -155,25 +155,27 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
         cur_token()->set_type(TokenKind::kIdentifier);
       }
 
+      auto tokens = token_pack();
+
       // Labelled statment and expression is ambiguous,
       // so first, try parse as a labelled statement.
       // If labelled statement parsing is failed, parse as an expression.
       if (cur_token()->Is(TokenKind::kIdentifier)) {
-        RecordedParserState rps = parser_state();
         Next();
-        
+
         // If colon is encounted after identifier,
         // it must be a labelled statement.
         if (cur_token()->Is(TokenKind::kColon)) {
-          RestoreParserState(rps);
-          return ParseLabelledStatement(yield, has_return, breakable, continuable);
+          RestoreTokens(tokens);
+          return ParseLabelledStatement();
         }
-        RestoreParserState(rps);
+
+        RestoreTokens(tokens);
       }
 
       // Parse an expression.
       Token info = *cur_token();
-      parse_result = ParseExpression(true, yield);
+      parse_result = ParseExpression();
       CHECK_AST(parse_result);
       parse_result = Success(New<ir::StatementView>(parse_result.value()));
       parse_result.value()->SetInformationForNode(&info);
@@ -185,23 +187,23 @@ ParseResult Parser<UCharInputIterator>::ParseStatement(bool yield, bool has_retu
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield, bool has_default) {
+ParseResult Parser<UCharInputIterator>::ParseDeclaration(bool error) {
   switch (cur_token()->type()) {
     case TokenKind::kFunction: {
-      auto function_overloads_result = ParseFunctionOverloads(yield, has_default, true, false);
+      auto function_overloads_result = ParseFunctionOverloads(true, false);
       CHECK_AST(function_overloads_result);
       current_scope()->Declare(function_overloads_result.value());
       return function_overloads_result;
     }
     case TokenKind::kClass:
-      return ParseClassDeclaration(yield, has_default);
+      return ParseClassDeclaration();
     case TokenKind::kEnum:
-      return ParseEnumDeclaration(yield, has_default);
+      return ParseEnumDeclaration();
     case TokenKind::kInterface:
       return ParseInterfaceDeclaration();
     case TokenKind::kLet:
     case TokenKind::kConst: {
-      auto lexical_decl_result = ParseLexicalDeclaration(true, yield);
+      auto lexical_decl_result = ParseLexicalDeclaration();
       if (IsLineTermination()) {
         ConsumeLineTerminator();
       } else if (!cur_token()->Is(TokenKind::kRightBrace)) {
@@ -225,7 +227,7 @@ ParseResult Parser<UCharInputIterator>::ParseDeclaration(bool error, bool yield,
 // Parse block statment.
 // e.g. { ... }
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseBlockStatement() {
   LOG_PHASE(ParseBlockStatement);
   
   Handle<ir::Scope> scope = NewScope();
@@ -239,18 +241,14 @@ ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has
     Next();
     
     while (!cur_token()->Is(TokenKind::kRightBrace)) {
-      if (cur_token()->Is(TokenKind::kEof)) {
-        UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);
-        return Failed();
+      CheckEof(YATSC_SOURCEINFO_ARGS);
+      auto statement_list_result = ParseStatementListItem();
+      // If parse failed,
+      // skip to next statement beggining.
+      if (!statement_list_result) {
+        SkipToNextStatement();
       } else {
-        auto statement_list_result = ParseStatementListItem(yield, has_return, breakable, continuable);
-        // If parse failed,
-        // skip to next statement beggining.
-        if (!statement_list_result) {
-          SkipToNextStatement();
-        } else {
-          block_view->InsertLast(statement_list_result.value());
-        }
+        block_view->InsertLast(statement_list_result.value());
       }
     }
 
@@ -271,16 +269,16 @@ ParseResult Parser<UCharInputIterator>::ParseBlockStatement(bool yield, bool has
 //
 // Parse statements and declarations.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseStatementListItem() {
   LOG_PHASE(ParseStatementListItem);
 
   // First parse declarations,
   // If declaration parsing failed,
   // parse statement.
-  auto decl_result = ParseDeclaration(false, yield, false);
+  auto decl_result = ParseDeclaration(false);
   
   if (!decl_result) {
-    return ParseStatement(yield, has_return, breakable, continuable);
+    return ParseStatement();
   }
   
   return decl_result;
@@ -292,7 +290,7 @@ ParseResult Parser<UCharInputIterator>::ParseStatementListItem(bool yield, bool 
 //
 // Parse lexical declaration.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration() {
   LOG_PHASE(ParseLexicalDeclaration);
   bool has_const = cur_token()->Is(TokenKind::kConst);
   
@@ -303,7 +301,7 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yi
   Next();
   
   while (1) {
-    auto lexical_decl_result = ParseLexicalBinding(has_const, in, yield);
+    auto lexical_decl_result = ParseLexicalBinding(has_const);
     
     if (lexical_decl_result) {
       lexical_decl->InsertLast(lexical_decl_result.value());
@@ -335,7 +333,7 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalDeclaration(bool in, bool yi
 //
 // Parse lexical variable declaration identifier bindings.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, bool in, bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl) {
   LOG_PHASE(ParseLexicalBinding);
 
   ParseResult value_result;
@@ -344,9 +342,9 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, boo
   // If binding is identifier, parse as simple identifier.
   // If not, parse as destructuring assignment pattern.
   if (cur_token()->Is(TokenKind::kIdentifier)) {
-    lhs_result = ParseBindingIdentifier(false, in, yield);
+    lhs_result = ParseBindingIdentifier();
   } else {
-    lhs_result = ParseBindingPattern(yield, false);
+    lhs_result = ParseBindingPattern();
   }
 
   // If binding parsing is failed,
@@ -372,7 +370,7 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, boo
   // If initializer exists.
   if (cur_token()->Is(TokenKind::kAssign)) {
     Next();
-    value_result = ParseAssignmentExpression(in, yield);
+    value_result = ParseAssignmentExpression();
     CHECK_AST(value_result);
     
   } else if (const_decl) {
@@ -391,30 +389,26 @@ ParseResult Parser<UCharInputIterator>::ParseLexicalBinding(bool const_decl, boo
 
 // BindingIdentifier[Default, Yield]
 //   [+Default] default
-//   [~Yield] yield Identifier
+//   [~Yield] yield
 //   Identifier
 //
 // Parse binding identifer.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allowed, bool in, bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier() {
   LOG_PHASE(ParseBindingIdentifier);
   
   Handle<ir::Node> ret;
-  if (cur_token()->Is(TokenKind::kDefault)) {
-    // If not default allowed here, record error,
-    // but parsing is continue.
-    if (!default_allowed) {
+  if (cur_token()->Is(TokenKind::kIdentifier)) {
+    // If current parsing location is the inside generator block,
+    // 'yield' is keyword and not allowed as a variable name, but parsing is continue.
+    if (cur_token()->value()->Equals("yield") && !state_.IsInGenerator()) {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-        << "'default' keyword not allowed here";
+        << "yield not allowed here.";
     }
-    ret = New<ir::DefaultView>();
-  } else if (cur_token()->Is(TokenKind::kYield)) {
-    ret = New<ir::YieldView>(false, ir::Node::Null());
-  } else if (cur_token()->Is(TokenKind::kIdentifier)) {
     ret = New<ir::NameView>(NewSymbol(ir::SymbolType::kVariableName, cur_token()->value()));
   } else {
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-      << "'default', 'yield' or 'identifier' expected.";
+      << "'identifier' expected.";
     return Failed();
   }
   
@@ -431,13 +425,13 @@ ParseResult Parser<UCharInputIterator>::ParseBindingIdentifier(bool default_allo
 //
 // Parse binding pattern.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBindingPattern(bool yield, bool generator_parameter) {
+ParseResult Parser<UCharInputIterator>::ParseBindingPattern() {
   LOG_PHASE(ParseBindingPattern);
   switch (cur_token()->type()) {
     case TokenKind::kLeftBrace:
-      return ParseObjectBindingPattern(yield, generator_parameter);
+      return ParseObjectBindingPattern();
     case TokenKind::kLeftBracket:
-      return ParseArrayBindingPattern(yield, generator_parameter);
+      return ParseArrayBindingPattern();
     default:
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'[' or '{' expected.";
       return Failed();
@@ -455,7 +449,7 @@ ParseResult Parser<UCharInputIterator>::ParseBindingPattern(bool yield, bool gen
 //   BindingPropertyList[?Yield, ?GeneratorParameter] , BindingProperty[?Yield, ?GeneratorParameter]
 // Parse destructuring assignment pattern for object.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bool generator_parameter) {
+ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern() {
   LOG_PHASE(ParseObjectBindingPattern);
   
   Handle<ir::Node> binding_prop_list = New<ir::BindingPropListView>();
@@ -463,7 +457,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
   Next();
     
   while (1) {
-    auto binding_prop_result = ParseBindingProperty(yield, generator_parameter);
+    auto binding_prop_result = ParseBindingProperty();
 
     if (binding_prop_list) {
       binding_prop_list->InsertLast(binding_prop_result.value());
@@ -509,7 +503,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectBindingPattern(bool yield, bo
 //
 // Parse destructuring assignment pattern for array.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, bool generator_parameter) {
+ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern() {
   LOG_PHASE(ParseArrayBindingPattern);
     
   Handle<ir::Node> binding_array = New<ir::BindingArrayView>();
@@ -519,7 +513,6 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
   bool exit = false;
     
   while (1) {
-
     // If comma found in array binding pattern,
     // this element is skipped.
     if (cur_token()->Is(TokenKind::kComma)) {
@@ -534,7 +527,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       rest->SetInformationForNode(cur_token());
       Next();
 
-      auto binding_identifier_result = ParseBindingIdentifier(false, true, yield);
+      auto binding_identifier_result = ParseBindingIdentifier();
       
       if (binding_identifier_result) {
         rest->set_parameter(binding_identifier_result.value());
@@ -547,14 +540,14 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
       }
       
     } else {
-      auto binding_elem_result = ParseBindingElement(yield, generator_parameter);
+      auto binding_elem_result = ParseBindingElement();
       
       if (binding_elem_result) {
         ParseResult assignment_expr_result;
 
         // Case initializer.
         if (cur_token()->Is(TokenKind::kAssign)) {
-          assignment_expr_result = ParseAssignmentExpression(true, yield);
+          assignment_expr_result = ParseAssignmentExpression();
         }
         
         auto ret = New<ir::BindingElementView>(binding_elem_result.value(),
@@ -593,7 +586,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrayBindingPattern(bool yield, boo
 //
 // Parse destructuring assignment object property.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool generator_parameter) {
+ParseResult Parser<UCharInputIterator>::ParseBindingProperty() {
   LOG_PHASE(ParseBindingProperty);
   ParseResult key_result;
   ParseResult value_result;
@@ -609,12 +602,12 @@ ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool ge
   // Case nested element.
   if (cur_token()->Is(TokenKind::kColon)) {
     Next();
-    value_result = ParseBindingElement(yield, generator_parameter);
+    value_result = ParseBindingElement();
     CHECK_AST(value_result);
   } else if (cur_token()->Is(TokenKind::kAssign)) {
     // Case initializer.
     Next();
-    value_result = ParseAssignmentExpression(true, yield);
+    value_result = ParseAssignmentExpression();
     CHECK_AST(value_result);
   }
   
@@ -631,15 +624,14 @@ ParseResult Parser<UCharInputIterator>::ParseBindingProperty(bool yield, bool ge
 //
 // Parse destructuring array element.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBindingElement(bool yield, bool generator_parameter) {
+ParseResult Parser<UCharInputIterator>::ParseBindingElement() {
   LOG_PHASE(ParseBindingElement);
   switch (cur_token()->type()) {
     case TokenKind::kIdentifier:
-    case TokenKind::kYield:
     case TokenKind::kDefault:
-      return ParseBindingIdentifier(false, false, yield);
+      return ParseBindingIdentifier();
     default:
-      return ParseBindingPattern(yield, generator_parameter);
+      return ParseBindingPattern();
   }
 }
 
@@ -653,12 +645,12 @@ ParseResult Parser<UCharInputIterator>::ParseBindingElement(bool yield, bool gen
 //
 // Parse variable statement.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseVariableStatement() {
   Next();
   Handle<ir::VariableDeclView> vars = New<ir::VariableDeclView>();
     
   while (1) {
-    auto variable_decl_result = ParseVariableDeclaration(in, yield);
+    auto variable_decl_result = ParseVariableDeclaration();
     
     if (variable_decl_result) {
       vars->InsertLast(variable_decl_result.value());
@@ -684,23 +676,23 @@ ParseResult Parser<UCharInputIterator>::ParseVariableStatement(bool in, bool yie
 //
 // Parse variable declaration.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration() {
   LOG_PHASE(ParseVariableDeclaration);
 
   ParseResult value_result;
   ParseResult lhs_result;
   
   if (cur_token()->Is(TokenKind::kIdentifier)) {
-    lhs_result = ParseBindingIdentifier(false, in, yield);
-  } else if (Token::IsKeyword(cur_token()->type())) {
+    lhs_result = ParseBindingIdentifier();
+  } else if (cur_token()->IsKeyword()) {
     // If keyword found in binding identifier section,
     // we recognize it as identifier and continue parsing.
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
       << "keyword '" << cur_token()->utf8_value() << "' is not valid identifier.";
     cur_token()->set_type(TokenKind::kIdentifier);
-    lhs_result = ParseBindingIdentifier(false, in, yield);
+    lhs_result = ParseBindingIdentifier();
   } else {
-    lhs_result = ParseBindingPattern(yield, false);
+    lhs_result = ParseBindingPattern();
   }
 
   CHECK_AST(lhs_result);
@@ -719,7 +711,7 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
   
   if (cur_token()->Is(TokenKind::kAssign)) {
     Next();
-    value_result = ParseAssignmentExpression(in, yield);
+    value_result = ParseAssignmentExpression();
     CHECK_AST(value_result);
   }
   
@@ -739,7 +731,7 @@ ParseResult Parser<UCharInputIterator>::ParseVariableDeclaration(bool in, bool y
 //
 // Parse if statement.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseIfStatement() {
   LOG_PHASE(ParseIfStatement);
   Token info = *cur_token();
   Next();
@@ -752,7 +744,7 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
   }
   
 
-  auto expr_result = ParseExpression(true, yield);
+  auto expr_result = ParseExpression();
     
   if (cur_token()->Is(TokenKind::kRightParen)) {
     CloseParenFound();
@@ -762,7 +754,7 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
     
   BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
     
-  auto then_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
+  auto then_stmt_result = ParseStatement();
       
   if (!prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
     ConsumeLineTerminator();
@@ -772,7 +764,7 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
       
   if (cur_token()->Is(TokenKind::kElse)) {
     Next();
-    else_stmt_result = ParseStatement(yield, has_return, breakable, continuable);
+    else_stmt_result = ParseStatement();
     if (prev_token()->Is(TokenKind::kRightBrace) && IsLineTermination()) {
       ConsumeLineTerminator();
     }
@@ -790,7 +782,7 @@ ParseResult Parser<UCharInputIterator>::ParseIfStatement(bool yield, bool has_re
 //
 // Parse while statement.
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has_return) {
+ParseResult Parser<UCharInputIterator>::ParseWhileStatement() {
   LOG_PHASE(ParseWhileStatement);
   Token info = *(cur_token());
 
@@ -800,11 +792,11 @@ ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
-    auto expr_result = ParseExpression(true, yield);
+    auto expr_result = ParseExpression();
     if (!expr_result) {
       SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightParen);
     }
-    auto iteration_body_result = ParseIterationBody(yield, has_return);
+    auto iteration_body_result = ParseIterationBody();
     CHECK_AST(iteration_body_result);
     auto while_stmt = New<ir::WhileStatementView>(expr_result.or(Null()), iteration_body_result.value());
     while_stmt->SetInformationForNode(&info);
@@ -820,12 +812,15 @@ ParseResult Parser<UCharInputIterator>::ParseWhileStatement(bool yield, bool has
 //   : 'do' statement[?yield, ?return] 'while' '(' expression[in, ?yield] ')' ;__opt
 //   ;
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, bool has_return) {
+ParseResult Parser<UCharInputIterator>::ParseDoWhileStatement() {
   LOG_PHASE(ParseDoWhileStatement);
   Token info = *(cur_token());
   Next();
 
-  auto stmt_result = ParseStatement(yield, has_return, true, true);
+  state_.EnterIteration();
+  auto stmt_result = ParseStatement();
+  state_.ExitIteration();
+  
   CHECK_AST(stmt_result);
   
   if (cur_token()->Is(TokenKind::kWhile)) {
@@ -835,7 +830,7 @@ ParseResult Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, bool h
       
       OpenParenFound();
       Next();
-      auto expr_result = ParseExpression(true, yield);
+      auto expr_result = ParseExpression();
       CHECK_AST(expr_result);
       
       if (cur_token()->Is(TokenKind::kRightParen)) {
@@ -868,7 +863,7 @@ ParseResult Parser<UCharInputIterator>::ParseDoWhileStatement(bool yield, bool h
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_return) {
+ParseResult Parser<UCharInputIterator>::ParseForStatement() {
   LOG_PHASE(ParseForStatement);
 
   Token info = *cur_token();
@@ -878,14 +873,15 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
     OpenParenFound();
     Next();
     ParseResult reciever_result;
+    
     switch (cur_token()->type()) {
       case TokenKind::kVar: {
-        reciever_result = ParseVariableStatement(true, yield);
+        reciever_result = ParseVariableStatement();
         CHECK_AST(reciever_result);
         break;
       }
       case TokenKind::kLet: {
-        reciever_result = ParseLexicalDeclaration(true, yield);
+        reciever_result = ParseLexicalDeclaration();
         CHECK_AST(reciever_result);
         break;
       }
@@ -893,18 +889,14 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
         break;
       default: {
 
-        RecordedParserState rps = parser_state();
-        reciever_result = ParseExpression(true, yield);
+        state_.EnterNoInExpr();
+        reciever_result = ParseExpression();
+        state_.ExitNoInExpr();
         CHECK_AST(reciever_result);
-        
-        if (!cur_token()->Is(TokenKind::kLineTerminator)) {
-          RestoreParserState(rps);
-          reciever_result = ParseLeftHandSideExpression(yield);
-          CHECK_AST(reciever_result);
-        }
       }
     }
-    return ParseForIteration(reciever_result.or(ir::Node::Null()), &info, yield, has_return);
+    
+    return ParseForIteration(reciever_result.or(ir::Node::Null()), &info);
   }
 
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'(' expected.";
@@ -913,7 +905,7 @@ ParseResult Parser<UCharInputIterator>::ParseForStatement(bool yield, bool has_r
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> reciever, Token* token_info, bool yield, bool has_return) {
+ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> reciever, Token* token_info) {
   LOG_PHASE(ParseForIterationStatement);
 
   ParseResult second_result;
@@ -925,28 +917,32 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
     // for (var i = 0; i < 10; i++) ...
     Next();
     if (!cur_token()->Is(TokenKind::kLineTerminator)) {
-      second_result = ParseExpression(true, yield);
+      second_result = ParseExpression();
       CHECK_AST(second_result);
     }
     if (cur_token()->Is(TokenKind::kLineTerminator)) {
       Next();
       if (!cur_token()->Is(TokenKind::kRightParen)) {
-        third_result = ParseExpression(true, yield);
+        third_result = ParseExpression();
         CHECK_AST(third_result);
       }
       
     }
   } else if (cur_token()->Is(TokenKind::kIdentifier) &&
              cur_token()->value()->Equals("of")) {
-    // for (var i in obj) ...
+    // for (var i of obj) ...
     Next();
-    second_result = ParseAssignmentExpression(true, yield);
+    second_result = ParseAssignmentExpression();
     CHECK_AST(second_result);
     for_of = true;
   } else if (cur_token()->Is(TokenKind::kIn)) {
-    // for (var i of obj) ...
+    // for (var i in obj) ...
     Next();
-    second_result = ParseAssignmentExpression(false, yield);
+    
+    state_.EnterNoInExpr();
+    second_result = ParseAssignmentExpression();
+    state_.ExitNoInExpr();
+    
     CHECK_AST(second_result);
     for_in = true;
   } else {
@@ -954,7 +950,7 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
     SKIP_IF_ERROR_RECOVERY_ENABLED(true, TokenKind::kRightParen);
   }
 
-  auto iteration_body_result = ParseIterationBody(yield, has_return);
+  auto iteration_body_result = ParseIterationBody();
   Handle<ir::Node> ret;
   
   if (for_in) {
@@ -971,11 +967,13 @@ ParseResult Parser<UCharInputIterator>::ParseForIteration(Handle<ir::Node> recie
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseIterationBody(bool yield, bool has_return) {
+ParseResult Parser<UCharInputIterator>::ParseIterationBody() {
   if (cur_token()->Is(TokenKind::kRightParen)) {
     CloseParenFound();
     BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-    return ParseStatement(yield, has_return, true, true);
+    state_.EnterIteration();
+    YATSC_SCOPED([&]{state_.ExitIteration();});
+    return ParseStatement();
   }
   
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "')' expected.";
@@ -984,19 +982,23 @@ ParseResult Parser<UCharInputIterator>::ParseIterationBody(bool yield, bool has_
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseContinueStatement(bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseContinueStatement() {
   LOG_PHASE(ParseContinueStatement);
 
   Token info = *cur_token();
   Next();
   ParseResult parse_result;
   YATSC_SCOPED([&]{
+    if (IsLineTermination()) {
+      ConsumeLineTerminator();
+    }
     if (parse_result) {
       parse_result.value()->SetInformationForNode(&info);
     }
   });
+  
   if (cur_token()->Is(TokenKind::kIdentifier)) {
-    auto primary_expr_result = ParsePrimaryExpression(yield);
+    auto primary_expr_result = ParsePrimaryExpression();
     CHECK_AST(primary_expr_result);
     return parse_result = Success(New<ir::ContinueStatementView>(primary_expr_result.value()));
   }
@@ -1005,7 +1007,7 @@ ParseResult Parser<UCharInputIterator>::ParseContinueStatement(bool yield) {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseBreakStatement(bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseBreakStatement() {
   LOG_PHASE(ParseBreakStatement);
 
   Token info = *cur_token();
@@ -1016,17 +1018,18 @@ ParseResult Parser<UCharInputIterator>::ParseBreakStatement(bool yield) {
       parse_result.value()->SetInformationForNode(&info);
     }
   });
+  
   if (cur_token()->Is(TokenKind::kIdentifier)) {
-    auto primary_expr_result = ParsePrimaryExpression(yield);
+    auto primary_expr_result = ParsePrimaryExpression();
     return parse_result = Success(New<ir::BreakStatementView>(primary_expr_result.value()));
   }
+  
   return parse_result = Success(New<ir::BreakStatementView>());
-
 }
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseReturnStatement() {
   LOG_PHASE(ParseReturnStatement);
 
   Token info = *cur_token();
@@ -1043,14 +1046,15 @@ ParseResult Parser<UCharInputIterator>::ParseReturnStatement(bool yield) {
     ConsumeLineTerminator();
     return parse_result = Success(New<ir::ReturnStatementView>());
   }
-  auto expr_result = ParseExpression(true, yield);
+  
+  auto expr_result = ParseExpression();
   CHECK_AST(expr_result);
   return parse_result = Success(New<ir::ReturnStatementView>(expr_result.value()));
 }
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseWithStatement() {
   LOG_PHASE(ParseWithStatement);
 
   Token info = *cur_token();
@@ -1066,20 +1070,18 @@ ParseResult Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     OpenParenFound();
     Next();
-    auto expr_result = ParseExpression(true, yield);
+    auto expr_result = ParseExpression();
     CHECK_AST(expr_result);
     if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
       BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-      auto stmt_result = ParseStatement(yield, has_return, breakable, continuable);
+      auto stmt_result = ParseStatement();
       CHECK_AST(stmt_result);
       return parse_result = Success(New<ir::WithStatementView>(expr_result.value(), stmt_result.value()));
     }
     
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "')' expected.";
-
-    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-    
+    BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);    
     return Failed();
   }
 
@@ -1089,7 +1091,7 @@ ParseResult Parser<UCharInputIterator>::ParseWithStatement(bool yield, bool has_
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool has_return, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseSwitchStatement() {
   LOG_PHASE(ParseSwitchStatement);
 
   Token info = *cur_token();
@@ -1100,17 +1102,19 @@ ParseResult Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool ha
     OpenParenFound();
 
     Next();
-    auto expr_result = ParseExpression(true, yield);
+    auto expr_result = ParseExpression();
     CHECK_AST(expr_result);
     
     if (cur_token()->Is(TokenKind::kRightParen)) {
       CloseParenFound();
       BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
-      if (cur_token()->Is(TokenKind::kLeftBrace)) {
+      
+      if (cur_token()->Is(TokenKind::kLeftBrace)) {        
         OpenBraceFound();
         Next();
-        auto case_clauses_result = ParseCaseClauses(yield, has_return, continuable);
+        auto case_clauses_result = ParseCaseClauses();
         CHECK_AST(case_clauses_result);
+        
         if (cur_token()->Is(TokenKind::kRightBrace)) {
           CloseBraceFound();
           BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
@@ -1140,12 +1144,11 @@ ParseResult Parser<UCharInputIterator>::ParseSwitchStatement(bool yield, bool ha
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_return, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseCaseClauses() {
   LOG_PHASE(ParseCaseClauses);
   Handle<ir::CaseListView> case_list = New<ir::CaseListView>();
   case_list->SetInformationForNode(cur_token());
   bool default_encounted = false;
-  bool success = true;
   
   while (1) {
     bool normal_case = false;
@@ -1157,15 +1160,13 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
       case TokenKind::kCase: {
         normal_case = true;
         Next();
-        expr_result = ParseExpression(true, yield);
+        expr_result = ParseExpression();
         if (!expr_result) {
           SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault);
           break;
         }
-        
-        FALLTHROUGH;
       }
-        
+        FALLTHROUGH;
       case TokenKind::kDefault: {
         if (!normal_case) {
           default_encounted = true;
@@ -1189,16 +1190,19 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
           if (cur_token()->OneOf({TokenKind::kCase, TokenKind::kDefault, TokenKind::kRightBrace})) {
             break;
           }
-          
+
+          state_.EnterCaseBlock();
           if (cur_token()->Is(TokenKind::kLeftBrace)) {
-            auto block_stmt_result = ParseBlockStatement(yield, has_return, true, continuable);
+            auto block_stmt_result = ParseBlockStatement();
+            state_.ExitCaseBlock();
             if (block_stmt_result) {
               body->InsertLast(block_stmt_result.value());
             } else {
               SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace, TokenKind::kCase, TokenKind::kDefault);
             }
           } else {
-            auto stmt_list_result = ParseStatementListItem(yield, has_return, true, continuable);
+            auto stmt_list_result = ParseStatementListItem();
+            state_.ExitCaseBlock();
             if (stmt_list_result) {
               body->InsertLast(stmt_list_result.value());
             } else {
@@ -1233,9 +1237,9 @@ ParseResult Parser<UCharInputIterator>::ParseCaseClauses(bool yield, bool has_re
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseLabelledStatement() {
   LOG_PHASE(ParseLabelledStatement);
-  auto label_identifier_result = ParseLabelIdentifier(yield);
+  auto label_identifier_result = ParseLabelIdentifier();
   CHECK_AST(label_identifier_result);
   label_identifier_result.value()->symbol()->set_type(ir::SymbolType::kLabelName);
 
@@ -1247,7 +1251,7 @@ ParseResult Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool 
     Next();
   }
   
-  return ParseLabelledItem(yield, has_return, breakable, continuable) >>= [&] (Handle<ir::Node> labelled_item) {
+  return ParseLabelledItem() >>= [&] (Handle<ir::Node> labelled_item) {
     auto node = New<ir::LabelledStatementView>(label_identifier_result.value(), labelled_item);
     node->SetInformationForNode(label_identifier_result.value());
     return Success(node);
@@ -1256,11 +1260,11 @@ ParseResult Parser<UCharInputIterator>::ParseLabelledStatement(bool yield, bool 
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseLabelledItem() {
   if (cur_token()->Is(TokenKind::kFunction)) {
-    return ParseFunctionOverloads(yield, false, true, false);
+    return ParseFunctionOverloads(false, false);
   }
-  return ParseStatement(yield, has_return, breakable, continuable);
+  return ParseStatement();
 }
 
 
@@ -1276,8 +1280,8 @@ ParseResult Parser<UCharInputIterator>::ParseThrowStatement() {
     Next();  
     return Failed();
   }
-
-  return ParseExpression(false, false) >>= [&](Handle<ir::Node> expr) {
+  
+  return ParseExpression() >>= [&](Handle<ir::Node> expr) {
     auto throw_stmt = New<ir::ThrowStatementView>(expr);
     throw_stmt->SetInformationForNode(&info);
     return Success(throw_stmt);
@@ -1286,13 +1290,13 @@ ParseResult Parser<UCharInputIterator>::ParseThrowStatement() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseTryStatement() {
   LOG_PHASE(ParseTryStatement);
 
   Token info = *cur_token();
   Next();
   
-  auto block_stmt_result = ParseBlockStatement(yield, has_return, breakable, continuable);
+  auto block_stmt_result = ParseBlockStatement();
   
   ParseResult catch_block_result;
   ParseResult finally_block_result;
@@ -1300,12 +1304,12 @@ ParseResult Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_r
 
   if (cur_token()->Is(TokenKind::kCatch)) {
     has_catch_or_finally = true;
-    catch_block_result = ParseCatchBlock(yield, has_return, breakable, continuable);
+    catch_block_result = ParseCatchBlock();
   }
     
   if (cur_token()->Is(TokenKind::kFinally)) {
     has_catch_or_finally = true;
-    finally_block_result = ParseFinallyBlock(yield, has_return, breakable, continuable);
+    finally_block_result = ParseFinallyBlock();
   }
 
   if (!has_catch_or_finally) {
@@ -1322,7 +1326,7 @@ ParseResult Parser<UCharInputIterator>::ParseTryStatement(bool yield, bool has_r
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseCatchBlock() {
   LOG_PHASE(ParseCatchBlock);
 
   Token info = *cur_token();
@@ -1334,9 +1338,9 @@ ParseResult Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_ret
     ParseResult catch_parameter_result;
     
     if (cur_token()->Is(TokenKind::kIdentifier)) {
-      catch_parameter_result = ParseBindingIdentifier(false, false, yield);
+      catch_parameter_result = ParseBindingIdentifier();
     } else {
-      catch_parameter_result = ParseBindingPattern(yield, false);
+      catch_parameter_result = ParseBindingPattern();
     }
 
     if (cur_token()->Is(TokenKind::kRightParen)) {
@@ -1344,7 +1348,7 @@ ParseResult Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_ret
       CloseParenFound();
       BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightParen, true);
       
-      return ParseBlockStatement(yield, has_return, breakable, continuable) >>= [&](Handle<ir::Node> catch_block) {
+      return ParseBlockStatement() >>= [&](Handle<ir::Node> catch_block) {
         Handle<ir::CatchStatementView> catch_stmt = New<ir::CatchStatementView>(catch_parameter_result.or(Null()),
                                                                                 catch_block);
         catch_stmt->SetInformationForNode(&info);
@@ -1363,11 +1367,12 @@ ParseResult Parser<UCharInputIterator>::ParseCatchBlock(bool yield, bool has_ret
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable) {
+ParseResult Parser<UCharInputIterator>::ParseFinallyBlock() {
   LOG_PHASE(ParseFinallyBlock);
   Token info = *cur_token();
   Next();
-  return ParseBlockStatement(yield, has_return, breakable, continuable) >>= [&](Handle<ir::Node> block_stmt) {
+  
+  return ParseBlockStatement() >>= [&](Handle<ir::Node> block_stmt) {
     Handle<ir::FinallyStatementView> finally_stmt = New<ir::FinallyStatementView>(block_stmt);
     finally_stmt->SetInformationForNode(&info);
     return Success(finally_stmt);
@@ -1389,7 +1394,7 @@ ParseResult Parser<UCharInputIterator>::ParseDebuggerStatement() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
   LOG_PHASE(ParseInterfaceDeclaration);
-  bool success = true;
+  Token info = *cur_token();
 
   Next();
 
@@ -1436,35 +1441,12 @@ ParseResult Parser<UCharInputIterator>::ParseInterfaceDeclaration() {
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
     return ParseObjectTypeExpression() >>= [&](Handle<ir::Node> body) {
-      return Success(New<ir::InterfaceView>(identifier_result.or(Null()),
-                                            type_parameters_result.or(Null()),
-                                            extends,
-                                            body));
-    };
-  }
-
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected.";
-  return Failed();
-}
-
-
-template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bool has_default) {
-  LOG_PHASE(ParseEnumDeclaration);
-  bool success = true;
-
-  Token info = *cur_token();
-  Next();
-  auto identifier_result = ParseIdentifier();
-  if (!identifier_result) {
-    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLeftBrace, TokenKind::kRightBrace);
-  }
-    
-  if (cur_token()->Is(TokenKind::kLeftBrace)) {
-    OpenBraceFound();
-    return ParseEnumBody(yield, has_default) >>= [&](Handle<ir::Node> enum_body) {
-      auto ret = New<ir::EnumDeclView>(identifier_result.or(Null()), enum_body);
-      ret->SetInformationForNode(&info);
+      auto ret = New<ir::InterfaceView>(identifier_result.or(Null()),
+                                        type_parameters_result.or(Null()),
+                                        extends,
+                                        body);
+      ret->SetInformationForNode(info);
+      current_scope()->Declare(ret);
       return Success(ret);
     };
   }
@@ -1475,7 +1457,33 @@ ParseResult Parser<UCharInputIterator>::ParseEnumDeclaration(bool yield, bool ha
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_default) {
+ParseResult Parser<UCharInputIterator>::ParseEnumDeclaration() {
+  LOG_PHASE(ParseEnumDeclaration);
+  Token info = *cur_token();
+  Next();
+  auto identifier_result = ParseIdentifier();
+
+  if (!identifier_result) {
+    SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLeftBrace, TokenKind::kRightBrace);
+  }
+    
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
+    OpenBraceFound();
+    return ParseEnumBody() >>= [&](Handle<ir::Node> enum_body) {
+      auto ret = New<ir::EnumDeclView>(identifier_result.or(Null()), enum_body);
+      ret->SetInformationForNode(&info);
+      current_scope()->Declare(ret);
+      return Success(ret);
+    };
+  }
+
+  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "'{' expected.";
+  return Failed();
+}
+
+
+template <typename UCharInputIterator>
+ParseResult Parser<UCharInputIterator>::ParseEnumBody() {
   LOG_PHASE(ParseEnumBody);
 
   auto ret = New<ir::EnumBodyView>();
@@ -1487,11 +1495,9 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
     BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
     return Success(ret);
   }
-
-  bool success = true;
     
   while (1) {
-    auto enum_property_result = ParseEnumProperty(yield, has_default);
+    auto enum_property_result = ParseEnumProperty();
     if (!enum_property_result) {
       SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kComma, TokenKind::kLineTerminator, TokenKind::kLineTerminator);
     } else {
@@ -1518,13 +1524,13 @@ ParseResult Parser<UCharInputIterator>::ParseEnumBody(bool yield, bool has_defau
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseEnumProperty(bool yield, bool has_default) {
+ParseResult Parser<UCharInputIterator>::ParseEnumProperty() {
   LOG_PHASE(ParseEnumProperty);
   
-  return ParsePropertyName(yield, false) >>= [&](Handle<ir::Node> prop_name) {
+  return ParsePropertyName() >>= [&](Handle<ir::Node> prop_name) {
     if (cur_token()->Is(TokenKind::kAssign)) {
       Next();
-      return ParseAssignmentExpression(true, yield) >>= [&](Handle<ir::Node> assignment_expr) {
+      return ParseAssignmentExpression() >>= [&](Handle<ir::Node> assignment_expr) {
         return Success(CreateEnumFieldView(prop_name, assignment_expr));
       };
     }
@@ -1545,14 +1551,13 @@ Handle<ir::Node> Parser<UCharInputIterator>::CreateEnumFieldView(
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool has_default) {
+ParseResult Parser<UCharInputIterator>::ParseClassDeclaration() {
   LOG_PHASE(ParseClassDeclaration);
 
   Token info = *cur_token();
   Next();
   ParseResult type_parameters_result;
   auto identifier_result = ParseIdentifier();
-  bool success = true;
 
   if (!identifier_result) {
     SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLess, TokenKind::kImplements, TokenKind::kExtends, TokenKind::kLeftBrace);
@@ -1590,6 +1595,7 @@ ParseResult Parser<UCharInputIterator>::ParseClassDeclaration(bool yield, bool h
                                            class_bases_result.or(Null()),
                                            class_body_result.or(Null()));
   class_decl->SetInformationForNode(&info);
+  current_scope()->Declare(class_decl);
   return Success(class_decl);
 }
 
@@ -1598,7 +1604,6 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseClassBases() {
   LOG_PHASE(ParseClassBases);
   bool extends_keyword = false;
-  bool success = true;
   
   auto bases = New<ir::ClassBasesView>();
   auto impls = New<ir::ClassImplsView>();
@@ -1654,7 +1659,6 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseClassBody() {
   LOG_PHASE(ParseClassBody);
   auto fields = New<ir::ClassFieldListView>();
-  bool success = true;
   
   while (!cur_token()->Is(TokenKind::kRightBrace)) {
     auto class_element_result = ParseClassElement();
@@ -1703,25 +1707,23 @@ ParseResult Parser<UCharInputIterator>::ParseClassElement() {
     cur_token()->set_type(TokenKind::kIdentifier);
   }
   
-  if (cur_token()->Is(TokenKind::kIdentifier)) {
-    if (cur_token()->value()->Equals("constructor")) {
-      return ParseConstructorOverloads(field_modifiers_result.value());
-    } else {
-      RecordedParserState rps = parser_state();
-      Next();
-      if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
-        if (cur_token()->Is(TokenKind::kLeftParen)) {
-          OpenParenFound();
-        }
-        RestoreParserState(rps);
-        return ParseMemberFunctionOverloads(field_modifiers_result.or(Null()), &at);
-      } 
-      RestoreParserState(rps);
-      return ParseMemberVariable(field_modifiers_result.or(Null()));
-    }
+  if (cur_token()->Is(TokenKind::kIdentifier) && cur_token()->value()->Equals("constructor")) {
+    return ParseConstructorOverloads(field_modifiers_result.value());
   } else if (cur_token()->Is(TokenKind::kMul)) {
     Next();
     return ParseGeneratorMethodOverloads(field_modifiers_result.value());
+  } else {
+    auto tokens = token_pack();
+    Next();
+    if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
+      if (cur_token()->Is(TokenKind::kLeftParen)) {
+        OpenParenFound();
+      }
+      RestoreTokens(tokens);
+      return ParseMemberFunctionOverloads(field_modifiers_result.or(Null()), &at);
+    } 
+    RestoreTokens(tokens);
+    return ParseMemberVariable(field_modifiers_result.or(Null()));
   }
 
   ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "unexpected token.";
@@ -1795,10 +1797,12 @@ void Parser<UCharInputIterator>::ValidateOverload(Handle<ir::MemberFunctionDefin
   
   if (overloads->size() > 0) {
     Handle<ir::MemberFunctionOverloadView> last(overloads->last_child());
-    
-    if (!node->name()->SymbolEquals(last->at(1))) {
-      ReportParseError(node->at(1), YATSC_SOURCEINFO_ARGS)
-        << "member function overload must have a same name.";
+
+    if (node->name()->HasNameView()) {
+      if (!node->name()->SymbolEquals(last->at(1))) {
+        ReportParseError(node->at(1), YATSC_SOURCEINFO_ARGS)
+          << "member function overload must have a same name.";
+      }
     }
     
     if (!node->modifiers()->Equals(last->modifiers())) {
@@ -1912,7 +1916,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation
     
     Token info = *cur_token();
     auto identifier_result = ParseIdentifier();
-    auto call_sig_result = ParseCallSignature(true, false);
+    auto call_sig_result = ParseCallSignature(true, false, false);
 
     if (!call_sig_result) {
       SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kLeftBrace, TokenKind::kLineTerminator);
@@ -1953,7 +1957,7 @@ ParseResult Parser<UCharInputIterator>::ParseConstructorOverloadOrImplementation
 // Check member function begging token.
 template <typename UCharInputIterator>
 bool Parser<UCharInputIterator>::IsMemberFunctionOverloadsBegin(Token* info) {
-  return info->OneOf({TokenKind::kIdentifier, TokenKind::kStatic}) ||
+  return info->OneOf({TokenKind::kIdentifier, TokenKind::kStringLiteral, TokenKind::kNumericLiteral, TokenKind::kStatic}) ||
     IsAccessLevelModifier(info) ||
     Token::IsKeyword(info->type());
 }
@@ -1973,14 +1977,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle<ir::
   bool first = true;
   
   while (1) {
-    Token info = *cur_token();
-    RecordedParserState rps = parser_state();
-    Next();
-    
-    if (IsMemberFunctionOverloadsBegin(&info)) {
-      // Reserve token position.
-      RestoreParserState(rps);
-
+    if (IsMemberFunctionOverloadsBegin(cur_token())) {
       // Parse an overload or an implementation.
       auto member_function_result = ParseMemberFunctionOverloadOrImplementation(first, mods, at, overloads);
       CHECK_AST(member_function_result);
@@ -1997,7 +1994,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberFunctionOverloads(Handle<ir::
       }
       first = false;
     } else {
-      ReportParseError(&info, YATSC_SOURCEINFO_ARGS) << "incomplete member function definition.";
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS) << "incomplete member function definition.";
       return Failed();
     }
   }
@@ -2041,54 +2038,50 @@ ParseResult Parser<UCharInputIterator>::ParseMemberFunctionOverloadOrImplementat
   
 
   // Method must be began an js identifier.
-  if (cur_token()->Is(TokenKind::kIdentifier)) {
-    // Save position.
-    Token info = *cur_token();
 
-    auto identifier_result = ParseIdentifier();
-    auto call_sig_result = ParseCallSignature(false, false);
-    Handle<ir::Node> ret;
+  // Save position.
+  Token info = *cur_token();
 
-    // public something(): void {
-    // -------------------------^ here
-    if (cur_token()->Is(TokenKind::kLeftBrace)) {
-      OpenBraceFound();
-      auto function_body_result = ParseFunctionBody(false);
-      CHECK_AST(function_body_result);
-      ret = New<ir::MemberFunctionView>(at.getter, at.setter, false,
-                                        mods,
-                                        identifier_result.or(Null()),
-                                        call_sig_result.or(Null()),
-                                        overloads,
-                                        function_body_result.or(Null()));
-    } else if (overloads) {
+  auto identifier_result = ParseLiteralPropertyName();
+  CHECK_AST(identifier_result);
+  auto call_sig_result = ParseCallSignature(false, true, false);
+  Handle<ir::Node> ret;
+
+  // public something(): void {
+  // -------------------------^ here
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
+    OpenBraceFound();
+    auto function_body_result = ParseFunctionBody(false);
+    CHECK_AST(function_body_result);
+    ret = New<ir::MemberFunctionView>(at.getter, at.setter, false,
+                                      mods,
+                                      identifier_result.or(Null()),
+                                      call_sig_result.or(Null()),
+                                      overloads,
+                                      function_body_result.or(Null()));
+  } else if (overloads) {
       
-      // Getter and setter is not allowed to overload function declaration.
-      if (at.getter || at.setter) {
-        ReportParseError(&info, YATSC_SOURCEINFO_ARGS)
-          << "overload is not allowed to getter and setter.";
-      }
-      ret = New<ir::MemberFunctionOverloadView>(mods, identifier_result.or(Null()), call_sig_result.or(Null()));
-      
-      if (IsLineTermination()) {
-        ConsumeLineTerminator();
-      } else {
-        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-          << "';' expected";
-        return Failed();
-      }
-    } else {
+    // Getter and setter is not allowed to overload function declaration.
+    if (at.getter || at.setter) {
       ReportParseError(&info, YATSC_SOURCEINFO_ARGS)
-        << "invalid member function definition";
+        << "overload is not allowed to getter and setter.";
+    }
+    ret = New<ir::MemberFunctionOverloadView>(mods, identifier_result.or(Null()), call_sig_result.or(Null()));
+      
+    if (IsLineTermination()) {
+      ConsumeLineTerminator();
+    } else {
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "';' expected";
       return Failed();
     }
-    ret->SetInformationForNode(mods);
-    return Success(ret);
+  } else {
+    ReportParseError(&info, YATSC_SOURCEINFO_ARGS)
+      << "invalid member function definition";
+    return Failed();
   }
-
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-    << "identifier expected";
-  return Failed();
+  ret->SetInformationForNode(mods);
+  return Success(ret);
 }
 
 
@@ -2099,13 +2092,7 @@ ParseResult Parser<UCharInputIterator>::ParseGeneratorMethodOverloads(Handle<ir:
   bool first = true;
   
   while (1) {
-    Token info = *cur_token();
-    RecordedParserState rps = parser_state();
-    Next();
-    
-    if (IsMemberFunctionOverloadsBegin(&info)) {
-      RestoreParserState(rps);
-      
+    if (IsMemberFunctionOverloadsBegin(cur_token())) {      
       auto generator_result = ParseGeneratorMethodOverloadOrImplementation(first, mods, overloads);
       CHECK_AST(generator_result);
       
@@ -2153,42 +2140,37 @@ ParseResult Parser<UCharInputIterator>::ParseGeneratorMethodOverloadOrImplementa
   }
   
     
-  if (cur_token()->Is(TokenKind::kIdentifier)) {
-    auto identifier_result = ParseIdentifier();
-    auto call_sig_result = ParseCallSignature(false, false);
-    Handle<ir::Node> ret;
+  auto identifier_result = ParseLiteralPropertyName();
+  CHECK_AST(identifier_result);
+  auto call_sig_result = ParseCallSignature(false, true, false);
+  Handle<ir::Node> ret;
       
-    if (cur_token()->Is(TokenKind::kLeftBrace)) {
-      OpenBraceFound();
-      auto function_body_result = ParseFunctionBody(false);
-      CHECK_AST(function_body_result);
-      ret = New<ir::MemberFunctionView>(mods,
-                                        identifier_result.or(Null()),
-                                        call_sig_result.or(Null()),
-                                        overloads,
-                                        function_body_result.or(Null()));
-    } else if (overloads) {
-      ret = New<ir::MemberFunctionOverloadView>(mods, identifier_result.or(Null()), call_sig_result.or(Null()));
-      if (IsLineTermination()) {
-        ConsumeLineTerminator();
-      } else {
-        ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-          << "';' expected.";
-        return Failed();
-      }
+  if (cur_token()->Is(TokenKind::kLeftBrace)) {
+    OpenBraceFound();
+    auto function_body_result = ParseFunctionBody(true);
+    CHECK_AST(function_body_result);
+    ret = New<ir::MemberFunctionView>(mods,
+                                      identifier_result.or(Null()),
+                                      call_sig_result.or(Null()),
+                                      overloads,
+                                      function_body_result.or(Null()));
+  } else if (overloads) {
+    ret = New<ir::MemberFunctionOverloadView>(mods, identifier_result.or(Null()), call_sig_result.or(Null()));
+    if (IsLineTermination()) {
+      ConsumeLineTerminator();
     } else {
-      ReportParseError(&info, YATSC_SOURCEINFO_ARGS)
-        << "invalid member function definition";
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "';' expected.";
       return Failed();
     }
-      
-    ret->SetInformationForNode(mods);
-    return Success(ret);
+  } else {
+    ReportParseError(&info, YATSC_SOURCEINFO_ARGS)
+      << "invalid member function definition";
+    return Failed();
   }
-
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-    << "identifier expected";
-  return Failed();
+      
+  ret->SetInformationForNode(mods);
+  return Success(ret);
 }
 
 
@@ -2200,37 +2182,33 @@ ParseResult Parser<UCharInputIterator>::ParseMemberVariable(Handle<ir::Node> mod
     cur_token()->set_type(TokenKind::kIdentifier);
   }
   
-  if (cur_token()->Is(TokenKind::kIdentifier)) {
-    auto identifier_result = ParseIdentifier();
-    ParseResult value_result;
-    ParseResult type_result;
-    
-    if (cur_token()->Is(TokenKind::kColon)) {
-      Next();
-      type_result = ParseTypeExpression();
-    }
-    
-    if (cur_token()->Is(TokenKind::kAssign)) {
-      Next();
-      value_result = ParseExpression(true, false);
-    }
-    
-    auto member_variable = New<ir::MemberVariableView>(mods,
-                                                       identifier_result.or(Null()),
-                                                       type_result.or(Null()),
-                                                       value_result.or(Null()));
-    member_variable->SetInformationForNode(mods);
-    return Success(member_variable);
-  }
 
-  ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-    << "'identifier' expected.";
-  return Failed();
+  auto identifier_result = ParseLiteralPropertyName();
+  CHECK_AST(identifier_result);
+  ParseResult value_result;
+  ParseResult type_result;
+    
+  if (cur_token()->Is(TokenKind::kColon)) {
+    Next();
+    type_result = ParseTypeExpression();
+  }
+    
+  if (cur_token()->Is(TokenKind::kAssign)) {
+    Next();
+    value_result = ParseExpression();
+  }
+    
+  auto member_variable = New<ir::MemberVariableView>(mods,
+                                                     identifier_result.or(Null()),
+                                                     type_result.or(Null()),
+                                                     value_result.or(Null()));
+  member_variable->SetInformationForNode(mods);
+  return Success(member_variable);
 }
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export) {
+ParseResult Parser<UCharInputIterator>::ParseFunctionOverloads(bool declaration, bool is_export) {
   auto overloads = New<ir::FunctionOverloadsView>();
   bool first = true;
   
@@ -2245,7 +2223,7 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool 
     first = false;
     
     if (cur_token()->Is(TokenKind::kFunction)) {
-      auto function_overloads_result = ParseFunctionOverloadOrImplementation(overloads, yield, has_default, declaration);
+      auto function_overloads_result = ParseFunctionOverloadOrImplementation(overloads, declaration);
       CHECK_AST(function_overloads_result);
       
       if (function_overloads_result.value()->HasFunctionOverloadView()) {
@@ -2279,11 +2257,10 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionOverloads(bool yield, bool 
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration) {
+ParseResult Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool declaration) {
   LOG_PHASE(ParseFunctionOverloadOrImplementation);
   if (cur_token()->Is(TokenKind::kFunction)) {
     bool generator = false;
-    bool success = true;
     
     Token info = *cur_token();
     Next();
@@ -2303,11 +2280,11 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionOverloadOrImplementation(Ha
         << "function name required.";
     }
     
-    auto call_sig_result = ParseCallSignature(false, false);
+    auto call_sig_result = ParseCallSignature(false, true, false);
     Handle<ir::Node> ret;
     if (cur_token()->Is(TokenKind::kLeftBrace)) {
       OpenBraceFound();
-      auto function_body_result = ParseFunctionBody(yield? yield: generator);
+      auto function_body_result = ParseFunctionBody(generator);
       ret = New<ir::FunctionView>(overloads,
                                   identifier_result.or(Null()),
                                   call_sig_result.or(Null()),
@@ -2356,7 +2333,6 @@ ParseResult Parser<UCharInputIterator>::ParseParameterList(bool accesslevel_allo
   }
     
   bool has_rest = false;
-  bool success = true;
     
   while (1) {
     if (has_rest) {
@@ -2460,12 +2436,14 @@ ParseResult Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslev
           << "default parameter not allowed in rest parameter.";
       }
       Next();
-      auto assignment_expr_result = ParseAssignmentExpression(true, false);
+
+      auto assignment_expr_result = ParseAssignmentExpression();
+      
       CHECK_AST(assignment_expr_result);
       pv->set_value(assignment_expr_result.value());
     }
     return Success(pv);
-  } else if (Token::IsKeyword(cur_token()->type())) {
+  } else if (cur_token()->IsKeyword()) {
     ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
       << "keyword '" << cur_token()->ToString() << "' is not allowed in formal parameter list.";
     return Failed();
@@ -2478,7 +2456,7 @@ ParseResult Parser<UCharInputIterator>::ParseParameter(bool rest, bool accesslev
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
+ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool generator) {
   LOG_PHASE(ParseFunctionBody);
 
   Handle<ir::Scope> scope = NewScope();
@@ -2486,8 +2464,6 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
   auto block = New<ir::BlockView>(scope);
   block->SetInformationForNode(cur_token());
   Next();
-
-  bool success = true;
     
   while (1) {
     if (cur_token()->Is(TokenKind::kRightBrace)) {
@@ -2502,8 +2478,20 @@ ParseResult Parser<UCharInputIterator>::ParseFunctionBody(bool yield) {
       UnexpectedEndOfInput(cur_token(), YATSC_SOURCEINFO_ARGS);
       return Failed();
     }
+
+    if (generator) {
+      state_.EnterGenerator();
+    } else {
+      state_.EnterFunction();
+    }
+
+    auto stmt_list_result = ParseStatementListItem();
     
-    auto stmt_list_result = ParseStatementListItem(yield, true, false, false);
+    if (generator) {
+      state_.ExitGenerator();
+    } else {
+      state_.ExitFunction();
+    }
     
     if (!stmt_list_result) {
       SKIP_IF_ERROR_RECOVERY_ENABLED(false, TokenKind::kRightBrace);

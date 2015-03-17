@@ -31,14 +31,15 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
 
   bool success = true;
   
-  while (1) {
+  while (cur_token()->Isnt(TokenKind::kEof)) {
+    
     Handle<ir::ExportView> export_view;
     if (cur_token()->type() == TokenKind::kExport) {
       Token info = *cur_token();
       Next();
       if (cur_token()->type() == TokenKind::kAssign) {
         Next();
-        auto assignment_expr_result = ParseAssignmentExpression(true, false);
+        auto assignment_expr_result = ParseAssignmentExpression();
         SKIP_TOKEN_OR(assignment_expr_result, success, TokenKind::kLineTerminator) {
           ret->InsertLast(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
         }
@@ -74,10 +75,6 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
       }
 
       ret->InsertLast(parse_result.value());
-    }
-    
-    if (cur_token()->type() == TokenKind::kEof) {
-      break;
     }
   }
   return Success(ret);
@@ -119,11 +116,16 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(Token* 
   LOG_PHASE(ParseAmbientVariableDeclaration);
   if (cur_token()->Is(TokenKind::kVar)) {
     Next();
+
+    if (cur_token()->Is(TokenKind::kNan)) {
+      cur_token()->set_type(TokenKind::kIdentifier);
+    }
+    
     if (cur_token()->Is(TokenKind::kIdentifier)) {
 
       return ParseIdentifier() >>= [&](Handle<ir::Node> identifier) {
         ParseResult type_annotation_result;
-        if (cur_token()->type() == TokenKind::kColon) {
+        if (cur_token()->Is(TokenKind::kColon)) {
           Next();
           type_annotation_result = ParseTypeExpression();
           CHECK_AST(type_annotation_result);
@@ -156,7 +158,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(Token* 
           Next();
         }
         
-        return ParseCallSignature(false, false) >>= [&](Handle<ir::Node> call_sig) {
+        return ParseCallSignature(false, true, false) >>= [&](Handle<ir::Node> call_sig) {
           auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier, call_sig);
           ret->SetInformationForNode(info);
           return Success(ret);
@@ -223,6 +225,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassBody() {
     bool success = true;
 
     while (1) {
+      CheckEof(YATSC_SOURCEINFO_ARGS);
       if (cur_token()->Is(TokenKind::kRightBrace)) {
         CloseBraceFound();
         BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
@@ -300,7 +303,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node>
         cur_token()->value()->Equals("constructor")) {
       Token info = *cur_token();
       Next();
-      auto call_sig_result = ParseCallSignature(true, false);
+      auto call_sig_result = ParseCallSignature(true, false, false);
       CHECK_AST(call_sig_result);
       auto ret = New<ir::AmbientConstructorView>(mods, call_sig_result.value());
       ret->SetInformationForNode(mods);
@@ -321,7 +324,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::No
     if (cur_token()->Is(TokenKind::kIdentifier)) {
       Token info = *cur_token();
       auto identifier_result = ParseIdentifier();
-      auto call_sig_result = ParseCallSignature(true, false);
+      auto call_sig_result = ParseCallSignature(true, true, false);
       auto ret = New<ir::AmbientMemberFunctionView>(accessor_type->getter,
                                                     accessor_type->setter,
                                                     false,
@@ -356,7 +359,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::N
       Token info = *cur_token();
       auto identifier_result = ParseIdentifier();
       CHECK_AST(identifier_result);
-      auto call_sig_result = ParseCallSignature(true, false);
+      auto call_sig_result = ParseCallSignature(true, true, false);
       CHECK_AST(call_sig_result);
       auto ret = New<ir::AmbientMemberFunctionView>(false, false, true, mods,
                                                     identifier_result.value(),
@@ -429,6 +432,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
     bool success = true;
     
     while (1) {
+      CheckEof(YATSC_SOURCEINFO_ARGS);
       auto ambient_enum_prop_result = ParseAmbientEnumProperty();
       SKIP_TOKEN_OR(ambient_enum_prop_result, success, TokenKind::kRightBrace) {
         ret->InsertLast(ambient_enum_prop_result.value());
@@ -456,7 +460,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumBody() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientEnumProperty() {
   LOG_PHASE(ParseAmbientEnumProperty);
-  auto prop_result = ParsePropertyName(false, false);
+  auto prop_result = ParsePropertyName();
   CHECK_AST(prop_result);
   if (cur_token()->type() == TokenKind::kAssign) {
     Next();
@@ -519,6 +523,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
     bool success = true;
     
     while (1) {
+      CheckEof(YATSC_SOURCEINFO_ARGS);
       if (cur_token()->Is(TokenKind::kRightBrace)) {
         CloseBraceFound();
         BalanceEnclosureIfNotBalanced(cur_token(), TokenKind::kRightBrace, true);
@@ -528,7 +533,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
       } else if (cur_token()->Is(TokenKind::kIllegal)) {
         SkipIllegalTokens();
       } else if (cur_token()->OneOf({TokenKind::kExport, TokenKind::kVar, TokenKind::kClass, TokenKind::kInterface,
-              TokenKind::kEnum, TokenKind::kImport, TokenKind::kIdentifier})) {
+              TokenKind::kEnum, TokenKind::kImport, TokenKind::kIdentifier, TokenKind::kFunction})) {
         auto ambient_module_element_result = ParseAmbientModuleElement(external);
         if (!ambient_module_element_result) {
           SkipTokensUntil({TokenKind::kRightBrace, TokenKind::kLineTerminator}, false);
@@ -561,6 +566,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
     Next();
 
     while (cur_token()->Is(TokenKind::kExport)) {
+      CheckEof(YATSC_SOURCEINFO_ARGS);
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
         << "export already seen.";
       Next();
@@ -568,7 +574,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
     
     if (external && cur_token()->type() == TokenKind::kAssign) {
       Next();
-      auto assignment_expr_result = ParseAssignmentExpression(true, false);
+      auto assignment_expr_result = ParseAssignmentExpression();
       CHECK_AST(assignment_expr_result);
       return Success(CreateExportView(assignment_expr_result.value(), ir::Node::Null(), &info, true));
     } else if (cur_token()->type() == TokenKind::kAssign) {

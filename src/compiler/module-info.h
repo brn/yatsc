@@ -45,19 +45,19 @@ class ModuleInfo {
         typescript_(typescript) {}
 
 
-  YATSC_GETTER(Handle<SourceStream>, source_stream, source_stream_);
+  YATSC_GETTER(Handle<SourceStream>, source_stream, source_stream_)
 
 
-  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, error_reporter_);
+  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, error_reporter_)
     
   
-  YATSC_CONST_GETTER(const char*, module_name, module_name_.c_str());
+  YATSC_CONST_GETTER(const char*, module_name, module_name_.c_str())
 
   
-  YATSC_CONST_GETTER(const String&, module_name_string, module_name_);
+  YATSC_CONST_GETTER(const String&, module_name_string, module_name_)
 
 
-  YATSC_CONST_GETTER(bool, typescript, typescript_);
+  YATSC_CONST_GETTER(bool, typescript, typescript_)
 
 
   bool IsDefinitionFile() const;

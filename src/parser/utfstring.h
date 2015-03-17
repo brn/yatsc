@@ -231,22 +231,22 @@ class UtfString {
 
   YATSC_INLINE const char* utf8_value() const {
     return utf_value_cache_.utf8_value().c_str();
-  };
-
+  }
+  
 
   YATSC_INLINE const UC16* utf16_value() const {
     return utf_value_cache_.utf16_value().c_str();
-  };
+  }
 
 
   YATSC_INLINE const Utf8String& utf8_string() const {
     return utf_value_cache_.utf8_value();
-  };
-
+  }
+  
 
   YATSC_INLINE const Utf16String& utf16_string() const {
     return utf_value_cache_.utf16_value();
-  };
+  }
 
 
   YATSC_INLINE size_t utf8_length() const {

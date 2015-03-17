@@ -31,16 +31,17 @@
 #include "../compiler/module-info.h"
 #include "../utils/path.h"
 #include "../utils/maybe.h"
+#include "./parser-state.h"
 
 
 namespace yatsc {
 
 
-#define SKIP_IF_ERROR_RECOVERY_ENABLED(advance_to_next, ...)    \
-  if (IsErrorRecorveryEnabled()) {                              \
-    SkipTokensUntil({__VA_ARGS__}, advance_to_next);           \
-  } else {                                                      \
-    return Failed();                                            \
+#define SKIP_IF_ERROR_RECOVERY_ENABLED(advance_to_next, ...)  \
+  if (IsErrorRecorveryEnabled()) {                            \
+    SkipTokensUntil({__VA_ARGS__}, advance_to_next);          \
+  } else {                                                    \
+    return Failed();                                          \
   }
 
 
@@ -194,7 +195,7 @@ class Parser: public ParserBase {
     } else {
       return ParseModule();
     }
-  };
+  }
 
  private:  
   
@@ -295,31 +296,36 @@ class Parser: public ParserBase {
                         const Token& current,
                         const Token& prev,
                         Handle<ir::Scope> current_scope,
-                        EnclosureBalancer enclosure_balancer_,
+                        EnclosureBalancer enclosure_balancer,
+                        const ParserState& state,
                         size_t error_count)
         : rcp_(rcp),
           current_(current),
           prev_(prev),
           scope_(current_scope),
-          enclosure_balancer_(enclosure_balancer_),
+          enclosure_balancer_(enclosure_balancer),
+          state_(state),
           error_count_(error_count) {}
 
-    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_);
+    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_)
 
 
-    YATSC_CONST_GETTER(const Token&, current, current_);
+    YATSC_CONST_GETTER(const Token&, current, current_)
 
 
-    YATSC_CONST_GETTER(const Token&, prev, prev_);
+    YATSC_CONST_GETTER(const Token&, prev, prev_)
 
 
-    YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_);
-
-    
-    YATSC_CONST_GETTER(const EnclosureBalancer&, enclosure_balancer, enclosure_balancer_);
+    YATSC_CONST_GETTER(Handle<ir::Scope>, scope, scope_)
 
     
-    YATSC_CONST_GETTER(size_t, error_count, error_count_);
+    YATSC_CONST_GETTER(const EnclosureBalancer&, enclosure_balancer, enclosure_balancer_)
+
+
+    YATSC_CONST_GETTER(const ParserState&, state, state_)
+
+    
+    YATSC_CONST_GETTER(size_t, error_count, error_count_)
 
    private:
     typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
@@ -327,6 +333,7 @@ class Parser: public ParserBase {
     Token prev_;
     Handle<ir::Scope> scope_;
     EnclosureBalancer enclosure_balancer_;
+    ParserState state_;
     size_t error_count_;
   };
 
@@ -338,10 +345,10 @@ class Parser: public ParserBase {
         parse_result_(parse_result),
         parser_state_(rps) {}
 
-    YATSC_GETTER(ParseResult, parse_result, parse_result_);
+    YATSC_GETTER(ParseResult, parse_result, parse_result_)
 
 
-    YATSC_GETTER(RecordedParserState, parser_state, parser_state_);
+    YATSC_GETTER(RecordedParserState, parser_state, parser_state_)
     
    private:
     ParseResult parse_result_;
@@ -376,16 +383,20 @@ class Parser: public ParserBase {
   class SyntaxErrorBuilder: private Static {
    public:
     template <typename T>
-    static Handle<ErrorDescriptor> Build(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+    static ErrorDescriptor& Build(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
       if (cplusplus_info) {
         return module_info->error_reporter()->SyntaxError(item) << filename << ":" << line << "\n";
       }
       return module_info->error_reporter()->SyntaxError(item);
     }
 
+    static ErrorDescriptor& Build(Handle<ModuleInfo> module_info) {
+      return module_info->error_reporter()->Ignore();
+    }
+
 
     template <typename T>
-    static Handle<ErrorDescriptor> BuildWarning(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+    static ErrorDescriptor& BuildWarning(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
       if (cplusplus_info) {
         return module_info->error_reporter()->Warning(item) << filename << ":" << line << "\n";
       }
@@ -420,7 +431,7 @@ class Parser: public ParserBase {
   }
 
 
-  YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_);
+  YATSC_PROPERTY(Handle<ir::Scope>, current_scope, scope_)
 
 
   Handle<ir::Scope> NewScope() {return Heap::NewHandle<ir::Scope>(current_scope(), global_scope_);}
@@ -438,7 +449,10 @@ class Parser: public ParserBase {
   void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token);
 
 
-  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NO_SE {return Just(result);}
+  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NOEXCEPT {
+    state_.ExitErrorRecovery();
+    return Just(result);
+  }
   
 
   YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
@@ -487,11 +501,11 @@ class Parser: public ParserBase {
 
 
   template <typename T>
-  Handle<ErrorDescriptor> ReportParseError(T item, const char* filename, int line);
+  ErrorDescriptor& ReportParseError(T item, const char* filename, int line);
 
 
   template <typename T>
-  Handle<ErrorDescriptor> ReportParseWarning(T item, const char* filename, int line);
+  ErrorDescriptor& ReportParseWarning(T item, const char* filename, int line);
 
   
   template <typename T>
@@ -504,8 +518,10 @@ class Parser: public ParserBase {
   void TryConsume(TokenKind kind) {if (cur_token()->Is(kind)) {Next();}}
 
 
-  void SkipToNextStatement();
-  
+  void CheckEof(const char* filename, int line) {if (cur_token()->Is(TokenKind::kEof)) {UnexpectedEndOfInput(&prev_token_info_, filename, line);}};
+
+
+  void SkipToNextStatement();  
 
   int record_mode_;
   int error_recovery_;
@@ -519,17 +535,18 @@ class Parser: public ParserBase {
   IntrusiveRbTree<SourcePosition, Parsed*> memo_;
   Handle<ir::GlobalScope> global_scope_;
   EnclosureBalancer enclosure_balancer_;
+  ParserState state_;
   
 
  VISIBLE_FOR_TESTING:
 
-  ParseResult ParseStatementListItem(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseStatementListItem();
 
-  ParseResult ParseStatementList(bool yield, bool has_return);
+  ParseResult ParseStatementList();
 
-  ParseResult ParseStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseStatement();
 
-  ParseResult ParseBlockStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseBlockStatement();
 
   ParseResult ParseModuleStatement();
 
@@ -537,77 +554,77 @@ class Parser: public ParserBase {
 
   ParseResult ParseExportStatement();
 
-  ParseResult ParseDeclaration(bool error, bool yield, bool has_default);
+  ParseResult ParseDeclaration(bool error);
   
   ParseResult ParseDebuggerStatement();
 
-  ParseResult ParseLexicalDeclaration(bool in, bool yield);
+  ParseResult ParseLexicalDeclaration();
 
-  ParseResult ParseLexicalBinding(bool const_decl, bool in, bool yield);
+  ParseResult ParseLexicalBinding(bool const_decl);
 
-  ParseResult ParseBindingPattern(bool yield, bool generator_parameter);
+  ParseResult ParseBindingPattern();
 
-  ParseResult ParseObjectBindingPattern(bool yield, bool generator_parameter);
+  ParseResult ParseObjectBindingPattern();
 
-  ParseResult ParseArrayBindingPattern(bool yield, bool generator_parameter);
+  ParseResult ParseArrayBindingPattern();
 
-  ParseResult ParseBindingProperty(bool yield, bool generator_parameter);
+  ParseResult ParseBindingProperty();
 
-  ParseResult ParseBindingElement(bool yield, bool generator_parameter);
+  ParseResult ParseBindingElement();
 
-  ParseResult ParseBindingIdentifier(bool default_allowed, bool in, bool yield);
+  ParseResult ParseBindingIdentifier();
 
-  ParseResult ParseVariableStatement(bool in, bool yield);
+  ParseResult ParseVariableStatement();
   
-  ParseResult ParseVariableDeclaration(bool in, bool yield);
+  ParseResult ParseVariableDeclaration();
 
-  ParseResult ParseIfStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseIfStatement();
 
-  ParseResult ParseWhileStatement(bool yield, bool has_return);
+  ParseResult ParseWhileStatement();
 
-  ParseResult ParseDoWhileStatement(bool yield, bool has_return);
+  ParseResult ParseDoWhileStatement();
 
-  ParseResult ParseForStatement(bool yield, bool has_return);
+  ParseResult ParseForStatement();
 
-  ParseResult ParseForIteration(Handle<ir::Node> reciever, Token*, bool yield, bool has_return);
+  ParseResult ParseForIteration(Handle<ir::Node> reciever, Token*);
 
-  ParseResult ParseIterationBody(bool yield, bool has_return);
+  ParseResult ParseIterationBody();
 
-  ParseResult ParseContinueStatement(bool yield);
+  ParseResult ParseContinueStatement();
 
-  ParseResult ParseBreakStatement(bool yield);
+  ParseResult ParseBreakStatement();
 
-  ParseResult ParseReturnStatement(bool yield);
+  ParseResult ParseReturnStatement();
 
-  ParseResult ParseWithStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseWithStatement();
 
-  ParseResult ParseSwitchStatement(bool yield, bool has_return, bool continuable);
+  ParseResult ParseSwitchStatement();
 
-  ParseResult ParseCaseClauses(bool yield, bool has_return, bool continuable);
+  ParseResult ParseCaseClauses();
 
-  ParseResult ParseLabelledStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseLabelledStatement();
 
-  ParseResult ParseLabelledItem(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseLabelledItem();
 
   ParseResult ParseThrowStatement();
 
-  ParseResult ParseTryStatement(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseTryStatement();
 
-  ParseResult ParseCatchBlock(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseCatchBlock();
 
-  ParseResult ParseFinallyBlock(bool yield, bool has_return, bool breakable, bool continuable);
+  ParseResult ParseFinallyBlock();
 
   ParseResult ParseInterfaceDeclaration();
 
-  ParseResult ParseEnumDeclaration(bool yield, bool has_default);
+  ParseResult ParseEnumDeclaration();
 
-  ParseResult ParseEnumBody(bool yield, bool has_default);
+  ParseResult ParseEnumBody();
 
-  ParseResult ParseEnumProperty(bool yield, bool has_default);
+  ParseResult ParseEnumProperty();
 
   Handle<ir::Node> CreateEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
   
-  ParseResult ParseClassDeclaration(bool yield, bool has_default);
+  ParseResult ParseClassDeclaration();
 
   ParseResult ParseClassBases();
 
@@ -638,15 +655,15 @@ class Parser: public ParserBase {
 
   ParseResult ParseMemberVariable(Handle<ir::Node> mods);
 
-  ParseResult ParseFunctionOverloads(bool yield, bool has_default, bool declaration, bool is_export);
+  ParseResult ParseFunctionOverloads(bool declaration, bool is_export);
 
-  ParseResult ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool yield, bool has_default, bool declaration);
+  ParseResult ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool declaration);
  
   ParseResult ParseParameterList(bool accesslevel_allowed);
   
   ParseResult ParseParameter(bool rest, bool accesslevel_allowed);
 
-  ParseResult ParseFunctionBody(bool yield);
+  ParseResult ParseFunctionBody(bool generator);
 
   ParseResult ParseTypeExpression();
 
@@ -660,6 +677,8 @@ class Parser: public ParserBase {
 
   ParseResult ParseTypeParameters();
 
+  ParseResult ParseTypeParameter();
+
   ParseResult ParseTypeQueryExpression();
 
   ParseResult ParseArrayType(Handle<ir::Node> type_expr);
@@ -668,52 +687,64 @@ class Parser: public ParserBase {
 
   ParseResult ParseObjectTypeElement();
 
-  ParseResult ParseCallSignature(bool accesslevel_allowed, bool annotation);
+  ParseResult ParseCallSignature(bool accesslevel_allowed, bool type_annotation, bool arrow_glyph_expected);
 
   ParseResult ParseIndexSignature();
+
+  // Parse expression.
+  ParseResult ParseCoveredExpression();
+
+  // Parse expression.
+  ParseResult ParseAsArrowFunction(Handle<ir::Node> type_list, const ir::Node::List&, Handle<ir::Node> ret_type);
+
+  // Parse expression.
+  ParseResult ParseAsTypeAssertion(Handle<ir::Node> type_list, const ir::Node::List&);
+
+  // Parse expression.
+  ParseResult ParseAsExpression(const ir::Node::List&);
   
   // Parse expression.
-  ParseResult ParseExpression(bool in, bool yield);
+  ParseResult ParseExpression();
 
   // Parse destructuring assignment.
-  ParseResult ParseAssignmentPattern(bool yield);
+  ParseResult ParseAssignmentPattern();
 
   // Parse destructuring assignment object pattern.
-  ParseResult ParseObjectAssignmentPattern(bool yield);
+  ParseResult ParseObjectAssignmentPattern();
 
   // Parse destructuring assignment array pattern.
   // To simplify, we parse AssignmentElementList together.
-  ParseResult ParseArrayAssignmentPattern(bool yield);
+  ParseResult ParseArrayAssignmentPattern();
 
   // Parse destructuring assignment object pattern properties.
-  ParseResult ParseAssignmentPropertyList(bool yield);
+  ParseResult ParseAssignmentPropertyList();
 
   // Parse destructuring assignment object pattern property.
-  ParseResult ParseAssignmentProperty(bool yield);
+  ParseResult ParseAssignmentProperty();
 
   // Parse destructuring assignment array pattern element.
-  ParseResult ParseAssignmentElement(bool yield);
+  ParseResult ParseAssignmentElement();
 
   // Parse destructuring assignment array pattern rest element.
-  ParseResult ParseAssignmentRestElement(bool yield);
+  ParseResult ParseAssignmentRestElement();
 
   // Parse destructuring assignment target node.
-  ParseResult ParseDestructuringAssignmentTarget(bool yield);
+  ParseResult ParseDestructuringAssignmentTarget();
 
   // Parse assignment expression.
-  ParseResult ParseAssignmentExpression(bool in, bool yield);
+  ParseResult ParseAssignmentExpression();
 
-  ParseResult ParseArrowFunction(bool in, bool yield, Handle<ir::Node> identifier);
+  ParseResult ParseArrowFunction(Handle<ir::Node> identifier);
 
-  ParseResult ParseArrowFunctionParameters(bool yield, Handle<ir::Node> identifier);
+  ParseResult ParseArrowFunctionParameters(Handle<ir::Node> identifier);
 
-  ParseResult ParseConciseBody(bool in, Handle<ir::Node> call_sig);
+  ParseResult ParseConciseBody(Handle<ir::Node> call_sig);
 
   // Parse conditional expression.
-  ParseResult ParseConditionalExpression(bool in, bool yield);
+  ParseResult ParseConditionalExpression();
 
 #define DEF_PARSE_BINARY_EXPR(name)                         \
-  ParseResult Parse##name##Expression(bool in, bool yield);
+  ParseResult Parse##name##Expression();
 
   DEF_PARSE_BINARY_EXPR(LogicalOR);
   DEF_PARSE_BINARY_EXPR(LogicalAND);
@@ -728,71 +759,69 @@ class Parser: public ParserBase {
 #undef DEF_PARSE_BINARY_EXPR
 
   // Parse unary expression.
-  ParseResult ParseUnaryExpression(bool yield);
+  ParseResult ParseUnaryExpression();
 
   // Parse postfix expression.
-  ParseResult ParsePostfixExpression(bool yield);
+  ParseResult ParsePostfixExpression();
 
-  ParseResult ParseLeftHandSideExpression(bool yield);
+  ParseResult ParseLeftHandSideExpression();
 
   // Parse new expression.
-  ParseResult ParseNewExpression(bool yield);
+  ParseResult ParseNewExpression();
   
   // Parse member expression.
-  ParseResult ParseMemberExpression(bool yield);
+  ParseResult ParseMemberExpression();
 
   // Parser getprop or getelem expression.
-  ParseResult ParseGetPropOrElem(Handle<ir::Node> node, bool yield, bool dot_only, bool is_error);
+  ParseResult ParseGetPropOrElem(Handle<ir::Node> node, bool dot_only, bool is_error);
 
-  ParseResult ParseCallExpression(bool yield);
+  ParseResult ParseCallExpression();
 
-  ParseResult BuildArguments(ParseResult type_arguments_result, Handle<ir::Node> args, bool success);
+  ParseResult BuildArguments(ParseResult type_arguments_result, Handle<ir::Node> args);
   
-  ParseResult ParseArguments(bool yield);
+  ParseResult ParseArguments();
 
-  ParseResult ParsePrimaryExpression(bool yield);
+  ParseResult ParsePrimaryExpression();
 
-  ParseResult ParseArrayLiteral(bool yield);
+  ParseResult ParseArrayLiteral();
 
-  ParseResult ParseSpreadElement(bool yield);
+  ParseResult ParseSpreadElement();
 
-  ParseResult ParseArrayComprehension(bool yield);
+  ParseResult ParseArrayComprehension();
 
-  ParseResult ParseComprehension(bool generator, bool yield);
+  ParseResult ParseComprehension(bool generator);
 
-  ParseResult ParseComprehensionTail(bool yield);
+  ParseResult ParseComprehensionTail();
 
-  ParseResult ParseComprehensionFor(bool yield);
+  ParseResult ParseComprehensionFor();
 
-  ParseResult ParseComprehensionIf(bool yield);
+  ParseResult ParseComprehensionIf();
 
-  ParseResult ParseGeneratorComprehension(bool yield);
+  ParseResult ParseGeneratorComprehension();
 
-  ParseResult ParseYieldExpression(bool in);
+  ParseResult ParseYieldExpression();
 
-  ParseResult ParseForBinding(bool yield);
+  ParseResult ParseForBinding();
 
-  ParseResult ParseObjectLiteral(bool yield);
+  ParseResult ParseObjectLiteral();
 
-  ParseResult ParsePropertyDefinition(bool yield);
+  ParseResult ParsePropertyDefinition();
 
-  ParseResult ParsePropertyName(bool yield, bool generator_parameter);
+  ParseResult ParsePropertyName();
 
   ParseResult ParseLiteralPropertyName();
 
-  ParseResult ParseComputedPropertyName(bool yield);
+  ParseResult ParseComputedPropertyName();
 
   ParseResult ParseLiteral();
 
   ParseResult ParseValueLiteral();
 
-  ParseResult ParseArrayInitializer(bool yield);
+  ParseResult ParseArrayInitializer();
 
-  ParseResult ParseIdentifierReference(bool yield);
+  ParseResult ParseIdentifierReference();
 
-  ParseResult ParseBindingIdentifier(bool default_allowed, bool yield);
-
-  ParseResult ParseLabelIdentifier(bool yield);
+  ParseResult ParseLabelIdentifier();
 
   ParseResult ParseIdentifier();
 
@@ -891,9 +920,39 @@ class Parser: public ParserBase {
 
   void DisableNestedGenericTypeScanMode() YATSC_NOEXCEPT {scanner_->DisableNestedGenericTypeScanMode();}
 
+  template <typename T>
+  ParseResult TryParse(T fn) {try {return fn();} catch(const FatalParseError e) {return Failed();}}
+  
   AccessorType ParseAccessor();
 
   void ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
+
+  class TokenPack {
+   public:
+    TokenPack(Token& current, Token& prev, const typename Scanner<UCharInputSourceIterator>::RecordedCharPosition& rcp)
+        : current_token_(current),
+          prev_token_(prev),
+          rcp_(rcp) {}
+
+    
+    YATSC_CONST_GETTER(Token, current_token, current_token_)
+    YATSC_CONST_GETTER(Token, prev_token, prev_token_)
+    YATSC_CONST_GETTER(typename Scanner<UCharInputSourceIterator>::RecordedCharPosition, rcp, rcp_)
+
+    Token current_token_;
+    Token prev_token_;
+    typename Scanner<UCharInputSourceIterator>::RecordedCharPosition rcp_;
+  };
+
+  TokenPack token_pack() {
+    return TokenPack(*current_token_info_, prev_token_info_, scanner_->char_position());
+  }
+
+  void RestoreTokens(const TokenPack& token_pack) {
+    *current_token_info_ = token_pack.current_token();
+    prev_token_info_ = token_pack.prev_token();
+    scanner_->RestoreScannerPosition(token_pack.rcp());
+  }
   
   
 #if defined(UNIT_TEST) || defined(DEBUG)

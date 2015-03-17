@@ -26,6 +26,8 @@
 #ifndef PARSER_SOURCE_POSITION_H
 #define PARSER_SOURCE_POSITION_H
 
+#include "../utils/utils.h"
+
 namespace yatsc {
 class SourcePosition: private Unmovable {
  public:
@@ -100,10 +102,10 @@ class SourcePosition: private Unmovable {
   }
 
 
-  YATSC_CONST_PROPERTY(size_t, start_col, start_col_);
-  YATSC_CONST_PROPERTY(size_t, end_col, end_col_);
-  YATSC_CONST_PROPERTY(size_t, start_line_number, start_line_number_);
-  YATSC_CONST_PROPERTY(size_t, end_line_number, end_line_number_);
+  YATSC_CONST_PROPERTY(size_t, start_col, start_col_)
+  YATSC_CONST_PROPERTY(size_t, end_col, end_col_)
+  YATSC_CONST_PROPERTY(size_t, start_line_number, start_line_number_)
+  YATSC_CONST_PROPERTY(size_t, end_line_number, end_line_number_)
 
 
  private:

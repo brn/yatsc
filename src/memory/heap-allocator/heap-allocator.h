@@ -45,7 +45,7 @@ class HeapReferenceCounterBase {
   }
 
 
-  virtual ~HeapReferenceCounterBase() {};
+  virtual ~HeapReferenceCounterBase() {}
 
   // Add reference.
   YATSC_INLINE void AddReference() YATSC_NO_SE;
@@ -78,7 +78,7 @@ class HeapReferenceCounter: public HeapReferenceCounterBase {
       : HeapReferenceCounterBase(ptr) {}
 
   
-  virtual ~HeapReferenceCounter() {};
+  virtual ~HeapReferenceCounter() {}
   
 
   // Release reference.
@@ -436,13 +436,13 @@ class UnsafeZoneAllocator {
     ~Zone() = default;
 
 
-    YATSC_GETTER(Byte*, heap, heap_);
+    YATSC_GETTER(Byte*, heap, heap_)
 
 
-    YATSC_CONST_GETTER(size_t, size, size_);
+    YATSC_CONST_GETTER(size_t, size, size_)
 
 
-    YATSC_PROPERTY(Zone*, next, next_);
+    YATSC_PROPERTY(Zone*, next, next_)
 
 
     YATSC_INLINE bool HasEnoughSize(size_t size) const {
@@ -491,9 +491,6 @@ class StandardAllocator: public std::allocator<T> {
 
 
   StandardAllocator() = default;
-
-  
-  StandardAllocator(const StandardAllocator& allocator) = default;
 
 
   template <typename U>

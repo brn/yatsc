@@ -26,14 +26,11 @@
 #include "../gtest-header.h"
 #include "../parser-util.h"
 
-bool breakable = false;
-bool returnable = false;
-bool continuable = false;
 #define STATEMENT_TEST(type, code, expected_str)                        \
-  PARSER_TEST("anonymous", ParseStatement(false, returnable, breakable, continuable), type, code, expected_str, false)
+  PARSER_TEST("anonymous", ParseStatement(), type, code, expected_str, false)
 
 #define STATEMENT_TEST_THROW(type, code)                                \
-  PARSER_TEST("anonymous",  ParseStatement(false, returnable, breakable, continuable), type, code, "", true)
+  PARSER_TEST("anonymous",  ParseStatement(), type, code, "", true)
 
 #define STATEMENT_TEST_ALL(code, expected_str)                          \
   []{STATEMENT_TEST(yatsc::LanguageMode::ES3, code, expected_str);}();  \
@@ -46,8 +43,7 @@ bool continuable = false;
   []{STATEMENT_TEST_THROW(yatsc::LanguageMode::ES6, code)}()
 
 
-TEST(StatementParseTest, ParseForStatement) {
-  breakable = true;
+TEST(StatementParseTest, ParseForStatement) {  
   STATEMENT_TEST_ALL("for (var i = 0; i < 10; i++) {}",
                      "[ForStatementView]\n"
                      "  [VariableDeclView]\n"
@@ -178,7 +174,6 @@ TEST(StatementParseTest, ParseForStatement) {
 
 
 TEST(StatementParseTest, ParseWhileStatement) {
-  breakable = true;
   STATEMENT_TEST_ALL("while (true) {}",
                      "[WhileStatementView]\n"
                      "  [TrueView]\n"
@@ -198,7 +193,6 @@ TEST(StatementParseTest, ParseWhileStatement) {
 
 
 TEST(StatementParseTest, ParseDoWhileStatement) {
-  breakable = true;
   STATEMENT_TEST_ALL("do {} while (true);",
                      "[DoWhileStatementView]\n"
                      "  [TrueView]\n"
@@ -218,7 +212,6 @@ TEST(StatementParseTest, ParseDoWhileStatement) {
 
 
 TEST(StatementParseTest, ParseIfStatement) {
-  breakable = false;
   STATEMENT_TEST_ALL("if (true) {}",
                      "[IfStatementView]\n"
                      "  [TrueView]\n"
@@ -252,7 +245,6 @@ TEST(StatementParseTest, ParseIfStatement) {
 
 
 TEST(StatementParseTest, ParseSwitchStatement) {
-  breakable = false;
   STATEMENT_TEST_ALL("switch (a) {case 1:break;case 2:break;default:{}}",
                      "[SwitchStatementView]\n"
                      "  [NameView][a]\n"
@@ -278,20 +270,17 @@ TEST(StatementParseTest, ParseSwitchStatement) {
 
 
 TEST(StatementParseTest, ParseThrowStatement) {
-  breakable = false;
   STATEMENT_TEST_ALL("throw a;",
                      "[ThrowStatementView]\n"
                      "  [NameView][a]");
 }
 
 TEST(StatementParseTest, ParseDebuggerStatement) {
-  breakable = false;
   STATEMENT_TEST_ALL("debugger;",
                      "[DebuggerView]");
 }
 
 TEST(StatementParseTest, ParseLabelledStatement) {
-  breakable = false;
   STATEMENT_TEST_ALL("LABEL:if(1){}",
                      "[LabelledStatementView]\n"
                      "  [NameView][LABEL]\n"
@@ -302,7 +291,6 @@ TEST(StatementParseTest, ParseLabelledStatement) {
 }
 
 TEST(StatementParseTest, ParseTryCatch) {
-  breakable = false;
   STATEMENT_TEST_ALL("try {} catch(e) {}",
                      "[TryStatementView]\n"
                      "  [BlockView]\n"
@@ -323,61 +311,79 @@ TEST(StatementParseTest, ParseTryCatch) {
 
 
 TEST(StatementParseTest, ParseReturnStatement) {
-  breakable = false;
-  returnable = true;
-  STATEMENT_TEST_ALL("return 0;",
-                     "[ReturnStatementView]\n"
-                     "  [NumberView][0]");
+  STATEMENT_TEST_ALL("var x = function() {return 0;}",
+                     "[VariableDeclView]\n"
+                     "  [VariableView]\n"
+                     "    [NameView][x]\n"
+                     "    [FunctionView]\n"
+                     "      [Empty]\n"
+                     "      [Empty]\n"
+                     "      [CallSignatureView]\n"
+                     "        [ParamList]\n"
+                     "        [Empty]\n"
+                     "        [Empty]\n"
+                     "      [BlockView]\n"
+                     "        [ReturnStatementView]\n"
+                     "          [NumberView][0]\n"
+                     "    [Empty]");
 
-  STATEMENT_TEST_ALL("return;",
-                     "[ReturnStatementView]\n"
-                     "  [Empty]");
+  STATEMENT_TEST_ALL("var x = function() {return;}",
+                     "[VariableDeclView]\n"
+                     "  [VariableView]\n"
+                     "    [NameView][x]\n"
+                     "    [FunctionView]\n"
+                     "      [Empty]\n"
+                     "      [Empty]\n"
+                     "      [CallSignatureView]\n"
+                     "        [ParamList]\n"
+                     "        [Empty]\n"
+                     "        [Empty]\n"
+                     "      [BlockView]\n"
+                     "        [ReturnStatementView]\n"
+                     "          [Empty]\n"
+                     "    [Empty]");
 
-  STATEMENT_TEST_ALL("return",
-                     "[ReturnStatementView]\n"
-                     "  [Empty]");
-
-  returnable = false;
   STATEMENT_THROW_TEST_ALL("return 0");
 }
 
 
 TEST(StatementParseTest, ParseBreakStatement) {
-  breakable = true;
-  returnable = false;
-  STATEMENT_TEST_ALL("break;",
-                     "[BreakStatementView]\n"
-                     "  [Empty]");
+  STATEMENT_TEST_ALL("while(true) {break;}",
+                     "[WhileStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "    [BreakStatementView]\n"
+                     "      [Empty]");
 
-  STATEMENT_TEST_ALL("break LABEL;",
-                     "[BreakStatementView]\n"
-                     "  [NameView][LABEL]");
+  STATEMENT_TEST_ALL("while(true) break LABEL;",
+                     "[WhileStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BreakStatementView]\n"
+                     "    [NameView][LABEL]");
 
-  breakable = false;
   STATEMENT_THROW_TEST_ALL("break;");
 }
 
 
 TEST(StatementParseTest, ParseContinueStatement) {
-  continuable = true;
-  STATEMENT_TEST_ALL("continue;",
-                     "[ContinueStatementView]\n"
-                     "  [Empty]");
+  STATEMENT_TEST_ALL("while(true) {continue;}",
+                     "[WhileStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [BlockView]\n"
+                     "    [ContinueStatementView]\n"
+                     "      [Empty]");
 
-  STATEMENT_TEST_ALL("continue LABEL;",
-                     "[ContinueStatementView]\n"
-                     "  [NameView][LABEL]");
+  STATEMENT_TEST_ALL("while(true) continue LABEL;",
+                     "[WhileStatementView]\n"
+                     "  [TrueView]\n"
+                     "  [ContinueStatementView]\n"
+                     "    [NameView][LABEL]");
 
-  continuable = false;
   STATEMENT_THROW_TEST_ALL("continue;");
 }
 
 
 TEST(StatementParseTest, ParseWithStatement) {
-  continuable = false;
-  breakable = false;
-  returnable = false;
-
   STATEMENT_TEST_ALL("with(x) {}",
                      "[WithStatementView]\n"
                      "  [NameView][x]\n"
@@ -386,10 +392,6 @@ TEST(StatementParseTest, ParseWithStatement) {
 
 
 TEST(StatementParseTest, ParseBlockStatement) {
-  continuable = false;
-  breakable = false;
-  returnable = false;
-
   STATEMENT_TEST_ALL("{var x = 0;var y = 0;}",
                      "[BlockView]\n"
                      "  [VariableDeclView]\n"

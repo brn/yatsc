@@ -68,13 +68,13 @@ class Symbol {
   
   ~Symbol() = default;
 
-  YATSC_CONST_GETTER(Unique::Id, id, value_->id());
+  YATSC_CONST_GETTER(Unique::Id, id, value_->id())
 
   
-  YATSC_PROPERTY(SymbolType, type, type_);
+  YATSC_PROPERTY(SymbolType, type, type_)
 
   
-  YATSC_CONST_GETTER(const Literal*, value, value_);
+  YATSC_CONST_GETTER(const Literal*, value, value_)
 
 
   size_t utf8_length() const {return value_->utf8_length();}
@@ -105,7 +105,7 @@ class Symbol {
 #define DECLARE_SYMBOL(t)                       \
   bool Is##t() {return SymbolType::k##t == type_;}
 
-  SYMBOL_LIST(DECLARE_SYMBOL, DECLARE_SYMBOL, DECLARE_SYMBOL);
+  SYMBOL_LIST(DECLARE_SYMBOL, DECLARE_SYMBOL, DECLARE_SYMBOL)
 #undef DECLARE_SYMBOL
   
  private:

@@ -105,7 +105,7 @@ namespace yatsc {namespace ir {
   DECLARE(TypeConstraintsView)                          \
   DECLARE(TypeArgumentsView)                            \
   DECLARE(TypeQueryView)                                \
-  DECLARE(ArrayTypeExprView)                            \  
+  DECLARE(ArrayTypeExprView)                            \
   DECLARE(ObjectTypeExprView)                           \
   DECLARE(UnionTypeExprView)                            \
   DECLARE(PropertySignatureView)                        \
@@ -247,17 +247,12 @@ class SourceInformation: private Unmovable{
   // Use default constructor.
   SourceInformation() = default;
   
-  /**
-   * @param line_number The line number of the current token.
-   * @param start_col The start column of the current token.
-   */
   SourceInformation(SourcePosition source_position)
       : source_position_(source_position) {}
 
 
-  /**
-   * Copy constructor
-   */
+
+  // Copy constructor
   SourceInformation(const SourceInformation& source_information)
       : source_position_(source_information.source_position_){}
 
@@ -270,7 +265,7 @@ class SourceInformation: private Unmovable{
 
 
   // Getter and setter for line_number_
-  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_);
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_position_)
   
  private:
   SourcePosition source_position_;
@@ -325,31 +320,31 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
 
 
   // Getter for node_type.
-  YATSC_CONST_GETTER(NodeType, node_type, node_type_);
+  YATSC_CONST_GETTER(NodeType, node_type, node_type_)
 
 
-  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_information_.source_position());
+  YATSC_CONST_GETTER(const SourcePosition&, source_position, source_information_.source_position())
 
 
   // Getter and setter for parent_node_.
-  YATSC_SETTER(Node*, parent_node, parent_node_);
+  YATSC_SETTER(Node*, parent_node, parent_node_)
 
 
-  YATSC_GETTER(Handle<Node>, parent_node, Handle<Node>(parent_node_));
+  YATSC_GETTER(Handle<Node>, parent_node, Handle<Node>(parent_node_))
 
 
   // Getter for children list.
-  YATSC_GETTER(List&, node_list, node_list_);
+  YATSC_GETTER(List&, node_list, node_list_)
 
   
   // Getter for size.
-  YATSC_CONST_GETTER(size_t, size, node_list_.size());
+  YATSC_CONST_GETTER(size_t, size, node_list_.size())
   
 
-  YATSC_CONST_GETTER(Handle<Node>, first_child, node_list_.front());
+  YATSC_CONST_GETTER(Handle<Node>, first_child, node_list_.front())
+  
 
-
-  YATSC_CONST_GETTER(Handle<Node>, last_child, node_list_.back());
+  YATSC_CONST_GETTER(Handle<Node>, last_child, node_list_.back())
 
 
   YATSC_INLINE List::iterator begin() {return node_list_.begin();}
@@ -605,7 +600,7 @@ class Node : public heap::HeapReference, private Uncopyable, private Unmovable {
   }
 
 
-#define DECLARE_CAST(ViewName) DEF_CAST(ViewName);
+#define DECLARE_CAST(ViewName) DEF_CAST(ViewName)
   // Define cast methods like To[ViewName].
   VIEW_LIST(DECLARE_CAST, DECLARE_CAST, DECLARE_CAST)
 #undef DEF_CAST
@@ -708,17 +703,17 @@ class PropertyNode: public Node, public Properties {
 // Represent block.
 class BlockView: public ScopedNode {
  public:
-  BlockView(Handle<Scope> scope): ScopedNode(NodeType::kBlockView, scope){};
+  BlockView(Handle<Scope> scope): ScopedNode(NodeType::kBlockView, scope){}
 };
 
 
 // Represent file root of script.
 class FileScopeView: public ScopedNode {
  public:
-  FileScopeView(Handle<Scope> scope, std::initializer_list<Handle<Node>> body): ScopedNode(NodeType::kFileScopeView, 0u, scope, body){};
+  FileScopeView(Handle<Scope> scope, std::initializer_list<Handle<Node>> body): ScopedNode(NodeType::kFileScopeView, 0u, scope, body){}
 
   
-  FileScopeView(Handle<Scope> scope): ScopedNode(NodeType::kFileScopeView, 0u, scope){};
+  FileScopeView(Handle<Scope> scope): ScopedNode(NodeType::kFileScopeView, 0u, scope){}
 };
 
 
@@ -732,7 +727,7 @@ class StatementView : public Node {
       Node(NodeType::kStatementView, 1u, {expr}) {}
 
   // Getter and Setter for exp.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 };
 
 
@@ -789,9 +784,9 @@ class ModuleDeclView: public PropertyNode {
       PropertyNode(NodeType::kModuleDeclView, 2u, {name, body}) {}
 
   
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -812,11 +807,11 @@ class ExportView: public Node {
       : Node(NodeType::kExportView, 2u) {}
 
   
-  NODE_PROPERTY(export_clause, 0);
+  NODE_PROPERTY(export_clause, 0)
 
-  NODE_PROPERTY(from_clause, 1);
+  NODE_PROPERTY(from_clause, 1)
 
-  NODE_FLAG_PROPERTY(default_export, 0);
+  NODE_FLAG_PROPERTY(default_export, 0)
 };
 
 
@@ -841,10 +836,10 @@ class NamedExportView: public Node {
       : Node(NodeType::kNamedExportView, 2u) {}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
-  NODE_PROPERTY(binding, 1);
+  NODE_PROPERTY(binding, 1)
 };
 
 
@@ -859,10 +854,10 @@ class ImportView: public Node {
       : Node(NodeType::kImportView, 2u) {}
 
   
-  NODE_PROPERTY(import_clause, 0);
+  NODE_PROPERTY(import_clause, 0)
 
   
-  NODE_PROPERTY(from_expr, 1);
+  NODE_PROPERTY(from_expr, 1)
 };
 
 
@@ -876,10 +871,10 @@ class ModuleImportView: public Node {
       : Node(NodeType::kModuleImportView, 2u) {}
 
 
-  NODE_PROPERTY(binding, 0);
+  NODE_PROPERTY(binding, 0)
 
 
-  NODE_PROPERTY(module_specifier, 1);
+  NODE_PROPERTY(module_specifier, 1)
 };
 
 
@@ -893,10 +888,10 @@ class ImportClauseView: public Node {
       : Node(NodeType::kImportClauseView, 2u) {}
 
 
-  NODE_PROPERTY(first, 0);
+  NODE_PROPERTY(first, 0)
 
 
-  NODE_PROPERTY(second, 1);
+  NODE_PROPERTY(second, 1)
 };
 
 
@@ -921,10 +916,10 @@ class NamedImportView: public Node {
       : Node(NodeType::kNamedImportView, 2u) {}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
-  NODE_PROPERTY(binding, 1);
+  NODE_PROPERTY(binding, 1)
 };
 
 
@@ -952,9 +947,9 @@ class VariableView : public Node {
       Node(NodeType::kVariableView, 3u) {}
 
 
-  NODE_PROPERTY(binding_identifier, 0);
-  NODE_PROPERTY(value, 1);
-  NODE_PROPERTY(type, 2);
+  NODE_PROPERTY(binding_identifier, 0)
+  NODE_PROPERTY(value, 1)
+  NODE_PROPERTY(type, 2)
 };
 
 
@@ -969,13 +964,13 @@ class IfStatementView : public Node {
       : Node(NodeType::kIfStatementView, 3u) {}
 
   // Getter and setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
   
   // Getter and Setter for then_block.
-  NODE_PROPERTY(then_block, 1);
+  NODE_PROPERTY(then_block, 1)
   
   // Getter and Setter for else_block.
-  NODE_PROPERTY(else_block, 2);
+  NODE_PROPERTY(else_block, 2)
 };
 
 
@@ -990,7 +985,7 @@ class ContinueStatementView: public Node {
       : Node(NodeType::kContinueStatementView, 1u, {labelled_identifier}) {}
 
 
-  NODE_PROPERTY(label, 0);
+  NODE_PROPERTY(label, 0)
 };
 
 
@@ -1006,7 +1001,7 @@ class ReturnStatementView: public Node {
   
 
   // Getter and Setter for expr_.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 };
 
 
@@ -1021,7 +1016,7 @@ class BreakStatementView: public Node {
 
 
   // Getter and Setter for label.
-  NODE_PROPERTY(label, 0);
+  NODE_PROPERTY(label, 0)
 };
 
 
@@ -1036,11 +1031,11 @@ class WithStatementView: public Node {
       : Node(NodeType::kWithStatementView, 2u) {}
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 
   
   // Getter and Setter for statement.
-  NODE_PROPERTY(statement, 1);
+  NODE_PROPERTY(statement, 1)
 };
 
 
@@ -1056,10 +1051,10 @@ class LabelledStatementView: public Node {
 
 
   // Getter and Setter for name_.
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
-  NODE_PROPERTY(statement, 1);
+  NODE_PROPERTY(statement, 1)
 };
 
 
@@ -1075,11 +1070,11 @@ class SwitchStatementView: public Node {
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
   
 
   // Getter and Setter for case_list.
-  NODE_PROPERTY(case_list, 1);
+  NODE_PROPERTY(case_list, 1)
 };
 
 
@@ -1106,11 +1101,11 @@ class CaseView: public Node {
 
 
   // Getter and Setter for condition.
-  NODE_PROPERTY(condition, 0);
+  NODE_PROPERTY(condition, 0)
 
 
   // Getter and Setter for body.
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -1138,15 +1133,15 @@ class TryStatementView: public Node {
 
 
   // Getter and Setter for statement.
-  NODE_PROPERTY(statement, 0);
+  NODE_PROPERTY(statement, 0)
 
   
   // Getter and Setter for catch_statement.
-  NODE_PROPERTY(catch_statement, 1);
+  NODE_PROPERTY(catch_statement, 1)
 
 
   // Getter and Setter for finally_statement.
-  NODE_PROPERTY(finally_statement, 2);
+  NODE_PROPERTY(finally_statement, 2)
 };
 
 
@@ -1161,11 +1156,11 @@ class CatchStatementView: public Node {
 
 
   // Getter and Setter for error_name.
-  NODE_PROPERTY(error_name, 0);
+  NODE_PROPERTY(error_name, 0)
 
 
   // Getter and Setter for body.
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -1180,7 +1175,7 @@ class FinallyStatementView: public Node {
       : Node(NodeType::kFinallyStatementView, 1u) {}
 
 
-  NODE_PROPERTY(body, 0);
+  NODE_PROPERTY(body, 0)
 };
 
 
@@ -1192,7 +1187,7 @@ class ThrowStatementView: public Node {
 
   
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 };
 
 
@@ -1206,19 +1201,19 @@ class ForStatementView: public Node {
 
 
   // Getter and Setter for cond_init.
-  NODE_PROPERTY(cond_init, 0);
+  NODE_PROPERTY(cond_init, 0)
 
 
   // Getter and Setter for cond_upd.
-  NODE_PROPERTY(cond_upd, 1);
+  NODE_PROPERTY(cond_upd, 1)
 
 
   // Getter and Setter for cond_cmp.
-  NODE_PROPERTY(cond_cmp, 2);
+  NODE_PROPERTY(cond_cmp, 2)
 
 
   // Getter and Setter for body .
-  NODE_PROPERTY(body, 3);
+  NODE_PROPERTY(body, 3)
 };
 
 
@@ -1233,15 +1228,15 @@ class ForInStatementView: public Node {
 
 
   // Getter and Setter for cond_init.
-  NODE_PROPERTY(property_name, 0);
+  NODE_PROPERTY(property_name, 0)
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 1);
+  NODE_PROPERTY(expr, 1)
 
   
   // Getter and Setter for body.
-  NODE_PROPERTY(body, 2);
+  NODE_PROPERTY(body, 2)
 };
 
 
@@ -1256,15 +1251,15 @@ class ForOfStatementView: public Node {
 
 
   // Getter and Setter for cond_init.
-  NODE_PROPERTY(property_name, 0);
+  NODE_PROPERTY(property_name, 0)
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 1);
+  NODE_PROPERTY(expr, 1)
 
   
   // Getter and Setter for body.
-  NODE_PROPERTY(body, 2);
+  NODE_PROPERTY(body, 2)
 };
 
 
@@ -1279,11 +1274,11 @@ class WhileStatementView: public Node {
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 
 
   // Getter and Setter for body.
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -1299,11 +1294,11 @@ class DoWhileStatementView: public Node {
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 
 
   // Getter and Setter for body .
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -1317,10 +1312,10 @@ class EnumDeclView: public Node {
       : Node(NodeType::kEnumDeclView, 2u) {}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -1344,10 +1339,10 @@ class EnumFieldView: public Node {
       : Node(NodeType::kEnumFieldView, 2u) {}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
-  NODE_PROPERTY(value, 1);
+  NODE_PROPERTY(value, 1)
 };
 
 
@@ -1360,9 +1355,9 @@ class ClassBasesView: public Node {
       : Node(NodeType::kClassBasesView, 2u) {}
 
   
-  NODE_PROPERTY(base, 0);
+  NODE_PROPERTY(base, 0)
 
-  NODE_PROPERTY(impls, 1);
+  NODE_PROPERTY(impls, 1)
 };
 
 
@@ -1383,19 +1378,19 @@ class ClassDeclView: public PropertyNode {
   
 
   // Getter and Setter for name.
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
   // Getter and Setter for type_parameters.
-  NODE_PROPERTY(type_parameters, 1);
+  NODE_PROPERTY(type_parameters, 1)
 
   
     // Getter and Setter for inheritance.
-  NODE_PROPERTY(bases, 2);
+  NODE_PROPERTY(bases, 2)
 
   
   // Getter and Setter for field_list.
-  NODE_PROPERTY(field_list, 3);
+  NODE_PROPERTY(field_list, 3)
 };
 
 
@@ -1409,7 +1404,7 @@ class ClassHeritageView: public Node {
       : Node(NodeType::kClassHeritageView, 1u) {}
 
 
-  NODE_PROPERTY(type_reference, 0);
+  NODE_PROPERTY(type_reference, 0)
 };
 
 
@@ -1443,7 +1438,7 @@ class ClassFieldAccessLevelView: public Node {
 
 
   // Getter and Setter for value.
-  NODE_PROPERTY(value, 0);
+  NODE_PROPERTY(value, 0)
 };
 
 
@@ -1455,13 +1450,13 @@ class MemberVariableView: public Node {
   MemberVariableView()
       : Node(NodeType::kMemberVariableView, 4u) {}
 
-  NODE_PROPERTY(accessor, 0);
+  NODE_PROPERTY(accessor, 0)
 
-  NODE_PROPERTY(name, 1);
+  NODE_PROPERTY(name, 1)
 
   NODE_PROPERTY(type, 2)
 
-  NODE_PROPERTY(value, 3);
+  NODE_PROPERTY(value, 3)
 };
 
 
@@ -1486,15 +1481,15 @@ class MemberFunctionDefinitionView: public Node {
 
   NODE_PROPERTY(modifiers, 0)
   
-  NODE_PROPERTY(name, 1);
+  NODE_PROPERTY(name, 1)
 
-  NODE_PROPERTY(call_signature, 2);
+  NODE_PROPERTY(call_signature, 2)
 
-  NODE_FLAG_PROPERTY(getter, 0);
+  NODE_FLAG_PROPERTY(getter, 0)
 
-  NODE_FLAG_PROPERTY(setter, 1);
+  NODE_FLAG_PROPERTY(setter, 1)
 
-  NODE_FLAG_PROPERTY(generator, 2);
+  NODE_FLAG_PROPERTY(generator, 2)
 };
 
 
@@ -1534,10 +1529,10 @@ class MemberFunctionView: public MemberFunctionDefinitionView {
       : MemberFunctionDefinitionView(NodeType::kMemberFunctionView, 5u) {}
 
   
-  NODE_PROPERTY(overloads, 3);
+  NODE_PROPERTY(overloads, 3)
   
   // Getter for body_.
-  NODE_PROPERTY(body, 4);
+  NODE_PROPERTY(body, 4)
 };
 
 
@@ -1552,19 +1547,19 @@ class InterfaceView: public Node {
 
   
   // Getter and Setter for name.
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
   // Getter and Setter for type_parameters.
-  NODE_PROPERTY(type_parameters, 1);
+  NODE_PROPERTY(type_parameters, 1)
 
 
   // Getter and Setter for impls.
-  NODE_PROPERTY(extends, 2);
+  NODE_PROPERTY(extends, 2)
 
 
   // Getter and Setter for name.
-  NODE_PROPERTY(field_list, 3);
+  NODE_PROPERTY(field_list, 3)
 };
 
 
@@ -1588,7 +1583,7 @@ class SimpleTypeExprView: public Node {
   
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(type_name, 0);
+  NODE_PROPERTY(type_name, 0)
 };
 
 
@@ -1604,10 +1599,10 @@ class IndexSignatureView: public Node {
       : Node(NodeType::kIndexSignatureView, 2u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
   
 
-  NODE_FLAG_PROPERTY(string_type, 0);
+  NODE_FLAG_PROPERTY(string_type, 0)
 };
 
 
@@ -1620,11 +1615,11 @@ class GenericTypeExprView: public Node {
   
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(type_name, 0);
+  NODE_PROPERTY(type_name, 0)
 
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(type_arguments, 1);
+  NODE_PROPERTY(type_arguments, 1)
 };
 
 
@@ -1637,10 +1632,10 @@ class TypeConstraintsView: public Node {
   
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(derived, 0);
+  NODE_PROPERTY(derived, 0)
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(base, 1);
+  NODE_PROPERTY(base, 1)
 };
 
 
@@ -1673,7 +1668,7 @@ class ArrayTypeExprView: public Node {
   
 
   // Getter and Setter for type_name_.
-  NODE_PROPERTY(type_name, 0);
+  NODE_PROPERTY(type_name, 0)
 };
 
 
@@ -1714,13 +1709,13 @@ class PropertySignatureView: public Node {
       : Node(NodeType::kPropertySignatureView, 2u) {}
   
 
-  NODE_PROPERTY(property_name, 0);
+  NODE_PROPERTY(property_name, 0)
 
 
-  NODE_PROPERTY(type_expr, 1);
+  NODE_PROPERTY(type_expr, 1)
 
 
-  NODE_FLAG_PROPERTY(optional, 0);
+  NODE_FLAG_PROPERTY(optional, 0)
 };
 
 
@@ -1739,13 +1734,13 @@ class MethodSignatureView: public Node {
       : Node(NodeType::kMethodSignatureView, 2u) {}
   
 
-  NODE_PROPERTY(property_name, 0);
+  NODE_PROPERTY(property_name, 0)
 
 
-  NODE_PROPERTY(type_expr, 1);
+  NODE_PROPERTY(type_expr, 1)
 
 
-  NODE_FLAG_PROPERTY(optional, 0);
+  NODE_FLAG_PROPERTY(optional, 0)
 };
 
 
@@ -1761,14 +1756,14 @@ class FunctionTypeExprView: public Node {
 
 
   // Getter and setter for param_list_.
-  NODE_PROPERTY(param_list, 0);
+  NODE_PROPERTY(param_list, 0)
   
 
   // Getter and setter for return_type_.
-  NODE_PROPERTY(return_type, 1);
+  NODE_PROPERTY(return_type, 1)
 
 
-  NODE_PROPERTY(type_parameters, 2);
+  NODE_PROPERTY(type_parameters, 2)
 };
 
 
@@ -1784,7 +1779,7 @@ class ConstructSignatureView: public Node {
 
 
   // Getter and setter for type_parameters.
-  NODE_PROPERTY(call_signature, 0);
+  NODE_PROPERTY(call_signature, 0)
 };
 
 
@@ -1800,11 +1795,11 @@ class AccessorTypeExprView: public Node {
 
   
   // Getter and setter for name_.
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
 
   // Getter and setter for type_expr.
-  NODE_PROPERTY(type_expr, 1);
+  NODE_PROPERTY(type_expr, 1)
 };
 
 
@@ -1841,11 +1836,11 @@ class FunctionOverloadView: public Node {
   FunctionOverloadView()
       : Node(NodeType::kFunctionOverloadView, 2u) {}
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
-  NODE_PROPERTY(call_signature, 1);
+  NODE_PROPERTY(call_signature, 1)
 
-  NODE_FLAG_PROPERTY(generator, 0);
+  NODE_FLAG_PROPERTY(generator, 0)
 };
 
 
@@ -1880,22 +1875,22 @@ class FunctionView: public Node {
   FunctionView()
       : Node(NodeType::kFunctionView, 4u) {}
 
-  NODE_PROPERTY(overloads, 0);
+  NODE_PROPERTY(overloads, 0)
   
   // Getter for name_.
-  NODE_GETTER(name, 1);
+  NODE_GETTER(name, 1)
 
   // Getter for param_list_.
-  NODE_GETTER(call_signature, 2);
+  NODE_GETTER(call_signature, 2)
 
   // Getter for body_.
-  NODE_GETTER(body, 3);
+  NODE_GETTER(body, 3)
 
-  NODE_FLAG_PROPERTY(getter, 0);
+  NODE_FLAG_PROPERTY(getter, 0)
 
-  NODE_FLAG_PROPERTY(setter, 1);
-
-  NODE_FLAG_PROPERTY(generator, 2);
+  NODE_FLAG_PROPERTY(setter, 1)
+  
+  NODE_FLAG_PROPERTY(generator, 2)
 };
 
 
@@ -1906,10 +1901,10 @@ class ArrowFunctionView: public Node {
       : Node(NodeType::kArrowFunctionView, 2u, {call_signature, body}) {}
 
   // Getter for param_list_.
-  NODE_GETTER(call_signature, 0);
+  NODE_GETTER(call_signature, 0)
 
   // Getter for body_.
-  NODE_GETTER(body, 1);
+  NODE_GETTER(body, 1)
 };
 
 
@@ -1927,15 +1922,15 @@ class ParameterView: public Node {
       : Node(NodeType::kParameterView, 4u){}
 
 
-  NODE_PROPERTY(name, 0);
+  NODE_PROPERTY(name, 0)
 
-  NODE_PROPERTY(value, 1);
+  NODE_PROPERTY(value, 1)
 
-  NODE_PROPERTY(type_expr, 2);
+  NODE_PROPERTY(type_expr, 2)
   
-  NODE_PROPERTY(access_level, 3);
+  NODE_PROPERTY(access_level, 3)
 
-  NODE_FLAG_PROPERTY(optional, 0);
+  NODE_FLAG_PROPERTY(optional, 0)
 };
 
 
@@ -1949,7 +1944,7 @@ class RestParamView: public Node {
       : Node(NodeType::kRestParamView, 1u){}
 
 
-  NODE_PROPERTY(parameter, 0);
+  NODE_PROPERTY(parameter, 0)
 };
 
 
@@ -1970,10 +1965,10 @@ class CallView: public Node {
       : Node(NodeType::kCallView, 2u, {target, arguments}) {}
 
   
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(target, 0)
 
 
-  NODE_PROPERTY(args, 1);
+  NODE_PROPERTY(args, 1)
 };
 
 
@@ -1983,13 +1978,13 @@ class CallSignatureView: public Node {
       : Node(NodeType::kCallSignatureView, 3u, {param_list, return_type, type_parameters}) {}
 
   
-  NODE_PROPERTY(param_list, 0);
+  NODE_PROPERTY(param_list, 0)
 
 
-  NODE_PROPERTY(return_type, 1);
+  NODE_PROPERTY(return_type, 1)
 
   
-  NODE_PROPERTY(type_parameters, 2);
+  NODE_PROPERTY(type_parameters, 2)
 };
 
 
@@ -2003,10 +1998,10 @@ class ArgumentsView: public Node {
       : Node(NodeType::kArgumentsView, 2u, {Node::Null(), call_args}) {}
 
 
-  NODE_PROPERTY(type_parameters, 0);
+  NODE_PROPERTY(type_parameters, 0)
 
 
-  NODE_PROPERTY(arguments, 1);
+  NODE_PROPERTY(arguments, 1)
 };
 
 
@@ -2031,10 +2026,10 @@ class NewCallView: public Node {
       : Node(NodeType::kNewCallView, 2u) {}
 
 
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(target, 0)
 
 
-  NODE_PROPERTY(args, 1);
+  NODE_PROPERTY(args, 1)
 };
 
 
@@ -2070,8 +2065,8 @@ class BindingElementView: public Node {
       : Node(NodeType::kBindingElementView, 2u) {}
 
   
-  NODE_PROPERTY(prop, 0);
-  NODE_PROPERTY(value, 1);
+  NODE_PROPERTY(prop, 0)
+  NODE_PROPERTY(value, 1)
 };
 
 
@@ -2094,9 +2089,9 @@ class YieldView: public Node {
   YieldView()
       : Node(NodeType::kYieldView, 1u) {}
 
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 
-  NODE_FLAG_PROPERTY(continuation, 0);
+  NODE_FLAG_PROPERTY(continuation, 0)
 };
 
 
@@ -2129,10 +2124,10 @@ class GetPropView: public Node {
       : Node(NodeType::kGetPropView, 2u) {}
 
   // Getter and Setter for target.
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(target, 0)
 
   // Getter and Setter for prop.
-  NODE_PROPERTY(prop, 1);
+  NODE_PROPERTY(prop, 1)
 };
 
 
@@ -2143,11 +2138,11 @@ class GetElemView: public Node {
 
   
   // Getter and Setter for target.
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(target, 0)
 
   
   // Getter and Setter for prop.
-  NODE_PROPERTY(prop, 1);
+  NODE_PROPERTY(prop, 1)
 };
 
 
@@ -2160,11 +2155,11 @@ class AssignmentView: public Node {
 
 
   // Getter and Setter for target.
-  NODE_PROPERTY(target, 0);
+  NODE_PROPERTY(target, 0)
 
 
   // Getter and Setter for expr.
-  NODE_PROPERTY(expr, 1);
+  NODE_PROPERTY(expr, 1)
 };
 
 
@@ -2175,15 +2170,15 @@ class TemaryExprView: public Node {
 
 
   // Getter and Setter for cond.
-  NODE_PROPERTY(cond, 0);
+  NODE_PROPERTY(cond, 0)
   
   
   // Getter and Setter for then_exp.
-  NODE_PROPERTY(then_expr, 1);
+  NODE_PROPERTY(then_expr, 1)
 
   
   // Getter and Setter for else_exp.
-  NODE_PROPERTY(else_expr, 2);
+  NODE_PROPERTY(else_expr, 2)
 };
 
 
@@ -2195,10 +2190,10 @@ class BinaryExprView: public Node {
   }
 
   // Getter and Setter for first.
-  NODE_PROPERTY(first, 0);
+  NODE_PROPERTY(first, 0)
 
   // Getter and Setter for second.
-  NODE_PROPERTY(second, 1);
+  NODE_PROPERTY(second, 1)
 };
 
 
@@ -2210,10 +2205,10 @@ class CastView: public Node {
 
 
   // Getter and setter for type_expr.
-  NODE_PROPERTY(type_expr, 0);
+  NODE_PROPERTY(type_expr, 0)
 
   // Getter and setter for expr.
-  NODE_PROPERTY(expr, 1);
+  NODE_PROPERTY(expr, 1)
 };
 
 
@@ -2225,7 +2220,7 @@ class UnaryExprView: public Node {
   }
 
   // Getter and Setter for exp_.
-  NODE_PROPERTY(expr, 0);
+  NODE_PROPERTY(expr, 0)
 };
 
 
@@ -2287,11 +2282,11 @@ class ObjectElementView: public Node {
       : Node(NodeType::kObjectElementView, 2u, {key, value}) {}
 
   // Getter and setter for key_.
-  NODE_PROPERTY(key, 0);
+  NODE_PROPERTY(key, 0)
 
 
   // Getter and setter for value_.
-  NODE_PROPERTY(value, 1);
+  NODE_PROPERTY(value, 1)
 };
 
 
@@ -2353,11 +2348,11 @@ class ComprehensionExprView: public Node {
       : Node(NodeType::kComprehensionExprView, 2) {}
 
   
-  NODE_PROPERTY(for_expr, 0);
+  NODE_PROPERTY(for_expr, 0)
 
-  NODE_PROPERTY(tail, 1);
+  NODE_PROPERTY(tail, 1)
 
-  NODE_FLAG_PROPERTY(generator, 0);
+  NODE_FLAG_PROPERTY(generator, 0)
 };
 
 
@@ -2373,13 +2368,13 @@ class AmbientFunctionDeclarationView: public Node {
       : Node(NodeType::kAmbientFunctionDeclarationView, 2u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
 
 
-  NODE_PROPERTY(call_signature, 1);
+  NODE_PROPERTY(call_signature, 1)
 
 
-  NODE_FLAG_PROPERTY(generator, 0);
+  NODE_FLAG_PROPERTY(generator, 0)
 };
 
 
@@ -2392,16 +2387,16 @@ class AmbientClassDeclarationView: public Node {
       : Node(NodeType::kAmbientClassDeclarationView, 4u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
 
   
-  NODE_PROPERTY(type_parameters, 1);
+  NODE_PROPERTY(type_parameters, 1)
 
 
-  NODE_PROPERTY(bases, 2);
+  NODE_PROPERTY(bases, 2)
 
 
-  NODE_PROPERTY(body, 3);
+  NODE_PROPERTY(body, 3)
 };
 
 
@@ -2422,10 +2417,10 @@ class AmbientVariableView: public Node {
       : Node(NodeType::kAmbientVariableView, 2u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
 
   
-  NODE_PROPERTY(type, 1);
+  NODE_PROPERTY(type, 1)
 };
 
 
@@ -2439,10 +2434,10 @@ class AmbientConstructorView: public Node {
       : Node(NodeType::kAmbientConstructorView, 2u) {}
 
 
-  NODE_PROPERTY(modifiers, 0);
+  NODE_PROPERTY(modifiers, 0)
 
 
-  NODE_PROPERTY(call_signature, 1);
+  NODE_PROPERTY(call_signature, 1)
 };
 
 
@@ -2460,13 +2455,13 @@ class AmbientMemberFunctionView: public Node {
       : Node(NodeType::kAmbientMemberFunctionView, 3u) {}
 
 
-  NODE_PROPERTY(modifiers, 0);
+  NODE_PROPERTY(modifiers, 0)
 
 
-  NODE_PROPERTY(identifier, 1);
+  NODE_PROPERTY(identifier, 1)
 
   
-  NODE_PROPERTY(call_signature, 2);
+  NODE_PROPERTY(call_signature, 2)
 };
 
 
@@ -2480,13 +2475,13 @@ class AmbientMemberVariableView: public Node {
       : Node(NodeType::kAmbientMemberVariableView, 3u) {}
 
 
-  NODE_PROPERTY(modifiers, 0);
+  NODE_PROPERTY(modifiers, 0)
 
 
-  NODE_PROPERTY(identifier, 1);
+  NODE_PROPERTY(identifier, 1)
 
 
-  NODE_PROPERTY(type, 2);
+  NODE_PROPERTY(type, 2)
 };
 
 
@@ -2500,10 +2495,10 @@ class AmbientEnumDeclarationView: public Node {
       : Node(NodeType::kAmbientEnumDeclarationView, 2u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
 
 
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 };
 
 
@@ -2524,10 +2519,10 @@ class AmbientEnumFieldView: public Node {
       : Node(NodeType::kAmbientEnumFieldView, 2u) {}
 
 
-  NODE_PROPERTY(property_name, 0);
+  NODE_PROPERTY(property_name, 0)
 
 
-  NODE_PROPERTY(value, 1);
+  NODE_PROPERTY(value, 1)
 };
 
 
@@ -2543,13 +2538,13 @@ class AmbientModuleView: public Node {
       : Node(NodeType::kAmbientModuleView, 2u) {}
 
 
-  NODE_PROPERTY(identifier, 0);
+  NODE_PROPERTY(identifier, 0)
 
 
-  NODE_PROPERTY(body, 1);
+  NODE_PROPERTY(body, 1)
 
 
-  NODE_FLAG_PROPERTY(external, 0);
+  NODE_FLAG_PROPERTY(external, 0)
 };
 
 

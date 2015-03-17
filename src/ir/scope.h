@@ -43,7 +43,7 @@ class GlobalScope;
 
 
 typedef Vector<Handle<Scope>> Scopes;
-typedef MultiHashMap<Unique::Id, GatheredTypeInfo> DeclaredMap;
+typedef MultiHashMap<std::string, GatheredTypeInfo> DeclaredMap;
 typedef IteratorRange<DeclaredMap::const_iterator, DeclaredMap::const_iterator> DeclaredRange;
 typedef IteratorRange<Scopes::iterator, Scopes::iterator> ScopeRange;
 
@@ -70,13 +70,13 @@ class Scope: private Uncopyable {
 
   void AddChild(Handle<Scope> child) {
     child_scope_list_.push_back(child);
-  };
+  }
 
 
   YATSC_INLINE ScopeRange children() {return MakeRange(child_scope_list_.begin(), child_scope_list_.end());}
 
 
-  YATSC_PROPERTY(Handle<Scope>, parent_scope, parent_scope_);
+  YATSC_PROPERTY(Handle<Scope>, parent_scope, parent_scope_)
 
  private:
   DeclaredMap declared_items_;
@@ -93,12 +93,12 @@ class GlobalScope: public Scope {
         literal_buffer_(literal_buffer) {Initialize();}
 
 
-  YATSC_CONST_GETTER(Handle<StringType>, string_type, string_type_);
-  YATSC_CONST_GETTER(Handle<NumberType>, number_type, number_type_);
-  YATSC_CONST_GETTER(Handle<BooleanType>, boolean_type, boolean_type_);
-  YATSC_CONST_GETTER(Handle<VoidType>, void_type, void_type_);
-  YATSC_CONST_GETTER(Handle<AnyType>, any_type, any_type_);
-  YATSC_CONST_GETTER(Handle<PhaiType>, phai_type, phai_type_);
+  YATSC_CONST_GETTER(Handle<StringType>, string_type, string_type_)
+  YATSC_CONST_GETTER(Handle<NumberType>, number_type, number_type_)
+  YATSC_CONST_GETTER(Handle<BooleanType>, boolean_type, boolean_type_)
+  YATSC_CONST_GETTER(Handle<VoidType>, void_type, void_type_)
+  YATSC_CONST_GETTER(Handle<AnyType>, any_type, any_type_)
+  YATSC_CONST_GETTER(Handle<PhaiType>, phai_type, phai_type_)
 
   
  private:

@@ -41,7 +41,7 @@ class ThreadPool {
   ThreadPool(int num_threads);
 
 
-  ~ThreadPool(){};
+  ~ThreadPool(){}
 
 
   template <typename T>

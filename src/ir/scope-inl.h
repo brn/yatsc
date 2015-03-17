@@ -24,7 +24,7 @@
 namespace yatsc { namespace ir {
 
 Maybe<DeclaredRange> Scope::FindDeclaredItem(Handle<Symbol> name) {
-  DeclaredRange range = declared_items_.equal_range(name->id());
+  DeclaredRange range = declared_items_.equal_range(name->utf8_value());
   if (range.first == declared_items_.end()) {
     if (parent_scope_) {
       return parent_scope_->FindDeclaredItem(name);

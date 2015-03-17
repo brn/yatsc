@@ -229,9 +229,7 @@ static const TokenKind kPunctures[] = {
   KEYWORD("void", TokenKind::kVoid)                                     \
   KEYWORD_GROUP('w')                                                    \
   KEYWORD("while", TokenKind::kWhile)                                   \
-  KEYWORD("with", TokenKind::kWith)                                     \
-  KEYWORD_GROUP('y')                                                    \
-  KEYWORD("yield", LanguageModeUtil::IsES6(co)? TokenKind::kYield: TokenKind::kIdentifier)
+  KEYWORD("with", TokenKind::kWith)
 
 
 // Get Identifier type from string.
@@ -367,8 +365,7 @@ bool Token::IsKeyword(TokenKind kind) {
     kind == TokenKind::kVoid ||
     kind == TokenKind::kWhile ||
     kind == TokenKind::kWith ||
-    kind == TokenKind::kFutureReservedWord ||
-    kind == TokenKind::kYield;
+    kind == TokenKind::kFutureReservedWord;
 }
 
 
