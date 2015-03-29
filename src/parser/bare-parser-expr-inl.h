@@ -21,54 +21,20 @@
 // THE SOFTWARE.
 
 
-#ifndef COMPILER_COMPILATION_UNIT_H
-#define COMPILER_COMPILATION_UNIT_H
-
-#include "../memory/heap.h"
-#include "../parser/literalbuffer.h"
-#include "../parser/error-reporter.h"
-#include "../parser/sourcestream.h"
-#include "../utils/stl.h"
-#include "../ir/node.h"
-#include "./module-info.h"
-#include "../ir/irfactory.h"
-
-
 namespace yatsc {
 
-class CompilationUnit {
- public:
-  CompilationUnit(ir::Node* root, Handle<ir::IRFactory> irfactory, Handle<ModuleInfo> module_info, Handle<LiteralBuffer> literal_buffer);
-
+PREFIX::ParseIdentifier() {
+  //LOG_PARSING(ParseIdentifier);
   
-  CompilationUnit(Handle<ModuleInfo> module_info);
-
+  if (token()->Is(TokenKind::kIdentifier)) {
+    NodeProxy<ir::NameView> proxy(token());
+    ConsumeToken();
+    return sem_action_.Success(proxy);
+  }
   
-  CompilationUnit(const CompilationUnit& compilation_unit);
-
-  
-  CompilationUnit(CompilationUnit&& compilation_unit);
-
-
-  bool success() const {return !module_info_->HasError();}
-
-
-  YATSC_CONST_GETTER(const char*, module_name, module_info_->module_name())
-
-
-  YATSC_GETTER(Handle<ErrorReporter>, error_reporter, module_info_->error_reporter())
-
-
-  YATSC_GETTER(Handle<ModuleInfo>, module_info, module_info_)
-
-  
- private:
-  ir::Node* root_;
-  Handle<ir::IRFactory> irfactory_;
-  Handle<ModuleInfo> module_info_;
-  Handle<LiteralBuffer> literal_buffer_;
-};
-
+  sem_action_.ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+    << "'identifier' expected";
+  return sem_action_.Failed();
 }
 
-#endif
+}

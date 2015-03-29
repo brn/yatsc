@@ -41,37 +41,37 @@ class NodeTest: public ::testing::Test {
 yatsc::ir::IRFactory NodeTest::irfactory;
 
 TEST_F(NodeTest, FileScopeView_ToFileScopeView_test) {
-  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::FileScopeView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
+  yatsc::ir::Node* node = irfactory.New<yatsc::ir::FileScopeView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
   ASSERT_TRUE(node->ToFileScopeView() != nullptr);
 }
 
 
 // StatementView node
 TEST_F(NodeTest, StatementView_expr_test) {
-  yatsc::Handle<yatsc::ir::StatementView> statement = irfactory.New<yatsc::ir::StatementView>();
-  yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
+  yatsc::ir::StatementView* statement = irfactory.New<yatsc::ir::StatementView>();
+  yatsc::ir::Node* n = irfactory.New<DummyView>();
   statement->set_expr(n);
   ASSERT_EQ(statement->expr(), n);
 
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::StatementView> statement2 = irfactory.New<yatsc::ir::StatementView>(n2);
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::StatementView* statement2 = irfactory.New<yatsc::ir::StatementView>(n2);
   ASSERT_EQ(statement2->expr(), n2);
 }
 
 
 TEST_F(NodeTest, StatementView_ToStatementView_test) {
-  yatsc::Handle<yatsc::ir::Node> statement = irfactory.New<yatsc::ir::StatementView>();
+  yatsc::ir::Node* statement = irfactory.New<yatsc::ir::StatementView>();
   ASSERT_TRUE(statement->ToStatementView() != nullptr);
 }
 
 
 // VariableDeclView node
 TEST_F(NodeTest, VariableDeclView_InsertLast_test) {
-  yatsc::Handle<yatsc::ir::VariableDeclView> var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
+  yatsc::ir::VariableDeclView* var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
   const yatsc::ir::Node::List& list = var_decl->node_list();
-  yatsc::Handle<yatsc::ir::Node> n1 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n3 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n1 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n3 = irfactory.New<DummyView>();
   
   var_decl->InsertLast(n1);
   var_decl->InsertLast(n2);
@@ -84,11 +84,11 @@ TEST_F(NodeTest, VariableDeclView_InsertLast_test) {
 
 
 TEST_F(NodeTest, VariableDeclView_Remove_test) {
-  yatsc::Handle<yatsc::ir::VariableDeclView> var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
+  yatsc::ir::VariableDeclView* var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
   const yatsc::ir::Node::List& list = var_decl->node_list();
-  yatsc::Handle<yatsc::ir::Node> n1 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n3 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n1 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n3 = irfactory.New<DummyView>();
   
   var_decl->InsertLast(n1);
   var_decl->InsertLast(n2);
@@ -112,43 +112,43 @@ TEST_F(NodeTest, VariableDeclView_Remove_test) {
 
 
 TEST_F(NodeTest, VariableDeclView_ToVariableDeclView_test) {
-  yatsc::Handle<yatsc::ir::Node> var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
+  yatsc::ir::Node* var_decl = irfactory.New<yatsc::ir::VariableDeclView>();
   ASSERT_TRUE(var_decl->ToVariableDeclView() != nullptr);
 }
 
 
 // TrueView node
 TEST_F(NodeTest, TrueView_ToTrueView_test) {
-  yatsc::Handle<yatsc::ir::Node> t = irfactory.New<yatsc::ir::TrueView>();
+  yatsc::ir::Node* t = irfactory.New<yatsc::ir::TrueView>();
   ASSERT_TRUE(t->ToTrueView() != nullptr);
 }
 
 
 // FalseView node
 TEST_F(NodeTest, FalseView_ToFalseView_test) {
-  yatsc::Handle<yatsc::ir::Node> f = irfactory.New<yatsc::ir::FalseView>();
+  yatsc::ir::Node* f = irfactory.New<yatsc::ir::FalseView>();
   ASSERT_TRUE(f->ToFalseView() != nullptr);
 }
 
 
 TEST_F(NodeTest, BlockView_ToBlockView_test) {
-  yatsc::Handle<yatsc::ir::Node> node = irfactory.New<yatsc::ir::BlockView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
+  yatsc::ir::Node* node = irfactory.New<yatsc::ir::BlockView>(yatsc::Heap::NewHandle<yatsc::ir::Scope>());
   ASSERT_TRUE(node->ToBlockView() != nullptr);
 }
 
 
 // ModuleDeclView node.
 TEST_F(NodeTest, ModuleDeclView_set_name_test) {
-  yatsc::Handle<yatsc::ir::ModuleDeclView> md = irfactory.New<yatsc::ir::ModuleDeclView>();
-  yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
+  yatsc::ir::ModuleDeclView* md = irfactory.New<yatsc::ir::ModuleDeclView>();
+  yatsc::ir::Node* n = irfactory.New<DummyView>();
   md->set_name(n);
   ASSERT_EQ(md->name(), n);
 }
 
 
 TEST_F(NodeTest, ModuleDeclView_set_body_test) {
-  yatsc::Handle<yatsc::ir::ModuleDeclView> md = irfactory.New<yatsc::ir::ModuleDeclView>();
-  yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
+  yatsc::ir::ModuleDeclView* md = irfactory.New<yatsc::ir::ModuleDeclView>();
+  yatsc::ir::Node* n = irfactory.New<DummyView>();
   md->set_body(n);
   ASSERT_EQ(md->body(), n);
 
@@ -158,15 +158,15 @@ TEST_F(NodeTest, ModuleDeclView_set_body_test) {
 
 
 TEST_F(NodeTest, ModuleDeclView_ToModuleDeclView_test) {
-  yatsc::Handle<yatsc::ir::Node> md = irfactory.New<yatsc::ir::ModuleDeclView>();
+  yatsc::ir::Node* md = irfactory.New<yatsc::ir::ModuleDeclView>();
   ASSERT_TRUE(md->ToModuleDeclView() != nullptr);
 }
 
 
 TEST_F(NodeTest, ExportView_target_test) {
-  yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::ExportView> ex = irfactory.New<yatsc::ir::ExportView>(n, n2);
+  yatsc::ir::Node* n = irfactory.New<DummyView>();
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::ExportView* ex = irfactory.New<yatsc::ir::ExportView>(n, n2);
   ASSERT_EQ(ex->export_clause(), n);
   ASSERT_EQ(ex->from_clause(), n2);
 }
@@ -174,28 +174,28 @@ TEST_F(NodeTest, ExportView_target_test) {
 
 // ImportView node.
 TEST_F(NodeTest, ImportView_alias_test) {
-  yatsc::Handle<yatsc::ir::Node> n1 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::ImportView> i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
+  yatsc::ir::Node* n1 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::ImportView* i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
   ASSERT_EQ(i->import_clause(), n1);
   ASSERT_EQ(i->from_expr(), n2);
 }
 
 
 TEST_F(NodeTest, ImportView_toImportView_test) {
-  yatsc::Handle<yatsc::ir::Node> n1 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> n2 = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
+  yatsc::ir::Node* n1 = irfactory.New<DummyView>();
+  yatsc::ir::Node* n2 = irfactory.New<DummyView>();
+  yatsc::ir::Node* i = irfactory.New<yatsc::ir::ImportView>(n1, n2);
 
   ASSERT_TRUE(i->ToImportView() != nullptr);
 }
 
 
 TEST_F(NodeTest, VariableView_test) {
-  yatsc::Handle<yatsc::ir::Node> name = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> value = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> type = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::VariableView> vv = irfactory.New<yatsc::ir::VariableView>(name, value, type);
+  yatsc::ir::Node* name = irfactory.New<DummyView>();
+  yatsc::ir::Node* value = irfactory.New<DummyView>();
+  yatsc::ir::Node* type = irfactory.New<DummyView>();
+  yatsc::ir::VariableView* vv = irfactory.New<yatsc::ir::VariableView>(name, value, type);
   ASSERT_EQ(vv->binding_identifier(), name);
   ASSERT_EQ(vv->value(), value);
   ASSERT_EQ(vv->type(), type);
@@ -211,10 +211,10 @@ TEST_F(NodeTest, VariableView_test) {
 
 
 TEST_F(NodeTest, IfStatementView_test) {
-  yatsc::Handle<yatsc::ir::Node> then_block = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> else_block = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::Node> expr = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::IfStatementView> ifv = irfactory.New<yatsc::ir::IfStatementView>(expr, then_block, else_block);
+  yatsc::ir::Node* then_block = irfactory.New<DummyView>();
+  yatsc::ir::Node* else_block = irfactory.New<DummyView>();
+  yatsc::ir::Node* expr = irfactory.New<DummyView>();
+  yatsc::ir::IfStatementView* ifv = irfactory.New<yatsc::ir::IfStatementView>(expr, then_block, else_block);
   ASSERT_EQ(ifv->then_block(), then_block);
   ASSERT_EQ(ifv->else_block(), else_block);
 
@@ -227,8 +227,8 @@ TEST_F(NodeTest, IfStatementView_test) {
 
 
 TEST_F(NodeTest, ReturnStatementView_test) {
-  yatsc::Handle<yatsc::ir::Node> n = irfactory.New<DummyView>();
-  yatsc::Handle<yatsc::ir::ReturnStatementView> rn = irfactory.New<yatsc::ir::ReturnStatementView>(n);
+  yatsc::ir::Node* n = irfactory.New<DummyView>();
+  yatsc::ir::ReturnStatementView* rn = irfactory.New<yatsc::ir::ReturnStatementView>(n);
   ASSERT_EQ(rn->expr(), n);
   rn->set_expr(yatsc::ir::Node::Null());
   ASSERT_FALSE(rn->expr());

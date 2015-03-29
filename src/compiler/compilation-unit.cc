@@ -25,10 +25,12 @@
 
 namespace yatsc {
 
-CompilationUnit::CompilationUnit(Handle<ir::Node> root,
+CompilationUnit::CompilationUnit(ir::Node* root,
+                                 Handle<ir::IRFactory> irfactory,
                                  Handle<ModuleInfo> module_info,
                                  Handle<LiteralBuffer> literal_buffer)
     : root_(root),
+      irfactory_(irfactory),
       module_info_(module_info),
       literal_buffer_(literal_buffer) {}
 

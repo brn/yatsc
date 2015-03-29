@@ -81,7 +81,7 @@ ParseResult Parser<UCharInputIterator>::ParseTypeParameter() {
     Next();
     auto ref_type_result = ParseTypeExpression();
     CHECK_AST(ref_type_result);
-    Handle<ir::Node> type_constraints = New<ir::TypeConstraintsView>(identifier_result.value(),
+    ir::Node* type_constraints = New<ir::TypeConstraintsView>(identifier_result.value(),
                                                                      ref_type_result.value());
     type_constraints->SetInformationForNode(identifier_result.value());
     return Success(type_constraints);
@@ -139,7 +139,7 @@ ParseResult Parser<UCharInputIterator>::ParseType() {
     Next();
     auto call_sig_result = ParseCallSignature(false, true, true);
     CHECK_AST(call_sig_result);
-    Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig_result.value());
+    ir::Node* ret = New<ir::ConstructSignatureView>(call_sig_result.value());
     ret->SetInformationForNode(call_sig_result.value());
     return Success(ret);
   } else if (cur_token()->type() == TokenKind::kTypeof) {
@@ -165,7 +165,7 @@ ParseResult Parser<UCharInputIterator>::ParseType() {
       Next();
       auto type_expr_result = ParseTypeExpression();
       CHECK_AST(type_expr_result);
-      Handle<ir::Node> ft = New<ir::FunctionTypeExprView>(param_list_result.value(),
+      ir::Node* ft = New<ir::FunctionTypeExprView>(param_list_result.value(),
                                                           type_expr_result.value(),
                                                           type_params_result.or(ir::Node::Null()));
       ft->SetInformationForNode(param_list_result.value());
@@ -207,13 +207,13 @@ ParseResult Parser<UCharInputIterator>::ParseReferencedType() {
     if (!cur_token()->has_line_break_before_next() && cur_token()->Is(TokenKind::kLess)) {
       auto type_arguments_result = ParseTypeArguments();
       CHECK_AST(type_arguments_result);
-      Handle<ir::Node> ret = New<ir::GenericTypeExprView>(primary_expr_result.value(),
+      ir::Node* ret = New<ir::GenericTypeExprView>(primary_expr_result.value(),
                                                           type_arguments_result.value());
       ret->SetInformationForNode(primary_expr_result.value());
       return Success(ret);
     }
 
-    Handle<ir::Node> ret = New<ir::SimpleTypeExprView>(primary_expr_result.value());
+    ir::Node* ret = New<ir::SimpleTypeExprView>(primary_expr_result.value());
     ret->SetInformationForNode(primary_expr_result.value());
     return Success(ret);
   }
@@ -240,7 +240,7 @@ ParseResult Parser<UCharInputIterator>::ParseTypeQueryExpression() {
       primary_expr_result = ParseGetPropOrElem(primary_expr_result.value(), true, false);
       CHECK_AST(primary_expr_result);
     }
-    Handle<ir::Node> ret = New<ir::TypeQueryView>(primary_expr_result.value());
+    ir::Node* ret = New<ir::TypeQueryView>(primary_expr_result.value());
     ret->SetInformationForNode(primary_expr_result.value());
     return Success(ret);
   }
@@ -264,7 +264,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseTypeArguments() {
   LOG_PHASE(ParseTypeArguments);
 
-  Handle<ir::TypeArgumentsView> type_arguments = New<ir::TypeArgumentsView>();
+  ir::TypeArgumentsView* type_arguments = New<ir::TypeArgumentsView>();
   type_arguments->SetInformationForNode(cur_token());
   EnableNestedGenericTypeScanMode();
   YATSC_SCOPED([&] {DisableNestedGenericTypeScanMode();});
@@ -299,11 +299,11 @@ ParseResult Parser<UCharInputIterator>::ParseTypeArguments() {
 //   | array_type
 //   ;
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseArrayType(Handle<ir::Node> type_expr) {
+ParseResult Parser<UCharInputIterator>::ParseArrayType(ir::Node* type_expr) {
   if (cur_token()->type() == TokenKind::kLeftBracket) {
     Next();
     if (cur_token()->type() == TokenKind::kRightBracket) {
-      Handle<ir::Node> array_type = New<ir::ArrayTypeExprView>(type_expr);
+      ir::Node* array_type = New<ir::ArrayTypeExprView>(type_expr);
       array_type->SetInformationForNode(cur_token());
       Next();
       return ParseArrayType(array_type);
@@ -330,7 +330,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeExpression() {
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
     Next();
-    Handle<ir::ObjectTypeExprView> object_type = New<ir::ObjectTypeExprView>();
+    ir::ObjectTypeExprView* object_type = New<ir::ObjectTypeExprView>();
     object_type->SetInformationForNode(cur_token());
 
     if (cur_token()->Is(TokenKind::kRightBrace)) {
@@ -385,7 +385,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
     Next();
     auto call_sig_result = ParseCallSignature(false, true, false);
     CHECK_AST(call_sig_result);
-    Handle<ir::Node> ret = New<ir::ConstructSignatureView>(call_sig_result.value());
+    ir::Node* ret = New<ir::ConstructSignatureView>(call_sig_result.value());
     ret->SetInformationForNode(call_sig_result.value());
     return Success(ret);
   } else if (cur_token()->OneOf({TokenKind::kLeftParen, TokenKind::kLess})) {
@@ -403,17 +403,17 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
       Next();
     }
 
+    if (cur_token()->IsKeyword()) {
+      cur_token()->set_type(TokenKind::kIdentifier);
+    }
+
     Token info = *cur_token();
 
     if (at.setter || at.getter) {
       key_result = Success(New<ir::NameView>(NewSymbol(ir::SymbolType::kPropertyName, info.value())));
       key_result.value()->SetInformationForNode(&info);
     } else {
-      if (cur_token()->Is(TokenKind::kIdentifier)) {
-        key_result = ParseIdentifierReference();
-      } else {
-        key_result = ParsePropertyName();
-      }
+      key_result = ParseLiteralPropertyName();
       CHECK_AST(key_result);
     }
     
@@ -439,7 +439,7 @@ ParseResult Parser<UCharInputIterator>::ParseObjectTypeElement() {
       ret->SetInformationForNode(type_expr_result.value());
       return Success(ret);
     }
-    Handle<ir::Node> ret = New<ir::PropertySignatureView>(optional, key_result.value(), ir::Node::Null());
+    ir::Node* ret = New<ir::PropertySignatureView>(optional, key_result.value(), ir::Node::Null());
     ret->SetInformationForNode(key_result.value());
     return Success(ret);
   }

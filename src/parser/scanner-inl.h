@@ -92,6 +92,15 @@ Token* Scanner<UCharInputIterator>::Scan() {
 
 
 template <typename UCharInputIterator>
+Token* Scanner<UCharInputIterator>::Peek() {
+  auto pos = char_position();
+  peeked_info_ = *Scan();
+  RestoreScannerPosition(pos);
+  return &peeked_info_;
+}
+
+
+template <typename UCharInputIterator>
 bool Scanner<UCharInputIterator>::DoScan() {
   if (char_ == unicode::u32('\0')) {
     BuildToken(TokenKind::kEof);
@@ -443,27 +452,32 @@ void Scanner<UCharInputIterator>::ScanBitwiseOrComparationOperator(
 
 // Check regular expression.
 template<typename UCharInputIterator>
-Token* Scanner<UCharInputIterator>::CheckRegularExpression(Token* token_info) {  
+Token* Scanner<UCharInputIterator>::CheckRegularExpression(Token* token) {  
   
   // Prepare for scanning.
   BeforeScan();
   UtfString expr;
 
-  if (token_info->type() == TokenKind::kDiv) {
+  if (token->Is(TokenKind::kDiv)) {
   
-    // In this method, char_ point next token of TS_DIV,
+    // In this method, char_ point next token of kDIV,
     // so we now assign a '/'.
     expr += UChar::FromAscii('/');
     bool escaped = false;
+    bool char_class = false;
   
     while (1) {
       expr += char_;
-      if (char_ == unicode::u32('\\')) {
+      if (char_ == unicode::u32('[') && !escaped) {
+        char_class = true;
+      } else if (char_ == unicode::u32(']') && !escaped && char_class) {
+        char_class = false;
+      } else if (char_ == unicode::u32('\\')) {
         escaped = !escaped;
       } else if (char_ == unicode::u32('/')) {
         if (escaped) {
           escaped = false;
-        } else {
+        } else if (!char_class) {
           Advance();
           while (char_ == unicode::u32('g') ||
                  char_ == unicode::u32('i') ||

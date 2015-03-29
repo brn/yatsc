@@ -34,9 +34,14 @@ class IRFactory : private Uncopyable {
   IRFactory() {}
   
   template <typename NodeName, typename ... Args>
-  inline Handle<NodeName> New(Args ... args) {
-    return Heap::NewIntrusive<NodeName>(std::forward<Args>(args)...);
+  inline NodeName* New(Args ... args) {
+    auto ret = unsafe_zone_allocator_.New<NodeName>(std::forward<Args>(args)...);
+    ret->set_unsafe_zone_allocator(&unsafe_zone_allocator_);
+    return ret;
   }
+
+ private:
+  UnsafeZoneAllocator unsafe_zone_allocator_;
 };
 
 }}

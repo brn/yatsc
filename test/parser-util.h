@@ -61,10 +61,11 @@ void YatscParserTest(const char* name,
   compiler_option.set_language_mode(type);
   auto lb = Heap::NewHandle<yatsc::LiteralBuffer>();
   auto global_scope = Heap::NewHandle<yatsc::ir::GlobalScope>(lb);
+  auto irfactory = Heap::NewHandle<ir::IRFactory>();
   
   Scanner<Iterator> scanner(module_info->source_stream()->begin(), module_info->source_stream()->end(), lb.Get(), compiler_option);
   Notificator<void(const yatsc::String&)> notificator;
-  Parser<Iterator> parser(compiler_option, &scanner, notificator, module_info, global_scope);
+  Parser<Iterator> parser(compiler_option, &scanner, notificator, irfactory, module_info, global_scope);
   ErrorFormatter error_formatter(module_info);
 
   ParseResult result;

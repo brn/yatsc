@@ -126,8 +126,7 @@ void Parser<UCharInputIterator>::SkipToNextStatement() {
             TokenKind::kLet,
             TokenKind::kConst,
             TokenKind::kImport,
-            TokenKind::kExport,
-            TokenKind::kModule
+            TokenKind::kExport
         })) {
       break;
     } else if (cur_token()->Is(TokenKind::kIdentifier) &&

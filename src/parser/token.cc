@@ -197,8 +197,6 @@ static const TokenKind kPunctures[] = {
   KEYWORD("interface", TokenKind::kInterface)                           \
   KEYWORD_GROUP('l')                                                    \
   KEYWORD("let", LanguageModeUtil::IsES6(co)? TokenKind::kLet: TokenKind::kIdentifier) \
-  KEYWORD_GROUP('m')                                                    \
-  KEYWORD("module", ModuleTypeUtil::IsModuleKeywordAllowed(co)? TokenKind::kModule: TokenKind::kIdentifier) \
   KEYWORD_GROUP('n')                                                    \
   KEYWORD("new", TokenKind::kNew)                                       \
   KEYWORD("null", TokenKind::kNull)                                     \
@@ -343,7 +341,6 @@ bool Token::IsKeyword(TokenKind kind) {
     kind == TokenKind::kInstanceof ||
     kind == TokenKind::kInterface ||
     kind == TokenKind::kLet ||
-    kind == TokenKind::kModule ||
     kind == TokenKind::kNew ||
     kind == TokenKind::kNull ||
     kind == TokenKind::kNan ||
@@ -366,6 +363,22 @@ bool Token::IsKeyword(TokenKind kind) {
     kind == TokenKind::kWhile ||
     kind == TokenKind::kWith ||
     kind == TokenKind::kFutureReservedWord;
+}
+
+
+bool Token::IsPrimaryKeyword(TokenKind kind) {
+  return kind == TokenKind::kThis ||
+    kind == TokenKind::kSuper ||
+    kind == TokenKind::kThis ||
+    kind == TokenKind::kDelete ||
+    kind == TokenKind::kNew ||
+    kind == TokenKind::kTrue ||
+    kind == TokenKind::kFalse ||
+    kind == TokenKind::kNull ||
+    kind == TokenKind::kNan ||
+    kind == TokenKind::kTypeof ||
+    kind == TokenKind::kUndefined ||
+    kind == TokenKind::kVoid;
 }
 
 

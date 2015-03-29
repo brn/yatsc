@@ -36,12 +36,12 @@ class SpinLock {
   SpinLock() {unlock();}
   ~SpinLock() = default;
   YATSC_INLINE void lock() YATSC_NOEXCEPT {
-    while (lock_.test_and_set(std::memory_order_seq_cst)) {}
+    while (lock_.test_and_set(std::memory_order_acquire)) {}
   }
 
   
   YATSC_INLINE void unlock() YATSC_NOEXCEPT {
-    lock_.clear(std::memory_order_seq_cst);
+    lock_.clear(std::memory_order_release);
   }
 
  private:

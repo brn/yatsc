@@ -25,11 +25,11 @@
 
 #include "./scanner-test-prelude.h"
 
-#define OPERATOR_TEST(operator, name, token_type)     \
-  TEST(ScannerTest, ScanOperator_##name)              \
-  {                                                   \
-   INIT(token, operator);                             \
-   ASSERT_EQ(token->type(), yatsc::TokenKind::token_type);  \
+#define OPERATOR_TEST(op, name, token_type)                 \
+  TEST(ScannerTest, ScanOperator_##name)                    \
+  {                                                         \
+    INIT(token, op);                                        \
+    ASSERT_EQ(token->type(), yatsc::TokenKind::token_type); \
   }
 
 

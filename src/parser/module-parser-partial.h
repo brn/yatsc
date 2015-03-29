@@ -335,7 +335,13 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
   if (cur_token()->Is(TokenKind::kIdentifier) &&
       cur_token()->value()->Equals("module")) {
     Token info = *cur_token();
+    TokenPack tokens = token_pack();
     Next();
+
+    if (!cur_token()->OneOf({TokenKind::kIdentifier, TokenKind::kLeftBrace})) {
+      RestoreTokens(tokens);
+      return ParseStatement();
+    }
 
     auto binding_identifier_result = ParseGetPropOrElem(ParseBindingIdentifier().or(Null()), false, true);
     CHECK_AST(binding_identifier_result);
@@ -365,7 +371,7 @@ ParseResult Parser<UCharInputIterator>::ParseModuleImport() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseTSModule(Handle<ir::Node> identifier, Token* info) {
+ParseResult Parser<UCharInputIterator>::ParseTSModule(ir::Node* identifier, Token* info) {
   LOG_PHASE(ParseTSModule);
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
     auto ts_module_body_result = ParseTSModuleBody();
@@ -607,9 +613,9 @@ ParseResult Parser<UCharInputIterator>::ParseExportDeclaration() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::CreateExportView(
-    Handle<ir::Node> export_clause,
-    Handle<ir::Node> from_clause,
+ir::Node* Parser<UCharInputIterator>::CreateExportView(
+    ir::Node* export_clause,
+    ir::Node* from_clause,
     Token* token_info,
     bool default_export) {
   LOG_PHASE(CreateExportView);
@@ -658,9 +664,9 @@ ParseResult Parser<UCharInputIterator>::ParseExportClause() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::CreateNamedExportView(
-    Handle<ir::Node> identifier,
-    Handle<ir::Node> binding) {
+ir::Node* Parser<UCharInputIterator>::CreateNamedExportView(
+    ir::Node* identifier,
+    ir::Node* binding) {
   LOG_PHASE(CreateNamedExportView);
   auto named_export = New<ir::NamedExportView>(identifier, binding);
   named_export->SetInformationForNode(identifier);

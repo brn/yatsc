@@ -100,8 +100,7 @@ class ErrorReporter {
   }
 
 
-  template <typename T>
-  ErrorDescriptor& SyntaxError(Handle<T> node) {
+  ErrorDescriptor& SyntaxError(ir::Node* node) {
     return SyntaxError(node->source_position());
   }
 
@@ -127,8 +126,7 @@ class ErrorReporter {
   }
 
 
-  template <typename T>
-  ErrorDescriptor& Warning(Handle<T> node) {
+  ErrorDescriptor& Warning(ir::Node* node) {
     return Warning(node->source_position());
   }
 
@@ -154,8 +152,7 @@ class ErrorReporter {
   }
 
 
-  template <typename T>
-  ErrorDescriptor& SemanticError(Handle<T> node) {
+  ErrorDescriptor& SemanticError(ir::Node* node) {
     return SemanticError(node->source_position());
   }
 
@@ -164,6 +161,32 @@ class ErrorReporter {
   ErrorBuffer buffer_;
   WarningBuffer warning_buffer_;
 };
+
+
+// template <bool cplusplus_info>
+// class SyntaxErrorBuilder: private Static {
+//  public:
+//   template <typename T>
+//   static ErrorDescriptor& Build(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+//     if (cplusplus_info) {
+//       return module_info->error_reporter()->SyntaxError(item) << filename << ":" << line << "\n";
+//     }
+//     return module_info->error_reporter()->SyntaxError(item);
+//   }
+
+//   static ErrorDescriptor& Build(Handle<ModuleInfo> module_info) {
+//     return module_info->error_reporter()->Ignore();
+//   }
+
+
+//   template <typename T>
+//   static ErrorDescriptor& BuildWarning(Handle<ModuleInfo> module_info, T item, const char* filename, int line) {
+//     if (cplusplus_info) {
+//       return module_info->error_reporter()->Warning(item) << filename << ":" << line << "\n";
+//     }
+//     return module_info->error_reporter()->Warning(item);
+//   }
+// };
 
 }
 

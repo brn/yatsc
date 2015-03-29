@@ -64,7 +64,9 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
    * Scan the source file from the current position to the next token position.
    */
   Token* Scan();
-  
+
+
+  Token* Peek();
 
 
   YATSC_CONST_GETTER(size_t, line_number, scanner_source_position_.current_line_number())
@@ -372,6 +374,7 @@ class Scanner: public ErrorReporter, private Uncopyable, private Unmovable {
   UCharInputIterator it_;
   UCharInputIterator end_;
   Token token_info_;
+  Token peeked_info_;
   UChar prev_;
   UChar char_;
   UChar lookahead1_;

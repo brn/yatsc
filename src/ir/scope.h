@@ -59,10 +59,10 @@ class Scope: private Uncopyable {
   ~Scope();
 
 
-  void Declare(Handle<Node> variable);
+  void Declare(Node* variable);
 
 
-  void Declare(Handle<Node> variable, Handle<ir::Type> type);
+  void Declare(Node* variable, Handle<ir::Type> type);
 
 
   YATSC_INLINE Maybe<DeclaredRange> FindDeclaredItem(Handle<Symbol> name);

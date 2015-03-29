@@ -34,9 +34,9 @@ class Node;
 class Scope;
 
 
-typedef HashMap<Unique::Id, Handle<Node>> PropertyMap;
+typedef HashMap<Unique::Id, Node*> PropertyMap;
 typedef IteratorRange<PropertyMap::iterator, PropertyMap::iterator> PropertyRange;
-typedef std::pair<Unique::Id, Handle<Node>> Property;
+typedef std::pair<Unique::Id, Node*> Property;
 
 class Properties: private Uncopyable {
  public:
@@ -47,7 +47,7 @@ class Properties: private Uncopyable {
   ~Properties() = default;
 
 
-  void Declare(Handle<Symbol> symbol, Handle<Node> prop) {
+  void Declare(Handle<Symbol> symbol, Node* prop) {
     properties_.insert(std::make_pair(symbol, prop));
   }
 

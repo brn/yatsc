@@ -40,7 +40,7 @@ Scope::Scope() {}
 Scope::~Scope() {}
 
 
-void Scope::Declare(Handle<Node> var, Handle<Type> type) {
+void Scope::Declare(Node* var, Handle<Type> type) {
   if (var->HasVariableView()) {
     if (var->first_child()->HasNameView()) {
       auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
@@ -58,13 +58,13 @@ void Scope::Declare(Handle<Node> var, Handle<Type> type) {
       }
     }
   } else if (var->HasFunctionView()) {
-    Handle<ir::Node> name = var->node_list()[1];
+    Node* name = var->node_list()[1];
     if (name && name->HasNameView()) {
       auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
       declared_items_.insert(std::make_pair(name->symbol()->utf8_value(), info));
     }
   } else if (var->HasClassDeclView() || var->HasInterfaceView() || var->HasEnumDeclView()) {
-    Handle<ir::Node> name = var->first_child();
+    Node* name = var->first_child();
     if (name && name->HasNameView()) {
       auto info = GatheredTypeInfo(type, var, ir::Type::Modifier::kPublic);
       declared_items_.insert(std::make_pair(name->symbol()->utf8_value(), info));
@@ -73,32 +73,32 @@ void Scope::Declare(Handle<Node> var, Handle<Type> type) {
 }
 
 
-void Scope::Declare(Handle<Node> var) {
+void Scope::Declare(Node* var) {
   Declare(var, global_scope_->phai_type());
 }
 
 
 void GlobalScope::Initialize() {
-  string_type_ = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
-  number_type_ = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
-  boolean_type_ = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
-  void_type_ = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
-  any_type_ = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
-  phai_type_ = Heap::NewHandle<ir::PhaiType>();
+  // string_type_ = DeclareBuiltin("string",  Heap::NewHandle<ir::StringType>());
+  // number_type_ = DeclareBuiltin("number",  Heap::NewHandle<ir::NumberType>());
+  // boolean_type_ = DeclareBuiltin("boolean", Heap::NewHandle<ir::BooleanType>());
+  // void_type_ = DeclareBuiltin("void",    Heap::NewHandle<ir::VoidType>());
+  // any_type_ = DeclareBuiltin("any",     Heap::NewHandle<ir::AnyType>());
+  //phai_type_ = Heap::NewHandle<ir::PhaiType>();
 }
 
 
-Handle<ir::Type> GlobalScope::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
-  UtfString utf_string(name);
-  auto literal = literal_buffer_->InsertValue(utf_string);
-  auto iv = Heap::NewIntrusive<ir::InterfaceView>(
-      Heap::NewIntrusive<ir::NameView>(Heap::NewHandle<ir::Symbol>(ir::SymbolType::kInterfaceName, literal)),
-      ir::Node::Null(),
-      Heap::NewIntrusive<ir::InterfaceExtendsView>(),
-      Heap::NewIntrusive<ir::ObjectTypeExprView>());
-  Declare(iv, type);
-  return type;
-}
+// Handle<ir::Type> GlobalScope::DeclareBuiltin(const char* name, Handle<ir::Type> type) {
+//   UtfString utf_string(name);
+//   auto literal = literal_buffer_->InsertValue(utf_string);
+//   auto iv = ir::InterfaceView>(
+//       Heap::NewIntrusive<ir::NameView>(Heap::NewHandle<ir::Symbol>(ir::SymbolType::kInterfaceName, literal)),
+//       ir::Node::Null(),
+//       Heap::NewIntrusive<ir::InterfaceExtendsView>(),
+//       Heap::NewIntrusive<ir::ObjectTypeExprView>());
+//   Declare(iv, type);
+//   return type;
+// }
 
 
 }}

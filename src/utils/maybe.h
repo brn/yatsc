@@ -28,13 +28,16 @@
 
 namespace yatsc {
 
+template <bool is_pointer, typename T>
+class Result {};
+
 // Value container for Maybe.
 // value requirements:
 //   T must be copy constructible.
 //   T must be move constructible.
 //
 template <typename T>
-class Result {
+class Result<false, T> {
  public:
   // Raw type of T.
   typedef typename std::remove_reference<typename std::remove_const<T>::type>::type Type;
@@ -65,14 +68,14 @@ class Result {
 
 
   // Copy constructor.
-  YATSC_INLINE Result(const Result<T>& result) {
+  YATSC_INLINE Result(const Result<false, T>& result) {
     if (!result.exists()) {return;}
     value_(result.value());
   }
 
 
   // Move constructor.
-  YATSC_INLINE Result(Result<T>&& result) {
+  YATSC_INLINE Result(Result<false, T>&& result) {
     if (!result.exists()) {return;}
     value_(std::move(result.value()));
   }
@@ -80,7 +83,7 @@ class Result {
 
   // Copy constructor for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result(const Result<U>& result) {
+  YATSC_INLINE Result(const Result<false, U>& result) {
     static_assert(std::is_base_of<T, U>::value,
                   "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return;}
@@ -90,7 +93,7 @@ class Result {
 
   // Move constructor for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result(Result<U>&& result) {
+  YATSC_INLINE Result(Result<false, U>&& result) {
     static_assert(std::is_base_of<T, U>::value,
                   "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return;}
@@ -99,7 +102,7 @@ class Result {
 
 
   // Copy assginment operator.
-  YATSC_INLINE Result& operator = (const Result<T>& result) {
+  YATSC_INLINE Result& operator = (const Result<false, T>& result) {
     if (!result.exists()) {return; *this;}
     value_(result.value());
     return *this;
@@ -107,7 +110,7 @@ class Result {
 
 
   // Move assginment operator.
-  YATSC_INLINE Result& operator = (Result<T>&& result) {
+  YATSC_INLINE Result& operator = (Result<false, T>&& result) {
     if (!result.exists()) {return; *this;}
     value_(std::move(result.value()));
     return *this;
@@ -116,7 +119,7 @@ class Result {
 
   // Copy assginment operator for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result& operator = (const Result<U>& result) {
+  YATSC_INLINE Result& operator = (const Result<false, U>& result) {
     static_assert(std::is_base_of<T, U>::value,
                   "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return; *this;}
@@ -127,7 +130,7 @@ class Result {
 
   // Move assginment operator for U that is compatible type of T.
   template <typename U>
-  YATSC_INLINE Result& operator = (Result<U>&& result) {
+  YATSC_INLINE Result& operator = (Result<false, U>&& result) {
     static_assert(std::is_base_of<T, U>::value,
                   "The value of Result<U> must be the derived class of The value of Result<T>.");
     if (!result.exists()) {return; *this;}
@@ -155,13 +158,13 @@ class Result {
 
 
 template <typename T>
-class Result<T*> {
+class Result<true, T> {
  public:
-  typedef T* Type;
+  typedef T Type;
 
-  typedef const typename std::remove_const<T>::type* ConstType;
+  typedef const typename std::remove_const<T>::type ConstType;
   
-  YATSC_INLINE explicit Result(T* ptr)
+  YATSC_INLINE explicit Result(T ptr)
       : ptr_(ptr) {}
 
 
@@ -169,61 +172,61 @@ class Result<T*> {
       : ptr_(nullptr) {}
 
 
-  YATSC_INLINE Result(const Result<T>& result)
+  YATSC_INLINE Result(const Result<true, T>& result)
       : ptr_(result.value()) {}
 
 
-  YATSC_INLINE Result(Result<T>&& result)
-      : ptr_(result.value()) {}
-
-
-  template <typename U>
-  YATSC_INLINE Result(const Result<U>& result)
+  YATSC_INLINE Result(Result<true, T>&& result)
       : ptr_(result.value()) {}
 
 
   template <typename U>
-  YATSC_INLINE Result(Result<U>&& result)
+  YATSC_INLINE Result(const Result<true, U>& result)
       : ptr_(result.value()) {}
 
 
-  YATSC_INLINE Result& operator = (const Result<T>& result) {
+  template <typename U>
+  YATSC_INLINE Result(Result<true, U>&& result)
+      : ptr_(result.value()) {}
+
+
+  YATSC_INLINE Result& operator = (const Result<true, T>& result) {
     ptr_ = result.value();
     return *this;
   }
 
 
-  YATSC_INLINE Result& operator = (Result<T>&& result) {
-    ptr_ = result.value();
-    return *this;
-  }
-
-
-  template <typename U>
-  YATSC_INLINE Result& operator = (const Result<U>& result) {
+  YATSC_INLINE Result& operator = (Result<true, T>&& result) {
     ptr_ = result.value();
     return *this;
   }
 
 
   template <typename U>
-  YATSC_INLINE Result& operator = (Result<U>&& result) {
+  YATSC_INLINE Result& operator = (const Result<true, U>& result) {
     ptr_ = result.value();
     return *this;
   }
 
 
-  YATSC_GETTER(T*, value, ptr_)
+  template <typename U>
+  YATSC_INLINE Result& operator = (Result<true, U>&& result) {
+    ptr_ = result.value();
+    return *this;
+  }
 
 
-  YATSC_CONST_GETTER(const T*, value, ptr_)
+  YATSC_GETTER(T, value, ptr_)
+
+
+  YATSC_CONST_GETTER(const T, value, ptr_)
 
 
   YATSC_CONST_GETTER(bool, exists, ptr_ != nullptr)
   
   
  private:
-  T* ptr_;
+  T ptr_;
 };
 
 
@@ -232,6 +235,10 @@ template <typename T>
 class Maybe {
   template <typename Other>
   friend class Maybe;
+
+  typedef Result<std::is_pointer<T>::value, T> SpecializedResult;
+  typedef typename Result<std::is_pointer<T>::value, T>::Type ResultType;
+  typedef typename Result<std::is_pointer<T>::value, T>::ConstType ConstResultType;
  public:
   explicit YATSC_INLINE Maybe(T target) {
     result_(target);
@@ -291,10 +298,10 @@ class Maybe {
   }
 
 
-  YATSC_INLINE typename Result<T>::Type value() {return result_->value();}
+  YATSC_INLINE ResultType value() {return result_->value();}
 
 
-  YATSC_INLINE typename Result<T>::ConstType value() const {return result_->value();}
+  YATSC_INLINE ConstResultType value() const {return result_->value();}
 
 
   YATSC_INLINE operator bool() YATSC_NO_SE {return just();}
@@ -306,7 +313,7 @@ class Maybe {
   YATSC_INLINE bool nothing() YATSC_NO_SE {return !just();}
 
 
-  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type&& alternate) {
+  YATSC_INLINE ResultType or(ResultType&& alternate) {
     if (!result_->exists()) {
       return std::move(alternate);
     }
@@ -314,7 +321,7 @@ class Maybe {
   }
 
 
-  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type&& alternate) const {
+  YATSC_INLINE ResultType or(ResultType&& alternate) const {
     if (!result_->exists()) {
       return std::move(alternate);
     }
@@ -322,7 +329,7 @@ class Maybe {
   }
   
 
-  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type& alternate) {
+  YATSC_INLINE ResultType or(ResultType& alternate) {
     if (!result_->exists()) {
       return alternate;
     }
@@ -330,7 +337,7 @@ class Maybe {
   }
 
 
-  YATSC_INLINE typename Result<T>::Type or(typename Result<T>::Type& alternate) const {
+  YATSC_INLINE ResultType or(ResultType& alternate) const {
     if (!result_->exists()) {
       return alternate;
     }
@@ -338,12 +345,12 @@ class Maybe {
   }
 
 
-  template <typename ResultType, typename Fn>
-  YATSC_INLINE Maybe<ResultType> fmap(Fn fn) {
+  template <typename Type, typename Fn>
+  YATSC_INLINE Maybe<Type> fmap(Fn fn) {
     if (just()) {
       return fn(value());
     }
-    return Maybe<ResultType>();
+    return Maybe<Type>();
   }
 
 
@@ -363,17 +370,17 @@ class Maybe {
   
 
  private:
-  YATSC_INLINE const Result<T>& result() const {
+  YATSC_INLINE const SpecializedResult& result() const {
     return *result_;
   }
 
 
-  YATSC_INLINE Result<T>& result() {
+  YATSC_INLINE SpecializedResult& result() {
     return *result_;
   }
   
   
-  LazyInitializer<Result<T>> result_;
+  LazyInitializer<SpecializedResult> result_;
 };
 
 

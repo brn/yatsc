@@ -32,6 +32,7 @@
 #include "../utils/utils.h"
 #include "../utils/unicode.h"
 #include "./uchar.h"
+#include "unicode-cache.h"
 
 
 namespace yatsc {
@@ -225,6 +226,7 @@ class UnicodeIteratorAdapter : public std::iterator<std::forward_iterator_tag, U
   UC32 line_number_;
   InputIterator begin_;
 };
+
 }
 
 #include "./unicode-iterator-adapter-inl.h"

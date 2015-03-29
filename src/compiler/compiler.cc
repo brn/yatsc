@@ -82,13 +82,14 @@ void Compiler::Run(Handle<ModuleInfo> module_info) {
       source_stream->end(),
       literal_buffer_.Get(),
       compiler_option_);
-  
-  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, module_info, global_scope_);
+
+  Handle<ir::IRFactory> irfactory = Heap::NewHandle<ir::IRFactory>();
+  Parser<SourceStream::iterator> parser(compiler_option_, &scanner, notificator_, irfactory, module_info, global_scope_);
   
   try {
     ParseResult root_result = parser.Parse();
     if (!module_info->HasError() && root_result) {
-      AddResult(Heap::NewHandle<CompilationUnit>(root_result.value(), module_info, literal_buffer_));
+      AddResult(Heap::NewHandle<CompilationUnit>(root_result.value(), parser.irfactory(), module_info, literal_buffer_));
     } else {
       AddResult(Heap::NewHandle<CompilationUnit>(module_info));
     }

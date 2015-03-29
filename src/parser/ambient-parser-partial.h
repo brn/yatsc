@@ -33,7 +33,7 @@ ParseResult Parser<UCharInputIterator>::ParseDeclarationModule() {
   
   while (cur_token()->Isnt(TokenKind::kEof)) {
     
-    Handle<ir::ExportView> export_view;
+    ir::ExportView* export_view = nullptr;
     if (cur_token()->type() == TokenKind::kExport) {
       Token info = *cur_token();
       Next();
@@ -123,7 +123,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientVariableDeclaration(Token* 
     
     if (cur_token()->Is(TokenKind::kIdentifier)) {
 
-      return ParseIdentifier() >>= [&](Handle<ir::Node> identifier) {
+      return ParseIdentifier() >>= [&](ir::Node* identifier) {
         ParseResult type_annotation_result;
         if (cur_token()->Is(TokenKind::kColon)) {
           Next();
@@ -152,13 +152,13 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientFunctionDeclaration(Token* 
     Next();
     if (cur_token()->type() == TokenKind::kIdentifier) {
       
-      return ParseIdentifier() >>= [&](Handle<ir::Node> identifier) {
+      return ParseIdentifier() >>= [&](ir::Node* identifier) {
         if (cur_token()->type() == TokenKind::kMul) {
           generator = true;
           Next();
         }
         
-        return ParseCallSignature(false, true, false) >>= [&](Handle<ir::Node> call_sig) {
+        return ParseCallSignature(false, true, false) >>= [&](ir::Node* call_sig) {
           auto ret = New<ir::AmbientFunctionDeclarationView>(generator, identifier, call_sig);
           ret->SetInformationForNode(info);
           return Success(ret);
@@ -290,7 +290,7 @@ ParseResult Parser<UCharInputInterator>::ParseAmbientClassElement() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node> mods) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(ir::Node* mods) {
   LOG_PHASE(ParseAmbientConstructor);
   
   if ((cur_token()->type() == TokenKind::kIdentifier &&
@@ -316,7 +316,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientConstructor(Handle<ir::Node>
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* accessor_type) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(ir::Node* mods, AccessorType* accessor_type) {
   LOG_PHASE(ParseAmbientMemberFunction);
   
   if (cur_token()->Is(TokenKind::kIdentifier) || IsAccessLevelModifier(cur_token())) {   
@@ -341,7 +341,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientMemberFunction(Handle<ir::No
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::Node> mods) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(ir::Node* mods) {
   LOG_PHASE(ParseAmbientGeneratorMethod);
 
   if (cur_token()->type() == TokenKind::kMul) {
@@ -374,7 +374,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientGeneratorMethod(Handle<ir::N
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(Handle<ir::Node> mods) {
+ParseResult Parser<UCharInputIterator>::ParseAmbientMemberVariable(ir::Node* mods) {
   LOG_PHASE(ParseAmbientMemberVariable);
   if (cur_token()->type() == TokenKind::kIdentifier) {
     auto identifier_result = ParseIdentifier();
@@ -473,9 +473,9 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientEnumProperty() {
 
 
 template <typename UCharInputIterator>
-Handle<ir::Node> Parser<UCharInputIterator>::CreateAmbientEnumFieldView(
-    Handle<ir::Node> name,
-    Handle<ir::Node> value) {
+ir::Node* Parser<UCharInputIterator>::CreateAmbientEnumFieldView(
+    ir::Node* name,
+    ir::Node* value) {
   LOG_PHASE(CreateAmbientEnumFieldView);
   auto ret = New<ir::AmbientEnumFieldView>(name, value);
   ret->SetInformationForNode(name);
@@ -516,7 +516,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
   LOG_PHASE(ParseAmbientModuleBody);
   if (cur_token()->Is(TokenKind::kLeftBrace)) {
     OpenBraceFound();
-    Handle<ir::Node> body = New<ir::AmbientModuleBody>();
+    ir::Node* body = New<ir::AmbientModuleBody>();
     body->SetInformationForNode(cur_token());
     Next();
     
@@ -557,7 +557,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleBody(bool external) {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external) {
   LOG_PHASE(ParseAmbientModuleElement);
-  Handle<ir::ExportView> export_view;
+  ir::ExportView* export_view = nullptr;
   
   if (cur_token()->Is(TokenKind::kExport)) {
     Token info = *cur_token();
@@ -607,7 +607,7 @@ ParseResult Parser<UCharInputIterator>::ParseAmbientModuleElement(bool external)
       parse_result = ParseImportDeclaration();
       CHECK_AST(parse_result);
       if (!external) {
-        Handle<ir::Node> maybe_from = parse_result.value()->ToImportView()->from_expr();
+        ir::Node* maybe_from = parse_result.value()->ToImportView()->from_expr();
         if (maybe_from) {
           if (maybe_from->HasExternalModuleReference()) {
             SYNTAX_ERROR("'require' not allowed here.", maybe_from);

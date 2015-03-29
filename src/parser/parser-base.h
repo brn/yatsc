@@ -43,22 +43,26 @@ class ParserBase: private Uncopyable, private Unmovable {
  public:
   
   ParserBase(const CompilerOption& co,
-             const Notificator<void(const String&)>& notificator)
+             const Notificator<void(const String&)>& notificator,
+             Handle<ir::IRFactory> irfactoy)
       : compiler_option_(co),
         notificator_(notificator),
-        current_token_info_(nullptr) {}  
+        current_token_info_(nullptr),
+        irfactory_(irfactoy){}
+
+  Handle<ir::IRFactory> irfactory() YATSC_NO_SE {return irfactory_;}
 
  protected:
   
   template <typename T, typename ... Args>
-  Handle<T> New(Args ... args) {
-    return irfactory_.New<T>(std::forward<Args>(args)...);
+  T* New(Args ... args) {
+    return this->irfactory_->template New<T>(std::forward<Args>(args)...);
   }
 
 
   template <typename T>
-  Handle<T> New(std::initializer_list<Handle<ir::Node>> list) {
-    return irfactory_.New<T>(list);
+  T* New(std::initializer_list<ir::Node*> list) {
+    return this->irfactory_->template New<T>(list);
   }
 
 
@@ -80,7 +84,7 @@ class ParserBase: private Uncopyable, private Unmovable {
   const Notificator<void(const String&)>& notificator_;
   Token* current_token_info_;
   Token prev_token_info_;
-  ir::IRFactory irfactory_;
+  Handle<ir::IRFactory> irfactory_;
 
 #ifdef DEBUG
   String indent_;

@@ -163,7 +163,7 @@ namespace yatsc {
 #endif
 
 
-typedef Maybe<Handle<ir::Node>> ParseResult;
+typedef Maybe<ir::Node*> ParseResult;
 
 
 class FatalParseError: std::exception {
@@ -180,9 +180,10 @@ class Parser: public ParserBase {
   Parser(const CompilerOption& co,
          Scanner<UCharInputSourceIterator>* scanner,
          const Notificator<void(const String&)>& notificator,
+         Handle<ir::IRFactory> irfactory,
          Handle<ModuleInfo> module_info,
          Handle<ir::GlobalScope> global_scope)
-      : ParserBase(co, notificator),
+      : ParserBase(co, notificator, irfactory),
         record_mode_(0),
         error_recovery_(1),
         scanner_(scanner),
@@ -426,7 +427,7 @@ class Parser: public ParserBase {
   }
 
 
-  YATSC_INLINE void Declare(Handle<ir::Node> node) {
+  YATSC_INLINE void Declare(ir::Node* node) {
     scope_->Declare(node);
   }
 
@@ -449,16 +450,16 @@ class Parser: public ParserBase {
   void SkipTokensUntil(std::initializer_list<TokenKind> kinds, bool move_to_next_token);
 
 
-  YATSC_INLINE ParseResult Success(Handle<ir::Node> result) YATSC_NOEXCEPT {
+  YATSC_INLINE ParseResult Success(ir::Node* result) YATSC_NOEXCEPT {
     state_.ExitErrorRecovery();
     return Just(result);
   }
   
 
-  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<Handle<ir::Node>>();}
+  YATSC_INLINE ParseResult Failed() YATSC_NO_SE {return Nothing<ir::Node*>();}
 
 
-  YATSC_INLINE Handle<ir::Node> Null() const {return ir::Node::Null();}
+  YATSC_INLINE ir::Node* Null() const {return nullptr;}
 
 
   void BalanceEnclosureIfNotBalanced(Token* token, TokenKind kind, bool move_to_next_token);
@@ -586,7 +587,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseForStatement();
 
-  ParseResult ParseForIteration(Handle<ir::Node> reciever, Token*);
+  ParseResult ParseForIteration(ir::Node* reciever, Token*);
 
   ParseResult ParseIterationBody();
 
@@ -622,7 +623,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseEnumProperty();
 
-  Handle<ir::Node> CreateEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
+  ir::Node* CreateEnumFieldView(ir::Node* name, ir::Node* value);
   
   ParseResult ParseClassDeclaration();
 
@@ -638,28 +639,30 @@ class Parser: public ParserBase {
 
   bool IsAccessLevelModifier(Token* token) {return token->OneOf({TokenKind::kPublic, TokenKind::kProtected, TokenKind::kPrivate});};
 
-  ParseResult ParseConstructorOverloads(Handle<ir::Node> mods);
+  ParseResult ParseConstructorOverloads(ir::Node* mods);
 
-  ParseResult ParseConstructorOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
+  ParseResult ParseConstructorOverloadOrImplementation(bool first, ir::Node* mods, ir::Node* overloads);
 
   bool IsMemberFunctionOverloadsBegin(Token* info);
   
-  ParseResult ParseMemberFunctionOverloads(Handle<ir::Node> mods, AccessorType* at);
+  ParseResult ParseMemberFunctionOverloads(ir::Node* mods, AccessorType* at);
 
   ParseResult ParseMemberFunctionOverloadOrImplementation(
-      bool first, Handle<ir::Node> mods, AccessorType* at, Handle<ir::Node> overloads);
+      bool first, ir::Node* mods, AccessorType* at, ir::Node* overloads);
 
-  ParseResult ParseGeneratorMethodOverloads(Handle<ir::Node> mods);
+  ParseResult ParseGeneratorMethodOverloads(ir::Node* mods);
 
-  ParseResult ParseGeneratorMethodOverloadOrImplementation(bool first, Handle<ir::Node> mods, Handle<ir::Node> overloads);
+  ParseResult ParseGeneratorMethodOverloadOrImplementation(bool first, ir::Node* mods, ir::Node* overloads);
 
-  ParseResult ParseMemberVariable(Handle<ir::Node> mods);
+  ParseResult ParseMemberVariable(ir::Node* mods);
 
   ParseResult ParseFunctionOverloads(bool declaration, bool is_export);
 
-  ParseResult ParseFunctionOverloadOrImplementation(Handle<ir::Node> overloads, bool declaration);
+  ParseResult ParseFunctionOverloadOrImplementation(ir::Node* overloads, bool declaration);
  
   ParseResult ParseParameterList(bool accesslevel_allowed);
+
+  ParseResult ParseRestParameter(bool accesslevel_allowed);
   
   ParseResult ParseParameter(bool rest, bool accesslevel_allowed);
 
@@ -681,7 +684,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseTypeQueryExpression();
 
-  ParseResult ParseArrayType(Handle<ir::Node> type_expr);
+  ParseResult ParseArrayType(ir::Node* type_expr);
 
   ParseResult ParseObjectTypeExpression();
 
@@ -694,11 +697,17 @@ class Parser: public ParserBase {
   // Parse expression.
   ParseResult ParseCoveredExpression();
 
-  // Parse expression.
-  ParseResult ParseAsArrowFunction(Handle<ir::Node> type_list, const ir::Node::List&, Handle<ir::Node> ret_type);
+  ParseResult ParseCoveredTypeExpression();
+
+  ParseResult ParseCoveredExpressionSuffix(bool invalid_arrow_param, bool has_types, ir::Node* type_arguments, const ir::Node::List& covered_expr_node_list);
+
+  bool IsParsibleAsArrowFunctionFormalParameterList();
 
   // Parse expression.
-  ParseResult ParseAsTypeAssertion(Handle<ir::Node> type_list, const ir::Node::List&);
+  ParseResult ParseAsArrowFunction(ir::Node* type_list, const ir::Node::List&, ir::Node* ret_type);
+
+  // Parse expression.
+  ParseResult ParseAsTypeAssertion(ir::Node* type_list, const ir::Node::List&);
 
   // Parse expression.
   ParseResult ParseAsExpression(const ir::Node::List&);
@@ -734,11 +743,11 @@ class Parser: public ParserBase {
   // Parse assignment expression.
   ParseResult ParseAssignmentExpression();
 
-  ParseResult ParseArrowFunction(Handle<ir::Node> identifier);
+  ParseResult ParseArrowFunction(ir::Node* identifier);
 
-  ParseResult ParseArrowFunctionParameters(Handle<ir::Node> identifier);
+  ParseResult ParseArrowFunctionParameters(ir::Node* identifier);
 
-  ParseResult ParseConciseBody(Handle<ir::Node> call_sig);
+  ParseResult ParseConciseBody(ir::Node* call_sig);
 
   // Parse conditional expression.
   ParseResult ParseConditionalExpression();
@@ -773,11 +782,11 @@ class Parser: public ParserBase {
   ParseResult ParseMemberExpression();
 
   // Parser getprop or getelem expression.
-  ParseResult ParseGetPropOrElem(Handle<ir::Node> node, bool dot_only, bool is_error);
+  ParseResult ParseGetPropOrElem(ir::Node* node, bool dot_only, bool is_error);
 
   ParseResult ParseCallExpression();
 
-  ParseResult BuildArguments(ParseResult type_arguments_result, Handle<ir::Node> args);
+  ParseResult BuildArguments(ParseResult type_arguments_result, ir::Node* args);
   
   ParseResult ParseArguments();
 
@@ -814,8 +823,6 @@ class Parser: public ParserBase {
   ParseResult ParseComputedPropertyName();
 
   ParseResult ParseLiteral();
-
-  ParseResult ParseValueLiteral();
 
   ParseResult ParseArrayInitializer();
 
@@ -855,23 +862,23 @@ class Parser: public ParserBase {
 
   ParseResult ParseModuleImport();
 
-  ParseResult ParseTSModule(Handle<ir::Node> identifier, Token* token_info);
+  ParseResult ParseTSModule(ir::Node* identifier, Token* token_info);
 
   ParseResult ParseTSModuleBody();
 
   ParseResult ParseExportDeclaration();
 
-  Handle<ir::Node> CreateExportView(
-      Handle<ir::Node> export_clause,
-      Handle<ir::Node> from_clause,
+  ir::Node* CreateExportView(
+      ir::Node* export_clause,
+      ir::Node* from_clause,
       Token* token_info,
       bool default_export);
 
   ParseResult ParseExportClause();
 
-  Handle<ir::Node> CreateNamedExportView(
-      Handle<ir::Node> identifier,
-      Handle<ir::Node> binding);
+  ir::Node* CreateNamedExportView(
+      ir::Node* identifier,
+      ir::Node* binding);
 
 
   // Ambient
@@ -889,13 +896,13 @@ class Parser: public ParserBase {
 
   ParseResult ParseAmbientClassElement();
 
-  ParseResult ParseAmbientConstructor(Handle<ir::Node> mods);
+  ParseResult ParseAmbientConstructor(ir::Node* mods);
 
-  ParseResult ParseAmbientMemberFunction(Handle<ir::Node> mods, AccessorType* acessor_type);
+  ParseResult ParseAmbientMemberFunction(ir::Node* mods, AccessorType* acessor_type);
 
-  ParseResult ParseAmbientGeneratorMethod(Handle<ir::Node> mods);
+  ParseResult ParseAmbientGeneratorMethod(ir::Node* mods);
 
-  ParseResult ParseAmbientMemberVariable(Handle<ir::Node> mods);
+  ParseResult ParseAmbientMemberVariable(ir::Node* mods);
 
   ParseResult ParseAmbientEnumDeclaration(Token* info);
 
@@ -903,7 +910,7 @@ class Parser: public ParserBase {
 
   ParseResult ParseAmbientEnumProperty();
 
-  Handle<ir::Node> CreateAmbientEnumFieldView(Handle<ir::Node> name, Handle<ir::Node> value);
+  ir::Node* CreateAmbientEnumFieldView(ir::Node* name, ir::Node* value);
 
   ParseResult ParseAmbientModuleDeclaration(Token* info);
 
@@ -925,7 +932,7 @@ class Parser: public ParserBase {
   
   AccessorType ParseAccessor();
 
-  void ValidateOverload(Handle<ir::MemberFunctionDefinitionView> node, Handle<ir::Node> overloads);
+  void ValidateOverload(ir::MemberFunctionDefinitionView* node, ir::Node* overloads);
 
   class TokenPack {
    public:

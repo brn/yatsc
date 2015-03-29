@@ -83,6 +83,9 @@ UnicodeIteratorAdapter<InputIterator>::UnicodeIteratorAdapter(UnicodeIteratorAda
 
 template <typename InputIterator>
 UChar UnicodeIteratorAdapter<InputIterator>::Convert () const {
+  if (0x0 <= *begin_ && 0x7f >= *begin_) {
+    return UnicodeCache::FromCache(*begin_);
+  }
   UC8Bytes utf8;
   auto byte_count = utf8::GetByteCount(*begin_);
   auto next = ConvertUtf8ToUcs2(byte_count, &utf8);

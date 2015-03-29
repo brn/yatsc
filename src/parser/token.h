@@ -67,7 +67,6 @@ namespace yatsc {
   DECLARE(Instanceof)                                     \
   DECLARE(Interface)                                      \
   DECLARE(Let)                                            \
-  DECLARE(Module)                                         \
   DECLARE(Nan)                                            \
   DECLARE(New)                                            \
   DECLARE(Null)                                           \
@@ -313,6 +312,8 @@ class Token {
 
   YATSC_INLINE bool IsKeyword() YATSC_NO_SE {return Token::IsKeyword(type_);}
 
+  YATSC_INLINE bool IsPrimaryKeyword() YATSC_NO_SE {return Token::IsPrimaryKeyword(type_);}
+
 #ifdef UNIT_TEST
   String ToStringWithValue() const {
     StringStream ss;
@@ -350,6 +351,8 @@ class Token {
   static bool IsKeyword(TokenKind type);
 
   static bool IsLetOperator(TokenKind kind);
+
+  static bool IsPrimaryKeyword(TokenKind kind);
   
  private:  
   const Literal* literal_;

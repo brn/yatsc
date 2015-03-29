@@ -43,7 +43,7 @@ ParseResult Parser<UCharInputIterator>::ParseExpression() {
 
   // Parse comma expressions.
   Next();
-  Handle<ir::CommaExprView> comma_expr = New<ir::CommaExprView>({assignment_expr});
+  ir::CommaExprView* comma_expr = New<ir::CommaExprView>({assignment_expr});
   comma_expr->SetInformationForNode(*cur_token());
   
   while (1) {
@@ -328,7 +328,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentRestElement() {
   Token info = *cur_token();
   Next();
   
-  return ParseDestructuringAssignmentTarget() >>= [&](Handle<ir::Node> target) {
+  return ParseDestructuringAssignmentTarget() >>= [&](ir::Node* target) {
     auto rest = New<ir::RestParamView>(target);
     rest->SetInformationForNode(&info);
     return Success(rest);
@@ -348,7 +348,7 @@ ParseResult Parser<UCharInputIterator>::ParseDestructuringAssignmentTarget() {
   
   RecordedParserState rps = parser_state();
   
-  return TryParse([&]{return ParseLeftHandSideExpression();}) >>= [&](Handle<ir::Node> lhs) {  
+  return TryParse([&]{return ParseLeftHandSideExpression();}) >>= [&](ir::Node* lhs) {  
     // Check whether DestructuringAssignmentTarget is IsValidAssignmentTarget or not.
     if (!lhs->IsValidLhs()) {
       if (lhs->HasObjectLiteralView() || lhs->HasArrayLiteralView()) {
@@ -379,53 +379,143 @@ bool IsAssignmentOp(TokenKind type) {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
-  LOG_PHASE(ParseCoveredExpression);
+ParseResult Parser<UCharInputIterator>::ParseCoveredTypeExpression() {
+  EnableNestedGenericTypeScanMode();
+  YATSC_SCOPED([&]{DisableNestedGenericTypeScanMode();});
+
   auto type_arguments = New<ir::TypeArgumentsView>();
-  bool has_types = false;
   
-  if (cur_token()->Is(TokenKind::kLess)) {
-    EnableNestedGenericTypeScanMode();
-    Next();
-    while (1) {
-      bool type_param = false;
-      TokenPack tokens = token_pack();
-      ParseResult type;
-      if (cur_token()->Is(TokenKind::kIdentifier)) {
-        Next();
-        if (cur_token()->Is(TokenKind::kExtends)) {
-          RestoreTokens(tokens);
-          type = ParseTypeParameter();
-          type_param = true;
-        } else {
-          RestoreTokens(tokens);
-        }
-      }
+  Next();
+    
+  while (1) {
       
-      if (!type_param) {
+    TokenPack tokens = token_pack();
+    ParseResult type;
+      
+    if (cur_token()->Is(TokenKind::kIdentifier)) {
+      Next();
+        
+      if (cur_token()->Is(TokenKind::kExtends)) {
+        RestoreTokens(tokens);
+        type = ParseTypeParameter();
+      } else {
+        RestoreTokens(tokens);
         type = ParseTypeExpression();
       }
-      CHECK_AST(type);
+        
+    } else {
+      type = ParseTypeExpression();
+    }
+      
+    CHECK_AST(type);
+    type_arguments->InsertLast(type.value());
 
-      has_types = true;
-      type_arguments->InsertLast(type.value());
+    if (cur_token()->Is(TokenKind::kComma)) {
+      Next();
+    } else if (cur_token()->Is(TokenKind::kGreater)) {
+      Next();
+      break;
+    } else {
+      ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
+        << "unexpected token.";
+      return Failed();
+    }
+  }
 
-      if (cur_token()->Is(TokenKind::kComma)) {
-        Next();
-      } else if (cur_token()->Is(TokenKind::kGreater)) {
-        Next();
-        break;
-      } else {
+  return Success(type_arguments);
+}
+
+
+template <typename UCharInputIterator>
+ParseResult Parser<UCharInputIterator>::ParseCoveredExpressionSuffix(bool invalid_arrow_param, bool has_types, ir::Node* type_arguments, const ir::Node::List& covered_expr_node_list) {
+  switch (cur_token()->type()) {      
+    case TokenKind::kArrowGlyph: {
+      Next();
+      return ParseAsArrowFunction(type_arguments, covered_expr_node_list, Null());
+    }
+        
+    case TokenKind::kColon: {
+      if (invalid_arrow_param) {
+        if (has_types) {
+          return ParseAsTypeAssertion(type_arguments, covered_expr_node_list);
+        }
+        return ParseAsExpression(covered_expr_node_list);
+      }
+        
+      auto rps = parser_state();
+      Next();
+      auto ret_type_ret = ParseTypeExpression();
+        
+      if (!ret_type_ret) {
+        RestoreParserState(rps);
+        return ParseAsExpression(covered_expr_node_list);
+      }
+        
+      if (cur_token()->Isnt(TokenKind::kArrowGlyph)) {
         ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-          << "unexpected token.";
+          << "=> expected.";
         return Failed();
       }
+        
+      Next();
+      return ParseAsArrowFunction(type_arguments, covered_expr_node_list, ret_type_ret.value());
     }
-    DisableNestedGenericTypeScanMode();
+        
+    default: {
+      if (has_types) {
+        return ParseAsTypeAssertion(type_arguments, covered_expr_node_list);
+      }
+      return ParseAsExpression(covered_expr_node_list);
+    }
+  }
+}
+
+
+template <typename UCharInputIterator>
+bool Parser<UCharInputIterator>::IsParsibleAsArrowFunctionFormalParameterList() {
+  if (cur_token()->OneOf({TokenKind::kIdentifier, TokenKind::kLeftBrace, TokenKind::kLeftBracket})) {
+    TokenPack tokens = token_pack();
+    YATSC_SCOPED([&]{RestoreTokens(tokens);});
+    Next();
+        
+    if (cur_token()->Is(TokenKind::kQuestionMark)) {
+      Next();
+      if (!cur_token()->OneOf({TokenKind::kColon, TokenKind::kComma, TokenKind::kRightParen, TokenKind::kAssign})) {
+        return false;
+      }
+      return true;
+    } else if (cur_token()->Is(TokenKind::kColon)) {
+      return true;
+    }
+    return false;
+  } else if (cur_token()->Is(TokenKind::kRest)) {
+    return true;
+  }
+
+  return false;
+}
+
+
+template <typename UCharInputIterator>
+ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
+  LOG_PHASE(ParseCoveredExpression);
+  bool has_types = false;
+
+  ParseResult type_arguments_result;
+  ir::Node* type_arguments = nullptr;
+  
+  if (cur_token()->Is(TokenKind::kLess)) {
+    type_arguments_result = ParseCoveredTypeExpression();
+    CHECK_AST(type_arguments_result);
+    type_arguments = type_arguments_result.value();
+    has_types = true;
+  } else {
+    type_arguments = New<ir::TypeArgumentsView>();
   }
 
   ir::Node::List covered_expr_node_list;
   bool invalid_arrow_param = false;
+  
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     TokenPack tokens = token_pack();
     Next();
@@ -433,10 +523,8 @@ ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
     if (cur_token()->Is(TokenKind::kRightParen)) {
       Token token = *cur_token();
       Next();
-      if (cur_token()->Is(TokenKind::kColon)) {
-        goto RET_TYPE_ARROW_FN;
-      } else if (cur_token()->Is(TokenKind::kArrowGlyph)) {
-        goto ARROW_FN;
+      if (cur_token()->OneOf({TokenKind::kColon, TokenKind::kArrowGlyph})) {
+        return ParseCoveredExpressionSuffix(invalid_arrow_param, has_types, type_arguments, covered_expr_node_list);
       } else {
         ReportParseError(&token, YATSC_SOURCEINFO_ARGS)
           << "unexpected token.";
@@ -447,6 +535,7 @@ ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
       RestoreTokens(tokens);
       auto ret = ParseGeneratorComprehension();
       CHECK_AST(ret);
+      
       if (has_types) {
         covered_expr_node_list.push_back(ret.value());
         return ParseAsTypeAssertion(type_arguments, covered_expr_node_list);
@@ -457,41 +546,15 @@ ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
     while (1) {
 
       ParseResult node_ret;
-      bool param = false;
-      if (cur_token()->OneOf({TokenKind::kIdentifier, TokenKind::kLeftBrace, TokenKind::kLeftBracket})) {
-        bool identifier = cur_token()->Is(TokenKind::kIdentifier);
-        TokenPack tokens = token_pack();
-        Next();
-        
-        if (cur_token()->Is(TokenKind::kQuestionMark) ||
-            cur_token()->Is(TokenKind::kColon)) {
-          if (identifier && cur_token()->Is(TokenKind::kQuestionMark)) {
-            Next();
-            if (!cur_token()->OneOf({TokenKind::kColon, TokenKind::kComma, TokenKind::kRightParen})) {
-              RestoreTokens(tokens);
-              goto EXPR;
-            }
-          }
-          RestoreTokens(tokens);
-          node_ret = ParseParameter(false, false);
-          CHECK_AST(node_ret);
-          param = true;
+
+      if (IsParsibleAsArrowFunctionFormalParameterList()) {
+        if (cur_token()->Is(TokenKind::kRest)) {
+          node_ret = ParseRestParameter(false);
         } else {
-          RestoreTokens(tokens);
+          node_ret = ParseParameter(false, false);
         }
-      } else if (cur_token()->Is(TokenKind::kRest)) {
-        Token token = *cur_token();
-        Next();
-        node_ret = ParseParameter(true, false);
         CHECK_AST(node_ret);
-        Handle<ir::Node> node = New<ir::RestParamView>(node_ret.value());
-        node->SetInformationForNode(&token);
-        param = true;
-        node_ret = Success(node);
-      }
-      
-      if (!param) {
-     EXPR:
+      } else {
         node_ret = ParseAssignmentExpression();
         CHECK_AST(node_ret);
         if (!node_ret.value()->HasNameView() &&
@@ -515,49 +578,7 @@ ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
       }
     }
 
-    switch (cur_token()->type()) {
-      
-      case TokenKind::kArrowGlyph: {
-     ARROW_FN:
-        Next();
-        return ParseAsArrowFunction(type_arguments, covered_expr_node_list, Null());
-      }
-        
-      case TokenKind::kColon: {
-     RET_TYPE_ARROW_FN:
-        if (invalid_arrow_param) {
-          if (has_types) {
-            return ParseAsTypeAssertion(type_arguments, covered_expr_node_list);
-          }
-          return ParseAsExpression(covered_expr_node_list);
-        }
-        
-        auto rps = parser_state();
-        Next();
-        auto ret_type_ret = ParseTypeExpression();
-        
-        if (!ret_type_ret) {
-          RestoreParserState(rps);
-          return ParseAsExpression(covered_expr_node_list);
-        }
-        
-        if (cur_token()->Isnt(TokenKind::kArrowGlyph)) {
-          ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
-            << "=> expected.";
-          return Failed();
-        }
-        
-        Next();
-        return ParseAsArrowFunction(type_arguments, covered_expr_node_list, ret_type_ret.value());
-      }
-        
-      default: {
-        if (has_types) {
-          return ParseAsTypeAssertion(type_arguments, covered_expr_node_list);
-        }
-        return ParseAsExpression(covered_expr_node_list);
-      }
-    }
+    return ParseCoveredExpressionSuffix(invalid_arrow_param, has_types, type_arguments, covered_expr_node_list);
   }
 
   if (has_types) {
@@ -569,7 +590,7 @@ ParseResult Parser<UCharInputIterator>::ParseCoveredExpression() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAsArrowFunction(Handle<ir::Node> type_list, const ir::Node::List& node_list, Handle<ir::Node> ret_type) {
+ParseResult Parser<UCharInputIterator>::ParseAsArrowFunction(ir::Node* type_list, const ir::Node::List& node_list, ir::Node* ret_type) {
   LOG_PHASE(ParseAsArrowFunction);
 
   auto params = New<ir::TypeParametersView>();
@@ -588,7 +609,7 @@ ParseResult Parser<UCharInputIterator>::ParseAsArrowFunction(Handle<ir::Node> ty
     }
   }
 
-  Handle<ir::Node> param_list = New<ir::ParamList>();
+  ir::Node* param_list = New<ir::ParamList>();
   if (node_list.size() > 0) {
     if (node_list.size() > 1 && node_list[0]->HasRestParamView()) {
       ReportParseError(node_list[0], YATSC_SOURCEINFO_ARGS)
@@ -619,7 +640,7 @@ ParseResult Parser<UCharInputIterator>::ParseAsArrowFunction(Handle<ir::Node> ty
     }
   }
 
-  auto call_sig = New<ir::CallSignatureView>(param_list, ret_type, params && params->size() > 0? Handle<ir::Node>(params): Null());
+  auto call_sig = New<ir::CallSignatureView>(param_list, ret_type, params && params->size() > 0? params: nullptr);
   auto info = type_list->size() > 0? type_list: param_list->size() > 0? param_list: ret_type;
   if (info) {
     call_sig->SetInformationForNode(info);
@@ -631,7 +652,7 @@ ParseResult Parser<UCharInputIterator>::ParseAsArrowFunction(Handle<ir::Node> ty
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseAsTypeAssertion(Handle<ir::Node> type_list, const ir::Node::List& node_list) {
+ParseResult Parser<UCharInputIterator>::ParseAsTypeAssertion(ir::Node* type_list, const ir::Node::List& node_list) {
   LOG_PHASE(ParseAsTypeAssertion);
 
   for (auto x: type_list->node_list()) {
@@ -641,50 +662,54 @@ ParseResult Parser<UCharInputIterator>::ParseAsTypeAssertion(Handle<ir::Node> ty
       return Failed();
     }
   }
+
+  auto is_valid_expr = [&](ir::Node* node) {
+    if (node->HasParameterView()) {
+      ir::ParameterView* p = node->ToParameterView();
+      if (p->optional()) {
+        ReportParseError(p, YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return false;
+      } else if (p->value()) {
+        ReportParseError(p, YATSC_SOURCEINFO_ARGS)
+        << "unexpected token.";
+        return false;
+      }
+    }
+    return true;
+  };
+
+
+  auto build_cast_view = [&](ir::Node* node) {
+    auto ret = New<ir::CastView>(type_list, node);
+    ret->SetInformationForNode(type_list);
+    return Success(ret);
+  };
+  
   
   if (node_list.size() > 1) {
     auto comma_expr = New<ir::CommaExprView>();
     comma_expr->SetInformationForNode(node_list[0]);
     for (auto x: node_list) {
-      if (x->HasParameterView()) {
-        Handle<ir::ParameterView> p(x);
-        if (p->optional()) {
-          ReportParseError(p, YATSC_SOURCEINFO_ARGS)
-            << "unexpected token.";
-          return Failed();
-        } else if (p->value()) {
-          ReportParseError(p, YATSC_SOURCEINFO_ARGS)
-            << "unexpected token.";
-          return Failed();
-        }
+      if (!is_valid_expr(x)) {
+        ReportParseError(x, YATSC_SOURCEINFO_ARGS)
+          << "unexpected token.";
+        return Failed();
       }
       comma_expr->InsertLast(x);
     }
-    auto ret = New<ir::CastView>(type_list, comma_expr);
-    ret->SetInformationForNode(type_list);
-    return Success(ret);
+    return build_cast_view(comma_expr);
   } else if (node_list.size() == 1) {
-    if (node_list[0]->HasParameterView()) {
-      Handle<ir::ParameterView> p(node_list[0]);
-      if (p->optional()) {
-        ReportParseError(p, YATSC_SOURCEINFO_ARGS)
-          << "unexpected token.";
-        return Failed();
-      } else if (p->value()) {
-        ReportParseError(p, YATSC_SOURCEINFO_ARGS)
-          << "unexpected token.";
-        return Failed();
-      }
+    if (!is_valid_expr(node_list[0])) {
+      ReportParseError(node_list[0], YATSC_SOURCEINFO_ARGS)
+        << "unexpected token.";
+      return Failed();
     }
-    auto ret = New<ir::CastView>(type_list, node_list[0]);
-    ret->SetInformationForNode(type_list);
-    return Success(ret);
+    return build_cast_view(node_list[0]);
   }
   
-  return ParseUnaryExpression() >>= [&](Handle<ir::Node> unary_expr) {
-    auto ret = New<ir::CastView>(type_list, unary_expr);
-    ret->SetInformationForNode(type_list);
-    return Success(ret);
+  return ParseUnaryExpression() >>= [&](ir::Node* unary_expr) {
+    return build_cast_view(unary_expr);
   };
 }
 
@@ -697,7 +722,7 @@ ParseResult Parser<UCharInputIterator>::ParseAsExpression(const ir::Node::List& 
     node->SetInformationForNode(node_list[0]);
     for (auto x: node_list) {
       if (x->HasParameterView()) {
-        Handle<ir::ParameterView> p(x);
+        ir::ParameterView* p = x->ToParameterView();
         if (p->optional()) {
           ReportParseError(p, YATSC_SOURCEINFO_ARGS)
             << "unexpected token.";
@@ -816,7 +841,7 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression() {
     // If left hand side expression is like 'func()',
     // that is invalid expression.
     if (expr_result.value()->IsValidLhs()) {
-      return ParseAssignmentExpression() >>= [&](Handle<ir::Node> rhs_result) {
+      return ParseAssignmentExpression() >>= [&](ir::Node* rhs_result) {
         auto result = New<ir::AssignmentView>(type, expr_result.value(), rhs_result);
         result->SetInformationForNode(expr_result.value());
         return Success(result);
@@ -836,16 +861,16 @@ ParseResult Parser<UCharInputIterator>::ParseAssignmentExpression() {
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseArrowFunction(Handle<ir::Node> identifier) {
+ParseResult Parser<UCharInputIterator>::ParseArrowFunction(ir::Node* identifier) {
   LOG_PHASE(ParseArrowFunction);
-  return ParseArrowFunctionParameters(identifier) >>= [&](Handle<ir::Node> call_sig) {
+  return ParseArrowFunctionParameters(identifier) >>= [&](ir::Node* call_sig) {
     return ParseConciseBody(call_sig);
   };
 }
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseArrowFunctionParameters(Handle<ir::Node> identifier) {
+ParseResult Parser<UCharInputIterator>::ParseArrowFunctionParameters(ir::Node* identifier) {
   LOG_PHASE(ParseArrowFunctionParameters);
 
   ParseResult call_sig_result;
@@ -870,7 +895,7 @@ ParseResult Parser<UCharInputIterator>::ParseArrowFunctionParameters(Handle<ir::
 
 
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseConciseBody(Handle<ir::Node> call_sig) {
+ParseResult Parser<UCharInputIterator>::ParseConciseBody(ir::Node* call_sig) {
   LOG_PHASE(ParseConciseBody);
   ParseResult concise_body_result;
   
@@ -880,7 +905,7 @@ ParseResult Parser<UCharInputIterator>::ParseConciseBody(Handle<ir::Node> call_s
     concise_body_result = ParseAssignmentExpression();
   }
   
-  return concise_body_result >>= [&](Handle<ir::Node> concise_body) {
+  return concise_body_result >>= [&](ir::Node* concise_body) {
     auto ret = New<ir::ArrowFunctionView>(call_sig, concise_body);
     ret->SetInformationForNode(call_sig);
     return Success(ret);
@@ -902,11 +927,11 @@ ParseResult Parser<UCharInputIterator>::ParseConditionalExpression() {
   if (cur_token()->Is(TokenKind::kQuestionMark)) {
     Next();
     
-    return ParseAssignmentExpression() >>= [&](Handle<ir::Node> left) {
+    return ParseAssignmentExpression() >>= [&](ir::Node* left) {
       
       if (cur_token()->Is(TokenKind::kColon)) {
         Next();
-        return ParseAssignmentExpression() >>= [&](Handle<ir::Node> right) {
+        return ParseAssignmentExpression() >>= [&](ir::Node* right) {
           auto temary = New<ir::TemaryExprView>(logical_or_expr_result.value(), left, right);
           temary->SetInformationForNode(logical_or_expr_result.value());
           temary->MarkAsInValidLhs();
@@ -1091,7 +1116,7 @@ ParseResult Parser<UCharInputIterator>::ParseUnaryExpression() {
     case TokenKind::kBitNor:
     case TokenKind::kNot: {
       Next();
-      return ParseUnaryExpression() >>= [&](Handle<ir::Node> unary_expr) {
+      return ParseUnaryExpression() >>= [&](ir::Node* unary_expr) {
         auto ret = New<ir::UnaryExprView>(type, unary_expr);
         ret->SetInformationForNode(unary_expr);
         return Success(ret);
@@ -1111,7 +1136,7 @@ ParseResult Parser<UCharInputIterator>::ParseUnaryExpression() {
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParsePostfixExpression() {
   LOG_PHASE(ParsePostfixExpression);
-  return ParseLeftHandSideExpression() >>= [&](Handle<ir::Node> lhs_expr) {
+  return ParseLeftHandSideExpression() >>= [&](ir::Node* lhs_expr) {
     if (cur_token()->OneOf({TokenKind::kIncrement, TokenKind::kDecrement})) {
       auto ret = New<ir::PostfixView>(lhs_expr, cur_token()->type());
       ret->SetInformationForNode(lhs_expr);
@@ -1181,7 +1206,7 @@ ParseResult Parser<UCharInputIterator>::ParseCallExpression() {
     auto arguments_result = ParseArguments();
     if (!arguments_result) {return target;}
     target.value()->MarkAsInValidLhs();
-    auto call = New<ir::CallView>(target.value(), arguments_result.value());
+    ir::Node* call = New<ir::CallView>(target.value(), arguments_result.value());
     call->SetInformationForNode(target.value());
     
     while (1) {
@@ -1209,8 +1234,8 @@ ParseResult Parser<UCharInputIterator>::ParseCallExpression() {
       }
     }
   } else if (cur_token()->Is(TokenKind::kTemplateLiteral)) {
-    return ParseTemplateLiteral() >>= [&](Handle<ir::Node> template_literal) {
-      Handle<ir::Node> call = New<ir::CallView>(target.value(), template_literal);
+    return ParseTemplateLiteral() >>= [&](ir::Node* template_literal) {
+      ir::Node* call = New<ir::CallView>(target.value(), template_literal);
       call->SetInformationForNode(target.value());
       call->MarkAsInValidLhs();
       return Success(call);
@@ -1222,7 +1247,7 @@ ParseResult Parser<UCharInputIterator>::ParseCallExpression() {
 
 template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::BuildArguments(ParseResult type_arguments_result,
-                                                       Handle<ir::Node> args) {
+                                                       ir::Node* args) {
   auto arguments = New<ir::ArgumentsView>(type_arguments_result.or(ir::Node::Null()), args);
   if (type_arguments_result) {
     arguments->SetInformationForNode(type_arguments_result.or(ir::Node::Null()));
@@ -1261,7 +1286,7 @@ ParseResult Parser<UCharInputIterator>::ParseArguments() {
   }
   
   if (cur_token()->Is(TokenKind::kLeftParen)) {
-    Handle<ir::CallArgsView> args = New<ir::CallArgsView>();
+    ir::CallArgsView* args = New<ir::CallArgsView>();
     args->SetInformationForNode(cur_token());
     Next();
     if (cur_token()->Is(TokenKind::kRightParen)) {
@@ -1330,7 +1355,7 @@ ParseResult Parser<UCharInputIterator>::ParseNewExpression() {
   auto tokens = token_pack();
   Next();
   if (cur_token()->Is(TokenKind::kNew)) {
-    return ParseNewExpression() >>= [&](Handle<ir::Node> new_expr) {
+    return ParseNewExpression() >>= [&](ir::Node* new_expr) {
       auto ret = New<ir::NewCallView>(new_expr, ir::Node::Null());
       ret->SetInformationForNode(tokens.current_token());
       return Success(ret);
@@ -1396,7 +1421,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression() {
     super->SetInformationForNode(token_info);
     return ParseGetPropOrElem(super, false, false);
   } else {
-    return ParsePrimaryExpression() >>= [&](Handle<ir::Node> primary_expr) {
+    return ParsePrimaryExpression() >>= [&](ir::Node* primary_expr) {
       return ParseGetPropOrElem(primary_expr, false, false);
     };
   }
@@ -1406,7 +1431,7 @@ ParseResult Parser<UCharInputIterator>::ParseMemberExpression() {
 // Parse member expression suffix.
 // Like 'new foo.bar.baz()', 'new foo["bar"]', '(function(){return {a:1}}).a'
 template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseGetPropOrElem(Handle<ir::Node> node, bool dot_only, bool is_throw) {
+ParseResult Parser<UCharInputIterator>::ParseGetPropOrElem(ir::Node* node, bool dot_only, bool is_throw) {
   LOG_PHASE(ParseGetPropOrElem);
   while (1) {
     switch (cur_token()->type()) {
@@ -1510,7 +1535,7 @@ ParseResult Parser<UCharInputIterator>::ParsePrimaryExpression() {
     }
     case TokenKind::kThis: {
       // parse a this.
-      Handle<ir::Node> this_view = New<ir::ThisView>();
+      ir::Node* this_view = New<ir::ThisView>();
       this_view->SetInformationForNode(token_info);
       Next();
       return parse_result = Success(this_view);
@@ -1619,7 +1644,7 @@ template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseArrayComprehension() {
   LOG_PHASE(ParseArrayComprehension);
   
-  return ParseComprehension(false) >>= [&](Handle<ir::Node> comprehension) {
+  return ParseComprehension(false) >>= [&](ir::Node* comprehension) {
     if (cur_token()->Is(TokenKind::kRightBracket)) {
       Next();
       auto arr = New<ir::ArrayLiteralView>();
@@ -1636,8 +1661,8 @@ ParseResult Parser<UCharInputIterator>::ParseArrayComprehension() {
 template<typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseComprehension(bool generator) {
   LOG_PHASE(ParseComprehension);
-  return ParseComprehensionFor() >>= [&](Handle<ir::Node> comp_for) {
-    return ParseComprehensionTail() >>= [&](Handle<ir::Node> comp_tail) {
+  return ParseComprehensionFor() >>= [&](ir::Node* comp_for) {
+    return ParseComprehensionTail() >>= [&](ir::Node* comp_tail) {
       auto expr = New<ir::ComprehensionExprView>(generator, comp_for, comp_tail);
       expr->SetInformationForNode(comp_for);
       return Success(expr);
@@ -1651,18 +1676,18 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionTail() {
   LOG_PHASE(ParseComprehensionTail);
   if (cur_token()->Is(TokenKind::kFor)) {
     
-    return ParseComprehensionFor() >>= [&](Handle<ir::Node> comp_for) {
-      Handle<ir::ForStatementView> stmt(comp_for);
-      return ParseComprehensionTail() >>= [&](Handle<ir::Node> comp_tail) {
+    return ParseComprehensionFor() >>= [&](ir::Node* comp_for) {
+      ir::ForStatementView* stmt = comp_for->ToForStatementView();
+      return ParseComprehensionTail() >>= [&](ir::Node* comp_tail) {
         stmt->set_body(comp_tail);
         return Success(stmt);
       };
     };
     
   } else if (cur_token()->Is(TokenKind::kIf)) {    
-    return ParseComprehensionIf() >>= [&](Handle<ir::Node> comp_if) {
-      Handle<ir::IfStatementView> stmt(comp_if);
-      return ParseComprehensionTail() >>= [&](Handle<ir::Node> comp_tail) {
+    return ParseComprehensionIf() >>= [&](ir::Node* comp_if) {
+      ir::IfStatementView* stmt = comp_if->ToIfStatementView();
+      return ParseComprehensionTail() >>= [&](ir::Node* comp_tail) {
         stmt->set_then_block(comp_tail);
         return Success(stmt);
       };
@@ -1682,12 +1707,12 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionFor() {
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     Next();
     
-    return ParseForBinding() >>= [&](Handle<ir::Node> for_binding) {
+    return ParseForBinding() >>= [&](ir::Node* for_binding) {
       if (cur_token()->Is(TokenKind::kIdentifier) &&
           cur_token()->value()->Equals("of")) {
         Next();
         
-        return ParseAssignmentExpression() >>= [&](Handle<ir::Node> assignment_expr) {
+        return ParseAssignmentExpression() >>= [&](ir::Node* assignment_expr) {
           if (cur_token()->Is(TokenKind::kRightParen)) {
             Next();
             auto for_expr = New<ir::ForOfStatementView>();
@@ -1723,7 +1748,7 @@ ParseResult Parser<UCharInputIterator>::ParseComprehensionIf() {
   if (cur_token()->Is(TokenKind::kLeftParen)) {
     Next();
 
-    return ParseAssignmentExpression() >>= [&](Handle<ir::Node> assignment_expr) {
+    return ParseAssignmentExpression() >>= [&](ir::Node* assignment_expr) {
       if (cur_token()->Is(TokenKind::kRightParen)) {
         Next();
         auto if_expr = New<ir::IfStatementView>();
@@ -1795,7 +1820,7 @@ ParseResult Parser<UCharInputIterator>::ParseYieldExpression() {
     continuation = true;
   }
 
-  return ParseAssignmentExpression() >>= [&](Handle<ir::Node> assignment_expr) {
+  return ParseAssignmentExpression() >>= [&](ir::Node* assignment_expr) {
     auto yield_expr = New<ir::YieldView>(continuation, assignment_expr);
     yield_expr->SetInformationForNode(cur_token());
     return Success(yield_expr);
@@ -1820,7 +1845,7 @@ template <typename UCharInputIterator>
 ParseResult Parser<UCharInputIterator>::ParseObjectLiteral() {
   LOG_PHASE(ParseObjectLiteral);
 
-  Handle<ir::ObjectLiteralView> object_literal = New<ir::ObjectLiteralView>();
+  ir::ObjectLiteralView* object_literal = New<ir::ObjectLiteralView>();
   object_literal->SetInformationForNode(cur_token());
   Handle<ir::Properties> prop = object_literal->properties();
   Next();
@@ -1936,7 +1961,7 @@ ParseResult Parser<UCharInputIterator>::ParsePropertyDefinition() {
       << "':' expected.";
     return Failed();
   }
-  Handle<ir::ObjectElementView> element = New<ir::ObjectElementView>(key_result.value(), value_result.or(Null()));
+  ir::ObjectElementView* element = New<ir::ObjectElementView>(key_result.value(), value_result.or(Null()));
   element->SetInformationForNode(&info);
   return Success(element);
 }
@@ -2005,17 +2030,6 @@ ParseResult Parser<UCharInputIterator>::ParseLiteral() {
       Next();
       return Success(node);
     }
-    default: {
-      return ParseValueLiteral();
-    }
-  }
-}
-
-
-template <typename UCharInputIterator>
-ParseResult Parser<UCharInputIterator>::ParseValueLiteral() {
-  LOG_PHASE(ParseValueLiteral);
-  switch (cur_token()->type()) {
     case TokenKind::kTrue: // FALL THROUGH
     case TokenKind::kFalse:
       return ParseBooleanLiteral();
@@ -2048,12 +2062,12 @@ ParseResult Parser<UCharInputIterator>::ParseArrayInitializer() {
       ReportParseError(cur_token(), YATSC_SOURCEINFO_ARGS)
         << "ArrayComprehension is not allowed except es6 mode.";
     }
-    return ParseArrayComprehension() >>= [&](Handle<ir::Node> comp) {
+    return ParseArrayComprehension() >>= [&](ir::Node* comp) {
       comp->SetInformationForNode(&info);
       return Success(comp);
     };    
   }
-  return ParseArrayLiteral() >>= [&](Handle<ir::Node> array_literal) {
+  return ParseArrayLiteral() >>= [&](ir::Node* array_literal) {
     array_literal->SetInformationForNode(&info);
     return Success(array_literal);
   };

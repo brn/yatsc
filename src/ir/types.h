@@ -119,7 +119,7 @@ class Type {
 
 class GatheredTypeInfo {
  public:
-  GatheredTypeInfo(Handle<Type> type, Handle<Node> prop, Type::Modifier modifier)
+  GatheredTypeInfo(Handle<Type> type, Node* prop, Type::Modifier modifier)
       : type_(type),
         node_(prop),
         modifier_(modifier) {}
@@ -159,13 +159,13 @@ class GatheredTypeInfo {
 
 
   YATSC_GETTER(Handle<Type>, type, type_)
-  YATSC_GETTER(Handle<Node>, node, node_)
+  YATSC_GETTER(Node*, node, node_)
   YATSC_GETTER(Type::Modifier, modifier, modifier_)
   
 
  private:
   Handle<Type> type_;
-  Handle<Node> node_;
+  Node* node_;
   Type::Modifier modifier_;
 };
 
@@ -216,7 +216,7 @@ class GenericType: public Type {
       : Type(id) {}
 
   
-  void AddTypeParameter(Handle<Symbol> symbol, Handle<Type> type, Handle<Node> node) {
+  void AddTypeParameter(Handle<Symbol> symbol, Handle<Type> type, Node* node) {
     type_param_map_.insert(std::make_pair(symbol->id(), Just(GatheredTypeInfo(type, node, Type::Modifier::kPublic))));
   }
 
@@ -254,7 +254,7 @@ class PropertyType: public GenericType {
       : GenericType(id) {}
   
 
-  void DeclareType(Handle<Symbol> symbol, Handle<Type> type, Handle<Node> prop, Type::Modifier modifier = Type::Modifier::kPublic) {
+  void DeclareType(Handle<Symbol> symbol, Handle<Type> type, Node* prop, Type::Modifier modifier = Type::Modifier::kPublic) {
     properties_.insert(std::make_pair(symbol, Just(GatheredTypeInfo(type, prop, modifier))));
   }
 
@@ -347,7 +347,7 @@ class CallSignatureType: public GenericType {
       : GenericType(TypeId::kCallSignature) {}
 
 
-  void AddParamType(Handle<Symbol> symbol, Handle<Node> node, Handle<Type> type) {
+  void AddParamType(Handle<Symbol> symbol, Node* node, Handle<Type> type) {
     param_map_.insert(std::make_pair(symbol->id(), Just(GatheredTypeInfo(type, node, Type::Modifier::kPublic))));
   }
 
