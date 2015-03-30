@@ -31,7 +31,7 @@ namespace yatsc {namespace ir {
 class IRFactory : private Uncopyable {
  public:
 
-  IRFactory() {}
+  IRFactory() = default;
   
   template <typename NodeName, typename ... Args>
   inline NodeName* New(Args ... args) {

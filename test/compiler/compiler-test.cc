@@ -54,12 +54,10 @@ inline void RunCompiler(const char* name) {
 
 
 TEST(Compiler, Compile_Products) {
-  // RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/compiler/tsc.ts");
-  // RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/services/services.ts");
-  // RunCompiler(PRODUCT_DIR"/test/doppio/console/doppioh.ts");
-  //RunCompiler(PRODUCT_DIR"/test/promises-typescript/lib/Promises.ts");
-  RunCompiler("/Users/a12360/Documents/workspace/tagsys_tag_admin2/src/main/webapp/ts/src/main/tagmgr/site/siteid/draft/tag/customHtml/edit-main.ts");
-  RunCompiler("/Users/a12360/Documents/workspace/tagsys_tag_admin2/src/main/webapp/ts/src/main/tagmgr/site/siteid/draft/macro/edit-main.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/compiler/tsc.ts");
+  RunCompiler(PRODUCT_DIR"/test/microsoft/typescript/src/services/services.ts");
+  RunCompiler(PRODUCT_DIR"/test/doppio/console/doppioh.ts");
+  RunCompiler(PRODUCT_DIR"/test/promises-typescript/lib/Promises.ts");
 }
 
 
